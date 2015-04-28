@@ -1,0 +1,9 @@
+https://github.com/iliapolo/cloudify-dsl-parser/archive/master.zip
+https://github.com/iliapolo/cloudify-rest-client/archive/master.zip
+https://github.com/iliapolo/cloudify-plugins-common/archive/master.zip
+https://github.com/iliapolo/cloudify-script-plugin/archive/master.zip
+https://github.com/iliapolo/cloudify-diamond-plugin/archive/master.zip
+https://github.com/iliapolo/cloudify-agent-installer-plugin/archive/master.zip
+https://github.com/iliapolo/cloudify-plugin-installer-plugin/archive/master.zip
+https://github.com/iliapolo/cloudify-windows-agent-installer-plugin/archive/master.zip
+https://github.com/iliapolo/cloudify-windows-plugin-installer-plugin/archive/master.zip
