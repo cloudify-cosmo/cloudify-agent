@@ -18,7 +18,6 @@ import uuid
 from cloudify_agent.shell import errors
 from cloudify_agent.shell import exceptions
 from cloudify_agent.shell.daemon_factory import DaemonFactory
-from cloudify_agent.tests.api.pm import travis
 from cloudify_agent.tests.shell import BaseShellTest
 
 
@@ -42,42 +41,6 @@ class TestDaemonFactory(BaseShellTest):
         self.assertRaises(errors.CloudifyAgentNotImplementedError,
                           DaemonFactory.new,
                           process_management='no-impl')
-
-    def test_new_relocated(self):
-        if not travis():
-            raise RuntimeError('Error! This test cannot be executed '
-                               'outside of the travis CI '
-                               'system since it may corrupt '
-                               'your local virtualenv')
-        daemon = DaemonFactory.new(
-            process_management='init.d',
-            name='name',
-            queue='queue',
-            manager_ip='127.0.0.1',
-            user='user',
-            relocated=True)
-        self.assertEqual('name', daemon.name)
-        self.assertEqual('queue', daemon.queue)
-        self.assertEqual('127.0.0.1', daemon.manager_ip)
-        self.assertEqual('user', daemon.user)
-
-    def test_new_disable_requiretty(self):
-        if not travis():
-            raise RuntimeError('Error! This test cannot be executed '
-                               'outside of the travis CI '
-                               'system since it may corrupt '
-                               'your local system files')
-        daemon = DaemonFactory.new(
-            process_management='init.d',
-            name='name',
-            queue='queue',
-            manager_ip='127.0.0.1',
-            user='user',
-            disable_requiretty=True)
-        self.assertEqual('name', daemon.name)
-        self.assertEqual('queue', daemon.queue)
-        self.assertEqual('127.0.0.1', daemon.manager_ip)
-        self.assertEqual('user', daemon.user)
 
     def test_save_load_delete(self):
 

@@ -18,6 +18,7 @@ import os
 
 import cloudify_agent
 from cloudify_agent.api import utils
+from cloudify_agent.tests.api.pm import travis
 
 
 class TestUtils(testtools.TestCase):
@@ -79,3 +80,20 @@ class TestUtils(testtools.TestCase):
         with open(env_path) as f:
             content = f.read()
         self.assertTrue('export key=value' in content)
+
+    def test_disable_requiretty(self):
+        if not travis():
+            raise RuntimeError('Error! This test cannot be executed '
+                               'outside of the travis CI '
+                               'system since it may corrupt '
+                               'your local system files')
+
+        utils.disable_requiretty()
+
+    def test_fix_virtualenv(self):
+        if not travis():
+            raise RuntimeError('Error! This test cannot be executed '
+                               'outside of the travis CI '
+                               'system since it may corrupt '
+                               'your local system files')
+        utils.fix_virtualenv()
