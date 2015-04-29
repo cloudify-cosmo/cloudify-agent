@@ -3,7 +3,7 @@ https://github.com/cloudify-cosmo/cloudify-rest-client/archive/master.zip
 https://github.com/cloudify-cosmo/cloudify-plugins-common/archive/master.zip
 https://github.com/cloudify-cosmo/cloudify-script-plugin/archive/master.zip
 https://github.com/cloudify-cosmo/cloudify-diamond-plugin/archive/master.zip
-https://github.com/cloudify-cosmo/cloudify-agent-installer-plugin/archive/master.zip
-https://github.com/cloudify-cosmo/cloudify-plugin-installer-plugin/archive/master.zip
-https://github.com/cloudify-cosmo/cloudify-windows-agent-installer-plugin/archive/master.zip
-https://github.com/cloudify-cosmo/cloudify-windows-plugin-installer-plugin/archive/master.zip
+https://github.com/cloudify-cosmo/cloudify-agent-installer-plugin/archive/CFY-2628-agent-installer-refactor.zip
+https://github.com/cloudify-cosmo/cloudify-plugin-installer-plugin/archive/CFY-2629-plugin-install-seperation.zip
+https://github.com/cloudify-cosmo/cloudify-windows-plugin-installer-plugin/archive/CFY-2630-windows-plugin-installer-seperation.zip
+https://github.com/cloudify-cosmo/cloudify-windows-agent-installer-plugin/archive/CFY-2631-windows-agent-installer-seperation.zip
