@@ -56,7 +56,6 @@ def get_possible_solutions(failure):
 def parse_custom_options(options):
 
     """
-
     :param options: a tuple where each element is in the form of an
                        option (i.e --a=b)
     :type options: tuple
