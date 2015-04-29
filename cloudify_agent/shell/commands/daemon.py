@@ -32,6 +32,10 @@ from cloudify_agent.shell import exceptions
               .format(env.CLOUDIFY_MANAGER_IP),
               required=True,
               envvar=env.CLOUDIFY_MANAGER_IP)
+@click.option('--manager-port',
+              help='The manager REST gateway port to connect to. [env {0}]'
+              .format(env.CLOUDIFY_MANAGER_PORT),
+              envvar=env.CLOUDIFY_MANAGER_PORT)
 @click.option('--name',
               help='The name of the daemon. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_NAME),
@@ -65,10 +69,6 @@ from cloudify_agent.shell import exceptions
                    'broker-port options are ignored. [env {0}]'
               .format(env.CLOUDIFY_BROKER_URL),
               envvar=env.CLOUDIFY_BROKER_URL)
-@click.option('--manager-port',
-              help='The manager REST gateway port to connect to. [env {0}]'
-                   .format(env.CLOUDIFY_MANAGER_PORT),
-              envvar=env.CLOUDIFY_MANAGER_PORT)
 @click.option('--min-workers',
               help='Minimum number of workers for '
                    'the autoscale configuration. [env {0}]'
@@ -84,10 +84,6 @@ from cloudify_agent.shell import exceptions
                    'env {0}]'
                    .format(env.CLOUDIFY_DAEMON_EXTRA_ENV),
               envvar=env.CLOUDIFY_DAEMON_EXTRA_ENV)
-@click.option('--log-level',
-              help='Logging level for the daemon log file. [env {0}]'
-                   .format(env.CLOUDIFY_DAEMON_LOG_LEVEL),
-              envvar=env.CLOUDIFY_DAEMON_LOG_LEVEL)
 @click.option('--process-management',
               help='The process management system to use '
                    'when creating the daemon. [env {0}]'

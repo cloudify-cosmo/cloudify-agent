@@ -110,12 +110,6 @@ class Daemon(object):
         daemon environment. the file should be in the format of
         multiple 'export A=B' lines. defaults to None.
 
-    ``log_level``:
-
-        log level for the cloudify agent. this level controls the logging
-        in the log file created by the agent. defaults to 'debug'.
-
-
     """
 
     # override this when adding implementations.
@@ -165,7 +159,6 @@ class Daemon(object):
         self.workdir = params.get(
             'workdir') or os.getcwd()
         self.extra_env_path = params.get('extra_env_path')
-        self.log_level = params.get('log_level') or defaults.LOG_LEVEL
 
         # save as a property so that it will be persisted in the json files
         self.process_management = self.PROCESS_MANAGEMENT

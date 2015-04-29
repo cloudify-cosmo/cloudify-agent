@@ -24,4 +24,3 @@ RELOCATED = False
 MIN_WORKERS = 0
 MAX_WORKERS = 5
 BROKER_URL = 'amqp://guest:guest@{0}:{1}//'
-LOG_LEVEL = 'debug'
