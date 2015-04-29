@@ -24,7 +24,6 @@ from cloudify_agent.shell.main import handle_failures
 from cloudify_agent.shell.main import get_log_level
 from cloudify_agent.shell import utils
 from cloudify_agent.shell import exceptions
-from cloudify_agent.shell import errors
 
 
 @click.command()

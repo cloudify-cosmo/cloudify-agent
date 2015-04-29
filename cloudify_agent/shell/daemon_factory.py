@@ -88,7 +88,6 @@ class DaemonFactory(object):
         daemon = DaemonFactory._find_implementation(process_management)
         return daemon(logger_level=logger_level, **params)
 
-
     @classmethod
     def load(cls, name, logger_level=logging.INFO):
 
