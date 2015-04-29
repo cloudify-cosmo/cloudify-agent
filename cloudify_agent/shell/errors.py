@@ -18,6 +18,7 @@ import os
 import click
 
 from cloudify_agent.shell import utils
+from cloudify_agent import VIRTUALENV
 
 
 class CloudifyAgentError(click.ClickException):
@@ -47,5 +48,27 @@ class CloudifyAgentNotImplementedError(CloudifyAgentError):
         super(CloudifyAgentNotImplementedError, self).__init__(self.__str__())
 
     def __str__(self):
-        return 'No implementation found for cloudify-agent ' \
+        return 'No implementation found for Cloudify Agent ' \
                'of type: {0}'.format(self.process_management)
+
+
+class CloudifyAgentAlreadyExistsError(CloudifyAgentError):
+
+    """
+    Error indicates that a cloudify agent with the given name already exists.
+    It must be deleted before creating a new one with the same name.
+    """
+
+    def __init__(self, name):
+        self.name = name
+        super(CloudifyAgentAlreadyExistsError, self).__init__(self.__str__())
+
+    def __str__(self):
+        return 'Cloudify Agent {0} already exists'.format(self.name)
+
+    @property
+    def possible_solutions(self):
+        return [
+            "Run '{0}/bin/cloudify-agent daemon delete --name={1}' and try "
+            "again".format(VIRTUALENV, self.name)
+        ]

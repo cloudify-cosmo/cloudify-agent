@@ -114,3 +114,21 @@ class TestDaemonFactory(BaseShellTest):
         self.assertRaises(exceptions.CloudifyAgentNotFoundException,
                           DaemonFactory.load,
                           'non_existing_name')
+
+    def test_new_existing_agent(self):
+
+        daemon = DaemonFactory.new(
+            process_management='init.d',
+            name='agent',
+            queue='queue',
+            manager_ip='127.0.0.1',
+            host='127.0.0.1',
+            user='user',
+            broker_url='127.0.0.1')
+
+        DaemonFactory.save(daemon)
+
+        self.assertRaises(errors.CloudifyAgentAlreadyExistsError,
+                          DaemonFactory.new,
+                          process_management='init.d',
+                          name='agent')

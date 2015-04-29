@@ -17,9 +17,9 @@ import uuid
 import os
 import logging
 
-from cloudify.utils import setup_logger
 
 from cloudify_agent.api import exceptions
+from cloudify_agent.api import errors
 from cloudify_agent.api.pm.initd import GenericLinuxDaemon
 from cloudify_agent.api import utils
 from cloudify_agent import VIRTUALENV
@@ -89,9 +89,6 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
         daemon = self._create_daemon()
         daemon.create()
 
-        # check for idempotency
-        daemon.create()
-
     def test_configure(self):
         daemon = self._create_daemon()
         daemon.create()
@@ -101,21 +98,21 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
         self.assertTrue(os.path.exists(daemon.config_path))
         self.assertTrue(os.path.exists(daemon.includes_path))
 
-        # check for idempotency
+    def test_configure_existing_agent(self):
+        daemon = self._create_daemon()
+        daemon.create()
+
         daemon.configure()
         self.assertTrue(os.path.exists(daemon.script_path))
         self.assertTrue(os.path.exists(daemon.config_path))
         self.assertTrue(os.path.exists(daemon.includes_path))
 
+        self.assertRaises(errors.DaemonError, daemon.configure)
+
     def test_start(self):
         daemon = self._create_daemon()
         daemon.create()
         daemon.configure()
-        daemon.start()
-        self.assert_daemon_alive(self.queue)
-        self.assert_registered_tasks(daemon.queue)
-
-        # check for idempotency
         daemon.start()
         self.assert_daemon_alive(self.queue)
         self.assert_registered_tasks(daemon.queue)
@@ -158,10 +155,6 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
         daemon.stop()
         self.assert_daemon_dead(self.queue)
 
-        # check for idempotency
-        daemon.stop()
-        self.assert_daemon_dead(self.queue)
-
     def test_stop_short_timeout(self):
         daemon = self._create_daemon()
         daemon.create()
@@ -178,12 +171,6 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
         daemon.configure()
         daemon.start()
         daemon.stop()
-        daemon.delete()
-        self.assertFalse(os.path.exists(daemon.script_path))
-        self.assertFalse(os.path.exists(daemon.config_path))
-        self.assertFalse(os.path.exists(daemon.includes_path))
-
-        # check for idempotency
         daemon.delete()
         self.assertFalse(os.path.exists(daemon.script_path))
         self.assertFalse(os.path.exists(daemon.config_path))
@@ -206,9 +193,6 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
                                 os.path.dirname(resources.__file__)),
                         stdout_pipe=False)
         try:
-            daemon.register('mock-plugin')
-
-            # check for idempotency
             daemon.register('mock-plugin')
             daemon.start()
             self.assert_registered_tasks(
@@ -233,14 +217,6 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
         daemon.start()
         try:
             daemon.register('mock-plugin')
-            daemon.restart()
-            self.assert_registered_tasks(
-                self.queue,
-                additional_tasks=set(['mock_plugin.tasks.run',
-                                      'mock_plugin.tasks.get_env_variable'])
-            )
-
-            # check for idempotency
             daemon.restart()
             self.assert_registered_tasks(
                 self.queue,

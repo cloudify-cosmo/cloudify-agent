@@ -28,4 +28,3 @@ class BaseCommandLineTestCase(BaseShellTest):
         except SystemExit:
             if raise_system_exit:
                 raise
-            pass

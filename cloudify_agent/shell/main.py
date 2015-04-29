@@ -28,21 +28,22 @@ from cloudify_agent.shell import errors as cli_errors
 
 codes = {
 
-    # exception start from 101
-    api_exceptions.DaemonException: 101,
-    api_exceptions.DaemonShutdownTimeout: 102,
-    api_exceptions.DaemonStartupTimeout: 103,
-    api_exceptions.DaemonStillRunningException: 104,
-    cli_exceptions.CloudifyAgentNotFoundException: 105,
+    # exception start from 100
     cli_exceptions.CloudifyAgentException: 100,
+    cli_exceptions.CloudifyAgentNotFoundException: 101,
+    api_exceptions.DaemonException: 102,
+    api_exceptions.DaemonShutdownTimeout: 103,
+    api_exceptions.DaemonStartupTimeout: 104,
+    api_exceptions.DaemonStillRunningException: 105,
 
-    # errors start from 201
-    api_errors.DaemonError: 201,
-    api_errors.DaemonParametersError: 202,
-    api_errors.DaemonConfigurationError: 203,
-    api_errors.MissingMandatoryParamError: 204,
-    cli_errors.CloudifyAgentNotImplementedError: 205,
-    cli_errors.CloudifyAgentError: 200
+    # errors start from 200
+    cli_errors.CloudifyAgentError: 200,
+    cli_errors.CloudifyAgentNotImplementedError: 201,
+    api_errors.DaemonError: 202,
+    api_errors.DaemonParametersError: 203,
+    api_errors.DaemonConfigurationError: 204,
+    api_errors.MissingMandatoryParamError: 205,
+
 }
 
 
@@ -66,12 +67,15 @@ def handle_failures(func):
 
                 # convert api exceptions to cli exceptions.
                 value = cli_exceptions.CloudifyAgentException(str(e))
+
             if isinstance(e, api_errors.DaemonError):
 
                 # convert api errors to cli errors
                 value = cli_errors.CloudifyAgentError(str(e))
 
-            # in any case, set the exception exit_code accordingly
+            # set the exit_code accordingly. the exit_code property is later
+            # read by the click framework to set the exit code of
+            # the process.
             value.exit_code = codes.get(tpe, 1)
             raise type(value), value, tb
 

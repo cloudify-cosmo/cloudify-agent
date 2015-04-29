@@ -36,7 +36,7 @@ class TestCommandLine(BaseCommandLineTestCase):
             self._run('cloudify-agent raise-error', raise_system_exit=True)
             self.fail('Expected failure of command execution')
         except SystemExit as e:
-            self.assertEqual(e.code, 101)
+            self.assertEqual(e.code, 102)
 
     def test_api_errors_conversion(self):
 
@@ -51,4 +51,4 @@ class TestCommandLine(BaseCommandLineTestCase):
             self._run('cloudify-agent raise-error', raise_system_exit=True)
             self.fail('Expected failure of command execution')
         except SystemExit as e:
-            self.assertEqual(e.code, 201)
+            self.assertEqual(e.code, 202)

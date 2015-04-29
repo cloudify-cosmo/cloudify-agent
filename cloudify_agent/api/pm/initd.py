@@ -22,6 +22,7 @@ from cloudify_agent.included_plugins import included_plugins
 from cloudify_agent.api import utils
 from cloudify_agent.api.pm.base import Daemon
 from cloudify_agent.api import exceptions
+from cloudify_agent.api import errors
 from cloudify_agent.api import defaults
 from cloudify_agent import VIRTUALENV
 
@@ -65,6 +66,19 @@ class GenericLinuxDaemon(Daemon):
         :rtype `str`
 
         """
+
+        def _validate(file_path):
+            if os.path.exists(file_path):
+                raise errors.DaemonError(
+                    'Failed configuring daemon {0}: {1} already exists.'
+                    .format(self.name, file_path))
+
+        # make sure none of the necessary files exist before we create them
+        # currently re-configuring an agent is not supported.
+
+        _validate(self.includes_path)
+        _validate(self.script_path)
+        _validate(self.config_path)
 
         self._create_includes()
         self._create_script()
@@ -210,10 +224,6 @@ class GenericLinuxDaemon(Daemon):
         return module_paths
 
     def _create_includes(self):
-        if os.path.exists(self.includes_path):
-            self.logger.debug('Not creating includes '
-                              'since it already exists.')
-            return
         with open(self.includes_path, 'w') as f:
             includes = []
             for plugin in included_plugins:
@@ -221,10 +231,6 @@ class GenericLinuxDaemon(Daemon):
             f.write(','.join(includes))
 
     def _create_script(self):
-        if os.path.exists(self.script_path):
-            self.logger.debug('Not creating script '
-                              'since it already exists.')
-            return
         rendered = utils.render_template_to_file(
             template_path='initd/celeryd.template',
             daemon_name=self.name,
@@ -235,10 +241,6 @@ class GenericLinuxDaemon(Daemon):
         self.runner.sudo('chmod +x {0}'.format(self.script_path))
 
     def _create_config(self):
-        if os.path.exists(self.config_path):
-            self.logger.debug('Not creating config '
-                              'since it already exists.')
-            return
         rendered = utils.render_template_to_file(
             template_path='initd/celeryd.conf.template',
             queue=self.queue,
