@@ -26,7 +26,7 @@ from cloudify_agent.shell import utils
 from cloudify_agent.shell import exceptions
 
 
-@click.command()
+@click.command(context_settings=dict(ignore_unknown_options=True))
 @click.option('--manager-ip',
               help='The manager IP to connect to. [env {0}]'
               .format(env.CLOUDIFY_MANAGER_IP),
@@ -91,6 +91,11 @@ from cloudify_agent.shell import exceptions
               type=click.Choice(['init.d']),
               default='init.d',
               envvar=env.CLOUDIFY_DAEMON_PROCESS_MANAGEMENT)
+# this is defined in order to allow passing any kind of option to the
+# command line. in order to support creating daemons of different kind via
+# the same command line. this argument is parsed as keyword arguments and
+# passed on the the daemon constructor.
+@click.argument('custom-options', nargs=-1, type=click.UNPROCESSED)
 @handle_failures
 def create(process_management, **params):
 
@@ -99,11 +104,14 @@ def create(process_management, **params):
 
     """
 
+    attributes = dict(**params)
+    custom_arg = attributes.pop('custom_options', ())
+    attributes.update(utils.parse_custom_options(custom_arg))
     click.echo('Creating...')
     daemon = DaemonFactory.new(
         process_management=process_management,
         logger_level=get_log_level(),
-        **params
+        **attributes
     )
 
     daemon.create()

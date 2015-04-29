@@ -58,7 +58,7 @@ class DaemonFactory(object):
         raise errors.CloudifyAgentNotImplementedError(process_management)
 
     @staticmethod
-    def new(process_management, logger_level=logging.INFO, **params):
+    def new(process_management, logger_level=logging.INFO, **attributes):
 
         """
         Creates a daemon instance that implements the required process
@@ -74,19 +74,19 @@ class DaemonFactory(object):
         :rtype `cloudify_agent.api.daemon.base.Daemon`
         """
 
-        name = params.get('name')
+        name = attributes.get('name')
         if name:
             # an explicit name was passed, make sure we don't already
             # have a daemon with that name
             try:
-                DaemonFactory.load(params.get('name'))
+                DaemonFactory.load(attributes.get('name'))
                 # this means we do have one, raise an error
                 raise errors.CloudifyAgentAlreadyExistsError(name)
             except exceptions.CloudifyAgentNotFoundException:
                 pass
 
         daemon = DaemonFactory._find_implementation(process_management)
-        return daemon(logger_level=logger_level, **params)
+        return daemon(logger_level=logger_level, **attributes)
 
     @classmethod
     def load(cls, name, logger_level=logging.INFO):

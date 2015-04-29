@@ -30,13 +30,11 @@ class TestDaemonFactory(BaseShellTest):
             name='name',
             queue='queue',
             manager_ip='127.0.0.1',
-            host='127.0.0.1',
             user='user',
             broker_url='127.0.0.1')
         self.assertEqual('name', daemon.name)
         self.assertEqual('queue', daemon.queue)
         self.assertEqual('127.0.0.1', daemon.manager_ip)
-        self.assertEqual('127.0.0.1', daemon.host)
         self.assertEqual('127.0.0.1', daemon.broker_url)
         self.assertEqual('user', daemon.user)
 
@@ -61,7 +59,6 @@ class TestDaemonFactory(BaseShellTest):
         self.assertEqual('name', daemon.name)
         self.assertEqual('queue', daemon.queue)
         self.assertEqual('127.0.0.1', daemon.manager_ip)
-        self.assertEqual('127.0.0.1', daemon.host)
         self.assertEqual('user', daemon.user)
 
     def test_new_disable_requiretty(self):
@@ -80,7 +77,6 @@ class TestDaemonFactory(BaseShellTest):
         self.assertEqual('name', daemon.name)
         self.assertEqual('queue', daemon.queue)
         self.assertEqual('127.0.0.1', daemon.manager_ip)
-        self.assertEqual('127.0.0.1', daemon.host)
         self.assertEqual('user', daemon.user)
 
     def test_save_load_delete(self):
@@ -100,7 +96,6 @@ class TestDaemonFactory(BaseShellTest):
         self.assertEqual(name, loaded.name)
         self.assertEqual('queue', loaded.queue)
         self.assertEqual('127.0.0.1', loaded.manager_ip)
-        self.assertEqual('127.0.0.1', loaded.host)
         self.assertEqual('user', loaded.user)
         self.assertEqual('127.0.0.1', daemon.broker_url)
         DaemonFactory.delete(daemon.name)
@@ -119,7 +114,6 @@ class TestDaemonFactory(BaseShellTest):
             name='agent',
             queue='queue',
             manager_ip='127.0.0.1',
-            host='127.0.0.1',
             user='user',
             broker_url='127.0.0.1')
 

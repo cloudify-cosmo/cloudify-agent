@@ -51,3 +51,25 @@ def get_possible_solutions(failure):
         return recommend(getattr(failure, 'possible_solutions'))
     else:
         return ''
+
+
+def parse_custom_options(options):
+
+    """
+
+    :param options: a tuple where each element is in the form of an
+                       option (i.e --a=b)
+    :type options: tuple
+
+    :return: a dictionary representing the tuple.
+    :rtype: dict
+    """
+
+    parsed = {}
+    for option_string in options:
+        parts = option_string.split('=')
+        key = parts[0][2:].replace('-', '_')  # options start with '--'
+        value = parts[1]
+        parsed[key] = value
+
+    return parsed

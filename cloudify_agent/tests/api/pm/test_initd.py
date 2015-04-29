@@ -249,6 +249,46 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
         self.assert_daemon_alive(queue2)
         self.assert_registered_tasks(queue2)
 
+    def test_conf_env_variables(self):
+        daemon = self._create_daemon()
+        daemon.create()
+        daemon.configure()
+        from cloudify_agent.tests import resources
+        self.runner.run('{0}/bin/pip install {1}/mock-plugin'
+                        .format(VIRTUALENV,
+                                os.path.dirname(resources.__file__)),
+                        stdout_pipe=False)
+        try:
+            daemon.register('mock-plugin')
+            daemon.start()
+
+            expected = {
+                'MANAGER_IP': str(daemon.manager_ip),
+                'MANAGER_REST_PORT': str(daemon.manager_port),
+                'CELERYD_WORK_DIR': daemon.workdir,
+                'CELERY_RESULT_BACKEND': daemon.broker_url,
+                'CELERY_BROKER_URL': daemon.broker_url,
+                'MANAGER_FILE_SERVER_URL': 'http://{0}:53229'
+                                           .format(daemon.manager_ip),
+                'MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL':
+                'http://{0}:53229/blueprints'.format(daemon.manager_ip)
+            }
+
+            def _check_env_var(var, expected_value):
+                _value = self.celery.send_task(
+                    name='mock_plugin.tasks.get_env_variable',
+                    queue=self.queue,
+                    args=[var]).get(timeout=5)
+                self.assertEqual(_value, expected_value)
+
+            for key, value in expected.iteritems():
+                _check_env_var(key, value)
+
+        finally:
+            self.runner.run('{0}/bin/pip uninstall -y mock-plugin'
+                            .format(VIRTUALENV),
+                            stdout_pipe=False)
+
     def test_extra_env_path(self):
         daemon = self._create_daemon()
         daemon.extra_env_path = utils.env_to_file(
@@ -267,8 +307,6 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
 
             # check the env file was properly sourced by querying the env
             # variable from the daemon process. this is done by a task
-            self.logger.info("Sending task "
-                             "'mock_plugin.tasks.get_env_variable'")
             value = self.celery.send_task(
                 name='mock_plugin.tasks.get_env_variable',
                 queue=self.queue,

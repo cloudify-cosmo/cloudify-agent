@@ -2,7 +2,7 @@
 export MANAGER_IP={{ manager_ip }}
 export MANAGER_REST_PORT={{ manager_port }}
 export MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229
-export MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL="http://{{ manager_ip }}:53229/blueprints"
+export MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL=http://{{ manager_ip }}:53229/blueprints
 
 # Celery worker environment variables
 export CELERY_BROKER_URL={{ broker_url }}

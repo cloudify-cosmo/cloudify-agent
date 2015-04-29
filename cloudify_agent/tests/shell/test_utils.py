@@ -44,3 +44,10 @@ class TestUtils(BaseShellTest):
         failure = RuntimeError()
         possible_solutions = utils.get_possible_solutions(failure)
         self.assertEqual(possible_solutions, '')
+
+    def test_parse_custom_options(self):
+
+        options = ('--key=value', '--complex-key=complex-value')
+        parsed = utils.parse_custom_options(options)
+        self.assertEqual(parsed,
+                         {'key': 'value', 'complex_key': 'complex-value'})

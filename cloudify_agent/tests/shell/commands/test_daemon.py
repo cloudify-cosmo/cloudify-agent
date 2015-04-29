@@ -56,6 +56,31 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
         factory_save = factory.save
         factory_save.assert_called_once_with(daemon)
 
+    def test_create_with_custom_options(self, factory):
+        self._run('cloudify-agent daemon create --name=name '
+                  '--queue=queue --manager-ip=127.0.0.1 --user=user '
+                  '--key=value --complex-key=complex-value')
+
+        factory_new = factory.new
+        factory_new.assert_called_once_with(
+            name='name',
+            queue='queue',
+            user='user',
+            manager_ip='127.0.0.1',
+            process_management='init.d',
+            broker_ip=None,
+            workdir=None,
+            broker_url=None,
+            max_workers=None,
+            min_workers=None,
+            broker_port=None,
+            manager_port=None,
+            extra_env_path=None,
+            logger_level=logging.INFO,
+            key='value',
+            complex_key='complex-value'
+        )
+
     def test_configure(self, factory):
         self._run('cloudify-agent daemon configure --name=name')
 

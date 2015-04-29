@@ -57,9 +57,6 @@ class TestDaemonDefaults(testtools.TestCase):
             self.daemon.name),
             self.daemon.queue)
 
-    def test_default_host(self):
-        self.assertEqual('127.0.0.1', self.daemon.host)
-
 
 class TestDaemonValidations(testtools.TestCase):
 
