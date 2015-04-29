@@ -9,4 +9,4 @@ This is the basic implementation of Cloudify's Agent from which Cloudify Agents 
 
 ## Usage
 
-See [Agent Packager](http://getcloudify.org/guide/3.1/agents-packager.html)
+See [Agent Packager](http://getcloudify.org/guide/agents-packager.html)
