@@ -59,11 +59,6 @@ class Daemon(object):
         to create more workers that process tasks of a given queue, use the
         'min_workers' and 'max_workers' keys. defaults to <name>-queue.
 
-    ``host``:
-
-        the ip address of the host this agent will run on. defaults to
-        127.0.0.1
-
     ``workdir``:
 
         working directory for runtime files (pid, log).
@@ -157,8 +152,6 @@ class Daemon(object):
             'name') or 'cloudify-agent-{0}'.format(uuid.uuid4())
         self.queue = params.get(
             'queue') or '{0}-queue'.format(self.name)
-        self.host = params.get(
-            'host') or '127.0.0.1'
         self.broker_url = params.get(
             'broker_url') or defaults.BROKER_URL.format(
             self.broker_ip,

@@ -56,7 +56,6 @@ class TestDaemonFactory(BaseShellTest):
             name='name',
             queue='queue',
             manager_ip='127.0.0.1',
-            host='127.0.0.1',
             user='user',
             relocated=True)
         self.assertEqual('name', daemon.name)
@@ -76,7 +75,6 @@ class TestDaemonFactory(BaseShellTest):
             name='name',
             queue='queue',
             manager_ip='127.0.0.1',
-            host='127.0.0.1',
             user='user',
             disable_requiretty=True)
         self.assertEqual('name', daemon.name)
@@ -93,7 +91,6 @@ class TestDaemonFactory(BaseShellTest):
             name=name,
             queue='queue',
             manager_ip='127.0.0.1',
-            host='127.0.0.1',
             user='user',
             broker_url='127.0.0.1')
 

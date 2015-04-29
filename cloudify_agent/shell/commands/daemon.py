@@ -40,10 +40,6 @@ from cloudify_agent.shell import exceptions
               help='The name of the queue to register the agent to. [env {0}]'
                    .format(env.CLOUDIFY_DAEMON_QUEUE),
               envvar=env.CLOUDIFY_DAEMON_QUEUE)
-@click.option('--host',
-              help='A resolvable IP address for this host. [env {0}]'
-                   .format(env.CLOUDIFY_AGENT_HOST),
-              envvar=env.CLOUDIFY_AGENT_HOST)
 @click.option('--user',
               help='The user to create this daemon under. [env {0}]'
                    .format(env.CLOUDIFY_DAEMON_USER),

@@ -30,50 +30,13 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
 
     def test_create(self, factory):
         self._run('cloudify-agent daemon create --name=name '
-                  '--queue=queue --host=127.0.0.1 '
+                  '--queue=queue '
                   '--manager-ip=127.0.0.1 --user=user')
 
         factory_new = factory.new
         factory_new.assert_called_once_with(
             name='name',
             queue='queue',
-            host='127.0.0.1',
-            user='user',
-            manager_ip='127.0.0.1',
-            process_management='init.d',
-            broker_ip=None,
-            workdir=None,
-            broker_url=None,
-            max_workers=None,
-            min_workers=None,
-            broker_port=None,
-            manager_port=None,
-            extra_env_path=None,
-            log_level=None,
-            logger_level=logging.INFO
-        )
-
-        daemon = factory_new.return_value
-        daemon.create.assert_called_once_with()
-
-        factory_save = factory.save
-        factory_save.assert_called_once_with(daemon)
-
-    def test_create_existing_agent(self, factory):
-
-        # when creating an existing agent, the load function should not
-        # raise an exception
-        factory.load = lambda *args: None
-
-        self._run('cloudify-agent daemon create --name=name '
-                  '--queue=queue --host=127.0.0.1 '
-                  '--manager-ip=127.0.0.1 --user=user')
-
-        factory_new = factory.new
-        factory_new.assert_called_once_with(
-            name='name',
-            queue='queue',
-            host='127.0.0.1',
             user='user',
             manager_ip='127.0.0.1',
             process_management='init.d',
