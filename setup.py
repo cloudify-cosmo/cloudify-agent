@@ -25,7 +25,7 @@ install_requires = [
     'cloudify-plugin-installer-plugin==1.2rc1',
     'cloudify-windows-agent-installer-plugin==1.2rc1',
     'cloudify-windows-plugin-installer-plugin==1.2rc1',
-    'click==3.3',
+    'click',
     'celery==3.1.17',
     'jinja2==2.7.2'
 ]
