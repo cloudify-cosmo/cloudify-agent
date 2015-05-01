@@ -37,9 +37,14 @@ class GenericLinuxDaemon(Daemon):
     CONFIG_DIR = '/etc/default'
     PROCESS_MANAGEMENT = 'init.d'
 
-    def __init__(self, logger_level=logging.INFO, **params):
+    def __init__(self,
+                 logger_level=logging.INFO,
+                 logger_format=None,
+                 **params):
         super(GenericLinuxDaemon, self).__init__(
-            logger_level=logger_level, **params)
+            logger_level=logger_level,
+            logger_format=logger_format,
+            **params)
 
         # init.d specific configuration
         self.script_path = os.path.join(self.SCRIPT_DIR, self.name)
@@ -63,7 +68,7 @@ class GenericLinuxDaemon(Daemon):
            that will be imported at startup.
 
         :return: The daemon name.
-        :rtype `str`
+        :rtype: str
 
         """
 
@@ -80,8 +85,14 @@ class GenericLinuxDaemon(Daemon):
         _validate(self.script_path)
         _validate(self.config_path)
 
+        self.logger.info('Creating includes file: {0}'
+                         .format(self.includes_path))
         self._create_includes()
+        self.logger.info('Creating daemon script: {0}'
+                         .format(self.script_path))
         self._create_script()
+        self.logger.info('Creating daemon conf file: {0}'
+                         .format(self.config_path))
         self._create_config()
 
     def start(self,
@@ -97,11 +108,13 @@ class GenericLinuxDaemon(Daemon):
         startup.
         """
 
+        self.logger.info('Starting...')
         self.runner.sudo(start_command(self))
         end_time = time.time() + timeout
         while time.time() < end_time:
             stats = self._get_worker_stats()
             if stats:
+                self.logger.info('Started successfully')
                 return
             time.sleep(interval)
         self._verify_no_celery_error()
@@ -114,18 +127,20 @@ class GenericLinuxDaemon(Daemon):
         """
         Stop the init.d service.
 
-        :raise DaemonStartupTimeout: in case the agent failed to be stopped
+        :raise DaemonShutdownTimeout: in case the agent failed to be stopped
         in the given amount of time.
         :raise DaemonException: in case an error happened during the agent
         shutdown.
 
         """
 
+        self.logger.info('Stopping...')
         self.runner.sudo(stop_command(self))
         end_time = time.time() + timeout
         while time.time() < end_time:
             stats = self._get_worker_stats()
             if not stats:
+                self.logger.info('Stopped successfully')
                 return
             time.sleep(interval)
         self._verify_no_celery_error()
@@ -141,6 +156,7 @@ class GenericLinuxDaemon(Daemon):
 
         """
 
+        self.logger.info('Deleting...')
         stats = self._get_worker_stats()
         if stats:
             raise exceptions.DaemonStillRunningException(self.name)
@@ -151,6 +167,7 @@ class GenericLinuxDaemon(Daemon):
             self.runner.sudo('rm {0}'.format(self.config_path))
         if os.path.exists(self.includes_path):
             self.runner.sudo('rm {0}'.format(self.includes_path))
+        self.logger.info('Deleted successfully')
 
     def register(self, plugin):
 
@@ -161,6 +178,7 @@ class GenericLinuxDaemon(Daemon):
 
         """
 
+        self.logger.info('Registering {0}'.format(plugin))
         plugin_paths = self._list_plugin_files(plugin)
 
         with open(self.includes_path) as include_file:
@@ -172,6 +190,7 @@ class GenericLinuxDaemon(Daemon):
 
         with open(self.includes_path, 'w') as f:
             f.write(new_includes)
+        self.logger.info('Registered {0} successfully'.format(plugin))
 
     def restart(self,
                 start_timeout=defaults.START_TIMEOUT,
@@ -205,7 +224,7 @@ class GenericLinuxDaemon(Daemon):
         :type plugin_name: string
 
         :return: A list of file paths.
-        :rtype `list of str`
+        :rtype: list of str
         """
 
         module_paths = []
@@ -228,7 +247,9 @@ class GenericLinuxDaemon(Daemon):
             includes = []
             for plugin in included_plugins:
                 includes.extend(self._list_plugin_files(plugin))
-            f.write(','.join(includes))
+            paths = ','.join(includes)
+            self.logger.debug('Writing includes file with {0}'.format(paths))
+            f.write(paths)
 
     def _create_script(self):
         rendered = utils.render_template_to_file(

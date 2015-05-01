@@ -71,7 +71,7 @@ class DaemonFactory(object):
         :type params: dict
 
         :return: A daemon instance.
-        :rtype `cloudify_agent.api.daemon.base.Daemon`
+        :rtype: cloudify_agent.api.pm.base.Daemon
         """
 
         name = attributes.get('name')
@@ -79,14 +79,15 @@ class DaemonFactory(object):
             # an explicit name was passed, make sure we don't already
             # have a daemon with that name
             try:
-                DaemonFactory.load(attributes.get('name'))
+                DaemonFactory.load(name)
                 # this means we do have one, raise an error
                 raise errors.CloudifyAgentAlreadyExistsError(name)
             except exceptions.CloudifyAgentNotFoundException:
                 pass
 
         daemon = DaemonFactory._find_implementation(process_management)
-        return daemon(logger_level=logger_level, **attributes)
+        return daemon(logger_level=logger_level,
+                      logger_format='%(message)s', **attributes)
 
     @classmethod
     def load(cls, name, logger_level=logging.INFO):
@@ -98,9 +99,10 @@ class DaemonFactory(object):
         :type name: str
 
         :return: A daemon instance.
-        :rtype `cloudify_agent.api.daemon.base.Daemon`
+        :rtype: cloudify_agent.api.pm.base.Daemon
 
-        :raise IOError: in case the daemon file does not exist.
+        :raise CloudifyAgentNotFoundException: in case the daemon
+        file does not exist.
         """
 
         storage_directory = utils.get_storage_directory()
@@ -115,7 +117,9 @@ class DaemonFactory(object):
             daemon_as_json = json.loads(f.read())
         process_management = daemon_as_json.pop('process_management')
         daemon = DaemonFactory._find_implementation(process_management)
-        return daemon(logger_level=logger_level, **daemon_as_json)
+        return daemon(logger_level=logger_level,
+                      logger_format='%(message)s',
+                      **daemon_as_json)
 
     @classmethod
     def save(cls, daemon):
