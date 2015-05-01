@@ -33,7 +33,7 @@ class TestCommandLine(BaseCommandLineTestCase):
         from cloudify_agent.shell.main import main
         main.add_command(_raise_api_exception, 'raise-error')
         try:
-            self._run('cfy agent raise-error', raise_system_exit=True)
+            self._run('cloudify-agent raise-error', raise_system_exit=True)
             self.fail('Expected failure of command execution')
         except SystemExit as e:
             self.assertEqual(e.code, 102)
@@ -48,7 +48,7 @@ class TestCommandLine(BaseCommandLineTestCase):
         from cloudify_agent.shell.main import main
         main.add_command(_raise_api_error, 'raise-error')
         try:
-            self._run('cfy agent raise-error', raise_system_exit=True)
+            self._run('cloudify-agent raise-error', raise_system_exit=True)
             self.fail('Expected failure of command execution')
         except SystemExit as e:
             self.assertEqual(e.code, 202)
