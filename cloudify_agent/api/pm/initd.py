@@ -48,6 +48,7 @@ class GenericLinuxDaemon(Daemon):
             self.workdir,
             '{0}-includes'.format(self.name)
         )
+        self.start_on_boot = params.get('start_on_boot')
 
     def create(self):
         pass
@@ -83,6 +84,11 @@ class GenericLinuxDaemon(Daemon):
         self._create_includes()
         self._create_script()
         self._create_config()
+
+        if self.start_on_boot:
+            self._create_start_on_boot_entry()
+            self.runner.sudo('sudo update-rc.d {0} defaults'
+                             .format(self.name))
 
     def start(self,
               timeout=defaults.START_TIMEOUT,
@@ -258,6 +264,27 @@ class GenericLinuxDaemon(Daemon):
 
         self.runner.sudo('cp {0} {1}'.format(rendered, self.config_path))
         self.runner.sudo('rm {0}'.format(rendered))
+
+    def _create_start_on_boot_entry(self):
+
+        response = self.runner.run('which dpkg', exit_on_failure=False)
+        if response.code == 0:
+            # debian based distribution, run update-rc.d
+            self.runner.sudo('update-rc.d {0} defaults'.format(self.name))
+        else:
+            response = self.runner.run('which rpm')
+            if response.code == 0:
+                # rpm based distribution, run chkconfig
+                self.runner.sudo('/sbin/chkconfig --add {0}'
+                                 .format(self.name))
+                self.runner.sudo('/sbin/chkconfig {0} on'
+                                 .format(self.name))
+            else:
+                raise errors.DaemonConfigurationError(
+                    "Cannot create a start-on-boot entry. Unknown "
+                    "distribution base. Supported distributions bases are "
+                    "debian and RPM"
+                )
 
     def _verify_no_celery_error(self):
         error_file_path = os.path.join(
