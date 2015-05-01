@@ -96,6 +96,11 @@ def main(debug):
         api_utils_logger.setLevel(logging.DEBUG)
 
 
+@click.group('agent')
+def agent_sub_command():
+    pass
+
+
 @click.group('daemon')
 def daemon_sub_command():
     pass
@@ -106,7 +111,7 @@ def daemon_sub_command():
 from cloudify_agent.shell.commands import daemon
 from cloudify_agent.shell.commands import configure
 
-main.add_command(configure.configure)
+agent_sub_command.add_command(configure.configure)
 
 daemon_sub_command.add_command(daemon.create)
 daemon_sub_command.add_command(daemon.configure)
@@ -117,4 +122,5 @@ daemon_sub_command.add_command(daemon.restart)
 daemon_sub_command.add_command(daemon.register)
 daemon_sub_command.add_command(daemon.inspect)
 
-main.add_command(daemon_sub_command)
+agent_sub_command.add_command(daemon_sub_command)
+main.add_command(agent_sub_command)
