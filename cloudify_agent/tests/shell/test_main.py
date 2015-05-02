@@ -13,6 +13,8 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import logging
+
 import click
 
 from cloudify_agent.api import exceptions as api_exceptions
@@ -52,3 +54,17 @@ class TestCommandLine(BaseCommandLineTestCase):
             self.fail('Expected failure of command execution')
         except SystemExit as e:
             self.assertEqual(e.code, 202)
+
+    def test_debug_command_line(self):
+
+        @click.command()
+        def log():
+            pass
+
+        from cloudify_agent.shell.main import main
+        main.add_command(log, 'log')
+        self._run('cloudify-agent --debug log')
+
+        # assert all loggers are now at debug level
+        from cloudify_agent.api.utils import logger
+        self.assertEqual(logger.level, logging.DEBUG)
