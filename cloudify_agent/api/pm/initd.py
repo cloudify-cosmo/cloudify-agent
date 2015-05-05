@@ -98,8 +98,6 @@ class GenericLinuxDaemon(Daemon):
 
         if self.start_on_boot:
             self._create_start_on_boot_entry()
-            self.runner.sudo('sudo update-rc.d {0} defaults'
-                             .format(self.name))
 
     def start(self,
               timeout=defaults.START_TIMEOUT,
