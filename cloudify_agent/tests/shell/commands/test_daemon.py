@@ -29,7 +29,7 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
     PROCESS_MANAGEMENT = 'init.d'
 
     def test_create(self, factory):
-        self._run('cloudify-agent daemon create --name=name '
+        self._run('cfy agent daemon create --name=name '
                   '--queue=queue --manager-ip=127.0.0.1 --user=user')
 
         factory_new = factory.new
@@ -57,7 +57,7 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
         factory_save.assert_called_once_with(daemon)
 
     def test_create_with_custom_options(self, factory):
-        self._run('cloudify-agent daemon create --name=name '
+        self._run('cfy agent daemon create --name=name '
                   '--queue=queue --manager-ip=127.0.0.1 --user=user '
                   '--key=value --complex-key=complex-value')
 
@@ -82,7 +82,7 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
         )
 
     def test_configure(self, factory):
-        self._run('cloudify-agent daemon configure --name=name')
+        self._run('cfy agent daemon configure --name=name')
 
         factory_load = factory.load
         factory_load.assert_called_once_with('name',
@@ -92,7 +92,7 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
         daemon.configure.assert_called_once_with()
 
     def test_start(self, factory):
-        self._run('cloudify-agent daemon start --name=name '
+        self._run('cfy agent daemon start --name=name '
                   '--interval 5 --timeout 20')
 
         factory_load = factory.load
@@ -106,7 +106,7 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
         )
 
     def test_stop(self, factory):
-        self._run('cloudify-agent daemon stop --name=name '
+        self._run('cfy agent daemon stop --name=name '
                   '--interval 5 --timeout 20')
 
         factory_load = factory.load
@@ -120,7 +120,7 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
         )
 
     def test_delete(self, factory):
-        self._run('cloudify-agent daemon delete --name=name')
+        self._run('cfy agent daemon delete --name=name')
 
         factory_load = factory.load
         factory_load.assert_called_once_with('name',
@@ -130,7 +130,7 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
         daemon.delete.assert_called_once_with()
 
     def test_restart(self, factory):
-        self._run('cloudify-agent daemon restart --name=name')
+        self._run('cfy agent daemon restart --name=name')
 
         factory_load = factory.load
         factory_load.assert_called_once_with('name',
@@ -140,7 +140,7 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
         daemon.restart.assert_called_once_with()
 
     def test_register(self, factory):
-        self._run('cloudify-agent daemon register '
+        self._run('cfy agent daemon register '
                   '--name=name --plugin=plugin')
 
         factory_load = factory.load
@@ -165,17 +165,17 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
         with open(daemon_path, 'w') as f:
             f.write(json.dumps(props))
 
-        self._run('cloudify-agent daemon inspect --name=test-cloudify-agent')
+        self._run('cfy agent daemon inspect --name=test-cloudify-agent')
 
         click_echo = click.echo
         click_echo.assert_called_once_with(json.dumps(props))
 
     def test_inspect_non_existing_agent(self, _):
         try:
-            self._run('cloudify-agent daemon inspect --name=non-existing',
+            self._run('cfy agent daemon inspect --name=non-existing',
                       raise_system_exit=True)
         except SystemExit as e:
             self.assertEqual(e.code, 101)
 
     def test_required(self, _):
-        self._run('cloudify-agent daemon create --manager-ip=manager')
+        self._run('cfy agent daemon create --manager-ip=manager')
