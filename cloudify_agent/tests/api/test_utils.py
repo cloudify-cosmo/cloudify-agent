@@ -21,7 +21,7 @@ from cloudify.utils import setup_logger
 
 import cloudify_agent
 from cloudify_agent.api import utils
-from cloudify_agent.tests.api.pm import travis
+from cloudify_agent.tests.api.pm import only_travis
 
 
 class TestUtils(testtools.TestCase):
@@ -84,21 +84,12 @@ class TestUtils(testtools.TestCase):
             content = f.read()
         self.assertTrue('export key=value' in content)
 
+    @only_travis
     def test_disable_requiretty(self):
-        if not travis():
-            raise RuntimeError('Error! This test cannot be executed '
-                               'outside of the travis CI '
-                               'system since it may corrupt '
-                               'your local system files')
-
         utils.disable_requiretty()
 
+    @only_travis
     def test_fix_virtualenv(self):
-        if not travis():
-            raise RuntimeError('Error! This test cannot be executed '
-                               'outside of the travis CI '
-                               'system since it may corrupt '
-                               'your local system files')
         utils.fix_virtualenv()
 
     def test_prefixed_logger_adapter(self):

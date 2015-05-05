@@ -26,6 +26,7 @@ from cloudify_agent import VIRTUALENV
 from cloudify_agent.tests import resources
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import patch_unless_travis
+from cloudify_agent.tests.api.pm import only_travis
 
 
 def _non_service_start_command(daemon):
@@ -68,7 +69,7 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
 
     PROCESS_MANAGEMENT = 'init.d'
 
-    def _create_daemon(self, name=None, queue=None):
+    def _create_daemon(self, name=None, queue=None, **attributes):
 
         if name is None:
             name = self.name
@@ -82,7 +83,8 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
             manager_ip='127.0.0.1',
             user=self.username,
             workdir=self.temp_folder,
-            logger_level=logging.DEBUG
+            logger_level=logging.DEBUG,
+            **attributes
         )
 
     def test_create(self):
@@ -97,6 +99,12 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
         self.assertTrue(os.path.exists(daemon.script_path))
         self.assertTrue(os.path.exists(daemon.config_path))
         self.assertTrue(os.path.exists(daemon.includes_path))
+
+    @only_travis
+    def test_configure_start_on_boot(self):
+        daemon = self._create_daemon(start_on_boot=True)
+        daemon.create()
+        daemon.configure()
 
     def test_configure_existing_agent(self):
         daemon = self._create_daemon()

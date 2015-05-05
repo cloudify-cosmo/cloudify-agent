@@ -70,5 +70,4 @@ def parse_custom_options(options):
         key = parts[0][2:].replace('-', '_')  # options start with '--'
         value = parts[1]
         parsed[key] = value
-
     return parsed

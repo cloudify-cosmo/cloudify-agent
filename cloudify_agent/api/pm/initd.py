@@ -53,7 +53,6 @@ class GenericLinuxDaemon(Daemon):
             self.workdir,
             '{0}-includes'.format(self.name)
         )
-        self.start_on_boot = params.get('start_on_boot')
 
     def create(self):
         pass

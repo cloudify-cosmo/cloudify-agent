@@ -47,6 +47,7 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
             broker_port=None,
             manager_port=None,
             extra_env_path=None,
+            start_on_boot=False,
             logger_level=logging.INFO
         )
 
@@ -77,6 +78,7 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
             manager_port=None,
             extra_env_path=None,
             logger_level=logging.INFO,
+            start_on_boot=False,
             key='value',
             complex_key='complex-value'
         )
