@@ -19,6 +19,8 @@ import logging
 import testtools
 import tempfile
 import shutil
+from functools import wraps
+
 from mock import _get_target
 from mock import patch
 
@@ -64,6 +66,20 @@ def patch_unless_travis(target, new):
     else:
         getter, attribute = _get_target(target)
         return patch(target, getattr(getter(), attribute))
+
+
+def only_travis(func):
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if not travis():
+            raise RuntimeError('Error! This test cannot be executed '
+                               'outside of the travis CI '
+                               'system since it may corrupt '
+                               'your local system files')
+        func(*args, **kwargs)
+
+    return wrapper
 
 
 class BaseDaemonLiveTestCase(testtools.TestCase):

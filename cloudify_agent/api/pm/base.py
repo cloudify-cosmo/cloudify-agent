@@ -106,6 +106,11 @@ class Daemon(object):
         daemon environment. the file should be in the format of
         multiple 'export A=B' lines. defaults to None.
 
+    ``start_on_boot``:
+
+        configure the daemon to automatically start on machine boot. this
+        functionality must be supported in any type of process management.
+
     """
 
     # override this when adding implementations.
@@ -163,6 +168,8 @@ class Daemon(object):
         self.workdir = params.get(
             'workdir') or os.getcwd()
         self.extra_env_path = params.get('extra_env_path')
+        self.start_on_boot = params.get(
+            'start_on_boot') or defaults.START_ON_BOOT
 
         # save as a property so that it will be persisted in the json files
         self.process_management = self.PROCESS_MANAGEMENT

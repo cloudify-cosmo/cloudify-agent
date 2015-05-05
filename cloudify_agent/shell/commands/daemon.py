@@ -84,6 +84,10 @@ from cloudify_agent.shell import exceptions
                    'env {0}]'
                    .format(env.CLOUDIFY_DAEMON_EXTRA_ENV),
               envvar=env.CLOUDIFY_DAEMON_EXTRA_ENV)
+@click.option('--start-on-boot',
+              help='Configure this daemon to start automatically on boot.',
+              is_flag=True,
+              default=False)
 @click.option('--process-management',
               help='The process management system to use '
                    'when creating the daemon. [env {0}]'
