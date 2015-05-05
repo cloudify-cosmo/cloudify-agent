@@ -15,6 +15,9 @@
 
 import testtools
 import os
+import logging
+
+from cloudify.utils import setup_logger
 
 import cloudify_agent
 from cloudify_agent.api import utils
@@ -97,3 +100,21 @@ class TestUtils(testtools.TestCase):
                                'system since it may corrupt '
                                'your local system files')
         utils.fix_virtualenv()
+
+    def test_prefixed_logger_adapter(self):
+
+        messages = set()
+
+        class TestHandler(logging.StreamHandler):
+
+            def emit(self, record):
+                messages.add(record.msg)
+
+        logger = setup_logger('test_logger', handlers=[TestHandler()])
+
+        adapter = utils.PrefixedLoggerAdapter(
+            logger, {'prefix': 'test-prefix'}
+        )
+
+        adapter.info('test-message')
+        self.assertEqual(messages.pop(), '[test-prefix] test-message')

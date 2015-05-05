@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import os
+import logging
 import tempfile
 import pkg_resources
 from jinja2 import Template
@@ -171,6 +172,9 @@ def fix_virtualenv():
 def env_to_file(env_variables, destination_path=None):
 
     """
+    Transforms a dictionary to an environment file. That is, every key-value
+    pair in the dictionary is translated into an 'export key=value'
+    statement. This file can later be directly sourced.
 
     :param env_variables: environment variables
     :type env_variables: dict
@@ -195,3 +199,9 @@ def env_to_file(env_variables, destination_path=None):
             f.write(os.linesep)
 
     return destination_path
+
+
+class PrefixedLoggerAdapter(logging.LoggerAdapter):
+
+    def process(self, msg, kwargs):
+        return '[{0}] {1}'.format(self.extra['prefix'], msg), kwargs

@@ -22,7 +22,7 @@ from cloudify_agent.tests.shell.commands import BaseCommandLineTestCase
 class TestConfigureCommandLine(BaseCommandLineTestCase):
 
     def test_configure(self, mock_api_utils):
-        self._run('cloudify-agent configure --disable-requiretty '
+        self._run('cfy agent configure --disable-requiretty '
                   '--relocated-env')
         mock_api_utils.disable_requiretty.assert_called_once()
         mock_api_utils.fix_virtualenv.assert_called_once()

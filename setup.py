@@ -47,13 +47,13 @@ setup(
             'resources/pm/initd/celeryd.conf.template',
             'resources/pm/initd/celeryd.template',
             'resources/pm/initd/disable-requiretty.sh']
-        },
+    },
     description='Cloudify Agent Implementation (Celery based)',
     install_requires=install_requires,
     license='LICENSE',
     entry_points={
         'console_scripts': [
-            'cloudify-agent = cloudify_agent.shell.main:main',
+            'cfy = cloudify_agent.shell.main:main',
         ]
     }
 )
