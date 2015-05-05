@@ -285,24 +285,25 @@ class GenericLinuxDaemon(Daemon):
 
     def _create_start_on_boot_entry(self):
 
-        response = self.runner.run('which dpkg', exit_on_failure=False)
-        if response.code == 0:
-            # debian based distribution, run update-rc.d
+        def _handle_debian():
             self.runner.sudo('update-rc.d {0} defaults'.format(self.name))
-        else:
-            response = self.runner.run('which rpm')
-            if response.code == 0:
-                # rpm based distribution, run chkconfig
-                self.runner.sudo('/sbin/chkconfig --add {0}'
-                                 .format(self.name))
-                self.runner.sudo('/sbin/chkconfig {0} on'
-                                 .format(self.name))
-            else:
-                raise errors.DaemonConfigurationError(
-                    "Cannot create a start-on-boot entry. Unknown "
-                    "distribution base. Supported distributions bases are "
-                    "debian and RPM"
-                )
+
+        def _handle_rpm():
+            self.runner.sudo('/sbin/chkconfig --add {0}'.format(self.name))
+            self.runner.sudo('/sbin/chkconfig {0} on'.format(self.name))
+
+        if self.runner.run('which dpkg', exit_on_failure=False).code == 0:
+            _handle_debian()
+            return
+        if self.runner.run('which rpm').code == 0:
+            _handle_rpm()
+            return
+        
+        raise errors.DaemonConfigurationError(
+            "Cannot create a start-on-boot entry. Unknown "
+            "distribution base. Supported distributions bases are "
+            "debian and RPM"
+        )
 
     def _verify_no_celery_error(self):
         error_file_path = os.path.join(
