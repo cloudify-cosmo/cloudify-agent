@@ -298,7 +298,7 @@ class GenericLinuxDaemon(Daemon):
         if self.runner.run('which rpm').code == 0:
             _handle_rpm()
             return
-        
+
         raise errors.DaemonConfigurationError(
             "Cannot create a start-on-boot entry. Unknown "
             "distribution base. Supported distributions bases are "
