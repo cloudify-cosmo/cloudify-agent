@@ -150,7 +150,7 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
                 self.fail('Expected start operation to fail '
                           'due to bad import')
             except exceptions.DaemonException as e:
-                self.assertTrue('cannot import name non_existent' in str(e))
+                self.assertIn('cannot import name non_existent', str(e))
         finally:
             self.runner.run('{0}/bin/pip uninstall -y mock-plugin-error'
                             .format(VIRTUALENV),
