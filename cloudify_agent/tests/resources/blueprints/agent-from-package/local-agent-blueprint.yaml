@@ -1,7 +1,7 @@
 tosca_definitions_version: cloudify_dsl_1_1
 
 imports:
-    - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/change-worker-installer-interface/resources/rest-service/cloudify/types/types.yaml
+    - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/CFY-2649-cloudify-agent/resources/rest-service/cloudify/types/types.yaml
 
 inputs:
 

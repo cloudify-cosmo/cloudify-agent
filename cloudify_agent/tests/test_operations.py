@@ -74,7 +74,7 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
             self.runner.run('{0}/bin/pip uninstall -y {1}'.format(
                 VIRTUALENV, plugin_name), stdout_pipe=False)
 
-    # @only_travis
+    @only_travis
     def test_install_plugins_and_restart(self):
         name = 'cloudify-agent-{0}'.format(uuid.uuid4())
         queue = '{0}-queue'.format(name)

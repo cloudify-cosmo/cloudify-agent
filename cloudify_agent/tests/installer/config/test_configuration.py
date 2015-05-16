@@ -193,7 +193,8 @@ class TestConfiguration(BaseTest):
             'port': 22,
             'ip': '127.0.0.1',
             'local': False,
-            'windows': False
+            'windows': False,
+            'connection_retry_interval': 5
         }
         self.assertEqual(expected, cloudify_agent)
 
@@ -217,7 +218,8 @@ class TestConfiguration(BaseTest):
             'port': 22,
             'ip': '127.0.0.1',
             'local': False,
-            'windows': False
+            'windows': False,
+            'connection_retry_interval': 5
         }
         self.assertEqual(expected, cloudify_agent)
 
@@ -237,7 +239,7 @@ class TestConfiguration(BaseTest):
                }))
     def test_prepare_agent(self):
         user = getpass.getuser()
-        cloudify_agent = {'user': user}
+        cloudify_agent = {'user': user, 'windows': False}
         prepare_agent(cloudify_agent)
         expected = {
             'agent_dir': 'basedir/test_node',
@@ -250,6 +252,8 @@ class TestConfiguration(BaseTest):
             'queue': 'test_node',
             'max_workers': 5,
             'user': user,
+            'workdir': 'basedir/test_node/work',
+            'windows': False,
             'min_workers': 0,
             'package_url': 'localhost/packages/agents/'
                            'distro-distro_codename-agent.tar.gz'
@@ -266,7 +270,7 @@ class TestConfiguration(BaseTest):
                    }
                }))
     def test_source_url_and_package_url(self):
-        cloudify_agent = {}
+        cloudify_agent = {'windows': False}
         self.assertRaisesRegexp(
             exceptions.AgentInstallerConfigurationError,
             "Cannot specify both 'source_url' and 'package_url' "

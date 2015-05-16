@@ -12,7 +12,7 @@ plugins:
     executor: central_deployment_agent
     install_arguments: --upgrade
   agent_new:
-    source: https://github.com/cloudify-cosmo/cloudify-agent/archive/CFY-2649-cloudify-agent-impl.zip
+    source: https://github.com/cloudify-cosmo/cloudify-agent/archive/CFY-2649-cloudify-agent.zip
     executor: central_deployment_agent
   mock:
     source: mock-plugin
@@ -58,8 +58,8 @@ node_templates:
           sudo apt-get -y install python-dev
           sudo start ssh
       cloudify_agent:
-        source_url: https://github.com/cloudify-cosmo/cloudify-agent/archive/CFY-2649-cloudify-agent-impl.zip
-        requirements: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/CFY-2649-cloudify-agent-impl/dev-requirements.txt
+        source_url: https://github.com/cloudify-cosmo/cloudify-agent/archive/CFY-2649-cloudify-agent.zip
+        requirements: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/CFY-2649-cloudify-agent/dev-requirements.txt
 
   application:
     type: nodes.Application

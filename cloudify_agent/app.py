@@ -19,6 +19,7 @@ import traceback
 from celery import Celery
 
 from cloudify.utils import get_agent_name
+from cloudify import constants
 
 from cloudify_agent.api.utils import get_storage_directory
 
@@ -29,9 +30,14 @@ used outside the scope of an @operation.
 """
 
 
-broker_url = os.environ.get('CELERY_BROKER_URL', 'amqp://')
-work_folder = os.environ.get('CELERYD_WORK_DIR')
+broker_url = os.environ.get(constants.CELERY_BROKER_URL_KEY, 'amqp://')
 
+try:
+    # running inside an agent
+    agent_name = get_agent_name()
+except KeyError:
+    # running outside an agent
+    agent_name = None
 
 # This attribute is used as the celery App instance.
 # it is referenced in two ways:
@@ -42,7 +48,7 @@ app = Celery(broker=broker_url,
              backend=broker_url)
 
 
-if work_folder:
+if agent_name:
 
     # Setting a new exception hook to catch any exceptions
     # on celery startup and write them to a file. This file
@@ -51,9 +57,12 @@ if work_folder:
 
     def new_excepthook(exception_type, value, the_traceback):
 
+        # use the storage directory because the work directory might have
+        # been created under a different user, in which case we don't have
+        # permissions to write to it.
         error_dump_path = os.path.join(
             get_storage_directory(),
-            '{0}.err'.format(get_agent_name()))
+            '{0}.err'.format(agent_name))
 
         with open(error_dump_path, 'w') as f:
             f.write('Type: {0}\n'.format(exception_type))
