@@ -298,7 +298,7 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
                 constants.CELERYD_WORK_DIR_KEY: daemon.workdir,
                 constants.CELERY_RESULT_BACKEND_KEY: daemon.broker_url,
                 constants.CELERY_BROKER_URL_KEY: daemon.broker_url,
-                constants.AGENT_PROCESS_MANAGEMENT_KEY: 'init.d',
+                constants.AGENT_STORAGE_DIRECTORY_KEY: get_storage_directory(),
                 constants.AGENT_NAME_KEY: daemon.name
             }
 
