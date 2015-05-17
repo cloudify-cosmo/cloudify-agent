@@ -98,7 +98,10 @@ class BaseDaemonLiveTestCase(BaseTest):
     def tearDown(self):
         super(BaseDaemonLiveTestCase, self).tearDown()
         os.chdir(self.currdir)
-        self.runner.run("pkill -9 -f 'celery'", exit_on_failure=False)
+        if os.name == 'nt':
+            self.runner.run('taskkill /IM celery.exe', exit_on_failure=False)
+        else:
+            self.runner.run("pkill -9 -f 'celery'", exit_on_failure=False)
 
     def _smakedirs(self, dirs):
         if not os.path.exists(dirs):

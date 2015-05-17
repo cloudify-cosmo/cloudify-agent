@@ -35,9 +35,8 @@ logger = setup_logger('cloudify_agent.tests.file_server')
 
 class FileServer(object):
 
-    def __init__(self, root_path, use_subprocess=False, timeout=5, port=PORT):
+    def __init__(self, root_path, use_subprocess=True, timeout=5, port=PORT):
         self.root_path = root_path
-        self.process = Process(target=self.start_impl)
         self.use_subprocess = use_subprocess
         self.timeout = timeout
         self.port = port
@@ -46,12 +45,14 @@ class FileServer(object):
         logger.info('Starting file server [subprocess={0}, __name__={1}]'
                     .format(self.use_subprocess, __name__))
         if self.use_subprocess:
-            subprocess.Popen(
-                [sys.executable, __file__, self.root_path],
+            self.process = subprocess.Popen(
+                [sys.executable, '-m', 'SimpleHTTPServer', str(self.port)],
                 stdin=FNULL,
                 stdout=FNULL,
-                stderr=FNULL)
+                stderr=FNULL,
+                cwd=self.root_path)
         else:
+            self.process = Process(target=self.start_impl)
             self.process.start()
 
         end_time = time.time() + self.timeout
@@ -79,8 +80,6 @@ class FileServer(object):
             logger.warning(str(e))
 
     def start_impl(self):
-        os.chdir(self.root_path)
-
         class TCPServer(SocketServer.TCPServer):
             allow_reuse_address = True
         httpd = TCPServer(('0.0.0.0', self.port),
