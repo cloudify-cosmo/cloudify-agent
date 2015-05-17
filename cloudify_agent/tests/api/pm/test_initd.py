@@ -47,6 +47,8 @@ CONFIG_DIR = '/tmp/etc/default'
 
 @patch('cloudify_agent.api.utils.get_storage_directory',
        get_storage_directory)
+@patch('cloudify_agent.api.pm.base.get_storage_directory',
+       get_storage_directory)
 @patch_unless_travis(
     'cloudify_agent.api.pm.initd.GenericLinuxDaemon.SCRIPT_DIR',
     SCRIPT_DIR)

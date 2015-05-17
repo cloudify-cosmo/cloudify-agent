@@ -89,7 +89,7 @@ class BaseDaemonLiveTestCase(BaseTest):
         factory.logger.setLevel(logging.DEBUG)
 
         self.runner = LocalCommandRunner(self.logger)
-        self.temp_folder = tempfile.mkdtemp(prefix='cloudify-agent-tests-')
+        self.temp_folder = tempfile.mkdtemp(prefix='cfy-agent-tests-')
         self.currdir = os.getcwd()
         self.username = getpass.getuser()
         self.logger.info('Working directory: {0}'.format(self.temp_folder))

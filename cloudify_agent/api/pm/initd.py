@@ -188,7 +188,8 @@ class GenericLinuxDaemon(Daemon):
             includes_path=self.includes_path,
             virtualenv_path=VIRTUALENV,
             extra_env_path=self.extra_env_path,
-            name=self.name
+            name=self.name,
+            storage_dir=utils.get_storage_directory()
         )
 
         self.runner.sudo('cp {0} {1}'.format(rendered, self.config_path))

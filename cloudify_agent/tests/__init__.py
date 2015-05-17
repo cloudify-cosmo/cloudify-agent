@@ -17,7 +17,7 @@ import unittest2 as unittest
 
 
 def get_storage_directory():
-    return '/tmp/cfy-agent-test-daemons'
+    return '/tmp/cfy-agent-tests-daemons'
 
 
 class BaseTest(unittest.TestCase):

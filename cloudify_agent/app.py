@@ -19,9 +19,8 @@ import traceback
 from celery import Celery
 
 from cloudify.utils import get_agent_name
+from cloudify.utils import get_agent_storage_directory
 from cloudify import constants
-
-from cloudify_agent.api.utils import get_storage_directory
 
 
 """
@@ -61,7 +60,7 @@ if agent_name:
         # been created under a different user, in which case we don't have
         # permissions to write to it.
         error_dump_path = os.path.join(
-            get_storage_directory(),
+            get_agent_storage_directory(),
             '{0}.err'.format(agent_name))
 
         with open(error_dump_path, 'w') as f:
