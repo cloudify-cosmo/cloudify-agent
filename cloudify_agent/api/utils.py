@@ -16,6 +16,7 @@
 import uuid
 import copy
 import tempfile
+import sys
 import shutil
 import os
 import getpass
@@ -460,8 +461,8 @@ def extract_package_name(package_dir):
     """
     runner = LocalCommandRunner()
     plugin_name = runner.run(
-        '{0}/bin/python {1} {2}'.format(
-            VIRTUALENV,
+        '{0} {1} {2}'.format(
+            sys.executable,
             os.path.join(os.path.dirname(plugins.__file__),
                          'extract_package_name.py'),
             package_dir),
