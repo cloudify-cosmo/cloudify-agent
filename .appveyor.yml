@@ -10,10 +10,6 @@ environment:
       PYTHON_VERSION: "2.7.8"
       PYTHON_ARCH: "32"
 
-    - PYTHON: "C:\\Python27-x64"
-      PYTHON_VERSION: "2.7.8"
-      PYTHON_ARCH: "64"
-
 install:
   # Download setup scripts and unzip
   - ps: "wget https://github.com/cloudify-cosmo/appveyor-utils/archive/master.zip -OutFile ./master.zip"
