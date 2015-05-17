@@ -43,7 +43,8 @@ class FileServer(object):
         self.port = port
 
     def start(self):
-        logger.info('Starting file server')
+        logger.info('Starting file server [subprocess={0}, __name__={1}]'
+                    .format(self.use_subprocess, __name__))
         if self.use_subprocess:
             subprocess.Popen(
                 [sys.executable, __file__, self.root_path],
