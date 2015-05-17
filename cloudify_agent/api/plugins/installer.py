@@ -55,6 +55,12 @@ class PluginInstaller(object):
         return plugin_name
 
     def _install_package(self, plugin_dir, args):
+
+        if os.name == 'nt':
+            pip_path = os.path.join(VIRTUALENV, 'Scripts', 'pip.exe')
+        else:
+            pip_path = os.path.join(VIRTUALENV, 'bin', 'pip')
+
         command = '{0} install {1} {2}'.format(
-            os.path.join(VIRTUALENV, 'bin', 'pip'), args, plugin_dir)
+            os.path.join(pip_path, args, plugin_dir))
         self.runner.run(command, cwd=plugin_dir)
