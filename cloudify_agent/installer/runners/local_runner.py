@@ -17,11 +17,13 @@ import tempfile
 import platform
 import os
 import shutil
-import pwd
 
 from cloudify import utils
 from cloudify.exceptions import CommandExecutionException
+
 from cloudify_agent.installer import exceptions
+from cloudify_agent.api.utils import get_home_dir
+
 
 ###############################################################
 # this runner is an extension to the regular command runner
@@ -71,7 +73,7 @@ class LocalRunner(utils.LocalCommandRunner):
 
     @staticmethod
     def home_dir(username):
-        return pwd.getpwnam(username).pw_dir
+        return get_home_dir(username)
 
     @staticmethod
     def put_file(src, dst=None):

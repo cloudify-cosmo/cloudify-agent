@@ -20,7 +20,6 @@ import shutil
 import os
 import getpass
 import pip
-import pwd
 import pkg_resources
 from jinja2 import Template
 
@@ -58,6 +57,38 @@ def get_agent_stats(name, celery):
     return stats
 
 
+def get_home_dir(username=None):
+
+    """
+    Retrieve the home directory of the given user. If no user was specified,
+    the currently logged user will be used.
+
+    Note: on windows this will always return the home directory of the
+    currently logged user.
+
+
+    :return: path to the home directory
+    :rtype: str
+
+    """
+
+    if os.name == 'nt':
+
+        # running on windows, we don't currently support retrieving
+        # home directories of users besides the currently logged one.
+        return os.path.expanduser('~')
+    else:
+        import pwd
+        if username is None:
+            if 'SUDO_USER' in os.environ:
+                # command was executed via sudo
+                # get the original user
+                username = os.environ['SUDO_USER']
+            else:
+                username = getpass.getuser()
+        return pwd.getpwnam(username).pw_dir
+
+
 def get_storage_directory():
 
     """
@@ -68,15 +99,7 @@ def get_storage_directory():
     :rtype str
 
     """
-
-    if 'SUDO_USER' in os.environ:
-        # command was executed via sudo
-        # get the original user
-        user = os.environ['SUDO_USER']
-    else:
-        user = getpass.getuser()
-
-    return os.path.join(pwd.getpwnam(user).pw_dir, '.cfy-agent')
+    return os.path.join(get_home_dir(), '.cfy-agent')
 
 
 def daemon_to_dict(daemon):
