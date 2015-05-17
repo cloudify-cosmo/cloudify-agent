@@ -15,6 +15,7 @@
 
 import tempfile
 import logging
+import os
 from mock import patch
 
 from cloudify.utils import setup_logger
@@ -77,10 +78,16 @@ class PluginInstallerTest(BaseTest):
             self.assertIn(dependency, out)
 
     def _uninstall_package_if_exists(self, plugin_name):
-        out = self.runner.run('{0}/bin/pip list'.format(VIRTUALENV)).output
+
+        if os.name == 'nt':
+            pip_path = os.path.join(VIRTUALENV, 'Scripts', 'pip.exe')
+        else:
+            pip_path = os.path.join(VIRTUALENV, 'bin', 'pip')
+
+        out = self.runner.run('{0} list'.format(pip_path)).output
         if plugin_name in out:
-            self.runner.run('{0}/bin/pip uninstall -y {1}'.format(
-                VIRTUALENV, plugin_name), stdout_pipe=False)
+            self.runner.run('{0} uninstall -y {1}'.format(
+                pip_path, plugin_name), stdout_pipe=False)
 
     def test_install(self):
         try:
