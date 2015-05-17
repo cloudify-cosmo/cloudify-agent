@@ -61,6 +61,5 @@ class PluginInstaller(object):
         else:
             pip_path = os.path.join(VIRTUALENV, 'bin', 'pip')
 
-        command = '{0} install {1} {2}'.format(
-            os.path.join(pip_path, args, plugin_dir))
+        command = '{0} install {1} {2}'.format(pip_path, args, plugin_dir)
         self.runner.run(command, cwd=plugin_dir)
