@@ -28,8 +28,8 @@ from cloudify_agent.api.pm.initd import GenericLinuxDaemon
 
 from cloudify_agent.tests import resources
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
-from cloudify_agent.tests.api.pm import patch_unless_travis
-from cloudify_agent.tests.api.pm import only_travis
+from cloudify_agent.tests.api.pm import patch_unless_ci
+from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.tests import get_storage_directory
 
 
@@ -49,16 +49,16 @@ CONFIG_DIR = '/tmp/etc/default'
        get_storage_directory)
 @patch('cloudify_agent.api.pm.base.get_storage_directory',
        get_storage_directory)
-@patch_unless_travis(
+@patch_unless_ci(
     'cloudify_agent.api.pm.initd.GenericLinuxDaemon.SCRIPT_DIR',
     SCRIPT_DIR)
-@patch_unless_travis(
+@patch_unless_ci(
     'cloudify_agent.api.pm.initd.GenericLinuxDaemon.CONFIG_DIR',
     CONFIG_DIR)
-@patch_unless_travis(
+@patch_unless_ci(
     'cloudify_agent.api.pm.initd.start_command',
     _non_service_start_command)
-@patch_unless_travis(
+@patch_unless_ci(
     'cloudify_agent.api.pm.initd.stop_command',
     _non_service_stop_command)
 class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
@@ -113,7 +113,7 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
 
         self.assertRaises(errors.DaemonError, daemon.configure)
 
-    @only_travis
+    @only_ci
     def test_configure_start_on_boot(self):
         daemon = self._create_daemon(start_on_boot=True)
         daemon.create()

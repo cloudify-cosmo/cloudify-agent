@@ -21,8 +21,6 @@ from cloudify.state import current_ctx
 
 from cloudify_agent.installer.config import configuration
 from cloudify_agent.installer.runners.local_runner import LocalRunner
-from cloudify_agent.installer.runners.winrm_runner import WinRMRunner
-from cloudify_agent.installer.runners.fabric_runner import FabricRunner
 
 
 def init_agent_installer(func):
@@ -39,6 +37,11 @@ def init_agent_installer(func):
         if cloudify_agent['local']:
             runner = LocalRunner(logger=ctx.logger)
         elif cloudify_agent['windows']:
+
+            # import here to avoid importing winrm related stuff when they
+            # are not needed
+            from cloudify_agent.installer.runners.winrm_runner import \
+                WinRMRunner
             runner = WinRMRunner(
                 host=cloudify_agent['ip'],
                 user=cloudify_agent['user'],
@@ -48,6 +51,11 @@ def init_agent_installer(func):
                 uri=cloudify_agent.get('user'),
                 logger=ctx.logger)
         else:
+            # import here because simply importing this module on a
+            # windows box will fail if the pywin32 extensions are not
+            # installed. see http://sourceforge.net/projects/pywin32/
+            from cloudify_agent.installer.runners.fabric_runner import \
+                FabricRunner
             runner = FabricRunner(
                 logger=ctx.logger,
                 host=cloudify_agent['ip'],

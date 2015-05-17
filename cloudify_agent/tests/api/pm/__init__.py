@@ -48,24 +48,24 @@ BUILT_IN_TASKS = [
 ]
 
 
-def travis():
-    return 'TRAVIS_BUILD_DIR' in os.environ
+def ci():
+    return 'TRAVIS_BUILD_DIR' in os.environ or 'APPVEYOR' in os.environ
 
 
-def patch_unless_travis(target, new):
+def patch_unless_ci(target, new):
 
-    if not travis():
+    if not ci():
         return patch(target, new)
     else:
         getter, attribute = _get_target(target)
         return patch(target, getattr(getter(), attribute))
 
 
-def only_travis(func):
+def only_ci(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not travis():
+        if not ci():
             raise RuntimeError('Error! This test cannot be executed '
                                'outside of the travis CI '
                                'system since it may corrupt '

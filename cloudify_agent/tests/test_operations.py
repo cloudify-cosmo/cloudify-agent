@@ -29,7 +29,7 @@ from cloudify_agent import VIRTUALENV
 from cloudify_agent.tests import utils
 from cloudify_agent.tests import file_server
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
-from cloudify_agent.tests.api.pm import only_travis
+from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.tests import BaseTest
 
 
@@ -74,7 +74,7 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
             self.runner.run('{0}/bin/pip uninstall -y {1}'.format(
                 VIRTUALENV, plugin_name), stdout_pipe=False)
 
-    @only_travis
+    @only_ci
     def test_install_plugins_and_restart(self):
         name = 'cloudify-agent-{0}'.format(uuid.uuid4())
         queue = '{0}-queue'.format(name)
@@ -133,7 +133,7 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
         finally:
             self._uninstall_package_if_exists('mock-plugin')
 
-    @only_travis
+    @only_ci
     def test_stop(self):
 
         name = 'cloudify-agent-{0}'.format(uuid.uuid4())

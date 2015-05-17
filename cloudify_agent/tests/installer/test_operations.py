@@ -29,7 +29,7 @@ from cloudify_agent.tests import resources
 from cloudify_agent.tests import file_server
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.utils import env as cenv
-from cloudify_agent.tests.api.pm import only_travis
+from cloudify_agent.tests.api.pm import only_ci
 
 
 class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
@@ -54,7 +54,7 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
     def tearDownClass(cls):
         cls.fs.stop()
 
-    @only_travis
+    @only_ci
     @patch('cloudify.workflows.local._validate_node')
     def test_local_agent_from_package(self, _):
 
@@ -85,7 +85,7 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
             env.execute('uninstall', task_retries=12)
             self.wait_for_daemon_dead(name=agent_name)
 
-    @only_travis
+    @only_ci
     @patch('cloudify.workflows.local._validate_node')
     def test_local_agent_from_source(self, _):
 

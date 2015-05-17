@@ -23,7 +23,7 @@ from cloudify.exceptions import NonRecoverableError
 
 import cloudify_agent
 from cloudify_agent.api import utils
-from cloudify_agent.tests.api.pm import only_travis
+from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.tests import resources
 from cloudify_agent.tests import file_server
 from cloudify_agent.tests import utils as test_utils
@@ -127,11 +127,11 @@ class TestUtils(BaseTest):
             content = f.read()
         self.assertTrue('export key=value' in content)
 
-    @only_travis
+    @only_ci
     def test_disable_requiretty(self):
         utils.disable_requiretty()
 
-    @only_travis
+    @only_ci
     def test_fix_virtualenv(self):
         utils.fix_virtualenv()
 
