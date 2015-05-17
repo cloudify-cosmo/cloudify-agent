@@ -57,5 +57,6 @@ class TestApp(BaseTest):
 
                 with open(error_file) as f:
                     content = f.read()
-                self.assertTrue("Type: <type 'exceptions.Exception'>" in content)
+                self.assertTrue("Type: <type 'exceptions.Exception'>"
+                                in content)
                 self.assertTrue("Value: Error" in content)
