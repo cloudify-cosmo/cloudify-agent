@@ -32,7 +32,7 @@ from cloudify_agent.api.utils import get_home_dir
 ###############################################################
 
 
-class LocalRunner(utils.LocalCommandRunner):
+class LocalLinuxRunner(utils.LocalCommandRunner):
 
     def extract(self, archive, destination, strip=1):
         if not os.path.exists(destination):

@@ -20,7 +20,7 @@ from cloudify import ctx
 from cloudify.state import current_ctx
 
 from cloudify_agent.installer.config import configuration
-from cloudify_agent.installer.runners.local_runner import LocalRunner
+from cloudify_agent.installer.runners.local_runner import LocalLinuxRunner
 
 
 def init_agent_installer(func):
@@ -35,7 +35,7 @@ def init_agent_installer(func):
 
         # now we can create the runner and attach it to ctx
         if cloudify_agent['local']:
-            runner = LocalRunner(logger=ctx.logger)
+            runner = LocalLinuxRunner(logger=ctx.logger)
         elif cloudify_agent['windows']:
 
             # import here to avoid importing winrm related stuff when they
@@ -132,15 +132,21 @@ class AgentCommandRunner(object):
         env_path = '{0}/env'.format(self._cloudify_agent['agent_dir'])
         ctx.logger.info('Creating virtualenv at {0}'.format(env_path))
         ctx.runner.run('virtualenv {0}'.format(env_path))
+
+        if self._cloudify_agent['windows']:
+            pip_path = '{0}\\{1}\\{2}'.format(env_path, 'Scripts', 'pip.exe')
+        else:
+            pip_path = os.path.join(env_path, 'bin', 'pip')
+
         if requirements:
             ctx.logger.info('Installing requirements file: {0}'
                             .format(requirements))
-            ctx.runner.run('{0}/bin/pip install -r {1}'
-                           .format(env_path, requirements))
+            ctx.runner.run('{0} install -r {1}'
+                           .format(pip_path, requirements))
         ctx.logger.info('Installing Cloudify Agent from {0}'
                         .format(source_url))
-        ctx.runner.run('{0}/bin/pip install {1}'
-                       .format(env_path, source_url))
+        ctx.runner.run('{0} install {1}'
+                       .format(pip_path, source_url))
 
     def from_package(self):
         package_path = ctx.runner.download(
@@ -148,9 +154,11 @@ class AgentCommandRunner(object):
         ctx.logger.info('Extracting Agent package...')
         ctx.runner.extract(archive=package_path,
                            destination=self._cloudify_agent['agent_dir'])
-
         ctx.logger.info('Auto-correcting agent virtualenv')
-        ctx.agent.run('configure --relocated-env')
+        if self._cloudify_agent['windows']:
+            ctx.agent.run('configure')
+        else:
+            ctx.agent.run('configure --relocated-env')
 
     def delete(self):
         ctx.logger.info('Deleting Agent Package')

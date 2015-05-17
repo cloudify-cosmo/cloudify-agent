@@ -20,7 +20,7 @@ import platform
 
 from cloudify.utils import setup_logger
 
-from cloudify_agent.installer.runners.local_runner import LocalRunner
+from cloudify_agent.installer.runners.local_runner import LocalLinuxRunner
 from cloudify_agent.tests.file_server import FileServer
 from cloudify_agent.tests.file_server import PORT
 from cloudify_agent.tests import BaseTest
@@ -37,7 +37,7 @@ class LocalRunnerTest(BaseTest):
         super(LocalRunnerTest, cls).setUpClass()
         cls.logger = setup_logger(cls.__name__)
         cls.logger.setLevel(logging.DEBUG)
-        cls.runner = LocalRunner(
+        cls.runner = LocalLinuxRunner(
             logger=cls.logger)
         resources = os.path.join(
             os.path.dirname(tests.__file__),

@@ -262,6 +262,10 @@ def fix_virtualenv():
 
     """
 
+    if os.name == 'nt':
+        # irrelevant for windows
+        return
+
     bin_dir = '{0}/bin'.format(VIRTUALENV)
 
     logger.debug('Searching for executable files in {0}'.format(bin_dir))
