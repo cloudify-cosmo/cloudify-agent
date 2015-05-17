@@ -384,6 +384,9 @@ class WinRMRunner(object):
             dst = self.mktemp()
         return self.put(contents=content, path=dst)
 
+    def close(self):
+        pass
+
 
 class WinRMCommandExecutionException(CommandExecutionException):
 

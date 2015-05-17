@@ -67,6 +67,9 @@ class LocalRunner(utils.LocalCommandRunner):
     def validate_connection(self):
         pass
 
+    def close(self):
+        pass
+
     @staticmethod
     def delete(path):
         shutil.rmtree(path)

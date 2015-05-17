@@ -76,8 +76,7 @@ def init_agent_installer(func):
         try:
             return func(*args, **kwargs)
         finally:
-            if isinstance(runner, FabricRunner):
-                runner.close()
+            runner.close()
 
     return wrapper
 
