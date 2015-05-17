@@ -169,6 +169,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
 
 @patch('cloudify_agent.api.utils.get_storage_directory',
        get_storage_directory)
+@patch('cloudify_agent.shell.commands.daemons.api_utils.get_storage_directory',
+       get_storage_directory)
 class TestDaemonCommandLine(BaseCommandLineTestCase):
 
     def test_inspect_non_existing_agent(self):

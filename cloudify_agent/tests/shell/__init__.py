@@ -31,7 +31,7 @@ class BaseShellTest(BaseTest):
             logger_level=logging.DEBUG)
         self.currdir = os.getcwd()
         self.workdir = tempfile.mkdtemp(
-            prefix='cloudify-agent-shell-tests-')
+            prefix='cfy-agent-shell-tests-')
         self.logger.info('Working directory: {0}'.format(self.workdir))
         os.chdir(self.workdir)
 
