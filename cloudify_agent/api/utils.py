@@ -485,9 +485,15 @@ def list_plugin_files(plugin_name):
 
     module_paths = []
     runner = LocalCommandRunner(logger)
+
+    if os.name == 'nt':
+        pip_path = os.path.join(VIRTUALENV, 'Scripts', 'pip.exe')
+    else:
+        pip_path = os.path.join(VIRTUALENV, 'bin', 'pip')
+
     files = runner.run(
         '{0} show -f {1}'
-        .format(os.path.join(VIRTUALENV, 'bin', 'pip'), plugin_name)
+        .format(pip_path, plugin_name)
     ).output.splitlines()
     for module in files:
         if module.endswith('.py') and '__init__' not in module:
