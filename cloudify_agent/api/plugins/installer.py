@@ -14,13 +14,12 @@
 #  * limitations under the License.
 
 import shutil
-import os
 
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
 
 from cloudify_agent.api import utils
-from cloudify_agent import VIRTUALENV
+from cloudify_agent.api.utils import get_pip_path
 
 
 default_logger = setup_logger('cloudify_agent.api.plugins.installer')
@@ -56,10 +55,6 @@ class PluginInstaller(object):
 
     def _install_package(self, plugin_dir, args):
 
-        if os.name == 'nt':
-            pip_path = os.path.join(VIRTUALENV, 'Scripts', 'pip.exe')
-        else:
-            pip_path = os.path.join(VIRTUALENV, 'bin', 'pip')
-
-        command = '{0} install {1} {2}'.format(pip_path, args, plugin_dir)
+        command = '{0} install {1} {2}'.format(
+            get_pip_path(), args, plugin_dir)
         self.runner.run(command, cwd=plugin_dir)

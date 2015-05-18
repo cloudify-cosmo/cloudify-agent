@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import os
 import tempfile
 import uuid
 
@@ -28,6 +27,7 @@ from cloudify_agent import operations
 from cloudify_agent import VIRTUALENV
 
 from cloudify_agent.tests import utils
+from cloudify_agent.api.utils import get_pip_path
 from cloudify_agent.tests import file_server
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import only_ci
@@ -63,23 +63,17 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
         cls.fs.stop()
 
     def _assert_plugin_installed(self, plugin_name):
-        out = self.runner.run('{0}/bin/pip list'.format(VIRTUALENV)).output
+        out = self.runner.run('{0} list'.format(get_pip_path())).output
         self.assertIn(plugin_name, out)
 
     def _create_plugin_url(self, plugin_tar_name):
         return '{0}/{1}'.format(self.file_server_url, plugin_tar_name)
 
     def _uninstall_package_if_exists(self, plugin_name):
-
-        if os.name == 'nt':
-            pip_path = os.path.join(VIRTUALENV, 'Scripts', 'pip.exe')
-        else:
-            pip_path = os.path.join(VIRTUALENV, 'bin', 'pip')
-
-        out = self.runner.run('{0} list'.format(pip_path)).output
+        out = self.runner.run('{0} list'.format(get_pip_path())).output
         if plugin_name in out:
             self.runner.run('{0} uninstall -y {1}'.format(
-                pip_path, plugin_name), stdout_pipe=False)
+                get_pip_path(), plugin_name), stdout_pipe=False)
 
     @only_ci
     def test_install_plugins_and_restart(self):

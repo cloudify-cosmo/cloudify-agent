@@ -455,14 +455,9 @@ def list_plugin_files(plugin_name):
     module_paths = []
     runner = LocalCommandRunner(logger)
 
-    if os.name == 'nt':
-        pip_path = os.path.join(VIRTUALENV, 'Scripts', 'pip.exe')
-    else:
-        pip_path = os.path.join(VIRTUALENV, 'bin', 'pip')
-
     files = runner.run(
         '{0} show -f {1}'
-        .format(pip_path, plugin_name)
+        .format(get_pip_path(), plugin_name)
     ).output.splitlines()
     for module in files:
         if module.endswith('.py') and '__init__' not in module:
@@ -494,3 +489,33 @@ def dict_to_options(dictionary):
         option = '--{0}={1}'.format(key, value)
         options_string = '{0} {1}'.format(options_string, option)
     return options_string.lstrip()
+
+
+def get_pip_path():
+
+    """
+    Lookup the path to the pip executable, os agnostic
+
+    :return: path to the pip executable
+    :rtype: str
+    """
+
+    if os.name == 'posix':
+        return '{0}/bin/pip'.format(VIRTUALENV)
+    else:
+        return '{0}\\Scripts\\pip'.format(VIRTUALENV)
+
+
+def get_python_path():
+
+    """
+    Lookup the path to the python executable, os agnostic
+
+    :return: path to the python executable
+    :rtype: str
+    """
+
+    if os.name == 'posix':
+        return '{0}/bin/pip'.format(VIRTUALENV)
+    else:
+        return '{0}\\Scripts\\python'.format(VIRTUALENV)

@@ -127,6 +127,7 @@ class TestUtils(BaseTest):
         utils.disable_requiretty()
 
     @only_ci
+    @only_os('posix')
     def test_fix_virtualenv(self):
         utils.fix_virtualenv()
 
