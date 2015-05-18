@@ -30,6 +30,7 @@ from cloudify_agent.tests import file_server
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.utils import env as cenv
 from cloudify_agent.tests.api.pm import only_ci
+from cloudify_agent.tests.api.pm import only_os
 
 
 ##############################################################################
@@ -62,8 +63,9 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
     def tearDownClass(cls):
         cls.fs.stop()
 
-    @only_ci
     @patch('cloudify.workflows.local._validate_node')
+    @only_ci
+    @only_os('posix')
     def test_local_agent_from_package(self, _):
 
         agent_name = utils.generate_agent_name()

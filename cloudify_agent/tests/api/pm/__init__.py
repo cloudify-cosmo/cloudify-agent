@@ -15,6 +15,8 @@
 
 import os
 import time
+import inspect
+import types
 import getpass
 import logging
 import tempfile
@@ -73,6 +75,29 @@ def only_ci(func):
         func(*args, **kwargs)
 
     return wrapper
+
+
+def only_os(os_type):
+
+    def decorator(test):
+
+        if isinstance(test, (types.MethodType, types.FunctionType)):
+            if os.name != os_type:
+                return lambda: None
+            else:
+                return test
+
+        if isinstance(test, type):
+            for name, fn in inspect.getmembers(test):
+                if isinstance(fn, types.UnboundMethodType):
+                    if name.startswith('test') or name.endswith('test'):
+                        setattr(test, name, decorator(fn))
+            return test
+
+        raise ValueError("'test' argument is of an unsupported type: {0}. "
+                         "supported types are: 'type', 'FunctionType',"
+                         " 'MethodType'".format(type(test)))
+    return decorator
 
 
 class BaseDaemonLiveTestCase(BaseTest):

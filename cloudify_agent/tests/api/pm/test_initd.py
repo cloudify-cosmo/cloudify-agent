@@ -30,6 +30,7 @@ from cloudify_agent.tests import resources
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import patch_unless_ci
 from cloudify_agent.tests.api.pm import only_ci
+from cloudify_agent.tests.api.pm import only_os
 from cloudify_agent.tests import get_storage_directory
 
 
@@ -61,6 +62,7 @@ CONFIG_DIR = '/tmp/etc/default'
 @patch_unless_ci(
     'cloudify_agent.api.pm.initd.stop_command',
     _non_service_stop_command)
+@only_os('posix')
 class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
 
     def setUp(self):

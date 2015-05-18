@@ -24,6 +24,7 @@ from cloudify.exceptions import NonRecoverableError
 import cloudify_agent
 from cloudify_agent.api import utils
 from cloudify_agent.tests.api.pm import only_ci
+from cloudify_agent.tests.api.pm import only_os
 from cloudify_agent.tests import resources
 from cloudify_agent.tests import file_server
 from cloudify_agent.tests import utils as test_utils
@@ -114,13 +115,6 @@ class TestUtils(BaseTest):
                              .format(os.linesep),
                              f.read())
 
-    def test_run_script_from_temp_file(self):
-        content = '#!/bin/bash\necho success'
-        path = utils.content_to_file(content)
-        os.system('chmod +x {0}'.format(path))
-        code = os.system(path)
-        self.assertEqual(0, code)
-
     def test_env_to_file(self):
         env_path = utils.env_dict_to_file({'key': 'value'})
         with open(env_path) as f:
@@ -128,6 +122,7 @@ class TestUtils(BaseTest):
         self.assertTrue('export key=value' in content)
 
     @only_ci
+    @only_os('posix')
     def test_disable_requiretty(self):
         utils.disable_requiretty()
 
