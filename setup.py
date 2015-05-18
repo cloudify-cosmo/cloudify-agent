@@ -48,7 +48,7 @@ setup(
         'cloudify_agent': [
             'resources/pm/initd/celeryd.conf.template',
             'resources/pm/initd/celeryd.template',
-            'resources/pm/initd/disable-requiretty.sh']
+            'resources/disable-requiretty.sh']
         },
     description='Cloudify Agent Implementation (Celery based)',
     install_requires=install_requires,

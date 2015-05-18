@@ -19,6 +19,8 @@ from cloudify.exceptions import CommandExecutionException
 from cloudify.utils import CommandExecutionResponse
 from cloudify.utils import setup_logger
 
+from cloudify_agent.installer import utils
+
 DEFAULT_WINRM_PORT = '5985'
 DEFAULT_WINRM_URI = 'wsman'
 DEFAULT_WINRM_PROTOCOL = 'http'
@@ -88,7 +90,7 @@ class WinRMRunner(object):
     def home_dir(self, _):
         self.run('echo $HOME')
 
-    def run(self, command, raise_on_failure=True):
+    def run(self, command, raise_on_failure=True, execution_env=None):
 
         """
         :param command: The command to execute.
@@ -98,10 +100,23 @@ class WinRMRunner(object):
             if the command fails. You can use raise_on_failure=False to
             just log the error and not raise an exception.
         :type raise_on_failure: bool
+        :param execution_env: environment variables to be applied before
+                              running the command
+        :type execution_env: dict
 
         :rtype WinRMCommandExecutionResponse.
         :raise WinRMCommandExecutionException.
         """
+
+        if execution_env is None:
+            execution_env = {}
+
+        remote_env_file = None
+        if execution_env:
+            env_file = utils.env_to_file(execution_env, possix=False)
+            remote_env_file = self.put_file(src=env_file,
+                                            dst='{0}.bat'.format(
+                                                self.mktemp()))
 
         def _chk(res):
             if res.status_code == 0:
@@ -124,6 +139,8 @@ class WinRMRunner(object):
                 self.session_config['host'],
                 command))
 
+        if remote_env_file:
+            command = 'call {0} & {1}'.format(command)
         response = self.session.run_cmd(command)
         _chk(response)
         return WinRMCommandExecutionResponse(
@@ -142,7 +159,7 @@ class WinRMRunner(object):
 
         return self.run('echo')
 
-    def download(self, url, output_path):
+    def download(self, url, output_path=None):
 
         """
         :param url: URL to the resource to download.
@@ -152,11 +169,15 @@ class WinRMRunner(object):
         :raise WinRMCommandExecutionException.
         """
 
+        if output_path is None:
+            output_path = self.mktemp()
+
         self.logger.info('Downloading {0}'.format(url))
-        return self.run(
+        self.run(
             '''@powershell -Command "(new-object System.Net.WebClient)
             .Downloadfile('{0}','{1}')"'''
             .format(url, output_path))
+        return output_path
 
     def move(self, src, dst):
 
@@ -337,7 +358,7 @@ class WinRMRunner(object):
             '''@powershell -Command "Get-Content {0}"'''
             .format(path)).output
 
-    def extract(self, archive, destination):
+    def unzip(self, archive, destination):
 
         """
         Un-tars an archive. internally this will use the 'tar' command line,
@@ -366,7 +387,8 @@ class WinRMRunner(object):
     def put_file(self, src, dst=None):
 
         """
-        Copies a file from the src path to the dst path.
+        Copies a file from the src path on the host machine to the dst path
+        on the target machine
 
         :param src: Path to a local file.
         :type src: str

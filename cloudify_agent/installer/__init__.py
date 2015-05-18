@@ -14,16 +14,23 @@
 #  * limitations under the License.
 
 import os
+import copy
 from functools import wraps
 
 from cloudify import ctx
 from cloudify.state import current_ctx
+from cloudify.utils import setup_logger
 
 from cloudify_agent.installer.config import configuration
-from cloudify_agent.installer.runners.local_runner import LocalLinuxRunner
+from cloudify_agent.shell import env
+from cloudify_agent.installer import utils
 
 
 def init_agent_installer(func):
+
+    # import here to avoid circular dependency
+    from cloudify_agent.installer import linux
+    from cloudify_agent.installer import windows
 
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -32,134 +39,121 @@ def init_agent_installer(func):
 
         # set connection details
         configuration.prepare_connection(cloudify_agent)
-
-        # now we can create the runner and attach it to ctx
-        if cloudify_agent['local']:
-            runner = LocalLinuxRunner(logger=ctx.logger)
-        elif cloudify_agent['windows']:
-
-            # import here to avoid importing winrm related stuff when they
-            # are not needed
-            from cloudify_agent.installer.runners.winrm_runner import \
-                WinRMRunner
-            runner = WinRMRunner(
-                host=cloudify_agent['ip'],
-                user=cloudify_agent['user'],
-                password=cloudify_agent['password'],
-                port=cloudify_agent.get('port'),
-                protocol=cloudify_agent.get('protocol'),
-                uri=cloudify_agent.get('user'),
-                logger=ctx.logger)
-        else:
-            # import here because simply importing this module on a
-            # windows box will fail if the pywin32 extensions are not
-            # installed. see http://sourceforge.net/projects/pywin32/
-            from cloudify_agent.installer.runners.fabric_runner import \
-                FabricRunner
-            runner = FabricRunner(
-                logger=ctx.logger,
-                host=cloudify_agent['ip'],
-                user=cloudify_agent['user'],
-                port=cloudify_agent.get('port'),
-                key=cloudify_agent.get('key'),
-                password=cloudify_agent.get('password'),
-                fabric_env=cloudify_agent.get('fabric_env'))
-
-        setattr(current_ctx.get_ctx(), 'runner', runner)
-
         configuration.prepare_agent(cloudify_agent)
-        agent_runner = AgentCommandRunner(cloudify_agent)
-        setattr(current_ctx.get_ctx(), 'agent', agent_runner)
+
+        # create the correct installer according to os
+        # and local/remote execution
+        if cloudify_agent['local']:
+            if os.name == 'nt':
+                installer = windows.LocalWindowsAgentInstaller(
+                    cloudify_agent, ctx.logger)
+            else:
+                installer = linux.LocalLinuxAgentInstaller(
+                    cloudify_agent, ctx.logger)
+        elif cloudify_agent['windows']:
+            installer = windows.RemoteWindowsAgentInstaller(
+                cloudify_agent, ctx.logger)
+        else:
+            installer = linux.RemoteLinuxAgentInstaller(
+                cloudify_agent, ctx.logger)
+
+        setattr(current_ctx.get_ctx(), 'installer', installer)
 
         kwargs['cloudify_agent'] = cloudify_agent
 
         try:
             return func(*args, **kwargs)
         finally:
-            runner.close()
+            installer.close_installer()
 
     return wrapper
 
 
-class AgentCommandRunner(object):
+class AgentInstaller(object):
 
-    """
-    class for running cloudify agent commands based on the configuration.
-    this class simplifies the agent commands by automatically prefixing the
-    correct virtualenv to run commands under.
+    def __init__(self, cloudify_agent, logger=None):
+        self.cloudify_agent = cloudify_agent
+        self.logger = logger or setup_logger(self.__class__.__name__)
 
-    """
+    def create(self):
+        raise NotImplementedError('Must be implemented by sub-class')
 
-    def __init__(self, cloudify_agent):
-        self._cloudify_agent = cloudify_agent
-        self.agent_dir = cloudify_agent['agent_dir']
-        bin_path = '{0}/env/bin'.format(self.agent_dir)
-        self._prefix = '{0}/python {0}/cfy-agent'.format(bin_path)
+    def configure(self):
+        raise NotImplementedError('Must be implemented by sub-class')
 
-    def run(self, command, execution_env=None):
-        response = ctx.runner.run(
-            '{0} {1}'.format(self._prefix, command),
-            execution_env=execution_env)
-        if response.output:
-            for line in response.output.split(os.linesep):
-                ctx.logger.info(line)
+    def start(self):
+        raise NotImplementedError('Must be implemented by sub-class')
 
-    def sudo(self, command):
-        response = ctx.runner.sudo(
-            '{0} {1}'.format(self._prefix, command))
-        if response.output:
-            for line in response.output.split(os.linesep):
-                ctx.logger.info(line)
-
-    def from_source(self):
-        get_pip_url = 'https://bootstrap.pypa.io/get-pip.py'
-
-        requirements = self._cloudify_agent.get('requirements')
-        source_url = self._cloudify_agent['source_url']
-
-        get_pip = ctx.runner.download(get_pip_url)
-
-        if self._cloudify_agent['windows']:
-            elevated = ctx.runner.run
-        else:
-            elevated = ctx.runner.sudo
-
-        ctx.logger.info('Installing pip...')
-        elevated('python {0}'.format(get_pip))
-        ctx.logger.info('Installing virtualenv...')
-        elevated('pip install virtualenv')
-
-        env_path = '{0}/env'.format(self._cloudify_agent['agent_dir'])
-        ctx.logger.info('Creating virtualenv at {0}'.format(env_path))
-        ctx.runner.run('virtualenv {0}'.format(env_path))
-
-        if self._cloudify_agent['windows']:
-            pip_path = '{0}\\{1}\\{2}'.format(env_path, 'Scripts', 'pip.exe')
-        else:
-            pip_path = os.path.join(env_path, 'bin', 'pip')
-
-        if requirements:
-            ctx.logger.info('Installing requirements file: {0}'
-                            .format(requirements))
-            ctx.runner.run('{0} install -r {1}'
-                           .format(pip_path, requirements))
-        ctx.logger.info('Installing Cloudify Agent from {0}'
-                        .format(source_url))
-        ctx.runner.run('{0} install {1}'
-                       .format(pip_path, source_url))
-
-    def from_package(self):
-        package_path = ctx.runner.download(
-            url=self._cloudify_agent['package_url'])
-        ctx.logger.info('Extracting Agent package...')
-        ctx.runner.extract(archive=package_path,
-                           destination=self._cloudify_agent['agent_dir'])
-        ctx.logger.info('Auto-correcting agent virtualenv')
-        if self._cloudify_agent['windows']:
-            ctx.agent.run('configure')
-        else:
-            ctx.agent.run('configure --relocated-env')
+    def stop(self):
+        raise NotImplementedError('Must be implemented by sub-class')
 
     def delete(self):
-        ctx.logger.info('Deleting Agent Package')
-        ctx.runner.delete(self.agent_dir)
+        raise NotImplementedError('Must be implemented by sub-class')
+
+    def restart(self):
+        raise NotImplementedError('Must be implemented by sub-class')
+
+    def create_custom_env_file_on_target(self, environment):
+        raise NotImplementedError('Must be implemented by sub-class')
+
+    def close(self):
+        raise NotImplementedError('Must be implemented by sub-class')
+
+    @property
+    def downloader(self):
+        raise NotImplementedError('Must be implemented by sub-class')
+
+    @property
+    def extractor(self):
+        raise NotImplementedError('Must be implemented by sub-class')
+
+    def _create_agent_env(self):
+
+        execution_env = {
+
+            # mandatory values calculated before the agent
+            # is actually created
+            env.CLOUDIFY_MANAGER_IP: self.cloudify_agent['manager_ip'],
+            env.CLOUDIFY_DAEMON_QUEUE: self.cloudify_agent['queue'],
+            env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
+
+            # these are variables that have default values that will be set
+            # by the agent on the remote host if not set here
+            env.CLOUDIFY_DAEMON_USER: self.cloudify_agent.get('user'),
+            env.CLOUDIFY_BROKER_IP: self.cloudify_agent.get('broker_ip'),
+            env.CLOUDIFY_BROKER_PORT: self.cloudify_agent.get('broker_port'),
+            env.CLOUDIFY_BROKER_URL: self.cloudify_agent.get('broker_url'),
+            env.CLOUDIFY_DAEMON_GROUP: self.cloudify_agent.get('group'),
+            env.CLOUDIFY_MANAGER_PORT: self.cloudify_agent.get('manager_port'),
+            env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(
+                'max_workers'),
+            env.CLOUDIFY_DAEMON_MIN_WORKERS: self.cloudify_agent.get(
+                'min_workers'),
+            env.CLOUDIFY_DAEMON_PROCESS_MANAGEMENT:
+                self.cloudify_agent['process_management']['name'],
+            env.CLOUDIFY_DAEMON_WORKDIR: self.cloudify_agent['workdir'],
+            env.CLOUDIFY_DAEMON_EXTRA_ENV:
+                self.create_custom_env_file_on_target(
+                    self.cloudify_agent['env'])
+        }
+
+        execution_env = utils.purge_none_values(execution_env)
+        execution_env = utils.stringify_values(execution_env)
+
+        ctx.logger.debug('Cloudify Agent will be created using the following '
+                         'environment: {0}'.format(execution_env))
+
+        return execution_env
+
+    def _create_process_management_options(self):
+        options = []
+        process_management = copy.deepcopy(self.cloudify_agent[
+            'process_management'])
+
+        # remove the name key because it is
+        # actually passed separately via an
+        # environment variable
+        process_management.pop('name')
+        for key, value in process_management.iteritems():
+            options.append('--{0}={1}'.format(key, value))
+        return ' '.join(options)

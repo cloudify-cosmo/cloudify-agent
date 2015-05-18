@@ -15,6 +15,7 @@
 
 import os
 import getpass
+import platform
 from functools import wraps
 
 from cloudify import ctx
@@ -143,11 +144,13 @@ def prepare_agent(cloudify_agent):
     _set_env(cloudify_agent)
     _set_agent_dir(cloudify_agent)
     _set_workdir(cloudify_agent)
+    _set_envdir(cloudify_agent)
     _set_process_management(cloudify_agent)
     _set_source_url(cloudify_agent)
     _set_requirements(cloudify_agent)
     _set_package_url(cloudify_agent)
     _set_fabric_env(cloudify_agent)
+    _set_disable_requiretty(cloudify_agent)
 
     def validate():
         if 'source_url' in cloudify_agent and 'package_url' in cloudify_agent:
@@ -228,7 +231,9 @@ def _set_process_management(_):
 def _set_distro(cloudify_agent):
     if cloudify_agent['windows']:
         return
-    dist = ctx.runner.machine_distribution()
+    if cloudify_agent['local']:
+        return platform.dist()[0].lower()
+    dist = ctx.installer.runner.machine_distribution()
     return dist[0].lower()
 
 
@@ -236,7 +241,9 @@ def _set_distro(cloudify_agent):
 def _set_distro_codename(cloudify_agent):
     if cloudify_agent['windows']:
         return
-    dist = ctx.runner.machine_distribution()
+    if cloudify_agent['local']:
+        return platform.dist()[2].lower()
+    dist = ctx.installer.runner.machine_distribution()
     return dist[2].lower()
 
 
@@ -254,6 +261,11 @@ def _set_package_url(cloudify_agent):
 @cloudify_agent_property('source_url', mandatory=False)
 def _set_source_url(_):
     pass
+
+
+@cloudify_agent_property('disable_requiretty')
+def _set_disable_requiretty(_):
+    return True
 
 
 @cloudify_agent_property('requirements', mandatory=False)
@@ -275,7 +287,10 @@ def _set_ip(_):
 def _set_basedir(cloudify_agent):
 
     # the default will be the home directory
-    return ctx.runner.home_dir(cloudify_agent['user'])
+    if cloudify_agent['local']:
+        return utils.get_home_dir(cloudify_agent['user'])
+    else:
+        return ctx.installer.runner.home_dir(cloudify_agent['user'])
 
 
 @cloudify_agent_property('agent_dir')
@@ -320,12 +335,12 @@ def _set_manager_ip(_):
 
 @cloudify_agent_property('env', mandatory=False)
 def _set_env(_):
-    pass
+    return {}
 
 
 @cloudify_agent_property('fabric_env', mandatory=False)
 def _set_fabric_env(_):
-    pass
+    return {}
 
 
 ########################################################################
@@ -344,3 +359,19 @@ def _set_min_workers(_):
 @cloudify_agent_property('max_workers', mandatory=False)
 def _set_max_workers(_):
     pass
+
+
+#############################################################################
+# This isn't exposed as a property because the env directory is tied to the
+# way we package the agent, and therefore cannot be an arbitrary path.
+# this setting is just for internal use and convenience later on.
+#############################################################################
+
+
+def _set_envdir(cloudify_agent):
+    agent_dir = cloudify_agent['agent_dir']
+    if cloudify_agent['windows']:
+        envdir = '{0}\\{1}'.format(agent_dir, 'env')
+    else:
+        envdir = os.path.join(agent_dir, 'env')
+    cloudify_agent['envdir'] = envdir

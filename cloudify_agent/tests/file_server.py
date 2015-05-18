@@ -48,8 +48,8 @@ class FileServer(object):
             self.process = subprocess.Popen(
                 [sys.executable, '-m', 'SimpleHTTPServer', str(self.port)],
                 stdin=FNULL,
-                stdout=FNULL,
-                stderr=FNULL,
+                stdout=None,
+                stderr=None,
                 cwd=self.root_path)
         else:
             self.process = Process(target=self.start_impl)

@@ -114,13 +114,13 @@ class GenericLinuxDaemon(Daemon):
 
         if os.path.exists(self.script_path):
             self.logger.debug('Deleting {0}'.format(self.script_path))
-            self.runner.sudo('rm {0}'.format(self.script_path))
+            self.runner.run('sudo rm {0}'.format(self.script_path))
         if os.path.exists(self.config_path):
             self.logger.debug('Deleting {0}'.format(self.config_path))
-            self.runner.sudo('rm {0}'.format(self.config_path))
+            self.runner.run('sudo rm {0}'.format(self.config_path))
         if os.path.exists(self.includes_path):
             self.logger.debug('Deleting {0}'.format(self.includes_path))
-            self.runner.sudo('rm {0}'.format(self.includes_path))
+            self.runner.run('sudo rm {0}'.format(self.includes_path))
 
     def update_includes(self, tasks):
         self.logger.debug('Updating includes configuration '
@@ -151,7 +151,6 @@ class GenericLinuxDaemon(Daemon):
 
     def _create_includes(self):
 
-        # create the file
         dirname = os.path.dirname(self.includes_path)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
@@ -170,9 +169,9 @@ class GenericLinuxDaemon(Daemon):
             daemon_name=self.name,
             config_path=self.config_path
         )
-        self.runner.sudo('cp {0} {1}'.format(rendered, self.script_path))
-        self.runner.sudo('rm {0}'.format(rendered))
-        self.runner.sudo('chmod +x {0}'.format(self.script_path))
+        self.runner.run('sudo cp {0} {1}'.format(rendered, self.script_path))
+        self.runner.run('sudo rm {0}'.format(rendered))
+        self.runner.run('sudo chmod +x {0}'.format(self.script_path))
 
     def _create_config(self):
         rendered = utils.render_template_to_file(
@@ -192,17 +191,17 @@ class GenericLinuxDaemon(Daemon):
             storage_dir=utils.get_storage_directory()
         )
 
-        self.runner.sudo('cp {0} {1}'.format(rendered, self.config_path))
-        self.runner.sudo('rm {0}'.format(rendered))
+        self.runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))
+        self.runner.run('sudo rm {0}'.format(rendered))
 
     def _create_start_on_boot_entry(self):
 
         def _handle_debian():
-            self.runner.sudo('update-rc.d {0} defaults'.format(self.name))
+            self.runner.run('sudo update-rc.d {0} defaults'.format(self.name))
 
         def _handle_rpm():
-            self.runner.sudo('/sbin/chkconfig --add {0}'.format(self.name))
-            self.runner.sudo('/sbin/chkconfig {0} on'.format(self.name))
+            self.runner.run('sudo /sbin/chkconfig --add {0}'.format(self.name))
+            self.runner.run('sudo /sbin/chkconfig {0} on'.format(self.name))
 
         if self.runner.run('which dpkg', exit_on_failure=False).code == 0:
             _handle_debian()

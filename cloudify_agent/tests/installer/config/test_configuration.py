@@ -20,12 +20,7 @@ from mock import patch, MagicMock
 from cloudify.context import BootstrapContext
 from cloudify.mocks import MockCloudifyContext
 
-from cloudify_agent.installer.config.configuration import \
-    cloudify_agent_property
-from cloudify_agent.installer.config.configuration import \
-    prepare_connection
-from cloudify_agent.installer.config.configuration import \
-    prepare_agent
+from cloudify_agent.installer.config import configuration
 from cloudify_agent.installer import exceptions
 from cloudify_agent.tests import BaseTest
 
@@ -62,7 +57,7 @@ class TestCloudifyAgentProperty(BaseTest):
            mock_context())
     def test_in_invocation_before(self):
 
-        @cloudify_agent_property('prop')
+        @configuration.cloudify_agent_property('prop')
         def prop(_):
             pass
 
@@ -75,7 +70,7 @@ class TestCloudifyAgentProperty(BaseTest):
            mock_context())
     def test_missing_mandatory_property(self):
 
-        @cloudify_agent_property('prop')
+        @configuration.cloudify_agent_property('prop')
         def prop(_):
             pass
 
@@ -89,7 +84,7 @@ class TestCloudifyAgentProperty(BaseTest):
            mock_context())
     def test_in_invocation_after(self):
 
-        @cloudify_agent_property('prop')
+        @configuration.cloudify_agent_property('prop')
         def prop(_):
             _['prop'] = 'value'
 
@@ -102,7 +97,7 @@ class TestCloudifyAgentProperty(BaseTest):
            mock_context(properties={'cloudify_agent': {'prop': 'value'}}))
     def test_in_properties(self):
 
-        @cloudify_agent_property('prop')
+        @configuration.cloudify_agent_property('prop')
         def prop(_):
             pass
 
@@ -115,7 +110,7 @@ class TestCloudifyAgentProperty(BaseTest):
            mock_context(agent_context={'user': 'value'}))
     def test_in_agent_context(self):
 
-        @cloudify_agent_property('user')
+        @configuration.cloudify_agent_property('user')
         def prop(_):
             pass
 
@@ -128,7 +123,7 @@ class TestCloudifyAgentProperty(BaseTest):
            mock_context(properties={'cloudify_agent': {'prop': 'value'}}))
     def test_invocation_overrides_properties(self):
 
-        @cloudify_agent_property('prop')
+        @configuration.cloudify_agent_property('prop')
         def prop(_):
             pass
 
@@ -141,7 +136,7 @@ class TestCloudifyAgentProperty(BaseTest):
            mock_context(agent_context={'prop': 'value'}))
     def test_invocation_overrides_context(self):
 
-        @cloudify_agent_property('prop')
+        @configuration.cloudify_agent_property('prop')
         def prop(_):
             pass
 
@@ -156,7 +151,7 @@ class TestCloudifyAgentProperty(BaseTest):
                         agent_context={'prop': 'value'}))
     def test_properties_override_context(self):
 
-        @cloudify_agent_property('prop')
+        @configuration.cloudify_agent_property('prop')
         def prop(_):
             pass
 
@@ -186,7 +181,7 @@ class TestConfiguration(BaseTest):
            ))
     def test_prepare_connection(self):
         cloudify_agent = {}
-        prepare_connection(cloudify_agent)
+        configuration.prepare_connection(cloudify_agent)
         expected = {
             'user': 'test_user',
             'key': 'key',
@@ -211,7 +206,7 @@ class TestConfiguration(BaseTest):
            ))
     def test_prepare_connection_ip_in_runtime(self):
         cloudify_agent = {}
-        prepare_connection(cloudify_agent)
+        configuration.prepare_connection(cloudify_agent)
         expected = {
             'user': 'test_user',
             'key': 'key',
@@ -240,16 +235,20 @@ class TestConfiguration(BaseTest):
     def test_prepare_agent(self):
         user = getpass.getuser()
         cloudify_agent = {'user': user, 'windows': False}
-        prepare_agent(cloudify_agent)
+        configuration.prepare_agent(cloudify_agent)
         expected = {
             'agent_dir': 'basedir/test_node',
             'distro': 'distro',
             'process_management': {'name': 'init.d'},
             'distro_codename': 'distro_codename',
             'basedir': 'basedir',
+            'disable_requiretty': True,
             'name': 'test_node',
             'manager_ip': 'localhost',
             'queue': 'test_node',
+            'env': {},
+            'envdir': 'basedir/test_node/env',
+            'fabric_env': {},
             'max_workers': 5,
             'user': user,
             'workdir': 'basedir/test_node/work',
@@ -270,11 +269,11 @@ class TestConfiguration(BaseTest):
                    }
                }))
     def test_source_url_and_package_url(self):
-        cloudify_agent = {'windows': False}
+        cloudify_agent = {'windows': False, 'local': True}
         self.assertRaisesRegexp(
             exceptions.AgentInstallerConfigurationError,
             "Cannot specify both 'source_url' and 'package_url' "
             "simultaneously.",
-            prepare_agent,
+            configuration.prepare_agent,
             cloudify_agent
         )

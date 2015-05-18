@@ -32,6 +32,14 @@ from cloudify_agent.tests.utils import env as cenv
 from cloudify_agent.tests.api.pm import only_ci
 
 
+##############################################################################
+# these tests run a local workflow to install the agent on the local machine.
+# it should support both windows and linux machines. and thus, testing the
+# LocalWindowsAgentInstaller and LocalLinuxAgentInstaller.
+# the remote use cases are tested as system tests because they require
+# actually launching VM's from the test.
+##############################################################################
+
 class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
     fs = None

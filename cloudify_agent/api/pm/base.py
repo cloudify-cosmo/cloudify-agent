@@ -202,6 +202,10 @@ class Daemon(object):
             if included_plugin not in self.plugins:
                 self.plugins.append(included_plugin)
 
+        # create working directory if its missing
+        if not os.path.exists(self.workdir):
+            os.makedirs(self.workdir)
+
         self.extra_env_path = params.get('extra_env_path')
 
         # save as a property so that it will be persisted in the json files

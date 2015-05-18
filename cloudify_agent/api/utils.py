@@ -19,13 +19,13 @@ import tempfile
 import sys
 import shutil
 import os
-import getpass
 import pip
 import pkg_resources
 from jinja2 import Template
 
 from cloudify.utils import LocalCommandRunner
 from cloudify.utils import setup_logger
+from cloudify.utils import get_home_dir
 from cloudify import exceptions
 
 import cloudify_agent
@@ -56,38 +56,6 @@ def get_agent_stats(name, celery):
         destination=[destination])
     stats = (inspect.stats() or {}).get(destination)
     return stats
-
-
-def get_home_dir(username=None):
-
-    """
-    Retrieve the home directory of the given user. If no user was specified,
-    the currently logged user will be used.
-
-    Note: on windows this will always return the home directory of the
-    currently logged user.
-
-
-    :return: path to the home directory
-    :rtype: str
-
-    """
-
-    if os.name == 'nt':
-
-        # running on windows, we don't currently support retrieving
-        # home directories of users besides the currently logged one.
-        return os.path.expanduser('~')
-    else:
-        import pwd
-        if username is None:
-            if 'SUDO_USER' in os.environ:
-                # command was executed via sudo
-                # get the original user
-                username = os.environ['SUDO_USER']
-            else:
-                username = getpass.getuser()
-        return pwd.getpwnam(username).pw_dir
 
 
 def get_storage_directory():
@@ -250,7 +218,7 @@ def disable_requiretty():
         resource_path='disable-requiretty.sh'
     )
     runner.run('chmod +x {0}'.format(disable_requiretty_script_path))
-    runner.sudo('{0}'.format(disable_requiretty_script_path))
+    runner.run('{0}'.format(disable_requiretty_script_path))
 
 
 def fix_virtualenv():
@@ -261,10 +229,6 @@ def fix_virtualenv():
     than the one that is used at runtime.
 
     """
-
-    if os.name == 'nt':
-        # irrelevant for windows
-        return
 
     bin_dir = '{0}/bin'.format(VIRTUALENV)
 
