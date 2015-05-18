@@ -26,4 +26,4 @@ MAX_WORKERS = 5
 BROKER_URL = 'amqp://guest:guest@{0}:{1}//'
 DELETE_AMQP_QUEUE_BEFORE_START = False
 DAEMON_FORCE_DELETE = False
-CLOUDIFY_AGENT_PREFIX = 'cloudify-agent'
+CLOUDIFY_AGENT_PREFIX = 'cfy-agent'

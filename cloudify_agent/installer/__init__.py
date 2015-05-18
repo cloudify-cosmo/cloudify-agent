@@ -23,7 +23,7 @@ from cloudify.utils import setup_logger
 
 from cloudify_agent.installer.config import configuration
 from cloudify_agent.shell import env
-from cloudify_agent.installer import utils
+from cloudify_agent.api import utils
 
 
 def init_agent_installer(func):

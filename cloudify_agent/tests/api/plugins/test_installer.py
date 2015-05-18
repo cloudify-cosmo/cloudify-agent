@@ -22,11 +22,12 @@ from cloudify.utils import LocalCommandRunner
 
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api import utils
-from cloudify_agent.api.utils import get_pip_path
+
 from cloudify_agent.tests import file_server
 from cloudify_agent.tests import utils as test_utils
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests import get_storage_directory
+from cloudify_agent.tests.utils import uninstall_package_if_exists
 
 
 @patch('cloudify_agent.api.utils.get_storage_directory',
@@ -77,18 +78,12 @@ class PluginInstallerTest(BaseTest):
         for dependency in dependencies:
             self.assertIn(dependency, out)
 
-    def _uninstall_package_if_exists(self, plugin_name):
-        out = self.runner.run('{0} list'.format(get_pip_path())).output
-        if plugin_name in out:
-            self.runner.run('{0} uninstall -y {1}'.format(
-                get_pip_path(), plugin_name), stdout_pipe=False)
-
     def test_install(self):
         try:
             self.installer.install(self._create_plugin_url('mock-plugin.tar'))
             self._assert_plugin_installed('mock-plugin')
         finally:
-            self._uninstall_package_if_exists('mock-plugin')
+            uninstall_package_if_exists('mock-plugin')
 
     def test_install_with_requirements(self):
 
@@ -101,12 +96,10 @@ class PluginInstallerTest(BaseTest):
                 plugin_name='mock-plugin-with-requirements',
                 dependencies=['TowelStuff'])
         finally:
-            self._uninstall_package_if_exists(
-                'mock-plugin-with-requirements')
+            uninstall_package_if_exists('mock-plugin-with-requirements')
 
             #############################################################
             # TowelStuff is a sample package inside PyPi, it doesn't do
             # anything. we use it to test requirement files support
             #############################################################
-            self._uninstall_package_if_exists(
-                'TowelStuff')
+            uninstall_package_if_exists('TowelStuff')

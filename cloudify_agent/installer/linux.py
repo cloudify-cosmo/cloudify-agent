@@ -20,7 +20,7 @@ import tempfile
 from cloudify.utils import LocalCommandRunner
 
 from cloudify_agent.installer import AgentInstaller
-from cloudify_agent.installer import utils
+from cloudify_agent.api import utils
 
 
 class RemoteLinuxAgentInstaller(AgentInstaller):

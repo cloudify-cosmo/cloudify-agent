@@ -21,7 +21,7 @@ from cloudify.utils import LocalCommandRunner
 
 from cloudify_agent.installer.runners.winrm_runner import WinRMRunner
 from cloudify_agent.installer import AgentInstaller
-from cloudify_agent.installer import utils
+from cloudify_agent.api import utils
 
 
 class RemoteWindowsAgentInstaller(AgentInstaller):
@@ -152,7 +152,7 @@ class LocalWindowsAgentInstaller(RemoteWindowsAgentInstaller):
         self.runner = LocalCommandRunner(logger=logger)
 
     def create_custom_env_file_on_target(self, environment):
-        return utils.env_to_file(env_variables=environment, possix=False)
+        return utils.env_to_file(env_variables=environment, posix=False)
 
     def close_installer(self):
         pass

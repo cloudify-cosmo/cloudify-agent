@@ -115,12 +115,6 @@ class TestUtils(BaseTest):
                              .format(os.linesep),
                              f.read())
 
-    def test_env_to_file(self):
-        env_path = utils.env_dict_to_file({'key': 'value'})
-        with open(env_path) as f:
-            content = f.read()
-        self.assertTrue('export key=value' in content)
-
     @only_ci
     @only_os('posix')
     def test_disable_requiretty(self):
@@ -154,7 +148,8 @@ class TestUtils(BaseTest):
             extracted_plugin_path))
 
     def test_extract_package_name(self):
-        package_dir = resources.get_resource('plugins/mock-plugin')
+        package_dir = os.path.join(resources.get_resource('plugins'),
+                                   'mock-plugin')
         self.assertEqual(
             'mock-plugin',
             utils.extract_package_name(package_dir))

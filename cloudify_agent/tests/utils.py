@@ -18,6 +18,10 @@ import filecmp
 import tarfile
 from contextlib import contextmanager
 
+from cloudify.utils import LocalCommandRunner
+
+from cloudify_agent.api import utils
+
 from cloudify_agent.tests import resources
 
 
@@ -95,3 +99,37 @@ def are_dir_trees_equal(dir1, dir2):
             return False
 
     return True
+
+
+def uninstall_package_if_exists(package_name):
+
+    """
+    Uninstalls a pip package if it exists in the virtualenv
+
+    :param package_name: the pip package name
+    :type package_name: str
+
+    """
+    runner = LocalCommandRunner()
+
+    out = runner.run('{0} list'.format(utils.get_pip_path())).output
+    if package_name in out:
+        runner.run('{0} uninstall -y {1}'.format(
+            utils.get_pip_path(), package_name), stdout_pipe=False)
+
+
+def install_package(package_path):
+
+    """
+    Installs a pip package to the virtualenv
+
+    :param package_path: the pip package path
+    :type package_path: str
+    """
+
+    runner = LocalCommandRunner()
+
+    runner.run(
+        '{0} install {1}'
+        .format(utils.get_pip_path(), package_path),
+        stdout_pipe=False)

@@ -54,7 +54,6 @@ class PluginInstaller(object):
         return plugin_name
 
     def _install_package(self, plugin_dir, args):
-
         command = '{0} install {1} {2}'.format(
             get_pip_path(), args, plugin_dir)
         self.runner.run(command, cwd=plugin_dir)

@@ -30,7 +30,7 @@ class TestUtils(BaseTest):
 
     def test_env_to_file_nt(self):
         file_path = utils.env_to_file({'key': 'value', 'key2': 'value2'},
-                                      possix=False)
+                                      posix=False)
         with open(file_path) as f:
             content = f.read()
         self.assertIn('set key=value', content)

@@ -13,6 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import os
 import tempfile
 import uuid
 
@@ -24,10 +25,9 @@ from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
 
 from cloudify_agent import operations
-from cloudify_agent import VIRTUALENV
 
 from cloudify_agent.tests import utils
-from cloudify_agent.api.utils import get_pip_path
+from cloudify_agent.api.utils import get_pip_path, get_cfy_agent_path
 from cloudify_agent.tests import file_server
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import only_ci
@@ -69,31 +69,12 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
     def _create_plugin_url(self, plugin_tar_name):
         return '{0}/{1}'.format(self.file_server_url, plugin_tar_name)
 
-    def _uninstall_package_if_exists(self, plugin_name):
-        out = self.runner.run('{0} list'.format(get_pip_path())).output
-        if plugin_name in out:
-            self.runner.run('{0} uninstall -y {1}'.format(
-                get_pip_path(), plugin_name), stdout_pipe=False)
-
     @only_ci
     def test_install_plugins_and_restart(self):
         name = 'cloudify-agent-{0}'.format(uuid.uuid4())
         queue = '{0}-queue'.format(name)
 
-        self.runner.run('{0}/bin/cfy-agent --debug daemons create '
-                        '--manager-ip=127.0.0.1 --name={1} '
-                        '--process-management=init.d '
-                        '--queue={2}'
-                        .format(VIRTUALENV, name, queue),
-                        stdout_pipe=False)
-        self.runner.run('{0}/bin/cfy-agent --debug daemons '
-                        'configure --name={1}'
-                        .format(VIRTUALENV, name),
-                        stdout_pipe=False)
-        self.runner.run('{0}/bin/cfy-agent --debug daemons '
-                        'start --name={1}'
-                        .format(VIRTUALENV, name),
-                        stdout_pipe=False)
+        self._start_agent(name, queue)
 
         new_name = 'cloudify-agent-{0}'.format(uuid.uuid4())
 
@@ -132,7 +113,7 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
             ).get(timeout=5)
 
         finally:
-            self._uninstall_package_if_exists('mock-plugin')
+            utils.uninstall_package_if_exists('mock-plugin')
 
     @only_ci
     def test_stop(self):
@@ -140,20 +121,7 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
         name = 'cloudify-agent-{0}'.format(uuid.uuid4())
         queue = '{0}-queue'.format(name)
 
-        self.runner.run('{0}/bin/cfy-agent --debug daemons create '
-                        '--manager-ip=127.0.0.1 --name={1} '
-                        '--process-management=init.d '
-                        '--queue={2}'
-                        .format(VIRTUALENV, name, queue),
-                        stdout_pipe=False)
-        self.runner.run('{0}/bin/cfy-agent --debug daemons '
-                        'configure --name={1}'
-                        .format(VIRTUALENV, name),
-                        stdout_pipe=False)
-        self.runner.run('{0}/bin/cfy-agent --debug daemons '
-                        'start --name={1}'
-                        .format(VIRTUALENV, name),
-                        stdout_pipe=False)
+        self._start_agent(name, queue)
 
         # now lets send the stop task
         # this simulates what they cloudify manager will do
@@ -164,6 +132,25 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
 
         # lets see that the old daemon is dead
         self.wait_for_daemon_dead(name=name)
+
+    def _start_agent(self, name, queue):
+        process_management = 'init.d' if os.name == 'posix' else 'nssm'
+
+        self.runner.run('{0} --debug daemons create '
+                        '--manager-ip=127.0.0.1 --name={1} '
+                        '--process-management={2} '
+                        '--queue={3}'
+                        .format(get_cfy_agent_path(),
+                                name, process_management, queue),
+                        stdout_pipe=False)
+        self.runner.run('{0} --debug daemons '
+                        'configure --name={1}'
+                        .format(get_cfy_agent_path(), name),
+                        stdout_pipe=False)
+        self.runner.run('{0} --debug daemons '
+                        'start --name={1}'
+                        .format(get_cfy_agent_path(), name),
+                        stdout_pipe=False)
 
 
 class CloudifyAgentTasksUnitTest(BaseTest):
