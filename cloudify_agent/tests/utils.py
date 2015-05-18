@@ -149,6 +149,7 @@ class FileServer(object):
         self.port = port
         self.root_path = root_path or os.path.dirname(resources.__file__)
         self.process = None
+        self.runner = LocalCommandRunner()
 
     def start(self, timeout=5):
         self.process = subprocess.Popen(
@@ -174,8 +175,13 @@ class FileServer(object):
     def stop(self, timeout=5):
         if self.process is None:
             return
-        self.process.terminate()
+
         end_time = time.time() + timeout
+
+        if os.name == 'nt':
+            self.runner.run('taskkill /PID {0}'.format(self.process.pid))
+        else:
+            self.runner.run('kill -9 {0}'.format(self.process.pid))
 
         while end_time > time.time():
             if not self.is_alive():
