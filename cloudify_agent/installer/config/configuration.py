@@ -237,7 +237,7 @@ def _set_process_management(cloudify_agent):
         return {'name': 'init.d'}
 
 
-@cloudify_agent_property('distro')
+@cloudify_agent_property('distro', mandatory=False)
 def _set_distro(cloudify_agent):
     if cloudify_agent['windows']:
         return
@@ -247,7 +247,7 @@ def _set_distro(cloudify_agent):
     return dist[0].lower()
 
 
-@cloudify_agent_property('distro_codename')
+@cloudify_agent_property('distro_codename', mandatory=False)
 def _set_distro_codename(cloudify_agent):
     if cloudify_agent['windows']:
         return
