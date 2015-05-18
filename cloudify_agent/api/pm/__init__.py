@@ -16,3 +16,4 @@
 # import all daemon concrete implementations
 # so that we can use Daemon.__subclasses__()
 from cloudify_agent.api.pm.initd import GenericLinuxDaemon  # NOQA
+from cloudify_agent.api.pm.nssm import NonSuckingServiceManagerDaemon  # NOQA

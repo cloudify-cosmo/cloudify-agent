@@ -23,7 +23,6 @@ from cloudify.utils import LocalCommandRunner
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api import utils
 
-from cloudify_agent.tests import file_server
 from cloudify_agent.tests import utils as test_utils
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests import get_storage_directory
@@ -46,7 +45,7 @@ class PluginInstallerTest(BaseTest):
 
         cls.file_server_resource_base = tempfile.mkdtemp(
             prefix='file-server-resource-base')
-        cls.fs = file_server.FileServer(
+        cls.fs = test_utils.FileServer(
             root_path=cls.file_server_resource_base)
         cls.fs.start()
         cls.file_server_url = 'http://localhost:{0}'.format(cls.fs.port)

@@ -25,13 +25,12 @@ from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
 
 from cloudify_agent import operations
+from cloudify_agent.api.utils import get_pip_path, get_cfy_agent_path
 
 from cloudify_agent.tests import utils
-from cloudify_agent.api.utils import get_pip_path, get_cfy_agent_path
-from cloudify_agent.tests import file_server
+from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import only_ci
-from cloudify_agent.tests import BaseTest
 
 
 class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
@@ -46,7 +45,7 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
 
         cls.file_server_resource_base = tempfile.mkdtemp(
             prefix='file-server-resource-base')
-        cls.fs = file_server.FileServer(
+        cls.fs = utils.FileServer(
             root_path=cls.file_server_resource_base)
         cls.fs.start()
         cls.file_server_url = 'http://localhost:{0}'.format(cls.fs.port)

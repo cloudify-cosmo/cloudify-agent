@@ -26,7 +26,7 @@ import cloudify_agent
 from cloudify_agent.api import utils
 
 from cloudify_agent.tests import resources
-from cloudify_agent.tests import file_server
+from cloudify_agent.tests import utils as test_utils
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.utils import env as cenv
 from cloudify_agent.tests.api.pm import only_ci
@@ -50,7 +50,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
         cls.logger = setup_logger('test_tasks')
         cls.resource_base = tempfile.mkdtemp(
             prefix='file-server-resource-base')
-        cls.fs = file_server.FileServer(root_path=cls.resource_base)
+        cls.fs = test_utils.FileServer(
+            root_path=cls.resource_base)
         cls.fs.start()
         project_dir = os.path.dirname(
             os.path.dirname(cloudify_agent.__file__))

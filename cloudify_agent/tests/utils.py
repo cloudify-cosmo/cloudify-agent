@@ -13,16 +13,24 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import sys
+import time
+import socket
+import subprocess
 import os
 import filecmp
 import tarfile
 from contextlib import contextmanager
 
 from cloudify.utils import LocalCommandRunner
+from cloudify.utils import setup_logger
 
 from cloudify_agent.api import utils
 
 from cloudify_agent.tests import resources
+
+
+logger = setup_logger('cloudify_agent.tests.utils')
 
 
 @contextmanager
@@ -133,3 +141,55 @@ def install_package(package_path):
         '{0} install {1}'
         .format(utils.get_pip_path(), package_path),
         stdout_pipe=False)
+
+
+class FileServer(object):
+
+    def __init__(self, root_path=None, port=5555):
+        self.port = port
+        self.root_path = root_path or os.path.dirname(resources.__file__)
+        self.process = None
+
+    def start(self, timeout=5):
+        self.process = subprocess.Popen(
+            [os.path.join(
+                os.path.dirname(sys.executable),
+                'serve'), '-p', str(self.port),
+             self.root_path],
+            stdin=open(os.devnull, 'w'),
+            stdout=None,
+            stderr=None)
+
+        end_time = time.time() + timeout
+
+        while end_time > time.time():
+            if self.is_alive():
+                logger.info('File server is up and serving from {0}'
+                            .format(self.root_path))
+                return
+            logger.info('File server is not responding. waiting 10ms')
+            time.sleep(0.1)
+        raise RuntimeError('FileServer failed to start')
+
+    def stop(self, timeout=5):
+        if self.process is None:
+            return
+        self.process.terminate()
+        end_time = time.time() + timeout
+
+        while end_time > time.time():
+            if not self.is_alive():
+                logger.info('File server has shutdown')
+                return
+            logger.info('File server is still running. waiting 10ms')
+            time.sleep(0.1)
+        raise RuntimeError('FileServer failed to stop')
+
+    def is_alive(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.connect(('localhost', self.port))
+            s.close()
+            return True
+        except socket.error:
+            return False

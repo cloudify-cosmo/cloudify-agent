@@ -16,17 +16,16 @@
 import json
 import os
 import tempfile
-from mock import patch
 
 from cloudify.utils import setup_logger
 from cloudify.exceptions import NonRecoverableError
 
 import cloudify_agent
 from cloudify_agent.api import utils
+
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.tests.api.pm import only_os
 from cloudify_agent.tests import resources
-from cloudify_agent.tests import file_server
 from cloudify_agent.tests import utils as test_utils
 from cloudify_agent.api import defaults
 from cloudify_agent.api.pm.base import Daemon
@@ -42,7 +41,7 @@ class TestUtils(BaseTest):
         cls.logger = setup_logger('cloudify_agent.tests.api.test_utils')
         cls.file_server_resource_base = tempfile.mkdtemp(
             prefix='file-server-resource-base')
-        cls.fs = file_server.FileServer(
+        cls.fs = test_utils.FileServer(
             root_path=cls.file_server_resource_base)
         cls.fs.start()
         cls.file_server_url = 'http://localhost:{0}'.format(cls.fs.port)
@@ -178,19 +177,6 @@ class PipVersionParserTestCase(BaseTest):
     def test_pip6_not_higher(self):
         result = utils.is_pip6_or_higher('1.5.4')
         self.assertEqual(result, False)
-
-    ####################################################################
-    # mock pip module with a module that does not have the __version__
-    # attribute. for example the file server
-    ####################################################################
-    @patch('cloudify_agent.api.utils.pip', file_server)
-    def test_pip_version_none(self):
-        self.assertRaisesRegexp(
-            NonRecoverableError,
-            'Failed to get pip version',
-            utils.parse_pip_version,
-            ''
-        )
 
     def test_pip6_exactly(self):
         result = utils.is_pip6_or_higher('6.0')
