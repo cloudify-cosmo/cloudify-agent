@@ -234,12 +234,13 @@ class TestConfiguration(BaseTest):
                }))
     def test_prepare_agent(self):
         user = getpass.getuser()
-        cloudify_agent = {'user': user, 'windows': False}
+        cloudify_agent = {'user': user, 'windows': os.name == 'nt'}
         configuration.prepare_agent(cloudify_agent)
         expected = {
-            'agent_dir': 'basedir/test_node',
+            'agent_dir': os.path.join('basedir', 'test_node'),
             'distro': 'distro',
-            'process_management': {'name': 'init.d'},
+            'process_management':
+                {'name': 'init.d' if os.name == 'posix' else 'nssm'},
             'distro_codename': 'distro_codename',
             'basedir': 'basedir',
             'disable_requiretty': True,
@@ -247,16 +248,17 @@ class TestConfiguration(BaseTest):
             'manager_ip': 'localhost',
             'queue': 'test_node',
             'env': {},
-            'envdir': 'basedir/test_node/env',
+            'envdir': os.path.join('basedir', 'test_node', 'env'),
             'fabric_env': {},
             'max_workers': 5,
             'user': user,
-            'workdir': 'basedir/test_node/work',
-            'windows': False,
+            'workdir': os.path.join('basedir', 'test_node', 'work'),
+            'windows': os.name == 'nt',
             'min_workers': 0,
             'package_url': 'localhost/packages/agents/'
                            'distro-distro_codename-agent.tar.gz'
         }
+        self.maxDiff = None
         self.assertEqual(expected, cloudify_agent)
 
     @patch('cloudify_agent.installer.config.configuration.ctx',
