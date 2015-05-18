@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import sys
+import logging
 import time
 import socket
 import subprocess
@@ -149,7 +150,9 @@ class FileServer(object):
         self.port = port
         self.root_path = root_path or os.path.dirname(resources.__file__)
         self.process = None
-        self.runner = LocalCommandRunner()
+        self.logger = setup_logger('cloudify_agent.tests.utils.FileServer',
+                                   logger_level=logging.DEBUG)
+        self.runner = LocalCommandRunner(self.logger)
 
     def start(self, timeout=5):
         self.process = subprocess.Popen(
@@ -179,7 +182,8 @@ class FileServer(object):
         end_time = time.time() + timeout
 
         if os.name == 'nt':
-            self.runner.run('taskkill /F /PID {0}'.format(self.process.pid))
+            self.runner.run('taskkill /F /PID {0}'.format(self.process.pid),
+                            stdout_pipe=False, stderr_pipe=False)
         else:
             self.runner.run('kill -9 {0}'.format(self.process.pid))
 
