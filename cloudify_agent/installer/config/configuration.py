@@ -207,8 +207,15 @@ def _set_local(_):
 
 
 @cloudify_agent_property('windows')
-def _set_windows(_):
-    return False
+def _set_windows(cloudify_agent):
+    if cloudify_agent['local']:
+        # auto detect
+        return os.name == 'nt'
+    else:
+        # default to False with remote cases
+        # this property should be set in the blueprint
+        # do install on windows machines remotely
+        return False
 
 
 @cloudify_agent_property('connection_retry_interval')
@@ -223,8 +230,11 @@ def _set_connection_retry_interval(_):
 
 
 @cloudify_agent_property('process_management')
-def _set_process_management(_):
-    return {'name': 'init.d'}
+def _set_process_management(cloudify_agent):
+    if cloudify_agent['windows']:
+        return {'name': 'nssm'}
+    else:
+        return {'name': 'init.d'}
 
 
 @cloudify_agent_property('distro')
