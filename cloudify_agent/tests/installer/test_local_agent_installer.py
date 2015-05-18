@@ -79,7 +79,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
             'resource_base': self.resource_base,
             'source_url': self.source_url,
             'requirements_file': self.requirements_file,
-            'name': agent_name
+            'name': agent_name,
+            'file_server_port': self.fs.port
         }
 
         env = local.init_env(name=self._testMethodName,

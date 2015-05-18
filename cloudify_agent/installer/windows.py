@@ -131,6 +131,9 @@ class RemoteWindowsAgentInstaller(AgentInstaller):
 
     def _from_package(self):
 
+        self.logger.info('Downloading Agent Package from {0}'.format(
+            self.cloudify_agent['package_url']
+        ))
         package_path = self.download(
             url=self.cloudify_agent['package_url'])
         self.logger.info('Untaring Agent package...')

@@ -25,6 +25,8 @@ config = {
 }
 
 resource_base = ctx.node.properties['resource_base']
+file_server_port = ctx.node.properties['file_server_port']
+
 ctx.logger.info('Changing directory into {0}'.format(resource_base))
 original = os.getcwd()
 try:
@@ -40,8 +42,8 @@ finally:
 dist = platform.dist()
 
 ctx.logger.info('Constructing package_url...'.format(resource_base))
-package_url = 'http://localhost:53229/{0}-{1}-agent.tar.gz'\
-    .format(dist[0], dist[2])
+package_url = 'http://localhost:{0}/{1}-{2}-agent.tar.gz'\
+    .format(file_server_port, dist[0], dist[2])
 ctx.logger.info('Package created successfully: {0}'.format(package_url))
 ctx.logger.info('Setting runtime properties')
 ctx.instance.runtime_properties['package_url'] = package_url

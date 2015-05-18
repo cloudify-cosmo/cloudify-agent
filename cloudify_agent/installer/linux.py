@@ -143,6 +143,10 @@ class RemoteLinuxAgentInstaller(AgentInstaller):
 
     def _from_package(self):
 
+        self.logger.info('Downloading Agent Package from {0}'.format(
+            self.cloudify_agent['package_url']
+        ))
+
         package_path = self.download(
             url=self.cloudify_agent['package_url'])
         self.logger.info('Untaring Agent package...')
@@ -175,7 +179,6 @@ class LocalLinuxAgentInstaller(RemoteLinuxAgentInstaller):
             if output_path is None:
                 output_path = tempfile.mkstemp()[1]
             urllib.urlretrieve(url, output_path)
-            self.logger.info('Downloaded {0} to {1}'.format(url, output_path))
             return output_path
 
         return _download

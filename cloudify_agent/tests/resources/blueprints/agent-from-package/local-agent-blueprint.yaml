@@ -19,6 +19,8 @@ inputs:
   name:
     description: Desired name for the agent
 
+  file_server_port:
+    description: port of the file server
 
 node_types:
 
@@ -33,6 +35,8 @@ node_types:
         description: |
           URL to a requirements file to be installed before
           installing the cloudify agent module
+      file_server_port:
+        description: port of the file server hosting the package
     interfaces:
       cloudify.interfaces.lifecycle:
         create: scripts/create-package.py
@@ -69,6 +73,7 @@ node_templates:
       resource_base: { get_input: resource_base }
       cloudify_agent_module: { get_input: source_url }
       requirements_file: { get_input: requirements_file }
+      file_server_port: { get_input: file_server_port }
     relationships:
       - target: agent_packager_host
         type: cloudify.relationships.contained_in
