@@ -28,8 +28,7 @@ install_requires = [
     'fabric==1.8.3',
     "pyyaml==3.10",
     "virtualenv==12.0.7",
-    "requests==2.4.1",
-    "jingen==0.1.0"
+    "requests==2.4.1"
 ]
 
 setup(
