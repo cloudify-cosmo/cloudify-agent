@@ -15,7 +15,7 @@ install:
   # Download and install Erlang
   - ps: "wget http://www.erlang.org/download/otp_win32_17.5.exe -OutFile c:\users\appveyor\erlang.exe"
   - "start /B /WAIT c:\users\appveyor\erlang.exe /S /D=c:\users\appveyor\erlang
-  - set ERLANG_HOME=c:\users\appveyor\erlang
+  - "set ERLANG_HOME=c:\users\appveyor\erlang"
 
   # Download and install RabbitMQ
   - ps: "wget https://www.rabbitmq.com/releases/rabbitmq-server/v3.5.2/rabbitmq-server-3.5.2.exe -OutFile c:\users\appveyor\rabbit.exe"
