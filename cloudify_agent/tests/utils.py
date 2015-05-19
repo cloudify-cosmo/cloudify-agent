@@ -182,7 +182,8 @@ class FileServer(object):
         end_time = time.time() + timeout
 
         if os.name == 'nt':
-            self.runner.run('taskkill /F /PID {0}'.format(self.process.pid),
+            self.runner.run('@powershell -Command "Stop-Process {0}"'
+                            .format(self.process.pid),
                             stdout_pipe=False, stderr_pipe=False)
         else:
             self.runner.run('kill -9 {0}'.format(self.process.pid))
