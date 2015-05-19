@@ -16,10 +16,8 @@
 import getpass
 import os
 import platform
-from mock import patch, MagicMock
+from mock import patch
 
-from cloudify.context import BootstrapContext
-from cloudify.mocks import MockCloudifyContext
 from cloudify import utils
 
 from cloudify_agent.installer.config import configuration

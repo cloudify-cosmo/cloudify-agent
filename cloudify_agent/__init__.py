@@ -16,4 +16,10 @@
 import os
 import sys
 
-VIRTUALENV = os.path.dirname(os.path.dirname(sys.executable))
+if os.name == 'nt':
+    if 'Scripts' not in sys.executable:
+        VIRTUALENV = os.path.dirname(sys.executable)
+    else:
+        VIRTUALENV = os.path.dirname(os.path.dirname(sys.executable))
+else:
+    VIRTUALENV = os.path.dirname(os.path.dirname(sys.executable))

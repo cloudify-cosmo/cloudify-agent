@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import sys
 import logging
 import time
 import socket
@@ -25,6 +24,7 @@ from contextlib import contextmanager
 
 from cloudify.utils import LocalCommandRunner
 from cloudify.utils import setup_logger
+from cloudify_agent import VIRTUALENV
 
 from cloudify_agent.api import utils
 
@@ -155,11 +155,10 @@ class FileServer(object):
         self.runner = LocalCommandRunner(self.logger)
 
     def start(self, timeout=5):
+        serve_path = os.path.join(VIRTUALENV, 'Scripts', 'serve')
+
         self.process = subprocess.Popen(
-            [os.path.join(
-                os.path.dirname(sys.executable),
-                'serve'), '-p', str(self.port),
-             self.root_path],
+            [serve_path, '-p', str(self.port), self.root_path],
             stdin=open(os.devnull, 'w'),
             stdout=None,
             stderr=None)
