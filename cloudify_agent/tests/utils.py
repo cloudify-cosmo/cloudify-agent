@@ -168,14 +168,14 @@ class FileServer(object):
 
         while end_time > time.time():
             if self.is_alive():
-                logger.info('File server is up and serving from {0}'
-                            .format(self.root_path))
+                logger.info('File server is up and serving from {0} ({1})'
+                            .format(self.root_path, self.process.pid))
                 return
             logger.info('File server is not responding. waiting 10ms')
             time.sleep(0.1)
         raise RuntimeError('FileServer failed to start')
 
-    def stop(self, timeout=5):
+    def stop(self, timeout=15):
         if self.process is None:
             return
 
