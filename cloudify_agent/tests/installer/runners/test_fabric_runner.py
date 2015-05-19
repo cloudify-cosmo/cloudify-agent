@@ -14,9 +14,18 @@
 #  * limitations under the License.
 
 from cloudify_agent.installer import exceptions
-from cloudify_agent.installer.runners.fabric_runner import FabricRunner
+
+# these imports may run on a windows box, in which case they may fail. (if
+# the pywin32 extensions). The tests wont run anyway because of the decorator,
+# so we can just avoid this import.
+try:
+    from cloudify_agent.installer.runners.fabric_runner import FabricRunner
+except ImportError:
+    FabricRunner = None
 
 from cloudify_agent.tests import BaseTest
+from cloudify_agent.tests.api.pm import only_os
+
 
 ##############################################################################
 # note that this file only tests validation and defaults of the fabric runner.
@@ -25,7 +34,7 @@ from cloudify_agent.tests import BaseTest
 # tests framework
 ##############################################################################
 
-
+@only_os('posix')
 class TestDefaults(BaseTest):
 
     def test_default_port(self):
@@ -37,6 +46,7 @@ class TestDefaults(BaseTest):
         self.assertTrue(runner.port, 22)
 
 
+@only_os('posix')
 class TestValidations(BaseTest):
 
     def test_no_host(self):
