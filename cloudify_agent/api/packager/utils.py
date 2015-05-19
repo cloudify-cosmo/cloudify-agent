@@ -25,7 +25,7 @@ from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
 
 logger = setup_logger('cloudify_agent.api.packager.packager')
-runner = LocalCommandRunner(logger)
+runner = LocalCommandRunner(logger=logger)
 
 
 def set_global_verbosity_level(is_verbose_output=False):
@@ -64,6 +64,7 @@ def install_module(module, venv):
     else:
         pip_cmd = '{1}/bin/pip install {0}'.format(module, venv)
     p = runner.run(pip_cmd)
+    logger.debug(p.output)
     if not p.code == 0:
         logger.error('Could not install module: {0}'.format(module))
         sys.exit(codes.errors['could_not_install_module'])
@@ -78,6 +79,7 @@ def install_requirements_file(path, venv):
     logger.debug('Installing {0} in venv {1}'.format(path, venv))
     pip_cmd = '{1}/bin/pip install -r{0}'.format(path, venv)
     p = runner.run(pip_cmd)
+    logger.debug(p.output)
     if not p.code == 0:
         logger.error('Could not install from requirements file: {0}'.format(
             path))
