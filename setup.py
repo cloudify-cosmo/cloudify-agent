@@ -23,9 +23,13 @@ install_requires = [
     'cloudify-diamond-plugin==1.2',
     'click==4.0',
     'celery==3.1.17',
-    'jinja2==2.7.2',
+    'jinja2==2.7.3',
     'pywinrm==0.0.3',
-    'fabric==1.8.3'
+    'fabric==1.8.3',
+    "pyyaml==3.10",
+    "virtualenv==12.0.7",
+    "requests==2.4.1",
+    "jingen==0.1.0"
 ]
 
 setup(
@@ -38,6 +42,7 @@ setup(
         'cloudify_agent.api',
         'cloudify_agent.api.pm',
         'cloudify_agent.api.plugins',
+        'cloudify_agent.api.packager',
         'cloudify_agent.installer',
         'cloudify_agent.installer.config',
         'cloudify_agent.installer.runners',
@@ -48,8 +53,10 @@ setup(
         'cloudify_agent': [
             'resources/pm/initd/celeryd.conf.template',
             'resources/pm/initd/celeryd.template',
-            'resources/disable-requiretty.sh']
-        },
+            'resources/disable-requiretty.sh',
+            'resources/included_plugins.py.j2'
+        ]
+    },
     description='Cloudify Agent Implementation (Celery based)',
     install_requires=install_requires,
     license='LICENSE',

@@ -68,11 +68,16 @@ def plugins_sub_command():
     pass
 
 
+@click.group('packages')
+def packages_sub_command():
+    pass
+
 # adding all of our commands.
 
 from cloudify_agent.shell.commands import daemons
 from cloudify_agent.shell.commands import plugins
 from cloudify_agent.shell.commands import configure
+from cloudify_agent.shell.commands import packages
 
 main.add_command(configure.configure)
 
@@ -88,5 +93,8 @@ daemon_sub_command.add_command(daemons.ls)
 
 plugins_sub_command.add_command(plugins.install)
 
+packages_sub_command.add_command(packages.create)
+
 main.add_command(daemon_sub_command)
 main.add_command(plugins_sub_command)
+main.add_command(packages_sub_command)
