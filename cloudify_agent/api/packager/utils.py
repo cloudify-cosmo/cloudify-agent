@@ -64,10 +64,10 @@ def install_module(module, venv):
     else:
         pip_cmd = '{1}/bin/pip install {0}'.format(module, venv)
     p = runner.run(pip_cmd)
+    logger.debug(p.output)
     if not p.code == 0:
         logger.error('Could not install module: {0}'.format(module))
         sys.exit(codes.errors['could_not_install_module'])
-    logger.debug(p.output)
 
 
 def install_requirements_file(path, venv):
@@ -79,11 +79,11 @@ def install_requirements_file(path, venv):
     logger.debug('Installing {0} in venv {1}'.format(path, venv))
     pip_cmd = '{1}/bin/pip install -r{0}'.format(path, venv)
     p = runner.run(pip_cmd)
+    logger.debug(p.output)
     if not p.code == 0:
         logger.error('Could not install from requirements file: {0}'.format(
             path))
         sys.exit(codes.errors['could_not_install_from_requirements_file'])
-    logger.debug(p.output)
 
 
 def uninstall_module(module, venv):
