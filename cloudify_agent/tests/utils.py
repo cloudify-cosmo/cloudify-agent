@@ -155,7 +155,10 @@ class FileServer(object):
         self.runner = LocalCommandRunner(self.logger)
 
     def start(self, timeout=5):
-        serve_path = os.path.join(VIRTUALENV, 'Scripts', 'serve')
+        if os.name == 'nt':
+            serve_path = os.path.join(VIRTUALENV, 'Scripts', 'serve')
+        else:
+            serve_path = os.path.join(VIRTUALENV, 'bin', 'serve')
 
         self.process = subprocess.Popen(
             [serve_path, '-p', str(self.port), self.root_path],
