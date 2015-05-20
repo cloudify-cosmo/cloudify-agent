@@ -94,7 +94,7 @@ from cloudify_agent.shell import utils
 # passed on the the daemon constructor.
 @click.argument('custom-options', nargs=-1, type=click.UNPROCESSED)
 @handle_failures
-def create(process_management, **params):
+def create(**params):
 
     """
     Creates and stores the daemon parameters.
@@ -108,8 +108,8 @@ def create(process_management, **params):
     attributes.update(utils.parse_custom_options(custom_arg))
     click.echo('Creating...')
     daemon = DaemonFactory.new(
-        process_management=process_management,
         logger_level=get_log_level(),
+        logger_format='%(message)s',
         **attributes
     )
 

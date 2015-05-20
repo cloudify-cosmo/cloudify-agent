@@ -49,7 +49,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             broker_port=None,
             manager_port=None,
             extra_env_path=None,
-            logger_level=logging.INFO
+            logger_level=logging.INFO,
+            logger_format='%(message)s'
         )
 
         daemon = factory_new.return_value
@@ -76,6 +77,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             broker_port=None,
             manager_port=None,
             extra_env_path=None,
+            logger_format='%(message)s',
             logger_level=logging.INFO,
             key='value',
             complex_key='complex-value'
