@@ -86,7 +86,10 @@ def connection_attributes(cloudify_agent):
             # default user will be the currently logged user
             cloudify_agent['user'] = getpass.getuser()
 
-    cloudify_agent['windows'] = False
+    if cloudify_agent['local']:
+        cloudify_agent['windows'] = os.name == 'nt'
+    else:
+        cloudify_agent['windows'] = False
 
     if not cloudify_agent['local'] and 'ip' not in cloudify_agent:
         raise_missing_attribute('ip')
