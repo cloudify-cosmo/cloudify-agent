@@ -20,7 +20,9 @@ install:
   # Download and install Erlang
   #################################
 
+  - echo Downloading Erlang...
   - ps: (new-object System.Net.WebClient).Downloadfile('http://www.erlang.org/download/otp_win32_17.5.exe', 'C:\Users\appveyor\erlang.exe')
+  - echo Installing Erlang...
   - start /B /WAIT C:\Users\appveyor\erlang.exe /S /D=C:\Users\appveyor\erlang
   - set ERLANG_HOME=C:\Users\appveyor\erlang
 
@@ -28,8 +30,11 @@ install:
   # Download and install RabbitMQ
   #################################
 
+  - echo Downloading Rabbit...
   - ps: (new-object System.Net.WebClient).Downloadfile('https://www.rabbitmq.com/releases/rabbitmq-server/v3.5.2/rabbitmq-server-3.5.2.exe', 'C:\Users\appveyor\rabbit.exe')
+  - echo Installing Rabbit...
   - start /B /WAIT C:\Users\appveyor\rabbit.exe /S
+  - ps: (Get-Service -Name RabbitMQ).Status
 
   ###################################
   # Download setup scripts and unzip
@@ -58,7 +63,7 @@ install:
   ##########################################################################
 
   - python --version
-  - python -c \"import struct; print(struct.calcsize('P') * 8)\"
+  - python -c "import struct; print(struct.calcsize('P') * 8)"
 
 build: false # Not a C# project, build stuff at the test step instead.
 
