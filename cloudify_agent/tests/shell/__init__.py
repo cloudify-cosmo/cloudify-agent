@@ -19,6 +19,7 @@ import os
 
 from cloudify.utils import setup_logger
 
+from cloudify_agent.api import utils
 from cloudify_agent.tests import BaseTest
 
 
@@ -29,6 +30,9 @@ class BaseShellTest(BaseTest):
         self.logger = setup_logger(
             'cloudify-agent.tests.shell',
             logger_level=logging.DEBUG)
+
+        utils.logger.setLevel(logging.DEBUG)
+
         self.currdir = os.getcwd()
         self.workdir = tempfile.mkdtemp(
             prefix='cfy-agent-shell-tests-')
