@@ -161,9 +161,9 @@ class NonSuckingServiceManagerDaemon(Daemon):
         environment = {
             constants.MANAGER_IP_KEY: self.manager_ip,
             constants.MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL_KEY:
-            'http://{{ manager_ip }}:53229/blueprints'.format(self.manager_ip),
+            'http://{0}:53229/blueprints'.format(self.manager_ip),
             constants.MANAGER_FILE_SERVER_URL_KEY:
-            'http://{{ manager_ip }}:53229'.format(self.manager_ip),
+            'http://{0}:53229'.format(self.manager_ip),
             constants.MANAGER_REST_PORT_KEY: self.manager_port
         }
 
@@ -172,15 +172,16 @@ class NonSuckingServiceManagerDaemon(Daemon):
         # set A=B lines (comments are allowed as well)
         self.logger.debug('Creating environment string from file: {'
                           '0}'.format(self.extra_env_path))
-        with open(self.extra_env_path) as f:
-            content = f.read()
-        for line in content.split():
-            if line.startswith('rem'):
-                break
-            parts = line.split(' ')[1].split('=')
-            key = parts[0]
-            value = parts[1]
-            environment[key] = value
+        if self.extra_env_path and os.path.exists(self.extra_env_path):
+            with open(self.extra_env_path) as f:
+                content = f.read()
+            for line in content.split():
+                if line.startswith('rem'):
+                    break
+                parts = line.split(' ')[1].split('=')
+                key = parts[0]
+                value = parts[1]
+                environment[key] = value
 
         env_string = ''
         for key, value in environment.iteritems():
