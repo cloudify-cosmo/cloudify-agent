@@ -167,7 +167,7 @@ class Daemon(object):
         self.broker_port = params.get(
             'broker_port') or defaults.BROKER_PORT
         self.name = params.get(
-            'name') or 'cloudify-agent-{0}'.format(uuid.uuid4())
+            'name') or utils.generate_agent_name()
         self.queue = params.get(
             'queue') or '{0}-queue'.format(self.name)
         self.broker_url = params.get(
