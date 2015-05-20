@@ -13,6 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import json
 import click
 
 from cloudify_agent.api import defaults
@@ -293,7 +294,7 @@ def inspect(name):
     """
 
     daemon = DaemonFactory.load(name)
-    click.echo(api_utils.daemon_to_dict(daemon))
+    click.echo(json.dumps(api_utils.daemon_to_dict(daemon), indent=2))
 
 
 @click.command('list')
