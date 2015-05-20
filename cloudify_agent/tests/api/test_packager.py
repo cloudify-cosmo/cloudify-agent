@@ -187,57 +187,56 @@ class TestCreate(testtools.TestCase):
             logger_level=logging.INFO)
         cls.runner = LocalCommandRunner(cls.logger)
         cls.packager = packager.Packager(verbose=True, venv=TEST_VENV)
-    # def test_create_agent_package(self):
-    #     cli_options = {
-    #         '--config': CONFIG_FILE,
-    #         '--force': True,
-    #         '--dryrun': False,
-    #         '--no-validation': False,
-    #         '--verbose': True
-    #     }
-    #     required_modules = [
-    #         'cloudify-plugins-common',
-    #         'cloudify-rest-client',
-    #         'cloudify-fabric-plugin',
-    #         'cloudify-agent',
-    #         'pyyaml',
-    #         'xmltodict'
-    #     ]
-    #     excluded_modules = [
-    #         'cloudify-diamond-plugin',
-    #         'cloudify-script-plugin'
-    #     ]
-    #     config = ap._import_config(CONFIG_FILE)
-    #     cli._run(cli_options)
-    #     if os.path.isdir(TEST_VENV):
-    #         shutil.rmtree(TEST_VENV)
-    #     os.makedirs(TEST_VENV)
-    #     utils.run('tar -xzvf {0} -C {1} --strip-components=1'.format(
-    #         config['output_tar'], BASE_DIR))
-    #     os.remove(config['output_tar'])
-    #     self.assertTrue(os.path.isdir(TEST_VENV))
-    #     pip_freeze_output = utils.get_installed(
-    #         TEST_VENV).lower()
-    #     for required_module in required_modules:
-    #         self.assertIn(required_module, pip_freeze_output)
-    #     for excluded_module in excluded_modules:
-    #         self.assertNotIn(excluded_module, pip_freeze_output)
-    #     shutil.rmtree(TEST_VENV)
 
-    # def test_dryrun(self):
-    #     cli_options = {
-    #         '--config': CONFIG_FILE,
-    #         '--force': True,
-    #         '--dryrun': True,
-    #         '--no-validation': False,
-    #         '--verbose': True
-    #     }
-    #     with LogCapture(level=logging.INFO) as l:
-    #         e = self.assertRaises(SystemExit, cli._run, cli_options)
-    #         l.check(('user', 'INFO', 'Creating virtualenv: {0}'.format(
-    #             TEST_VENV)),
-    #             ('user', 'INFO', 'Dryrun complete'))
-    #     self.assertEqual(codes.notifications['dryrun_complete'], e.message)
+    def test_create_agent_package(self):
+        cli_options = {
+            'config_file': CONFIG_FILE,
+            'force': True,
+            'dryrun': False,
+            'no_validate': False
+        }
+        required_modules = [
+            'cloudify-plugins-common',
+            'cloudify-rest-client',
+            'cloudify-fabric-plugin',
+            'cloudify-agent',
+            'pyyaml',
+            'xmltodict'
+        ]
+        excluded_modules = [
+            'cloudify-diamond-plugin',
+            'cloudify-script-plugin'
+        ]
+        config = self.packager._import_config(CONFIG_FILE)
+        self.packager.create(**cli_options)
+        if os.path.isdir(TEST_VENV):
+            shutil.rmtree(TEST_VENV)
+        os.makedirs(TEST_VENV)
+        self.runner.run('tar -xzvf {0} -C {1} --strip-components=1'.format(
+            config['output_tar'], BASE_DIR))
+        os.remove(config['output_tar'])
+        self.assertTrue(os.path.isdir(TEST_VENV))
+        pip_freeze_output = utils.get_installed(
+            TEST_VENV).lower()
+        for required_module in required_modules:
+            self.assertIn(required_module, pip_freeze_output)
+        for excluded_module in excluded_modules:
+            self.assertNotIn(excluded_module, pip_freeze_output)
+        shutil.rmtree(TEST_VENV)
+
+    def test_dryrun(self):
+        cli_options = {
+            'config_file': CONFIG_FILE,
+            'force': True,
+            'dryrun': True,
+            'no_validate': False,
+        }
+        with LogCapture(level=logging.INFO) as l:
+            e = self.assertRaises(
+                SystemExit, self.packager.create, **cli_options)
+            l.check(('cloudify_agent.api.packager.packager',
+                     'INFO', 'Dryrun complete'))
+        self.assertEqual(codes.notifications['dryrun_complete'], e.message)
 
     @venv
     def test_create_agent_package_no_cloudify_agent_configured(self):
@@ -273,7 +272,6 @@ class TestCreate(testtools.TestCase):
         includes_file = self.packager._generate_includes_file(modules)
         includes = imp.load_source('includes_file', includes_file)
         self.assertIn('cloudify-fabric-plugin', includes.included_plugins)
-        self.assertIn('cloudify-puppet-plugin', includes.included_plugins)
 
     @venv
     def test_generate_includes_file_no_previous_includes_file_provided(self):

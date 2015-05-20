@@ -1,7 +1,7 @@
 distribution: Ubuntu
 release: trusty
 python_path: /usr/bin/python
-requirements_file: agent_packager/tests/resources/requirements.txt
+requirements_file: cloudify_agent/tests/resources/packager/requirements.txt
 # cloudify_agent_version: 3.1
 cloudify_agent_module: https://github.com/nir0s/cloudify-agent/archive/master.tar.gz
 core_modules:
@@ -9,7 +9,7 @@ core_modules:
     # cloudify_rest_client: https://github.com/cloudify-cosmo/cloudify-rest-client/archive/3.1.tar.gz
 core_plugins:
     cloudify_script_plugin: exclude
-    # cloudify_diamond_plugin: https://github.com/cloudify-cosmo/cloudify-diamond-plugin/archive/3.1.tar.gz
+    # cloudify_diamond_plugin: https://github.com/cloudify-cosmo/cloudify-diamond-plugin/archive/1.1.tar.gz
 additional_modules:
     - pyyaml==3.10
 additional_plugins:

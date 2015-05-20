@@ -245,7 +245,7 @@ class Packager():
          of plugins. The plugins list will be used to populate the file.
         :param string venv: path of virtualenv to install in.
         """
-        logger.debug('Generating includes file')
+        logger.debug('Generating includes file...')
 
         process = self.runner.run('{0}/bin/python -c "import cloudify_agent;'
                                   ' print cloudify_agent.__file__"'.format(
@@ -255,17 +255,16 @@ class Packager():
             cloudify_agent_module_path, INCLUDES_FILE)
 
         try:
-            previous_included = imp.load_source(
+            current_includes_file = imp.load_source(
                 'included_plugins', os.path.join(
                     cloudify_agent_module_path, INCLUDES_FILE))
-            plugins_list = previous_included.included_plugins
-            for plugin in plugins_list:
+            current_plugins_list = current_includes_file.included_plugins
+            for plugin in current_plugins_list:
                 if plugin not in modules['plugins']:
                     modules['plugins'].append(plugin)
         except IOError:
             logger.debug('Included Plugins file could not be found in agent '
                          'module. A new file will be generated.')
-
         logger.debug('Writing includes file to: {0}'.format(output_file))
         agent_utils.render_template_to_file(
             TEMPLATE_FILE, output_file, **modules)
@@ -333,19 +332,21 @@ class Packager():
         logger.debug('Distribution release is: {0}'.format(release))
         logger.debug('Python path is: {0}'.format(python))
         logger.debug('Destination tarfile is: {0}'.format(destination_tar))
-        # create virtualenv
-        self._make_venv(python, force)
-        # remove output file or alert on existing
-        self._handle_output_file(destination_tar, force)
         # create modules dict
         modules = self._set_defaults()
         modules = self._merge_modules(modules, config)
         # handle a dryun
+        if dryrun:
+            utils.set_global_verbosity_level(True)
         logger.debug('Modules and plugins to install: {0}'.format(json.dumps(
             modules, sort_keys=True, indent=4, separators=(',', ': '))))
         if dryrun:
             logger.info('Dryrun complete')
             sys.exit(codes.notifications['dryrun_complete'])
+        # create virtualenv
+        self._make_venv(python, force)
+        # remove output file or alert on existing
+        self._handle_output_file(destination_tar, force)
         # install all required modules
         final_set = self._install(modules, final_set)
         # uninstall excluded modules
@@ -362,8 +363,8 @@ class Packager():
                     'in the agent:\n{0}'.format(
                         utils.get_installed(self.venv)))
         # remove (or not) virtualenv
-        if not config.get('keep_venv'):
-            logger.info('Removing origin virtualenv')
+        if not config.get('keep_virtualenv'):
+            logger.info('Removing origin virtualenv {0}'.format(self.venv))
             shutil.rmtree(self.venv)
         # duh!
         logger.info('Process complete!')
