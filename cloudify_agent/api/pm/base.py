@@ -14,7 +14,6 @@
 #  * limitations under the License.
 
 import getpass
-import uuid
 import os
 import time
 import json
