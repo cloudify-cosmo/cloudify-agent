@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import uuid
+import json
 import copy
 import tempfile
 import sys
@@ -590,3 +591,41 @@ def purge_none_values(dictionary):
         if dictionary[key] is None:
             del dict_copy[key]
     return dict_copy
+
+
+def json_load(file_path):
+
+    """
+    Loads a JSON file into a dictionary.
+
+    :param file_path: path to the json file
+    :type file_path: str
+
+    :return: the dictionary
+    :rtype: dict
+    """
+
+    logger.debug('Loading JSON from {0}'.format(file_path))
+    with open(file_path) as f:
+        return json_loads(f.read())
+
+
+def json_loads(content):
+
+    """
+    Loads a JSON string into a dictionary.
+    If the string is not a valid json, it will be part
+    of the raised exception.
+
+
+    :param content: the string to load
+    :type content: str
+
+    :return: the dictionary
+    :rtype: dict
+    """
+
+    try:
+        return json.loads(content)
+    except ValueError as e:
+        raise ValueError('{0}:{1}{2}'.format(str(e), os.linesep, content))
