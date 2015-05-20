@@ -436,7 +436,7 @@ def list_plugin_files(plugin_name):
             module_paths.append(
                 module.replace(prefix, '')
                 .replace(os.sep, '.').replace('.py', '').strip())
-    return module_paths
+    return ','.join(module_paths)
 
 
 def dict_to_options(dictionary):

@@ -123,9 +123,8 @@ class NonSuckingServiceManagerDaemon(Daemon):
         # encode to ascii to be able to parse this
         app_parameters = output.decode('utf16').encode('ascii')
 
-        new_tasks = ','.join(tasks)
         includes = app_parameters.split('--include=')[1].split()[0]
-        new_includes = '{0},{1}'.format(includes, new_tasks)
+        new_includes = '{0},{1}'.format(includes, tasks)
 
         new_app_parameters = app_parameters.replace(includes, new_includes)
 

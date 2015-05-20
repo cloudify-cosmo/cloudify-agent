@@ -129,13 +129,12 @@ class GenericLinuxDaemon(Daemon):
             raise errors.DaemonNotConfiguredError(self.name)
         with open(self.includes_path) as include_file:
             includes = include_file.read()
-        new_tasks = ','.join(tasks)
         if includes:
             # append to current includes
-            new_includes = '{0},{1}'.format(includes, new_tasks)
+            new_includes = '{0},{1}'.format(includes, tasks)
         else:
             # current includes is empty
-            new_includes = new_tasks
+            new_includes = tasks
 
         if os.path.exists(self.includes_path):
             os.remove(self.includes_path)
@@ -161,7 +160,8 @@ class GenericLinuxDaemon(Daemon):
             self.register(plugin)
 
         # add built-in operations
-        self.update_includes(operations.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES)
+        self.update_includes(
+            ','.join(operations.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES))
 
     def _create_script(self):
         rendered = utils.render_template_to_file(
