@@ -150,7 +150,7 @@ class LocalWindowsAgentInstaller(RemoteWindowsAgentInstaller):
     def __init__(self, cloudify_agent, logger=None):
         super(RemoteWindowsAgentInstaller, self).__init__(cloudify_agent,
                                                           logger)
-        self.cfy_agent_path = '{0}/bin/cfy-agent'.format(
+        self.cfy_agent_path = '{0}\\Scripts\\cfy-agent'.format(
             cloudify_agent['envdir'])
         self.runner = LocalCommandRunner(logger=logger)
 
