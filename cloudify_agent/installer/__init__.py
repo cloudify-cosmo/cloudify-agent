@@ -38,8 +38,7 @@ def init_agent_installer(func):
         cloudify_agent = kwargs.get('cloudify_agent', {})
 
         # set connection details
-        configuration.prepare_connection(cloudify_agent)
-        configuration.prepare_agent(cloudify_agent)
+        cloudify_agent = configuration.prepare_cloudify_agent(cloudify_agent)
 
         # create the correct installer according to os
         # and local/remote execution
@@ -134,7 +133,7 @@ class AgentInstaller(object):
             env.CLOUDIFY_DAEMON_WORKDIR: self.cloudify_agent['workdir'],
             env.CLOUDIFY_DAEMON_EXTRA_ENV:
                 self.create_custom_env_file_on_target(
-                    self.cloudify_agent['env'])
+                    self.cloudify_agent.get('env', {}))
         }
 
         execution_env = utils.purge_none_values(execution_env)
