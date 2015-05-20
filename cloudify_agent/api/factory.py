@@ -113,10 +113,9 @@ class DaemonFactory(object):
             raise errors.DaemonNotFoundError(name)
         logger.debug('Loading daemon for storage: {0}'
                      .format(storage_directory))
-        with open(daemon_path) as f:
-            daemon_as_json = json.loads(f.read())
-            logger.debug('Daemon loaded: {0}'.format(json.dumps(
-                daemon_as_json, indent=2)))
+        daemon_as_json = utils.json_load(daemon_path)
+        logger.debug('Daemon loaded: {0}'.format(json.dumps(
+            daemon_as_json, indent=2)))
         process_management = daemon_as_json.pop('process_management')
         daemon = DaemonFactory._find_implementation(process_management)
         return daemon(logger_level=logger_level,

@@ -14,7 +14,6 @@
 #  * limitations under the License.
 
 import os
-import json
 
 import click
 
@@ -313,8 +312,8 @@ def ls():
             api_utils.get_storage_directory(),
             daemon_file
         )
-        with open(full_path) as f:
-            daemon = json.load(f)
+        if full_path.endswith('json'):
+            daemon = api_utils.json_load(full_path)
             click.echo(daemon['name'])
 
 

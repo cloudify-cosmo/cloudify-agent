@@ -31,6 +31,7 @@ from cloudify.exceptions import CommandExecutionException
 from cloudify.exceptions import CommandExecutionError
 
 from cloudify_agent.installer import exceptions
+from cloudify_agent.api import utils as api_utils
 
 DEFAULT_REMOTE_EXECUTION_PORT = 22
 
@@ -503,8 +504,7 @@ class FabricRunner(object):
             imports_line='import platform, json',
             command='json.dumps(platform.dist())', **attributes
         )
-        self.logger.debug(response)
-        return json.loads(response)
+        return api_utils.json_loads(response)
 
     def delete(self, path):
         self.logger.info('Deleting {0}'.format(path))

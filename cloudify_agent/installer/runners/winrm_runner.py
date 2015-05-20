@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import json
 import winrm
 
 from cloudify.exceptions import CommandExecutionException
@@ -21,6 +20,7 @@ from cloudify.utils import CommandExecutionResponse
 from cloudify.utils import setup_logger
 
 from cloudify_agent.installer import utils
+from cloudify_agent.api import utils as api_utils
 
 DEFAULT_WINRM_PORT = '5985'
 DEFAULT_WINRM_URI = 'wsman'
@@ -342,8 +342,7 @@ class WinRMRunner(object):
             imports_line='import platform, json',
             command='json.dumps(platform.dist())'
         )
-        self.logger.debug(response)
-        return json.loads(response)
+        return api_utils.json_loads(response)
 
     def python(self, imports_line, command):
 
