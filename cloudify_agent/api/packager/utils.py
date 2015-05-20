@@ -20,6 +20,7 @@ import sys
 import requests
 import re
 import logging
+import os
 
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
@@ -46,7 +47,8 @@ def make_virtualenv(virtualenv_dir, python='/usr/bin/python'):
     :param string virtualenv_dir: path of virtualenv to create
     """
     logger.debug('virtualenv_dir: {0}'.format(virtualenv_dir))
-    p = runner.run('virtualenv -p {0} {1}'.format(python, virtualenv_dir))
+    p = runner.run('virtualenv -p {0} {1}'.format(
+        python, virtualenv_dir), exit_on_failure=False)
     if not p.code == 0:
         logger.error('Could not create venv: {0}'.format(virtualenv_dir))
         sys.exit(codes.errors['could_not_create_virtualenv'])
@@ -58,11 +60,11 @@ def install_module(module, venv):
     :param string module: module to install. can be a url or a path.
     :param string venv: path of virtualenv to install in.
     """
+    if not os.path.isdir(venv):
+        logger.error('Virtualenv {0} does not exist.'.format(venv))
+        sys.exit(codes.errors['virtualenv_not_exists'])
     logger.debug('Installing {0} in venv {1}'.format(module, venv))
-    if module == 'pre':
-        pip_cmd = '{1}/bin/pip install {0} --pre'.format(module, venv)
-    else:
-        pip_cmd = '{1}/bin/pip install {0}'.format(module, venv)
+    pip_cmd = '{1}/bin/pip install {0}'.format(module, venv)
     p = runner.run(pip_cmd, exit_on_failure=False)
     logger.debug(p.output)
     if not p.code == 0:
@@ -76,6 +78,9 @@ def install_requirements_file(path, venv):
     :param string path: path to requirements file1
     :param string venv: path of virtualenv to install in
     """
+    if not os.path.isdir(venv):
+        logger.error('Virtualenv {0} does not exist.'.format(venv))
+        sys.exit(codes.errors['virtualenv_not_exists'])
     logger.debug('Installing {0} in venv {1}'.format(path, venv))
     pip_cmd = '{1}/bin/pip install -r{0}'.format(path, venv)
     p = runner.run(pip_cmd, exit_on_failure=False)
@@ -94,14 +99,14 @@ def uninstall_module(module, venv):
     """
     logger.debug('Uninstalling {0} in venv {1}'.format(module, venv))
     pip_cmd = '{1}/bin/pip uninstall {0} -y'.format(module, venv)
-    p = runner.run(pip_cmd)
+    p = runner.run(pip_cmd, exit_on_failure=False)
     if not p.code == 0:
         logger.error('Could not uninstall module: {0}'.format(module))
         sys.exit(codes.errors['could_not_uninstall_module'])
 
 
 def get_installed(venv):
-    p = runner.run('{0}/bin/pip freeze'.format(venv))
+    p = runner.run('{0}/bin/pip freeze'.format(venv), exit_on_failure=False)
     return p.output
 
 
@@ -111,7 +116,7 @@ def check_installed(module, venv):
     :param string module: module to install. can be a url or a path.
     :param string venv: path of virtualenv to install in.
     """
-    p = runner.run('{0}/bin/pip freeze'.format(venv))
+    p = runner.run('{0}/bin/pip freeze'.format(venv), exit_on_failure=False)
     if re.search(r'{0}'.format(module), p.output.lower()):
         logger.debug('Module {0} is installed in {1}'.format(module, venv))
         return True
@@ -143,7 +148,8 @@ def tar(source, destination):
     #     tar.add(source, arcname=os.path.basename(source))
     # WORKAROUND IMPLEMENTATION
     logger.info('Creating tar file: {0}'.format(destination))
-    r = runner.run('tar czvf {0} {1}'.format(destination, source))
+    r = runner.run('tar czvf {0} {1}'.format(
+        destination, source), exit_on_failure=False)
     if not r.code == 0:
         logger.error('Failed to create tar file.')
         sys.exit(codes.errors['failed_to_create_tar'])
