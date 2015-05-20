@@ -33,4 +33,6 @@ errors = {
     'invalid_yaml_file': 12,
     'could_not_install_from_requirements_file': 13,
     'virtualenv_not_exists': 14,
+    'config_not_dict': 15,
+    'config_file_not_str': 16,
 }

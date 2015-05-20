@@ -27,3 +27,12 @@ BROKER_URL = 'amqp://guest:guest@{0}:{1}//'
 DELETE_AMQP_QUEUE_BEFORE_START = False
 DAEMON_FORCE_DELETE = False
 CLOUDIFY_AGENT_PREFIX = 'cfy-agent'
+
+# packager
+CONFIG_FILE = 'config.yaml'
+OUTPUT_TAR_PATH = '{0}-{1}-agent.tar.gz'
+VENV_PATH = 'cloudify/env'
+
+INCLUDES_FILE = 'included_plugins.py'
+TEMPLATE_FILE = 'included_plugins.py.j2'
+TEMPLATE_DIR = 'resources'

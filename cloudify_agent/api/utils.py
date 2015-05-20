@@ -474,7 +474,7 @@ def get_cfy_agent_path():
         return '{0}\\Scripts\\cfy-agent'.format(VIRTUALENV)
 
 
-def get_pip_path():
+def get_pip_path(virtualenv=VIRTUALENV):
 
     """
     Lookup the path to the pip executable, os agnostic
@@ -483,13 +483,10 @@ def get_pip_path():
     :rtype: str
     """
 
-    if os.name == 'posix':
-        return '{0}/bin/pip'.format(VIRTUALENV)
-    else:
-        return '{0}\\Scripts\\pip'.format(VIRTUALENV)
+    return get_executable_path('pip', virtualenv)
 
 
-def get_python_path():
+def get_python_path(virtualenv=VIRTUALENV):
 
     """
     Lookup the path to the python executable, os agnostic
@@ -498,10 +495,22 @@ def get_python_path():
     :rtype: str
     """
 
+    return get_executable_path('python', virtualenv)
+
+
+def get_executable_path(executable, virtualenv=VIRTUALENV):
+
+    """
+    Lookup the path to an executable in a virtualenv, os agnostic
+
+    :return: path to the executable
+    :rtype: str
+    """
+
     if os.name == 'posix':
-        return '{0}/bin/pip'.format(VIRTUALENV)
+        return '{0}/bin/{1}'.format(virtualenv, executable)
     else:
-        return '{0}\\Scripts\\python'.format(VIRTUALENV)
+        return '{0}\\Scripts\\{1}'.format(virtualenv, executable)
 
 
 def env_to_file(env_variables, destination_path=None, posix=True):

@@ -13,13 +13,15 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-__author__ = 'nir0s'
-
 import cloudify_agent.api.packager.utils as utils
 import cloudify_agent.api.packager.packager as packager
 import cloudify_agent.api.packager.codes as codes
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
+
+from cloudify_agent.tests import resources
+from cloudify_agent.api import defaults
+
 from requests import ConnectionError
 
 import imp
@@ -33,34 +35,22 @@ import shutil
 from functools import wraps
 
 
-TEST_RESOURCES_DIR = 'cloudify_agent/tests/resources/packager/'
-CONFIG_FILE = os.path.join(TEST_RESOURCES_DIR, 'config_file.yaml')
-BAD_CONFIG_FILE = os.path.join(TEST_RESOURCES_DIR, 'bad_config_file.yaml')
-EMPTY_CONFIG_FILE = os.path.join(TEST_RESOURCES_DIR, 'empty_config_file.yaml')
-BASE_DIR = 'cloudify'
-TEST_VENV = os.path.join(BASE_DIR, 'env')
-TEST_MODULE = 'xmltodict'
-TEST_FILE = 'https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.tar.gz'  # NOQA
-MANAGER = 'https://github.com/cloudify-cosmo/cloudify-manager/archive/master.tar.gz'  # NOQA
-MOCK_MODULE = os.path.join(TEST_RESOURCES_DIR, 'mock-module')
-MOCK_MODULE_NO_INCLUDES_FILE = os.path.join(
-    TEST_RESOURCES_DIR, 'mock-module-no-includes')
+def venv(path):
+    def real(func):
+        @wraps(func)
+        def execution_handler(*args, **kwargs):
+            try:
+                shutil.rmtree(os.path.dirname(path))
+            except:
+                pass
+            utils.make_virtualenv(path)
+            func(*args, **kwargs)
+            shutil.rmtree(os.path.dirname(path))
+        return execution_handler
+    return real
 
 
-def venv(func):
-    @wraps(func)
-    def execution_handler(*args, **kwargs):
-        try:
-            shutil.rmtree(TEST_VENV)
-        except:
-            pass
-        utils.make_virtualenv(TEST_VENV)
-        func(*args, **kwargs)
-        shutil.rmtree(TEST_VENV)
-    return execution_handler
-
-
-class TestUtils(testtools.TestCase):
+class TestBase(testtools.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -70,59 +60,118 @@ class TestUtils(testtools.TestCase):
             logger_level=logging.INFO)
         cls.runner = LocalCommandRunner(cls.logger)
         cls.packager = packager.Packager(verbose=True)
+        cls.config = resources.get_resource(
+            os.path.join('packager', 'config_file.yaml'))
+        cls.bad_config = resources.get_resource(
+            os.path.join('packager', 'bad_config_file.yaml'))
+        cls.empty_config = resources.get_resource(
+            os.path.join('packager', 'empty_config_file.yaml'))
+        cls.base_dir = 'cloudify'
+        cls.test_module = 'xmltodict'
+        cls.test_download_url = 'https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.tar.gz'  # NOQA
+        cls.mock_module = resources.get_resource(
+            os.path.join('packager', 'mock-module'))
+        cls.mock_module_no_includes = resources.get_resource(
+            os.path.join('packager', 'mock-module-no-includes'))
+        cls.requirements_file_path = resources.get_resource(
+            os.path.join('packager', 'requirements.txt'))
+
+
+class TestUtils(TestBase):
 
     def test_import_config_file(self):
-        outcome = self.packager._import_config(CONFIG_FILE)
+        outcome = self.packager._import_config(self.config)
         self.assertEquals(type(outcome), dict)
         self.assertIn('distribution', outcome.keys())
 
     def test_fail_import_config_file(self):
-        e = self.assertRaises(SystemExit, self.packager._import_config, '')
+        e = self.assertRaises(
+            SystemExit, self.packager._import_config,
+            config_file='')
         self.assertEqual(
             codes.errors['could_not_access_config_file'], e.message)
 
     def test_import_bad_config_file_mapping(self):
         e = self.assertRaises(
-            SystemExit, self.packager._import_config, BAD_CONFIG_FILE)
+            SystemExit, self.packager._import_config,
+            config_file=self.bad_config)
         self.assertEqual(codes.errors['invalid_yaml_file'], e.message)
 
-    @venv
+    def test_import_empty_config_file(self):
+        e = self.assertRaises(
+            SystemExit, self.packager.create,
+            config_file=self.empty_config)
+        self.assertEqual(
+            codes.errors['missing_cloudify_agent_config'], e.message)
+
+    @venv(defaults.VENV_PATH)
     def test_create_virtualenv(self):
-        if not os.path.exists('{0}/bin/python'.format(TEST_VENV)):
+        if not os.path.exists('{0}/bin/python'.format(defaults.VENV_PATH)):
             raise Exception('venv not created')
 
     def test_fail_create_virtualenv_bad_dir(self):
         e = self.assertRaises(
-            SystemExit, utils.make_virtualenv, '/' + TEST_VENV)
+            SystemExit, utils.make_virtualenv, '/' + defaults.VENV_PATH)
         self.assertEqual(
             codes.errors['could_not_create_virtualenv'], e.message)
 
     def test_fail_create_virtualenv_missing_python(self):
         e = self.assertRaises(
-            SystemExit, utils.make_virtualenv, TEST_VENV,
+            SystemExit, utils.make_virtualenv, defaults.VENV_PATH,
             '/usr/bin/missing_python')
         self.assertEqual(
             codes.errors['could_not_create_virtualenv'], e.message)
 
-    @venv
+    @venv(defaults.VENV_PATH)
     def test_install_module(self):
-        utils.install_module(TEST_MODULE, TEST_VENV)
-        pip_freeze_output = utils.get_installed(TEST_VENV).lower()
-        self.assertIn(TEST_MODULE, pip_freeze_output)
+        utils.install_module(self.test_module, defaults.VENV_PATH)
+        pip_freeze_output = utils.get_installed(defaults.VENV_PATH).lower()
+        self.assertIn(self.test_module, pip_freeze_output)
 
-    @venv
+    @venv(defaults.VENV_PATH)
+    def test_install_requirements_file(self):
+        utils.install_requirements_file(
+            self.requirements_file_path, defaults.VENV_PATH)
+        pip_freeze_output = utils.get_installed(defaults.VENV_PATH).lower()
+        self.assertIn(self.test_module, pip_freeze_output)
+
+    @venv(defaults.VENV_PATH)
+    def test_uninstall_module(self):
+        utils.install_module(self.test_module, defaults.VENV_PATH)
+        utils.uninstall_module(self.test_module, defaults.VENV_PATH)
+        pip_freeze_output = utils.get_installed(defaults.VENV_PATH).lower()
+        self.assertNotIn(self.test_module, pip_freeze_output)
+
+    @venv(defaults.VENV_PATH)
+    def test_uninstall_missing_module(self):
+        e = self.assertRaises(
+            SystemExit, utils.uninstall_module, 'BLAH!!', defaults.VENV_PATH)
+        self.assertEqual(codes.errors['could_not_uninstall_module'], e.message)
+
+    @venv(defaults.VENV_PATH)
     def test_install_nonexisting_module(self):
         e = self.assertRaises(
-            SystemExit, utils.install_module, 'BLAH!!', TEST_VENV)
+            SystemExit, utils.install_module, 'BLAH!!', defaults.VENV_PATH)
         self.assertEqual(codes.errors['could_not_install_module'], e.message)
 
     def test_install_module_nonexisting_venv(self):
         e = self.assertRaises(
-            SystemExit, utils.install_module, TEST_MODULE, 'BLAH!!')
+            SystemExit, utils.install_module, self.test_module, 'BLAH!!')
         self.assertEqual(codes.errors['virtualenv_not_exists'], e.message)
 
+    @venv(defaults.VENV_PATH)
+    def test_check_module_installed(self):
+        utils.install_module(self.test_module, defaults.VENV_PATH)
+        installed = utils.check_installed(self.test_module, defaults.VENV_PATH)
+        self.assertTrue(installed)
+
+    @venv(defaults.VENV_PATH)
+    def test_check_module_not_installed(self):
+        installed = utils.check_installed(self.test_module, defaults.VENV_PATH)
+        self.assertFalse(installed)
+
     def test_download_file(self):
-        utils.download_file(TEST_FILE, 'file')
+        utils.download_file(self.test_download_url, 'file')
         if not os.path.isfile('file'):
             raise Exception('file not downloaded')
         os.remove('file')
@@ -146,11 +195,12 @@ class TestUtils(testtools.TestCase):
 
     def test_download_missing_path(self):
         e = self.assertRaises(
-            IOError, utils.download_file, TEST_FILE, 'x/file')
+            IOError, utils.download_file, self.test_download_url, 'x/file')
         self.assertIn('No such file or directory', e)
 
     def test_download_no_permissions(self):
-        e = self.assertRaises(IOError, utils.download_file, TEST_FILE, '/file')
+        e = self.assertRaises(
+            IOError, utils.download_file, self.test_download_url, '/file')
         self.assertIn('Permission denied', e)
 
     def test_tar(self):
@@ -165,32 +215,24 @@ class TestUtils(testtools.TestCase):
             self.assertIn('dir/content.file', members)
         os.remove('tar.file')
 
-    @venv
+    @venv(defaults.VENV_PATH)
     def test_tar_no_permissions(self):
-        e = self.assertRaises(SystemExit, utils.tar, TEST_VENV, '/file')
+        e = self.assertRaises(
+            SystemExit, utils.tar, defaults.VENV_PATH, '/file')
         self.assertEqual(e.message, codes.errors['failed_to_create_tar'])
 
-    @venv
+    @venv(defaults.VENV_PATH)
     def test_tar_missing_source(self):
         e = self.assertRaises(SystemExit, utils.tar, 'missing', 'file')
         self.assertEqual(e.message, codes.errors['failed_to_create_tar'])
         os.remove('file')
 
 
-class TestCreate(testtools.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-
-        cls.logger = setup_logger(
-            'test_logger',
-            logger_level=logging.INFO)
-        cls.runner = LocalCommandRunner(cls.logger)
-        cls.packager = packager.Packager(verbose=True, venv=TEST_VENV)
+class TestCreate(TestBase):
 
     def test_create_agent_package(self):
         cli_options = {
-            'config_file': CONFIG_FILE,
+            'config_file': self.config,
             'force': True,
             'dryrun': False,
             'no_validate': False
@@ -207,26 +249,26 @@ class TestCreate(testtools.TestCase):
             'cloudify-diamond-plugin',
             'cloudify-script-plugin'
         ]
-        config = self.packager._import_config(CONFIG_FILE)
+        config = self.packager._import_config(self.config)
         self.packager.create(**cli_options)
-        if os.path.isdir(TEST_VENV):
-            shutil.rmtree(TEST_VENV)
-        os.makedirs(TEST_VENV)
+        if os.path.isdir(defaults.VENV_PATH):
+            shutil.rmtree(os.path.dirname(defaults.VENV_PATH))
+        os.makedirs(defaults.VENV_PATH)
         self.runner.run('tar -xzvf {0} -C {1} --strip-components=1'.format(
-            config['output_tar'], BASE_DIR))
+            config['output_tar'], self.base_dir))
         os.remove(config['output_tar'])
-        self.assertTrue(os.path.isdir(TEST_VENV))
+        self.assertTrue(os.path.isdir(defaults.VENV_PATH))
         pip_freeze_output = utils.get_installed(
-            TEST_VENV).lower()
+            defaults.VENV_PATH).lower()
         for required_module in required_modules:
             self.assertIn(required_module, pip_freeze_output)
         for excluded_module in excluded_modules:
             self.assertNotIn(excluded_module, pip_freeze_output)
-        shutil.rmtree(TEST_VENV)
+        shutil.rmtree(os.path.dirname(defaults.VENV_PATH))
 
     def test_dryrun(self):
         cli_options = {
-            'config_file': CONFIG_FILE,
+            'config_file': self.config,
             'force': True,
             'dryrun': True,
             'no_validate': False,
@@ -238,9 +280,9 @@ class TestCreate(testtools.TestCase):
                      'INFO', 'Dryrun complete'))
         self.assertEqual(codes.notifications['dryrun_complete'], e.message)
 
-    @venv
+    @venv(defaults.VENV_PATH)
     def test_create_agent_package_no_cloudify_agent_configured(self):
-        config = self.packager._import_config(CONFIG_FILE)
+        config = self.packager._import_config(self.config)
         del config['cloudify_agent_module']
 
         e = self.assertRaises(SystemExit, self.packager.create, config, None,
@@ -248,34 +290,65 @@ class TestCreate(testtools.TestCase):
         self.assertEqual(
             e.message, codes.errors['missing_cloudify_agent_config'])
 
-    @venv
+    @venv(defaults.VENV_PATH)
     def test_create_agent_package_existing_venv_no_force(self):
         e = self.assertRaises(
-            SystemExit, self.packager.create, None, CONFIG_FILE)
+            SystemExit, self.packager.create, None, self.config)
         self.assertEqual(e.message, codes.errors['virtualenv_already_exists'])
 
-    @venv
+    def test_config_file_not_str(self):
+        e = self.assertRaises(
+            SystemExit, self.packager.create, None, {'x': 'y'})
+        self.assertEqual(e.message, codes.errors['config_file_not_str'])
+
+    def test_config_not_dict(self):
+        e = self.assertRaises(
+            SystemExit, self.packager.create, 'str', None)
+        self.assertEqual(e.message, codes.errors['config_not_dict'])
+
+    @venv(defaults.VENV_PATH)
     def test_create_agent_package_tar_already_exists(self):
-        config = self.packager._import_config(CONFIG_FILE)
-        shutil.rmtree(TEST_VENV)
+        config = self.packager._import_config(self.config)
+        shutil.rmtree(defaults.VENV_PATH)
         with open(config['output_tar'], 'w') as a:
             a.write('CONTENT')
         e = self.assertRaises(
-            SystemExit, self.packager.create, None, CONFIG_FILE)
+            SystemExit, self.packager.create, None, self.config)
         self.assertEqual(e.message, codes.errors['tar_already_exists'])
         os.remove(config['output_tar'])
 
-    @venv
+    @venv(defaults.VENV_PATH)
     def test_generate_includes_file(self):
-        utils.install_module(MOCK_MODULE, TEST_VENV)
+        """THIS IS CURRENTLY BROKEN.
+        Since _generate_includes_file by default outputs to
+        os.path.dirname(cloudify_agent.__file__), and the name of the
+        package is also cloudify_agent, it imports the directory under
+        the cwd rather than the package in the virtualenv.
+        requires a solution.
+
+        this does, however, verify that an includes file is generated
+        and that the module is added into it.
+        """
+        utils.install_module(self.mock_module, defaults.VENV_PATH)
         modules = {'plugins': ['cloudify-fabric-plugin']}
         includes_file = self.packager._generate_includes_file(modules)
         includes = imp.load_source('includes_file', includes_file)
         self.assertIn('cloudify-fabric-plugin', includes.included_plugins)
 
-    @venv
+    @venv(defaults.VENV_PATH)
     def test_generate_includes_file_no_previous_includes_file_provided(self):
-        utils.install_module(MOCK_MODULE_NO_INCLUDES_FILE, TEST_VENV)
+        """THIS IS CURRENTLY BROKEN.
+        Since _generate_includes_file by default outputs to
+        os.path.dirname(cloudify_agent.__file__), and the name of the
+        package is also cloudify_agent, it imports the directory under
+        the cwd rather than the package in the virtualenv.
+        requires a solution.
+
+        this does, however, verify that an includes file is generated
+        and that the module is added into it.
+        """
+        utils.install_module(
+            self.mock_module_no_includes, defaults.VENV_PATH)
         modules = {'plugins': ['cloudify-fabric-plugin']}
         includes_file = self.packager._generate_includes_file(modules)
         includes = imp.load_source('includes_file', includes_file)

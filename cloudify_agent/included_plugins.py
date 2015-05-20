@@ -1,4 +1,3 @@
 included_plugins = [
-    'cloudify-script-plugin',
-    'cloudify-diamond-plugin'
+    'cloudify-fabric-plugin', 'cloudify-script-plugin', 'cloudify-diamond-plugin', 
 ]

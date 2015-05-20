@@ -25,15 +25,8 @@ import codes
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
 from cloudify_agent.api import utils as agent_utils
+from cloudify_agent.api import defaults
 
-
-DEFAULT_CONFIG_FILE = 'config.yaml'
-DEFAULT_OUTPUT_TAR_PATH = '{0}-{1}-agent.tar.gz'
-DEFAULT_VENV_PATH = 'cloudify/env'
-
-INCLUDES_FILE = 'included_plugins.py'
-TEMPLATE_FILE = 'included_plugins.py.j2'
-TEMPLATE_DIR = 'resources'
 
 EXTERNAL_MODULES = [
     'celery==3.1.17'
@@ -54,19 +47,19 @@ MANDATORY_MODULES = [
     'cloudify_plugins_common',
 ]
 
-DEFAULT_CLOUDIFY_AGENT_URL = 'https://github.com/nir0s/cloudify-agent/archive/{0}.tar.gz'  # NOQA
+DEFAULT_CLOUDIFY_AGENT_URL = 'https://github.com/cloudify-cosmo/cloudify-agent/archive/{0}.tar.gz'  # NOQA
 
 logger = setup_logger('cloudify_agent.api.packager.packager')
 
 
 class Packager():
 
-    def __init__(self, verbose=False, venv=DEFAULT_VENV_PATH):
+    def __init__(self, verbose=False, venv=defaults.VENV_PATH):
         self.venv = venv
         self.runner = LocalCommandRunner(logger=logger)
         utils.set_global_verbosity_level(verbose)
 
-    def _import_config(self, config_file=DEFAULT_CONFIG_FILE):
+    def _import_config(self, config_file=defaults.CONFIG_FILE):
         """returns a configuration object
 
         :param string config_file: path to config file
@@ -163,7 +156,7 @@ class Packager():
         if 'cloudify_agent_module' in config:
             modules['agent'] = config['cloudify_agent_module']
         elif 'cloudify_agent_version' in config:
-            modules['agent'] = DEFAULT_CLOUDIFY_AGENT_URL.format(
+            modules['agent'] = defaults.CLOUDIFY_AGENT_URL.format(
                 config['cloudify_agent_version'])
         else:
             logger.error('Either `cloudify_agent_module` or '
@@ -247,17 +240,17 @@ class Packager():
         """
         logger.debug('Generating includes file...')
 
-        process = self.runner.run('{0}/bin/python -c "import cloudify_agent;'
+        process = self.runner.run('{0} -c "import cloudify_agent;'
                                   ' print cloudify_agent.__file__"'.format(
-                                      self.venv))
+                                      agent_utils.get_python_path(self.venv)))
         cloudify_agent_module_path = os.path.dirname(process.output)
         output_file = os.path.join(
-            cloudify_agent_module_path, INCLUDES_FILE)
+            cloudify_agent_module_path, defaults.INCLUDES_FILE)
 
         try:
             current_includes_file = imp.load_source(
                 'included_plugins', os.path.join(
-                    cloudify_agent_module_path, INCLUDES_FILE))
+                    cloudify_agent_module_path, defaults.INCLUDES_FILE))
             current_plugins_list = current_includes_file.included_plugins
             for plugin in current_plugins_list:
                 if plugin not in modules['plugins']:
@@ -267,7 +260,7 @@ class Packager():
                          'module. A new file will be generated.')
         logger.debug('Writing includes file to: {0}'.format(output_file))
         agent_utils.render_template_to_file(
-            TEMPLATE_FILE, output_file, **modules)
+            defaults.TEMPLATE_FILE, output_file, **modules)
         return output_file
 
     def create(self, config=None, config_file=None, force=False, dryrun=False,
@@ -279,7 +272,7 @@ class Packager():
         `distribution` config object in the config.yaml.
 
         A virtualenv will be created under
-         cloudify/DISTRIBUTION-RELEASE-agent/env
+         cloudify/env
         unless configured in the yaml under the `venv` property.
         The order of the modules' installation is as follows:
 
@@ -287,10 +280,6 @@ class Packager():
         cloudify-plugins-common
         cloudify-script-plugin
         cloudify-diamond-plugin
-        cloudify-agent-installer-plugin
-        cloudify-plugin-installer-plugin
-        cloudify-windows-agent-installer-plugin
-        cloudify-windows-plugin-installer-plugin
         cloudify-agent
         any additional modules specified under `additional_modules` in the yaml
         any additional plugins specified under `additional_plugins` in the yaml
@@ -308,6 +297,14 @@ class Packager():
         # to validate the installation and create the includes file
         final_set = {'modules': [], 'plugins': []}
         # import config
+        if config and not isinstance(config, dict):
+            logger.error('config must be of type dict, (not {0})'.format(
+                type(config)))
+            sys.exit(codes.errors['config_not_dict'])
+        if config_file and not isinstance(config_file, str):
+            logger.error('config_file must be of type str, (not {0})'.format(
+                type(config_file)))
+            sys.exit(codes.errors['config_file_not_str'])
         if not config:
             config = self._import_config(config_file) if config_file else \
                 self._import_config()
@@ -318,15 +315,15 @@ class Packager():
             release = config.get('release', release)
         except Exception as ex:
             logger.error(
-                'Distribution not found in configuration '
+                'Distribution info not found in configuration '
                 'and could not be retrieved automatically. '
                 'please specify the distribution in the yaml. '
                 '({0})'.format(ex.message))
             sys.exit(codes.errors['could_not_identify_distribution'])
         python = config.get('python_path', '/usr/bin/python')
-        venv = DEFAULT_VENV_PATH
+        venv = defaults.VENV_PATH
         destination_tar = config.get(
-            'output_tar', DEFAULT_OUTPUT_TAR_PATH.format(distro, release))
+            'output_tar', defaults.OUTPUT_TAR_PATH.format(distro, release))
 
         logger.debug('Distibution is: {0}'.format(distro))
         logger.debug('Distribution release is: {0}'.format(release))
@@ -365,7 +362,7 @@ class Packager():
         # remove (or not) virtualenv
         if not config.get('keep_virtualenv'):
             logger.info('Removing origin virtualenv {0}'.format(self.venv))
-            shutil.rmtree(self.venv)
+            shutil.rmtree(os.path.dirname(self.venv))
         # duh!
         logger.info('Process complete!')
 

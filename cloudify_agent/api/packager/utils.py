@@ -24,6 +24,7 @@ import os
 
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
+from cloudify_agent.api import utils as agent_utils
 
 logger = setup_logger('cloudify_agent.api.packager.packager')
 runner = LocalCommandRunner(logger=logger)
@@ -54,7 +55,7 @@ def make_virtualenv(virtualenv_dir, python='/usr/bin/python'):
         sys.exit(codes.errors['could_not_create_virtualenv'])
 
 
-def install_module(module, venv):
+def pip_install(what, venv):
     """installs a module in a virtualenv
 
     :param string module: module to install. can be a url or a path.
@@ -63,13 +64,22 @@ def install_module(module, venv):
     if not os.path.isdir(venv):
         logger.error('Virtualenv {0} does not exist.'.format(venv))
         sys.exit(codes.errors['virtualenv_not_exists'])
-    logger.debug('Installing {0} in venv {1}'.format(module, venv))
-    pip_cmd = '{1}/bin/pip install {0}'.format(module, venv)
+    logger.debug('Installing {0} in venv {1}'.format(what, venv))
+    pip_cmd = '{1} install {0}'.format(what, agent_utils.get_pip_path(venv))
     p = runner.run(pip_cmd, exit_on_failure=False)
     logger.debug(p.output)
     if not p.code == 0:
-        logger.error('Could not install module: {0}'.format(module))
+        logger.error('Could not install: {0}'.format(what))
         sys.exit(codes.errors['could_not_install_module'])
+
+
+def install_module(module, venv):
+    """installs a module in a virtualenv
+
+    :param string module: module to install. can be a url or a path.
+    :param string venv: path of virtualenv to install in.
+    """
+    pip_install(module, venv)
 
 
 def install_requirements_file(path, venv):
@@ -78,17 +88,7 @@ def install_requirements_file(path, venv):
     :param string path: path to requirements file1
     :param string venv: path of virtualenv to install in
     """
-    if not os.path.isdir(venv):
-        logger.error('Virtualenv {0} does not exist.'.format(venv))
-        sys.exit(codes.errors['virtualenv_not_exists'])
-    logger.debug('Installing {0} in venv {1}'.format(path, venv))
-    pip_cmd = '{1}/bin/pip install -r{0}'.format(path, venv)
-    p = runner.run(pip_cmd, exit_on_failure=False)
-    logger.debug(p.output)
-    if not p.code == 0:
-        logger.error('Could not install from requirements file: {0}'.format(
-            path))
-        sys.exit(codes.errors['could_not_install_from_requirements_file'])
+    pip_install('-r{0}'.format(path), venv)
 
 
 def uninstall_module(module, venv):
@@ -98,7 +98,8 @@ def uninstall_module(module, venv):
     :param string venv: path of virtualenv to install in.
     """
     logger.debug('Uninstalling {0} in venv {1}'.format(module, venv))
-    pip_cmd = '{1}/bin/pip uninstall {0} -y'.format(module, venv)
+    pip_cmd = '{1} uninstall {0} -y'.format(
+        module, agent_utils.get_pip_path(venv))
     p = runner.run(pip_cmd, exit_on_failure=False)
     if not p.code == 0:
         logger.error('Could not uninstall module: {0}'.format(module))
@@ -106,7 +107,8 @@ def uninstall_module(module, venv):
 
 
 def get_installed(venv):
-    p = runner.run('{0}/bin/pip freeze'.format(venv), exit_on_failure=False)
+    p = runner.run('{0} freeze'.format(
+        agent_utils.get_pip_path(venv)), exit_on_failure=False)
     return p.output
 
 
@@ -116,7 +118,8 @@ def check_installed(module, venv):
     :param string module: module to install. can be a url or a path.
     :param string venv: path of virtualenv to install in.
     """
-    p = runner.run('{0}/bin/pip freeze'.format(venv), exit_on_failure=False)
+    p = runner.run('{0} freeze'.format(
+        agent_utils.get_pip_path(venv)), exit_on_failure=False)
     if re.search(r'{0}'.format(module), p.output.lower()):
         logger.debug('Module {0} is installed in {1}'.format(module, venv))
         return True
