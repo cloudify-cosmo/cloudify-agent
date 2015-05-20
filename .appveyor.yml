@@ -63,7 +63,7 @@ install:
 build: false # Not a C# project, build stuff at the test step instead.
 
 before_test:
-  - %CMD_IN_ENV% pip install tox==2.0.0
+  - "%CMD_IN_ENV% pip install tox==2.0.0"
 
 test_script:
-  - %CMD_IN_ENV% tox -e %TOX_ENV%
+  - "%CMD_IN_ENV% tox -e %TOX_ENV%"
