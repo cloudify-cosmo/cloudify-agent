@@ -68,20 +68,20 @@ class TestUtils(BaseTest):
         self.logger.info(json.dumps(daemon_json, indent=2))
 
     def test_get_resource(self):
-        resource = utils.get_resource('pm/initd/celeryd.conf.template')
+        resource = utils.get_resource('pm/initd/initd.conf.template')
         path_to_resource = os.path.join(
             os.path.dirname(cloudify_agent.__file__),
             'resources',
             'pm',
             'initd',
-            'celeryd.conf.template'
+            'initd.conf.template'
         )
         with open(path_to_resource) as f:
             self.assertEqual(f.read(), resource)
 
     def test_rendered_template_to_file(self):
         temp = utils.render_template_to_file(
-            template_path='pm/initd/celeryd.conf.template',
+            template_path='pm/initd/initd.conf.template',
             manager_ip='127.0.0.1'
         )
         with open(temp) as f:
@@ -90,14 +90,14 @@ class TestUtils(BaseTest):
 
     def test_resource_to_tempfile(self):
         temp = utils.resource_to_tempfile(
-            resource_path='pm/initd/celeryd.conf.template'
+            resource_path='pm/initd/initd.conf.template'
         )
         path_to_resource = os.path.join(
             os.path.dirname(cloudify_agent.__file__),
             'resources',
             'pm',
             'initd',
-            'celeryd.conf.template'
+            'initd.conf.template'
         )
         with open(path_to_resource) as expected:
             with open(temp) as actual:

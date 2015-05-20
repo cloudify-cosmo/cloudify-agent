@@ -14,7 +14,6 @@
 #  * limitations under the License.
 
 import os
-import tempfile
 import logging
 
 from cloudify_agent import VIRTUALENV

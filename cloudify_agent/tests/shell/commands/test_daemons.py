@@ -155,6 +155,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
     @patch('cloudify_agent.shell.commands.daemons.api_utils.daemon_to_dict')
     def test_inspect(self, daemon_to_dict, factory):
 
+        daemon_to_dict.return_value = {}
+
         name = utils.generate_agent_name()
         self._run('cfy-agent daemons inspect --name={0}'.format(name))
 

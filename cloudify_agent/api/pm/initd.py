@@ -165,7 +165,7 @@ class GenericLinuxDaemon(Daemon):
 
     def _create_script(self):
         rendered = utils.render_template_to_file(
-            template_path='pm/initd/celeryd.template',
+            template_path='pm/initd/initd.template',
             daemon_name=self.name,
             config_path=self.config_path
         )
@@ -175,7 +175,7 @@ class GenericLinuxDaemon(Daemon):
 
     def _create_config(self):
         rendered = utils.render_template_to_file(
-            template_path='pm/initd/celeryd.conf.template',
+            template_path='pm/initd/initd.conf.template',
             queue=self.queue,
             workdir=self.workdir,
             manager_ip=self.manager_ip,
