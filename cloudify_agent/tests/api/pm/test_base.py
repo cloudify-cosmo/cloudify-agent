@@ -51,7 +51,7 @@ class TestDaemonDefaults(BaseTest):
                          self.daemon.broker_url)
 
     def test_default_name(self):
-        self.assertTrue('cloudify-agent-' in self.daemon.name)
+        self.assertTrue('cfy-agent-' in self.daemon.name)
 
     def test_default_user(self):
         self.assertEqual(getpass.getuser(), self.daemon.user)
