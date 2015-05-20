@@ -21,6 +21,7 @@ from cloudify.utils import setup_logger
 
 from cloudify_agent.api import utils
 from cloudify_agent.tests import BaseTest
+from cloudify_agent.api import factory
 
 
 class BaseShellTest(BaseTest):
@@ -32,6 +33,7 @@ class BaseShellTest(BaseTest):
             logger_level=logging.DEBUG)
 
         utils.logger.setLevel(logging.DEBUG)
+        factory.logger.setLevel(logging.DEBUG)
 
         self.currdir = os.getcwd()
         self.workdir = tempfile.mkdtemp(

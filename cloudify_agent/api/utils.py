@@ -525,6 +525,8 @@ def env_to_file(env_variables, destination_path=None, posix=True):
     :rtype `str`
     """
 
+    if not env_variables:
+        return None
     if not destination_path:
         destination_path = tempfile.mkstemp(suffix='env')[1]
 

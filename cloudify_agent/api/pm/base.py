@@ -26,6 +26,7 @@ from cloudify.utils import LocalCommandRunner
 from cloudify.utils import setup_logger
 from cloudify import amqp_client
 
+from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
 from cloudify_agent.api import errors
 from cloudify_agent.api import exceptions
@@ -210,6 +211,15 @@ class Daemon(object):
 
         # save as a property so that it will be persisted in the json files
         self.process_management = self.PROCESS_MANAGEMENT
+
+        # save as a property so that it will be persisted in the json files
+        self.virtualenv = VIRTUALENV
+
+        # save as a property so that it will be persisted in the json files
+        self.logger_level = logger_level
+
+        # save as a property so that it will be persisted in the json files
+        self.logger_format = logger_format
 
         # configure logger
         self.logger = setup_logger(

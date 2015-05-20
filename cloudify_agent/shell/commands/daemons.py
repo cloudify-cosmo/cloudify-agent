@@ -306,15 +306,10 @@ def ls():
     List all existing daemons.
 
     """
-    daemon_files = os.listdir(api_utils.get_storage_directory())
-    for daemon_file in daemon_files:
-        full_path = os.path.join(
-            api_utils.get_storage_directory(),
-            daemon_file
-        )
-        if full_path.endswith('json'):
-            daemon = api_utils.json_load(full_path)
-            click.echo(daemon['name'])
+
+    daemons = DaemonFactory.load_all()
+    for daemon in daemons:
+        click.echo(daemon.name)
 
 
 def _load_daemon(name):

@@ -87,8 +87,29 @@ class DaemonFactory(object):
         return daemon(logger_level=logger_level,
                       logger_format='%(message)s', **attributes)
 
+    @staticmethod
+    def load_all():
+
+        if not os.path.exists(utils.get_storage_directory()):
+            return []
+
+        daemons = []
+        daemon_files = os.listdir(utils.get_storage_directory())
+        for daemon_file in daemon_files:
+            full_path = os.path.join(
+                utils.get_storage_directory(),
+                daemon_file
+            )
+            if full_path.endswith('json'):
+                logger.debug('Loading daemon from: {0}'.format(full_path))
+                daemon_as_json = utils.json_load(full_path)
+                process_management = daemon_as_json.pop('process_management')
+                daemon = DaemonFactory._find_implementation(process_management)
+                daemons.append(daemon(**daemon_as_json))
+        return daemons
+
     @classmethod
-    def load(cls, name, logger_level=logging.INFO):
+    def load(cls, name):
 
         """
         Loads a daemon from local storage.
@@ -111,16 +132,14 @@ class DaemonFactory(object):
         )
         if not os.path.exists(daemon_path):
             raise errors.DaemonNotFoundError(name)
-        logger.debug('Loading daemon for storage: {0}'
-                     .format(storage_directory))
+        logger.debug('Loading daemon {0} from storage: {1}'
+                     .format(name, storage_directory))
         daemon_as_json = utils.json_load(daemon_path)
-        logger.debug('Daemon loaded: {0}'.format(json.dumps(
+        logger.debug('Daemon {0} loaded: {1}'.format(name, json.dumps(
             daemon_as_json, indent=2)))
         process_management = daemon_as_json.pop('process_management')
         daemon = DaemonFactory._find_implementation(process_management)
-        return daemon(logger_level=logger_level,
-                      logger_format='%(message)s',
-                      **daemon_as_json)
+        return daemon(**daemon_as_json)
 
     @classmethod
     def save(cls, daemon):
