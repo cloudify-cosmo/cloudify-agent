@@ -169,11 +169,15 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
         # convert the custom environment file to a dictionary
         # file should be a callable batch file in the form of multiple
-        # A=B lines
+        # set A=B lines (comments are allowed as well)
+        self.logger.debug('Creating environment string from file: {'
+                          '0}'.format(self.extra_env_path))
         with open(self.extra_env_path) as f:
             content = f.read()
         for line in content.split():
-            parts = line.split('=')
+            if line.startswith('rem'):
+                break
+            parts = line.split(' ')[1].split('=')
             key = parts[0]
             value = parts[1]
             environment[key] = value
