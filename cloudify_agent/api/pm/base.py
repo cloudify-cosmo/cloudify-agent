@@ -149,7 +149,7 @@ class Daemon(object):
         :type params dict
 
         :return: an instance of a daemon.
-        :rtype `cloudify_agent.api.pm.base.Daemon`
+        :rtype: cloudify_agent.api.pm.base.Daemon
         """
 
         # Mandatory parameters

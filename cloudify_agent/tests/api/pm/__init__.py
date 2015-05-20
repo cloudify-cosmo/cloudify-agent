@@ -120,7 +120,7 @@ class BaseDaemonLiveTestCase(BaseTest):
         utils.logger.setLevel(logging.DEBUG)
         factory.logger.setLevel(logging.DEBUG)
 
-        self.name = 'cloudify-agent-{0}'.format(str(uuid.uuid4())[0:4])
+        self.name = utils.generate_agent_name()
         self.queue = '{0}-queue'.format(self.name)
 
         self.runner = LocalCommandRunner(self.logger)
@@ -134,7 +134,18 @@ class BaseDaemonLiveTestCase(BaseTest):
         super(BaseDaemonLiveTestCase, self).tearDown()
         os.chdir(self.currdir)
         if os.name == 'nt':
-            self.runner.run('taskkill /IM celery.exe', exit_on_failure=False)
+            # with windows we need to stop and remove the service
+            nssm_path = utils.get_full_resource_path(
+                os.path.join('pm', 'nssm', 'nssm.exe'))
+            self.runner.run('sc stop {0}'.format(self.name),
+                            exit_on_failure=False,
+                            stderr_pipe=False,
+                            stdout_pipe=False)
+            self.runner.run('{0} remove {1} confirm'
+                            .format(nssm_path, self.name),
+                            exit_on_failure=False,
+                            stderr_pipe=False,
+                            stdout_pipe=False)
         else:
             self.runner.run("pkill -9 -f 'celery'", exit_on_failure=False)
 
@@ -334,6 +345,22 @@ class BaseDaemonLiveTestCase(BaseTest):
             self.assertEqual(value, 'TEST_ENV_VALUE')
         finally:
             test_utils.uninstall_package_if_exists('mock-plugin')
+
+    def _test_delete_before_stop_impl(self):
+        daemon = self.create_daemon()
+        daemon.create()
+        daemon.configure()
+        daemon.start()
+        self.assertRaises(exceptions.DaemonStillRunningException,
+                          daemon.delete)
+
+    def _test_delete_before_stop_with_force_impl(self):
+        daemon = self.create_daemon()
+        daemon.create()
+        daemon.configure()
+        daemon.start()
+        daemon.delete(force=True)
+        self.assert_daemon_dead(self.name)
 
     def _smakedirs(self, dirs):
         if not os.path.exists(dirs):

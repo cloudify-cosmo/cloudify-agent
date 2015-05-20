@@ -1,0 +1,49 @@
+@echo off
+
+echo Installing the agent as a windows service...
+
+{{ nssm_path }} install {{ agent_service_name }} {{ virtualenv_path }}\Scripts\celeryd.exe ^
+--events -Q {{ queue }} ^
+--hostname={{ name }} ^
+--autoscale={{ max_workers }},{{ min_workers }} ^
+--maxtasksperchild=10 ^
+--without-gossip ^
+--without-mingle ^
+--loglevel={{ celery_log_level }} ^
+--pidfile={{ celery_pid_file }} ^
+--logfile={{ celery_log_file }} ^
+--include=cloudify_agent.operations ^
+-Ofair
+
+if %errorlevel% neq 0 exit /b %errorlevel%
+
+echo Setting service environment
+
+{{ nssm_path }} set {{ agent_service_name }} AppEnvironmentExtra ^
+MANAGEMENT_IP={{ manager_ip }} ^
+MANAGER_REST_PORT={{ manager_port }} ^
+MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229 ^
+MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL=http://{{ manager_ip }}:53229/blueprints ^
+AGENT_NAME={{ name }} ^
+AGENT_STORAGE_DIR={{ storage_dir }} ^
+CELERY_BROKER_URL={{ broker_url }} ^
+CELERY_APP=cloudify_agent.app.app ^
+CELERY_TASK_SERIALIZER=json ^
+CELERY_RESULT_SERIALIZER=json ^
+CELERY_RESULT_BACKEND={{ broker_url }} ^
+CELERYD_WORK_DIR={{ workdir }} {{ custom_environment }}
+
+if %errorlevel% neq 0 exit /b %errorlevel%
+
+echo Configuring startup policy...
+
+sc config {{ agent_service_name }} start= {{ startup_policy }}
+
+echo Configuring failure policy...
+
+sc failure {{ agent_service_name }} reset= {{ failure_reset_timeout }} actions= restart/{{ failure_restart_delay }}
+
+if %errorlevel% neq 0 exit /b %errorlevel%
+
+echo Cloudify Agent configured successfully as a Windows Service ({{ agent_service_name }})
+

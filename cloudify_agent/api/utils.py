@@ -432,9 +432,10 @@ def list_plugin_files(plugin_name):
         if module.endswith('.py') and '__init__' not in module:
             # the files paths are relative to the
             # package __init__.py file.
+            prefix = '../' if os.name == 'posix' else '..\\'
             module_paths.append(
-                module.replace('../', '')
-                .replace('/', '.').replace('.py', '').strip())
+                module.replace(prefix, '')
+                .replace(os.sep, '.').replace('.py', '').strip())
     return module_paths
 
 

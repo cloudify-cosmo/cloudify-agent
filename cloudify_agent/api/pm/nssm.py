@@ -14,15 +14,15 @@
 #  * limitations under the License.
 
 import os
+import tempfile
 import logging
-
-from cloudify import constants
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.api.pm.base import Daemon
+from cloudify_agent import operations
 
 
 ###########################################
@@ -48,75 +48,93 @@ class NonSuckingServiceManagerDaemon(Daemon):
             **params)
 
         # nssm specific configuration
-        self.configure_script_path = os.path.join(
+        self.config_path = os.path.join(
             self.workdir,
-            'configure-service')
-        self.app_parameters_path = os.path.join(
-            self.workdir,
-            'AppParameters'
-        )
+            '{0}.conf.bat'.format(self.name))
         self.nssm_path = utils.get_full_resource_path(
             os.path.join('pm', 'nssm', 'nssm.exe'))
-        self.agent_service_name = params.get('service_name', 'Cloudify-Agent')
+        self.agent_service_name = params.get('service_name', self.name)
         self.startup_policy = params.get('startup_policy', 'auto')
         self.failure_reset_timeout = params.get('failure_reset_timeout', 60)
         self.failure_restart_delay = params.get('failure_restart_delay', 5000)
 
+        self.celery_log_level = params.get('celery_log_level', 'debug')
+        self.celery_log_file = params.get(
+            'celery_log_file',
+            os.path.join(self.workdir, '{0}-celery.log'.format(self.name)))
+        self.celery_pid_file = params.get(
+            'celery_pid_file',
+            os.path.join(self.workdir, '{0}-celery.pid'.format(self.name)))
+
     def configure(self):
 
-        params_string = self._create_params_string()
-        self.logger.debug('Created params: {0}'.format(params_string))
         env_string = self._create_env_string()
         self.logger.debug('Created environment: {0}'.format(env_string))
 
         # creating the installation script
-        rendered = utils.render_template_to_file(
-            template_path='pm/nssm/configure-service.bat.template',
+        utils.render_template_to_file(
+            template_path='pm/nssm/nssm.conf.template',
+            file_path=self.config_path,
+            queue=self.queue,
+            nssm_path=self.nssm_path,
+            celery_log_level=self.celery_log_level,
+            celery_log_file=self.celery_log_file,
+            celery_pid_file=self.celery_pid_file,
+            workdir=self.workdir,
+            manager_ip=self.manager_ip,
+            manager_port=self.manager_port,
+            broker_url=self.broker_url,
+            min_workers=self.min_workers,
+            max_workers=self.max_workers,
+            includes=','.join(operations.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES),
             virtualenv_path=VIRTUALENV,
+            name=self.name,
+            storage_dir=utils.get_storage_directory(),
             agent_service_name=self.agent_service_name,
-            params=params_string,
             environment=env_string,
             startup_policy=self.startup_policy,
             failure_reset_timeout=self.failure_reset_timeout,
             failure_restart_delay=self.failure_restart_delay
         )
 
-        self.runner.run('copy {0} {1}'
-                        .format(rendered, self.configure_script_path))
         self.logger.debug('Rendered configuration script: {0}'.format(
-            self.configure_script_path))
-        self.runner.run('del {0}'.format(rendered))
-
-        # saving application parameters for future use
-        with open(self.app_parameters_path, 'w') as f:
-            f.write(params_string)
-        self.logger.debug('Created AppParameters file: {0}'
-                          .format(self.app_parameters_path))
+            self.config_path))
 
         # run the configuration script
         self.logger.info('Running configuration script')
-        self.runner.run(self.configure_script_path)
-        self.logger.debug('Successfuly executed configuration script')
+        self.runner.run(self.config_path,
+                        stdout_pipe=False,
+                        stderr_pipe=False)
+        self.logger.debug('Successfully executed configuration script')
+
+        # register plugins
+        for plugin in self.plugins:
+            self.register(plugin)
 
     def update_includes(self, tasks):
         self.logger.debug('Updating includes configuration '
                           'with new tasks: {0}'.format(tasks))
-        with open(self.app_parameters_path) as f:
-            app_parameters = f.read()
+
+        output = self.runner.run('{0} get {1} AppParameters'
+                                 .format(self.nssm_path,
+                                         self.agent_service_name)
+                                 ).output
+
+        # apparently nssm output is encoded in utf16 without BOM
+        # encode to ascii to be able to parse this
+        app_parameters = output.decode('utf16').encode('ascii')
+
+        new_tasks = ','.join(tasks)
         includes = app_parameters.split('--include=')[1].split()[0]
-        new_includes = '{0},{1}'.format(includes, tasks)
+        new_includes = '{0},{1}'.format(includes, new_tasks)
 
         new_app_parameters = app_parameters.replace(includes, new_includes)
 
         self.logger.debug('Setting new parameters for {0}: {0}'.format(
             new_app_parameters))
-        self.runner.run('{0} set {1} AppParameters {1}'
+        self.runner.run('{0} set {1} AppParameters {2}'
                         .format(self.nssm_path, self.agent_service_name,
                                 new_app_parameters))
-
-        # Write new AppParameters
-        with open(name=self.app_parameters_path, mode='w') as f:
-            f.write(app_parameters)
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
         stats = utils.get_agent_stats(self.name, self.celery)
@@ -130,46 +148,21 @@ class NonSuckingServiceManagerDaemon(Daemon):
             self.agent_service_name))
 
         self.logger.info('Deleting files...')
-        if os.path.exists(self.configure_script_path):
-            self.runner.run('del {0}'.format(self.configure_script_path))
-        if os.path.exists(self.app_parameters_path):
-            self.runner.run('del {0}'.format(self.app_parameters_path))
+        if os.path.exists(self.config_path):
+            self.runner.run('del {0}'.format(self.config_path))
         self.logger.info('Deleted successfully')
 
     def start_command(self):
-        return 'sc start {}'.format(self.agent_service_name)
+        return 'sc start {0}'.format(self.agent_service_name)
 
     def stop_command(self):
-        return 'sc stop {}'.format(self.agent_service_name)
-
-    def _create_params_string(self):
-        from cloudify_agent import operations
-        return '--broker={0} ' \
-               '--events ' \
-               '--app=cloudify_agent.app.app ' \
-               '-Q {1} ' \
-               '-n celery.{1} ' \
-               '--autoscale={2},{3} ' \
-               '--include={4} '\
-            .format(self.broker_url,
-                    self.queue,
-                    self.min_workers,
-                    self.max_workers,
-                    operations.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES)
+        return 'sc stop {0}'.format(self.agent_service_name)
 
     def _create_env_string(self):
-        environment = {
-            constants.MANAGER_IP_KEY: self.manager_ip,
-            constants.MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL_KEY:
-            'http://{0}:53229/blueprints'.format(self.manager_ip),
-            constants.MANAGER_FILE_SERVER_URL_KEY:
-            'http://{0}:53229'.format(self.manager_ip),
-            constants.MANAGER_REST_PORT_KEY: self.manager_port
-        }
-
         # convert the custom environment file to a dictionary
         # file should be a callable batch file in the form of multiple
         # set A=B lines (comments are allowed as well)
+        env_string = ''
         self.logger.debug('Creating environment string from file: {'
                           '0}'.format(self.extra_env_path))
         if self.extra_env_path and os.path.exists(self.extra_env_path):
@@ -181,10 +174,5 @@ class NonSuckingServiceManagerDaemon(Daemon):
                 parts = line.split(' ')[1].split('=')
                 key = parts[0]
                 value = parts[1]
-                environment[key] = value
-
-        env_string = ''
-        for key, value in environment.iteritems():
-            env_string = '{0} {1}={2}' \
-                .format(env_string, key, value)
+                env_string = '{0} {1}={2}'.format(env_string, key, value)
         return env_string.strip()

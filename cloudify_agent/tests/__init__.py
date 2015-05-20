@@ -13,11 +13,13 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import os
+import tempfile
 import unittest2 as unittest
 
 
 def get_storage_directory():
-    return '/tmp/cfy-agent-tests-daemons'
+    return os.path.join(tempfile.gettempdir(), 'cfy-agent-tests-daemons')
 
 
 class BaseTest(unittest.TestCase):

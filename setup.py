@@ -50,7 +50,7 @@ setup(
             'resources/pm/initd/celeryd.template',
             'resources/disable-requiretty.sh',
             'resources/pm/nssm/nssm.exe',
-            'resources/pm/nssm/configure-service.bat.template']
+            'resources/pm/nssm/nssm.conf.template']
         },
     description='Cloudify Agent Implementation (Celery based)',
     install_requires=install_requires,
