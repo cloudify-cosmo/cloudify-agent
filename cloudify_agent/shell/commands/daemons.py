@@ -13,9 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import os
 import json
-
 import click
 
 from cloudify_agent.api import defaults
@@ -97,7 +95,7 @@ from cloudify_agent.shell import utils
 # passed on the the daemon constructor.
 @click.argument('custom-options', nargs=-1, type=click.UNPROCESSED)
 @handle_failures
-def create(process_management, **params):
+def create(**params):
 
     """
     Creates and stores the daemon parameters.
@@ -111,8 +109,8 @@ def create(process_management, **params):
     attributes.update(utils.parse_custom_options(custom_arg))
     click.echo('Creating...')
     daemon = DaemonFactory.new(
-        process_management=process_management,
         logger_level=get_log_level(),
+        logger_format='%(message)s',
         **attributes
     )
 
@@ -296,7 +294,7 @@ def inspect(name):
     """
 
     daemon = DaemonFactory.load(name)
-    click.echo(api_utils.daemon_to_dict(daemon))
+    click.echo(json.dumps(api_utils.daemon_to_dict(daemon), indent=2))
 
 
 @click.command('list')
@@ -307,15 +305,10 @@ def ls():
     List all existing daemons.
 
     """
-    daemon_files = os.listdir(api_utils.get_storage_directory())
-    for daemon_file in daemon_files:
-        full_path = os.path.join(
-            api_utils.get_storage_directory(),
-            daemon_file
-        )
-        with open(full_path) as f:
-            daemon = json.load(f)
-            click.echo(daemon['name'])
+
+    daemons = DaemonFactory.load_all()
+    for daemon in daemons:
+        click.echo(daemon.name)
 
 
 def _load_daemon(name):

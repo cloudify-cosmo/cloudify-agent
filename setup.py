@@ -50,9 +50,11 @@ setup(
     ],
     package_data={
         'cloudify_agent': [
-            'resources/pm/initd/celeryd.conf.template',
-            'resources/pm/initd/celeryd.template',
             'resources/disable-requiretty.sh',
+            'resources/pm/initd/initd.conf.template',
+            'resources/pm/initd/initd.template',
+            'resources/pm/nssm/nssm.exe',
+            'resources/pm/nssm/nssm.conf.template',
             'resources/included_plugins.py.j2'
         ]
     },

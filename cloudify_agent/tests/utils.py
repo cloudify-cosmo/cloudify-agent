@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import sys
 import logging
 import time
 import socket
@@ -25,6 +24,7 @@ from contextlib import contextmanager
 
 from cloudify.utils import LocalCommandRunner
 from cloudify.utils import setup_logger
+from cloudify_agent import VIRTUALENV
 
 from cloudify_agent.api import utils
 
@@ -155,11 +155,13 @@ class FileServer(object):
         self.runner = LocalCommandRunner(self.logger)
 
     def start(self, timeout=5):
+        if os.name == 'nt':
+            serve_path = os.path.join(VIRTUALENV, 'Scripts', 'serve')
+        else:
+            serve_path = os.path.join(VIRTUALENV, 'bin', 'serve')
+
         self.process = subprocess.Popen(
-            [os.path.join(
-                os.path.dirname(sys.executable),
-                'serve'), '-p', str(self.port),
-             self.root_path],
+            [serve_path, '-p', str(self.port), self.root_path],
             stdin=open(os.devnull, 'w'),
             stdout=None,
             stderr=None)
@@ -182,7 +184,7 @@ class FileServer(object):
         end_time = time.time() + timeout
 
         if os.name == 'nt':
-            self.runner.run('taskkill /F /PID {0}'.format(self.process.pid),
+            self.runner.run('taskkill /F /T /PID {0}'.format(self.process.pid),
                             stdout_pipe=False, stderr_pipe=False)
         else:
             self.runner.run('kill -9 {0}'.format(self.process.pid))

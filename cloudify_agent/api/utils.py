@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import uuid
+import json
 import copy
 import tempfile
 import sys
@@ -431,9 +432,10 @@ def list_plugin_files(plugin_name):
         if module.endswith('.py') and '__init__' not in module:
             # the files paths are relative to the
             # package __init__.py file.
+            prefix = '../' if os.name == 'posix' else '..\\'
             module_paths.append(
-                module.replace('../', '')
-                .replace('/', '.').replace('.py', '').strip())
+                module.replace(prefix, '')
+                .replace(os.sep, '.').replace('.py', '').strip())
     return module_paths
 
 
@@ -533,6 +535,8 @@ def env_to_file(env_variables, destination_path=None, posix=True):
     :rtype `str`
     """
 
+    if not env_variables:
+        return None
     if not destination_path:
         destination_path = tempfile.mkstemp(suffix='env')[1]
 
@@ -599,3 +603,41 @@ def purge_none_values(dictionary):
         if dictionary[key] is None:
             del dict_copy[key]
     return dict_copy
+
+
+def json_load(file_path):
+
+    """
+    Loads a JSON file into a dictionary.
+
+    :param file_path: path to the json file
+    :type file_path: str
+
+    :return: the dictionary
+    :rtype: dict
+    """
+
+    logger.debug('Loading JSON from {0}'.format(file_path))
+    with open(file_path) as f:
+        return json_loads(f.read())
+
+
+def json_loads(content):
+
+    """
+    Loads a JSON string into a dictionary.
+    If the string is not a valid json, it will be part
+    of the raised exception.
+
+
+    :param content: the string to load
+    :type content: str
+
+    :return: the dictionary
+    :rtype: dict
+    """
+
+    try:
+        return json.loads(content)
+    except ValueError as e:
+        raise ValueError('{0}:{1}{2}'.format(str(e), os.linesep, content))

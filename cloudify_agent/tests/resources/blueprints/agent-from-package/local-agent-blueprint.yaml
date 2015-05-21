@@ -54,7 +54,6 @@ node_templates:
               ip: 127.0.0.1
               manager_ip: 127.0.0.1
               local: true
-              basedir: /tmp
               package_url: { get_attribute: [ agent_package, package_url ] }
 
 

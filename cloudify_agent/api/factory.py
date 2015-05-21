@@ -56,17 +56,24 @@ class DaemonFactory(object):
         raise errors.DaemonNotImplementedError(process_management)
 
     @staticmethod
-    def new(process_management, logger_level=logging.INFO, **attributes):
+    def new(logger_level=logging.INFO, logger_format=None, **attributes):
 
         """
         Creates a daemon instance that implements the required process
         management.
 
-        :param process_management: The process management to use.
-        :type process_management: str
+        :param logger_level: the daemon logger level. Note that this is not
+        the log level of the daemon itself, but rather the log level for
+        the logger creating and configuring the daemon
+        :type logger_level: int
 
-        :param params: parameters passed to the daemon class constructor.
-        :type params: dict
+        :param logger_format: the daemon logger format. Note that this is not
+        the log format of the daemon itself, but rather the log format for
+        the logger creating and configuring the daemon.
+        :type logger_format: str
+
+        :param attributes: parameters passed to the daemon class constructor.
+        :type attributes: dict
 
         :return: A daemon instance.
         :rtype: cloudify_agent.api.pm.base.Daemon
@@ -83,18 +90,54 @@ class DaemonFactory(object):
             except errors.DaemonNotFoundError:
                 pass
 
+        process_management = attributes['process_management']
         daemon = DaemonFactory._find_implementation(process_management)
         return daemon(logger_level=logger_level,
-                      logger_format='%(message)s', **attributes)
+                      logger_format=logger_format, **attributes)
+
+    @staticmethod
+    def load_all():
+
+        if not os.path.exists(utils.get_storage_directory()):
+            return []
+
+        daemons = []
+        daemon_files = os.listdir(utils.get_storage_directory())
+        for daemon_file in daemon_files:
+            full_path = os.path.join(
+                utils.get_storage_directory(),
+                daemon_file
+            )
+            if full_path.endswith('json'):
+                logger.debug('Loading daemon from: {0}'.format(full_path))
+                daemon_as_json = utils.json_load(full_path)
+                process_management = daemon_as_json.pop('process_management')
+                daemon = DaemonFactory._find_implementation(process_management)
+                daemons.append(daemon(**daemon_as_json))
+        return daemons
 
     @classmethod
-    def load(cls, name, logger_level=logging.INFO):
+    def load(cls, name, logger_level=None, logger_format=None):
 
         """
         Loads a daemon from local storage.
 
         :param name: The name of the daemon to load.
         :type name: str
+        :param logger_level:
+
+            The level of the logger of the loaded daemon.
+            if not specified, the value given at first
+            instantiation will be used.
+        :type logger_level: int
+
+        :param logger_format:
+
+            The format of the logger of the loaded daemon.
+            if not specified, the value given at first
+            instantiation will be used.
+        :type logger_format: int
+
 
         :return: A daemon instance.
         :rtype: cloudify_agent.api.pm.base.Daemon
@@ -111,17 +154,18 @@ class DaemonFactory(object):
         )
         if not os.path.exists(daemon_path):
             raise errors.DaemonNotFoundError(name)
-        logger.debug('Loading daemon for storage: {0}'
-                     .format(storage_directory))
-        with open(daemon_path) as f:
-            daemon_as_json = json.loads(f.read())
-            logger.debug('Daemon loaded: {0}'.format(json.dumps(
-                daemon_as_json, indent=2)))
+        logger.debug('Loading daemon {0} from storage: {1}'
+                     .format(name, storage_directory))
+        daemon_as_json = utils.json_load(daemon_path)
+        if logger_level:
+            daemon_as_json['logger_level'] = logger_level
+        if logger_format:
+            daemon_as_json['logger_format'] = logger_format
+        logger.debug('Daemon {0} loaded: {1}'.format(name, json.dumps(
+            daemon_as_json, indent=2)))
         process_management = daemon_as_json.pop('process_management')
         daemon = DaemonFactory._find_implementation(process_management)
-        return daemon(logger_level=logger_level,
-                      logger_format='%(message)s',
-                      **daemon_as_json)
+        return daemon(**daemon_as_json)
 
     @classmethod
     def save(cls, daemon):

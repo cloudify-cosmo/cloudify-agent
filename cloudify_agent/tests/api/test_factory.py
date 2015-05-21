@@ -14,9 +14,12 @@
 #  * limitations under the License.
 
 import uuid
+import os
+import shutil
 from mock import patch
 
 from cloudify_agent.api import errors as api_errors
+from cloudify_agent.api.utils import generate_agent_name
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.tests.shell import BaseShellTest
 from cloudify_agent.tests import get_storage_directory
@@ -82,6 +85,31 @@ class TestDaemonFactory(BaseShellTest):
         self.assertRaises(api_errors.DaemonNotFoundError,
                           DaemonFactory.load,
                           'non_existing_name')
+
+    def test_load_all(self):
+
+        def _save_daemon(name):
+            daemon = DaemonFactory.new(
+                process_management='init.d',
+                name=name,
+                queue='queue',
+                manager_ip='127.0.0.1',
+                user='user',
+                broker_url='127.0.0.1')
+            DaemonFactory.save(daemon)
+
+        if os.path.exists(get_storage_directory()):
+            shutil.rmtree(get_storage_directory())
+
+        daemons = DaemonFactory.load_all()
+        self.assertEquals(0, len(daemons))
+
+        _save_daemon(generate_agent_name())
+        _save_daemon(generate_agent_name())
+        _save_daemon(generate_agent_name())
+
+        daemons = DaemonFactory.load_all()
+        self.assertEquals(3, len(daemons))
 
     def test_new_existing_agent(self):
 

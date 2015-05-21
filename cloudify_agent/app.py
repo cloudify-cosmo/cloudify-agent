@@ -40,7 +40,7 @@ except KeyError:
 
 # This attribute is used as the celery App instance.
 # it is referenced in two ways:
-#   1. Celery command line --app options. (celeryd.conf.template)
+#   1. Celery command line --app options.
 #   2. The operation decorator uses app.task as the underlying
 #      celery task decorator. (cloudify.decorators)
 app = Celery(broker=broker_url,

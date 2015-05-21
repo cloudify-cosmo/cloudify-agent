@@ -20,6 +20,7 @@ from cloudify.utils import CommandExecutionResponse
 from cloudify.utils import setup_logger
 
 from cloudify_agent.installer import utils
+from cloudify_agent.api import utils as api_utils
 
 DEFAULT_WINRM_PORT = '5985'
 DEFAULT_WINRM_URI = 'wsman'
@@ -113,7 +114,7 @@ class WinRMRunner(object):
 
         remote_env_file = None
         if execution_env:
-            env_file = utils.env_to_file(execution_env, possix=False)
+            env_file = utils.env_to_file(execution_env, posix=False)
             remote_env_file = self.put_file(src=env_file,
                                             dst='{0}.bat'.format(
                                                 self.mktemp()))
@@ -323,6 +324,61 @@ class WinRMRunner(object):
             '''@powershell -Command "(Get-Service -Name {0}).Status"'''  # NOQA
             .format(service_name))
         return response.output.strip()
+
+    def machine_distribution(self):
+
+        """
+        Retrieves the distribution information of the host.
+
+        :return: dictionary of the platform distribution as returned from
+        'platform.dist()'
+
+        :rtype: dict
+        :raise: worker_installer.fabric_runner.FabricCommandExecutionException
+
+        """
+
+        response = self.python(
+            imports_line='import platform, json',
+            command='json.dumps(platform.dist())'
+        )
+        return api_utils.json_loads(response)
+
+    def python(self, imports_line, command):
+
+        """
+        Run a python command and return the output.
+
+        To overcome the situation where additional info is printed
+        to stdout when a command execution occurs, a string is
+        appended to the output. This will then search for the string
+        and the following closing brackets to retrieve the original output.
+
+        :param imports_line: The imports needed for the command.
+        :type imports_line: str
+        :param command: The python command to run.
+        :type command: str
+
+        :return: the string representation of the return value of
+                 the python command
+        :rtype: str
+        :raise: worker_installer.fabric_runner.FabricCommandExecutionException
+        """
+
+        start = '###CLOUDIFYCOMMANDOPEN'
+        end = 'CLOUDIFYCOMMANDCLOSE###'
+
+        stdout = self.run('python -c "import sys; {0}; '
+                          'sys.stdout.write(\'{1}{2}{3}\\n\''
+                          '.format({4}))"'
+                          .format(imports_line,
+                                  start,
+                                  '{0}',
+                                  end,
+                                  command)).output
+        result = stdout[stdout.find(start) - 1 + len(end):
+                        stdout.find(end)]
+        return result
 
     def put(self, contents, path):
 

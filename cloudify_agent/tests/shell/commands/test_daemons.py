@@ -49,7 +49,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             broker_port=None,
             manager_port=None,
             extra_env_path=None,
-            logger_level=logging.INFO
+            logger_level=logging.INFO,
+            logger_format='%(message)s'
         )
 
         daemon = factory_new.return_value
@@ -76,6 +77,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             broker_port=None,
             manager_port=None,
             extra_env_path=None,
+            logger_format='%(message)s',
             logger_level=logging.INFO,
             key='value',
             complex_key='complex-value'
@@ -152,6 +154,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
 
     @patch('cloudify_agent.shell.commands.daemons.api_utils.daemon_to_dict')
     def test_inspect(self, daemon_to_dict, factory):
+
+        daemon_to_dict.return_value = {}
 
         name = utils.generate_agent_name()
         self._run('cfy-agent daemons inspect --name={0}'.format(name))

@@ -14,7 +14,6 @@
 #  * limitations under the License.
 
 import getpass
-import uuid
 import os
 import time
 import json
@@ -26,6 +25,7 @@ from cloudify.utils import LocalCommandRunner
 from cloudify.utils import setup_logger
 from cloudify import amqp_client
 
+from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
 from cloudify_agent.api import errors
 from cloudify_agent.api import exceptions
@@ -149,7 +149,7 @@ class Daemon(object):
         :type params dict
 
         :return: an instance of a daemon.
-        :rtype `cloudify_agent.api.pm.base.Daemon`
+        :rtype: cloudify_agent.api.pm.base.Daemon
         """
 
         # Mandatory parameters
@@ -166,7 +166,7 @@ class Daemon(object):
         self.broker_port = params.get(
             'broker_port') or defaults.BROKER_PORT
         self.name = params.get(
-            'name') or 'cloudify-agent-{0}'.format(uuid.uuid4())
+            'name') or utils.generate_agent_name()
         self.queue = params.get(
             'queue') or '{0}-queue'.format(self.name)
         self.broker_url = params.get(
@@ -210,6 +210,15 @@ class Daemon(object):
 
         # save as a property so that it will be persisted in the json files
         self.process_management = self.PROCESS_MANAGEMENT
+
+        # save as a property so that it will be persisted in the json files
+        self.virtualenv = VIRTUALENV
+
+        # save as a property so that it will be persisted in the json files
+        self.logger_level = logger_level
+
+        # save as a property so that it will be persisted in the json files
+        self.logger_format = logger_format
 
         # configure logger
         self.logger = setup_logger(
