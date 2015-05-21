@@ -16,7 +16,6 @@
 import getpass
 import os
 import time
-import json
 import logging
 
 from celery import Celery
