@@ -73,7 +73,7 @@ def only_ci(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not ci():
+        if ci():
             raise RuntimeError('Error! This test cannot be executed '
                                'outside of the travis CI '
                                'system since it may corrupt '

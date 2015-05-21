@@ -43,10 +43,11 @@ class TestConfiguration(BaseTest):
            mock_context())
     @patch('cloudify_agent.installer.config.attributes.ctx',
            mock_context())
-    def test_prepare_agent(self):
+    def test_prepare(self):
 
         cloudify_agent = {'local': True}
-        cloudify_agent = configuration.prepare_cloudify_agent(cloudify_agent)
+        cloudify_agent = configuration.prepare_connection(cloudify_agent)
+        cloudify_agent = configuration.prepare_agent(cloudify_agent)
 
         user = getpass.getuser()
         basedir = utils.get_home_dir(user)
@@ -86,6 +87,7 @@ class TestConfiguration(BaseTest):
     def test_fixed_attribute(self):
 
         cloudify_agent = {'basedir': 'custom', 'local': True}
-        cloudify_agent = configuration.prepare_cloudify_agent(cloudify_agent)
+        cloudify_agent = configuration.prepare_connection(cloudify_agent)
+        cloudify_agent = configuration.prepare_agent(cloudify_agent)
 
         self.assertEqual(cloudify_agent['basedir'], 'custom')

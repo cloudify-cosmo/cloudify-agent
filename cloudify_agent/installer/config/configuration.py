@@ -23,7 +23,6 @@ from cloudify import context
 from cloudify import utils
 
 from cloudify_agent.installer.config.decorators import group
-from cloudify_agent.installer.config.attributes import AGENT_ATTRIBUTES
 from cloudify_agent.installer.config.attributes import raise_missing_attribute
 
 
@@ -35,19 +34,21 @@ class fixed_dict(dict):
         super(fixed_dict, self).__setitem__(key, value)
 
 
-def prepare_cloudify_agent(cloudify_agent):
+def prepare_connection(cloudify_agent):
 
     fixed_cloudify_agent = fixed_dict(**copy.deepcopy(cloudify_agent))
 
     connection_attributes(fixed_cloudify_agent)
+
+    return copy.deepcopy(fixed_cloudify_agent)
+
+
+def prepare_agent(cloudify_agent):
+
+    fixed_cloudify_agent = fixed_dict(**copy.deepcopy(cloudify_agent))
+
     cfy_agent_attributes(fixed_cloudify_agent)
     installation_attributes(fixed_cloudify_agent)
-
-    # now we can validate mandatory attributes
-    for attr, value in AGENT_ATTRIBUTES.iteritems():
-        mandatory = value.get('mandatory', False)
-        if mandatory and attr not in fixed_cloudify_agent:
-            raise_missing_attribute(attr)
 
     return copy.deepcopy(fixed_cloudify_agent)
 
@@ -116,14 +117,14 @@ def installation_attributes(cloudify_agent):
         if cloudify_agent['local']:
             cloudify_agent['distro'] = platform.dist()[0].lower()
         else:
-            dist = ctx.installer.runner.machine_distribution()
+            dist = ctx.runner.machine_distribution()
             cloudify_agent['distro'] = dist[0].lower()
 
         # distro was not specified, try to auto-detect
         if cloudify_agent['local']:
             cloudify_agent['distro_codename'] = platform.dist()[2].lower()
         else:
-            dist = ctx.installer.runner.machine_distribution()
+            dist = ctx.runner.machine_distribution()
             cloudify_agent['distro_codename'] = dist[2].lower()
 
         if 'package_url' not in cloudify_agent:
@@ -136,7 +137,7 @@ def installation_attributes(cloudify_agent):
     if cloudify_agent['local']:
         basedir = utils.get_home_dir(cloudify_agent['user'])
     else:
-        basedir = ctx.installer.runner.home_dir(cloudify_agent['user'])
+        basedir = ctx.runner.home_dir(cloudify_agent['user'])
     cloudify_agent['basedir'] = basedir
 
     name = cloudify_agent['name']

@@ -21,10 +21,16 @@ from functools import wraps
 from cloudify import ctx
 from cloudify.state import current_ctx
 from cloudify.utils import setup_logger
+from cloudify.utils import LocalCommandRunner
 
 from cloudify_agent.installer.config import configuration
 from cloudify_agent.shell import env
 from cloudify_agent.api import utils
+from cloudify_agent.installer.runners import fabric_runner
+from cloudify_agent.installer.runners import winrm_runner
+from cloudify_agent.installer.config.attributes import AGENT_ATTRIBUTES
+from cloudify_agent.installer.config.attributes import raise_missing_attribute
+
 
 
 def init_agent_installer(func):
@@ -38,13 +44,41 @@ def init_agent_installer(func):
 
         cloudify_agent = kwargs.get('cloudify_agent', {})
 
-        # set connection details
-        ctx.logger.info('Processing cloudify_agent configuration. '
+        ctx.logger.info('Processing connection configuration. '
                         '[cloudify_agent={0}] '
                         .format(json.dumps(cloudify_agent)))
-        cloudify_agent = configuration.prepare_cloudify_agent(cloudify_agent)
+        # first prepare all connection deatuls
+        cloudify_agent = configuration.prepare_connection(cloudify_agent)
         ctx.logger.info('Processed [cloudify_agent={0}]'
                         .format(json.dumps(cloudify_agent)))
+
+        # create the correct runner according to os
+        # and local/remote execution. we need this runner now because it
+        # will be used to determine the agent basedir in case it wasn't
+        # explicitly set
+        if cloudify_agent['local']:
+            runner = LocalCommandRunner(logger=ctx.logger)
+        else:
+            if cloudify_agent['windos']:
+                runner = winrm_runner.WinRMRunner()
+            else:
+                runner = fabric_runner.FabricRunner()
+
+        setattr(current_ctx.get_ctx(), 'runner', runner)
+
+        ctx.logger.info('Processing agent configuration. '
+                        '[cloudify_agent={0}] '
+                        .format(json.dumps(cloudify_agent)))
+        # now we can create all other agent attributes
+        cloudify_agent = configuration.prepare_agent(cloudify_agent)
+        ctx.logger.info('Processed [cloudify_agent={0}]'
+                        .format(json.dumps(cloudify_agent)))
+
+        # now we can validate mandatory attributes
+        for attr, value in AGENT_ATTRIBUTES.iteritems():
+            mandatory = value.get('mandatory', False)
+            if mandatory and attr not in cloudify_agent:
+                raise_missing_attribute(attr)
 
         # create the correct installer according to os
         # and local/remote execution
