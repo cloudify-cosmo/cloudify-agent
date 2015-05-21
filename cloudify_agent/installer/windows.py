@@ -13,6 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import shutil
 import urllib
 import tempfile
 from setuptools import archive_util
@@ -186,3 +187,7 @@ class LocalWindowsAgentInstaller(RemoteWindowsAgentInstaller):
             return destination
 
         return _unzip
+
+    def delete_agent(self):
+        self._run_daemon_command('delete')
+        shutil.rmtree(self.cloudify_agent['agent_dir'])

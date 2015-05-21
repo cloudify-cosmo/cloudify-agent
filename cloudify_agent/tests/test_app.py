@@ -13,15 +13,10 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import os
-
-from cloudify import constants
 
 from cloudify_agent import app
-from cloudify_agent.api import utils
 from cloudify_agent.tests.utils import env
 from cloudify_agent.tests import BaseTest
-from cloudify_agent.tests import get_storage_directory
 
 
 class TestApp(BaseTest):
@@ -40,23 +35,3 @@ class TestApp(BaseTest):
             reload(app)
             self.assertEqual(app.app.conf['BROKER_URL'], 'test-url')
             self.assertEqual(app.app.conf['CELERY_RESULT_BACKEND'], 'test-url')
-
-    def test_exception_hook(self):
-        name = utils.generate_agent_name()
-        with env(constants.AGENT_NAME_KEY, name):
-            with env(constants.AGENT_STORAGE_DIRECTORY_KEY,
-                     get_storage_directory()):
-                reload(app)
-                import sys
-                sys.excepthook(Exception, Exception('Error'), None)
-
-                # check file was created with the exception details
-                error_file = os.path.join(get_storage_directory(),
-                                          '{0}.err'.format(name))
-                self.assertTrue(os.path.exists(error_file))
-
-                with open(error_file) as f:
-                    content = f.read()
-                self.assertTrue("Type: <type 'exceptions.Exception'>"
-                                in content)
-                self.assertTrue("Value: Error" in content)

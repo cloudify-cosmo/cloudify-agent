@@ -16,6 +16,7 @@
 import os
 import urllib
 import tempfile
+import shutil
 
 from cloudify.utils import LocalCommandRunner
 
@@ -102,7 +103,7 @@ class RemoteLinuxAgentInstaller(AgentInstaller):
 
     def delete_agent(self):
         self._run_daemon_command('delete')
-        self.runner.run('rm -rf {0}'.format(self.cloudify_agent['agent_dir']))
+        self.runner.delete(self.cloudify_agent['agent_dir'])
 
     def restart_agent(self):
         self._run_daemon_command('restart')
@@ -196,3 +197,7 @@ class LocalLinuxAgentInstaller(RemoteLinuxAgentInstaller):
             self.runner.run('tar xzvf {0} --strip={1} -C {2}'
                             .format(archive, strip, destination))
         return _untar
+
+    def delete_agent(self):
+        self._run_daemon_command('delete')
+        shutil.rmtree(self.cloudify_agent['agent_dir'])

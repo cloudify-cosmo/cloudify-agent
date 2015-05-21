@@ -20,7 +20,6 @@ from mock import patch
 
 from cloudify.workflows import local
 from cloudify.utils import setup_logger
-from cloudify import constants
 
 import cloudify_agent
 from cloudify_agent.api import utils
@@ -28,7 +27,6 @@ from cloudify_agent.api import utils
 from cloudify_agent.tests import resources
 from cloudify_agent.tests import utils as test_utils
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
-from cloudify_agent.tests.utils import env as cenv
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.tests.api.pm import only_os
 
@@ -90,12 +88,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
         env.execute('install', task_retries=0)
         self.assert_daemon_alive(name=agent_name)
 
-        # this needs to be executed with the AGENT_NAME_KEY environment
-        # variable to correctly simulate the execution of the 'stop' method
-        # as if it was inside the agent process itself
-        with cenv(constants.AGENT_NAME_KEY, agent_name):
-            env.execute('uninstall', task_retries=12)
-            self.wait_for_daemon_dead(name=agent_name)
+        env.execute('uninstall', task_retries=1)
+        self.wait_for_daemon_dead(name=agent_name)
 
     @only_ci
     @patch('cloudify.workflows.local._validate_node')
@@ -119,9 +113,5 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
         env.execute('install', task_retries=0)
         self.assert_daemon_alive(name=agent_name)
 
-        # this needs to be executed with the AGENT_NAME_KEY environment
-        # variable to correctly simulate the execution of the 'stop' method
-        # as if it was inside the agent process itself
-        with cenv(constants.AGENT_NAME_KEY, agent_name):
-            env.execute('uninstall', task_retries=12)
-            self.wait_for_daemon_dead(name=agent_name)
+        env.execute('uninstall', task_retries=1)
+        self.wait_for_daemon_dead(name=agent_name)

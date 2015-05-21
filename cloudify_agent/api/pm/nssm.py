@@ -156,7 +156,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
         self.logger.info('Deleting files...')
         if os.path.exists(self.config_path):
-            self.runner.run('del {0}'.format(self.config_path))
+            os.remove(self.config_path)
         self.logger.info('Deleted successfully')
 
     def start_command(self):

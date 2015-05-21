@@ -433,7 +433,6 @@ class FabricRunner(object):
                 raise exceptions.AgentInstallerConfigurationError(
                     'Cannot find neither wget nor curl'
                     .format(url))
-        self.logger.info('Downloading {0}'.format(url))
         self.run(command, **attributes)
         return output_path
 
@@ -506,7 +505,6 @@ class FabricRunner(object):
         return api_utils.json_loads(response)
 
     def delete(self, path):
-        self.logger.info('Deleting {0}'.format(path))
         self.run('rm -rf {0}'.format(path))
 
     @staticmethod
