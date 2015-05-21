@@ -421,6 +421,9 @@ def list_plugin_files(plugin_name):
     :rtype: list of str
     """
 
+    logger.debug('Listing modules of plugin: {0}'
+                 .format(plugin_name))
+
     module_paths = []
     runner = LocalCommandRunner(logger)
 
@@ -436,7 +439,7 @@ def list_plugin_files(plugin_name):
             module_paths.append(
                 module.replace(prefix, '')
                 .replace(os.sep, '.').replace('.py', '').strip())
-    return ','.join(module_paths)
+    return module_paths
 
 
 def dict_to_options(dictionary):

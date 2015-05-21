@@ -22,7 +22,7 @@ from cloudify_agent.api import exceptions
 from cloudify_agent.api import errors
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
-from cloudify_agent import operations
+from cloudify_agent.included_plugins import included_plugins
 
 
 class GenericLinuxDaemon(Daemon):
@@ -122,25 +122,13 @@ class GenericLinuxDaemon(Daemon):
             self.logger.info('Deleting {0}'.format(self.includes_path))
             self.runner.run('sudo rm {0}'.format(self.includes_path))
 
-    def update_includes(self, tasks):
-        self.logger.debug('Updating includes configuration '
-                          'with new tasks: {0}'.format(tasks))
+    def set_includes(self):
+        self.logger.debug('Setting includes configuration '
+                          'with: {0}'.format(self.includes))
         if not os.path.isfile(self.includes_path):
             raise errors.DaemonNotConfiguredError(self.name)
-        with open(self.includes_path) as include_file:
-            includes = include_file.read()
-        if includes:
-            # append to current includes
-            new_includes = '{0},{1}'.format(includes, tasks)
-        else:
-            # current includes is empty
-            new_includes = tasks
-
-        if os.path.exists(self.includes_path):
-            os.remove(self.includes_path)
-
         with open(self.includes_path, 'w') as f:
-            f.write(new_includes)
+            f.write(','.join(self.includes))
 
     def stop_command(self):
         return stop_command(self)
@@ -149,19 +137,13 @@ class GenericLinuxDaemon(Daemon):
         return start_command(self)
 
     def _create_includes(self):
-
         dirname = os.path.dirname(self.includes_path)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
         open(self.includes_path, 'w').close()
 
-        # register plugins
-        for plugin in self.plugins:
+        for plugin in included_plugins:
             self.register(plugin)
-
-        # add built-in operations
-        self.update_includes(
-            ','.join(operations.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES))
 
     def _create_script(self):
         rendered = utils.render_template_to_file(

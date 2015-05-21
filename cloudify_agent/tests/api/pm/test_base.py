@@ -132,9 +132,8 @@ class TestNotImplemented(BaseTest):
             manager_ip='manager_ip'
         )
 
-    def test_update_includes(self):
-        self.assertRaises(NotImplementedError, self.daemon.update_includes,
-                          'task')
+    def test_set_includes(self):
+        self.assertRaises(NotImplementedError, self.daemon.set_includes)
 
     def start_command(self):
         self.assertRaises(NotImplementedError, self.daemon.start_command)

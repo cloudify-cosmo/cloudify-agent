@@ -41,13 +41,11 @@ from cloudify_agent.shell import utils
               help='The manager REST gateway port to connect to. [env {0}]'
               .format(env.CLOUDIFY_MANAGER_PORT),
               envvar=env.CLOUDIFY_MANAGER_PORT)
-@click.option('--plugins',
-              help='A comma separated list of plugin names '
-                   'to be included in the daemon. This is a shortcut to '
-                   'avoid running the register command '
-                   'multiple times [env {0}]'
-              .format(env.CLOUDIFY_AGENT_PLUGINS),
-              envvar=env.CLOUDIFY_AGENT_PLUGINS)
+@click.option('--includes',
+              help='A comma separated list of module names '
+                   'to be included in the daemon. [env {0}]'
+              .format(env.CLOUDIFY_AGENT_INCLUDES),
+              envvar=env.CLOUDIFY_AGENT_INCLUDES)
 @click.option('--name',
               help='The name of the daemon. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_NAME),

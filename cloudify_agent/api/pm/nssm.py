@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import codecs
 import os
 import logging
 
@@ -24,6 +23,7 @@ from cloudify_agent.api import utils
 from cloudify_agent.api.pm.base import Daemon
 from cloudify_agent import operations
 from cloudify_agent.api import errors
+from cloudify_agent.included_plugins import included_plugins
 
 
 ###########################################
@@ -116,13 +116,12 @@ class NonSuckingServiceManagerDaemon(Daemon):
         self.logger.debug('Successfully executed configuration script')
 
         # register plugins
-        for plugin in self.plugins:
-            self.logger.info('Registering plugin: {0}'.format(plugin))
+        for plugin in included_plugins:
             self.register(plugin)
 
-    def update_includes(self, tasks):
-        self.logger.debug('Updating includes configuration '
-                          'with new tasks: {0}'.format(tasks))
+    def set_includes(self):
+        self.logger.debug('Setting includes configuration '
+                          'with: {0}'.format(self.includes))
 
         output = self.runner.run('{0} get {1} AppParameters'
                                  .format(self.nssm_path,
@@ -133,10 +132,11 @@ class NonSuckingServiceManagerDaemon(Daemon):
         # encode to ascii to be able to parse this
         app_parameters = output.decode('utf16').encode('utf-8').rstrip()
 
-        includes = app_parameters.split('--include=')[1].split()[0]
-        new_includes = '{0},{1}'.format(includes, tasks)
+        current_includes = app_parameters.split('--include=')[1].split()[0]
 
-        new_app_parameters = app_parameters.replace(includes, new_includes)
+        new_app_parameters = app_parameters.replace(
+            current_includes,
+            ','.join(self.includes))
 
         self.logger.debug('Setting new parameters for {0}: {1}'.format(
             self.agent_service_name, app_parameters))

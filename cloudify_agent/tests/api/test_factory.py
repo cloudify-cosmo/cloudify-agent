@@ -47,12 +47,12 @@ class TestDaemonFactory(BaseShellTest):
         self.assertEqual('127.0.0.1', daemon.broker_url)
         self.assertEqual('user', daemon.user)
 
-    def test_new_wrong_plugins_attribute(self):
+    def test_new_wrong_includes_attribute(self):
         self.assertRaises(ValueError, DaemonFactory.new,
                           process_management='init.d',
                           name=self.daemon_name,
                           manager_ip='127.0.0.1',
-                          plugins=set(['plugin']))
+                          includes=set(['plugin']))
 
     def test_new_no_implementation(self):
         self.assertRaises(api_errors.DaemonNotImplementedError,

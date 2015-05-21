@@ -31,7 +31,7 @@ from cloudify_agent.api import exceptions
 from cloudify_agent.api import defaults
 from cloudify_agent.api.utils import get_storage_directory
 from cloudify_agent.api.factory import DaemonFactory
-from cloudify_agent.included_plugins import included_plugins
+from cloudify_agent import operations
 
 
 class Daemon(object):
@@ -113,9 +113,12 @@ class Daemon(object):
         daemon environment. the file should be in the format of
         multiple 'export A=B' lines. defaults to None.
 
-    ``plugins``:
+    ``includes``:
 
-        a comma separated list of plugin names to be included in the daemon.
+        a comma separated list of modules to include with this agent.
+        if none if specified, only the built-in modules will be included.
+        see operation.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES. This option may
+        also be passed as a regular JSON list.
 
     """
 
@@ -180,43 +183,33 @@ class Daemon(object):
             'max_workers') or defaults.MAX_WORKERS
         self.workdir = params.get(
             'workdir') or os.getcwd()
+        self.extra_env_path = params.get('extra_env_path')
 
-        # accept a comma separated list as the plugins to include
-        # with the agent.
-        plugins = params.get('plugins')
-        if plugins:
-            if isinstance(plugins, str):
-                self.plugins = plugins.split(',')
-            elif isinstance(plugins, list):
-                self.plugins = plugins
+        includes = params.get('includes')
+        if includes:
+            if isinstance(includes, str):
+                self.includes = includes.split(',')
+            elif isinstance(includes, list):
+                self.includes = includes
             else:
-                raise ValueError("Unexpected type of attribute 'plugins'. "
-                                 "Expected either 'str' or 'list', but got: "
-                                 "{0}".format(type(plugins)))
+                raise ValueError("Unexpected type for 'includes' parameter: "
+                                 "{0}. supported type are 'str' and 'list'"
+                                 .format(type(includes)))
         else:
-            self.plugins = []
+            self.includes = []
 
-        # add included plugins
-        for included_plugin in included_plugins:
-            if included_plugin not in self.plugins:
-                self.plugins.append(included_plugin)
+        # add built-in operations
+        self.includes.extend(operations.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES)
 
         # create working directory if its missing
         if not os.path.exists(self.workdir):
             os.makedirs(self.workdir)
 
-        self.extra_env_path = params.get('extra_env_path')
-
-        # save as a property so that it will be persisted in the json files
+        # save as attributes so that they will be persisted in the json files
+        # we will make use of these values when loading agents by name.
         self.process_management = self.PROCESS_MANAGEMENT
-
-        # save as a property so that it will be persisted in the json files
         self.virtualenv = VIRTUALENV
-
-        # save as a property so that it will be persisted in the json files
         self.logger_level = logger_level
-
-        # save as a property so that it will be persisted in the json files
         self.logger_format = logger_format
 
         # configure logger
@@ -318,10 +311,10 @@ class Daemon(object):
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
-    def update_includes(self, tasks):
+    def set_includes(self):
 
         """
-        Update the includes list of the agent. This method must modify the
+        sets the includes list of the agent. This method must modify the
         includes configuration used when starting the agent.
         """
         raise NotImplementedError('Must be implemented by a subclass')
@@ -357,19 +350,12 @@ class Daemon(object):
         :type plugin: str
         """
 
-        self.logger.debug('Listing modules of plugin: {0}'
-                          .format(plugin))
-        tasks = utils.list_plugin_files(plugin)
+        modules = utils.list_plugin_files(plugin)
+
+        self.includes.extend(modules)
 
         # process management specific implementation
-        self.update_includes(tasks)
-
-        # keep track of the plugins regardless of the process management
-        # check if the plugin already exists in the state, this can happen
-        # because instances can be instantiated with plugins, therefore the
-        # registration of such plugins should not add to the state.
-        if plugin not in self.plugins:
-            self.plugins.append(plugin)
+        self.set_includes()
 
         # save the plugin again because the 'plugins' attribute
         # has changed
