@@ -98,7 +98,10 @@ class RemoteWindowsAgentInstaller(AgentInstaller):
 
     def create_custom_env_file_on_target(self, environment):
         env_file = utils.env_to_file(env_variables=environment)
-        return self.runner.put_file(src=env_file)
+        if env_file:
+            return self.runner.put_file(src=env_file)
+        else:
+            return None
 
     def close(self):
         pass
