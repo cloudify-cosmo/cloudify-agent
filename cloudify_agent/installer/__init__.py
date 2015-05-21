@@ -32,7 +32,6 @@ from cloudify_agent.installer.config.attributes import AGENT_ATTRIBUTES
 from cloudify_agent.installer.config.attributes import raise_missing_attribute
 
 
-
 def init_agent_installer(func):
 
     # import here to avoid circular dependency
@@ -59,7 +58,7 @@ def init_agent_installer(func):
         if cloudify_agent['local']:
             runner = LocalCommandRunner(logger=ctx.logger)
         else:
-            if cloudify_agent['windos']:
+            if cloudify_agent['windows']:
                 runner = winrm_runner.WinRMRunner()
             else:
                 runner = fabric_runner.FabricRunner()
