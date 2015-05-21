@@ -19,11 +19,16 @@ from system_tests import resources
 from cosmo_tester.framework import testenv
 
 
+import os
+os.environ['HANDLER_CONFIGURATION'] = '/home/elip/dev/system-tests-handlers/lab-openstack-eli-handler.yaml'
+
+
 class AgentInstallerTest(testenv.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.logger = setup_logger('test_tasks')
+        cls.logger = setup_logger(
+            'cloudify_agent.system_tests.manager.test_agent_installer')
 
     def test_agent_installer(self):
 

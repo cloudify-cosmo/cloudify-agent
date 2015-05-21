@@ -145,8 +145,14 @@ class TestConfigDecorators(unittest.TestCase):
         self.assertEqual(cloudify_agent['attr'], 'value-overridden')
 
     @patch('cloudify_agent.installer.config.decorators.ctx',
-           mock_context(agent_properties={
-               'attr1': 'value1', 'attr2': 'value2'}))
+           mock_context(
+               agent_properties={
+                   'attr1': 'value1',
+                   'attr2': 'value2'
+               },
+               agent_runtime_properties={
+                   'attr1': 'value1-override'
+               }))
     @patch('cloudify_agent.installer.config.decorators.AGENT_ATTRIBUTES',
            {'attr1': {'group': 'g'}, 'attr2': {'group': 'g'}})
     def test_group(self):
@@ -158,7 +164,7 @@ class TestConfigDecorators(unittest.TestCase):
         cloudify_agent = {}
         g(cloudify_agent)
 
-        self.assertEqual(cloudify_agent['attr1'], 'value1')
+        self.assertEqual(cloudify_agent['attr1'], 'value1-override')
         self.assertEqual(cloudify_agent['attr2'], 'value2')
 
     @patch('cloudify_agent.installer.config.decorators.ctx',

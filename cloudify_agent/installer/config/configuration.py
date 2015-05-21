@@ -85,14 +85,13 @@ def connection_attributes(cloudify_agent):
 
     if cloudify_agent['local']:
 
+        cloudify_agent['windows'] = os.name == 'nt'
+
         # we are installing an agent locally, all we need is the username
         if 'user' not in cloudify_agent:
 
             # default user will be the currently logged user
             cloudify_agent['user'] = getpass.getuser()
-
-    if cloudify_agent['local']:
-        cloudify_agent['windows'] = os.name == 'nt'
     else:
         cloudify_agent['windows'] = False
 

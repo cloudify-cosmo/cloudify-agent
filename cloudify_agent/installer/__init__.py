@@ -39,7 +39,13 @@ def init_agent_installer(func):
         cloudify_agent = kwargs.get('cloudify_agent', {})
 
         # set connection details
+        import json
+        ctx.logger.info('Preparing cloudify_agent configuration. Current '
+                        'state is: {0}'.format(json.dumps(cloudify_agent,
+                                                          indent=2)))
         cloudify_agent = configuration.prepare_cloudify_agent(cloudify_agent)
+        ctx.logger.info('cloudify_agent after processing is: {0}'
+                        .format(json.dumps(cloudify_agent, indent=2)))
 
         # create the correct installer according to os
         # and local/remote execution

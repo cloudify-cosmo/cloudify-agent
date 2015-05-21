@@ -41,15 +41,19 @@ def attribute(name):
 
             # if the property was given in the invocation, use it.
             if name in cloudify_agent:
+                ctx.logger.info('{0} found in operation inputs'.format(name))
                 pass
 
             # if the property is inside a runtime property, use it.
             elif name in runtime_properties:
+                ctx.logger.inf('{0} found in node instance '
+                               'runtime properties')
                 cloudify_agent[name] = runtime_properties[
                     name]
 
             # if the property is declared on the node, use it
             elif name in node_properties:
+                ctx.logger.info('{0} found in node properties'.format(name))
                 cloudify_agent[name] = node_properties[name]
 
             # if the property is inside the bootstrap context,
@@ -57,13 +61,16 @@ def attribute(name):
             elif hasattr(agent_context, context_attribute):
                 value = getattr(agent_context, context_attribute)
                 if value is not None:
-                    cloudify_agent[name] = getattr(agent_context,
-                                                   context_attribute)
+                    ctx.logger.info('{0} found in agent bootstrap context')
+                    cloudify_agent[name] = value
 
             else:
                 # apply the function itself
+                ctx.logger.info('Applying attribute function on: {'
+                                '0}'.format(name))
                 value = function(cloudify_agent)
                 if value is not None:
+                    ctx.logger.info('')
                     cloudify_agent[name] = value
 
         return wrapper
@@ -84,6 +91,8 @@ def group(name):
                 if attr_value.get('group') == name:
                     group_attributes[attr_name] = attr_value
 
+            ctx.logger.info('Performing lookup for attributes '
+                            'of group: {0}'.format(name))
             for group_attr_name in group_attributes.iterkeys():
                 # iterate and try to set all the attributes of the group as
                 # defined in the heuristics of @attribute.
@@ -91,10 +100,20 @@ def group(name):
                 def setter(_):
                     pass
 
+                import json
+                ctx.logger.info('Performing lookup for attribute: '
+                                '{0} with cloudify_agent: {1}'
+                                .format(group_attr_name,
+                                        json.dumps(cloudify_agent, indent=2)))
                 setter(cloudify_agent)
 
             # when we are done, invoke the group function to
             # apply group logic
+            import json
+            ctx.logger.info('Applying group function on group: {0} with '
+                            'cloudify_agent: {1}'
+                            .format(name, json.dumps(cloudify_agent,
+                                                     indent=2)))
             group_function(cloudify_agent)
 
         return wrapper
