@@ -340,7 +340,7 @@ class BaseDaemonLiveTestCase(BaseTest):
             value = self.celery.send_task(
                 name='mock_plugin.tasks.get_env_variable',
                 queue=self.queue,
-                args=['TEST_ENV_KEY']).get(timeout=5)
+                args=['TEST_ENV_KEY']).get(timeout=10)
             self.assertEqual(value, 'TEST_ENV_VALUE')
         finally:
             test_utils.uninstall_package_if_exists('mock-plugin')

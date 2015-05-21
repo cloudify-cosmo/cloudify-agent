@@ -143,6 +143,7 @@ class GenericLinuxDaemon(Daemon):
         open(self.includes_path, 'w').close()
 
         for plugin in included_plugins:
+            self.logger.info('Registering plugin: {0}'.format(plugin))
             self.register(plugin)
 
     def _create_script(self):
