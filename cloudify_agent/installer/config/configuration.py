@@ -70,7 +70,12 @@ def cfy_agent_attributes(cloudify_agent):
 
     cloudify_agent['name'] = cloudify_agent['queue']
 
-    cloudify_agent['manager_ip'] = utils.get_manager_ip()
+    if 'manager_ip' not in cloudify_agent:
+
+        # double check here because get_manager_ip function will
+        # fail we the env variable is not set, but this is ok since
+        # the manager_ip might have been explicitly set.
+        cloudify_agent['manager_ip'] = utils.get_manager_ip()
 
 
 @group('connection')

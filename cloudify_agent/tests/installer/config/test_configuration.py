@@ -19,6 +19,7 @@ import platform
 from mock import patch
 
 from cloudify import utils
+from cloudify import constants
 
 from cloudify_agent.installer.config import configuration
 from cloudify_agent.tests import BaseTest
@@ -29,8 +30,12 @@ class TestConfiguration(BaseTest):
 
     def setUp(self):
         super(TestConfiguration, self).setUp()
-        os.environ['MANAGER_FILE_SERVER_URL'] = 'localhost'
-        os.environ['MANAGEMENT_IP'] = 'localhost'
+        os.environ[constants.MANAGER_FILE_SERVER_URL_KEY] = 'localhost'
+        os.environ[constants.MANAGER_IP_KEY] = 'localhost'
+
+    def tearDown(self):
+        del os.environ[constants.MANAGER_FILE_SERVER_URL_KEY]
+        del os.environ[constants.MANAGER_IP_KEY]
 
     @patch('cloudify_agent.installer.config.configuration.ctx',
            mock_context())
