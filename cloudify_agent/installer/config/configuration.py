@@ -120,11 +120,12 @@ def installation_attributes(cloudify_agent):
             dist = ctx.installer.runner.machine_distribution()
             cloudify_agent['distro_codename'] = dist[2].lower()
 
-        cloudify_agent['package_url'] = '{0}/packages/agents' \
-                                        '/{1}-{2}-agent.tar.gz' \
-            .format(utils.get_manager_file_server_url(),
-                    cloudify_agent['distro'],
-                    cloudify_agent['distro_codename'])
+        if 'package_url' not in cloudify_agent:
+            cloudify_agent['package_url'] = '{0}/packages/agents' \
+                                            '/{1}-{2}-agent.tar.gz' \
+                .format(utils.get_manager_file_server_url(),
+                        cloudify_agent['distro'],
+                        cloudify_agent['distro_codename'])
 
     if cloudify_agent['local']:
         basedir = utils.get_home_dir(cloudify_agent['user'])
