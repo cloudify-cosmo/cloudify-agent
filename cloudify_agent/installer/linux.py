@@ -55,7 +55,7 @@ class RemoteLinuxAgentInstaller(AgentInstaller):
     def extractor(self):
         return self.runner.untar
 
-    def _run_agent_command(self, command, execution_env=None, sudo=True):
+    def _run_agent_command(self, command, execution_env=None, sudo=False):
 
         if execution_env is None:
             execution_env = {}
@@ -74,7 +74,7 @@ class RemoteLinuxAgentInstaller(AgentInstaller):
 
     def _run_daemon_command(self, command,
                             execution_env=None,
-                            sudo=True):
+                            sudo=False):
 
         full_command = 'daemons {0} --name={1}'.format(
             command, self.cloudify_agent['name'])
@@ -90,7 +90,7 @@ class RemoteLinuxAgentInstaller(AgentInstaller):
             self._from_package()
         self._run_daemon_command(
             'create {0}'.format(self._create_process_management_options()),
-            execution_env=self._create_agent_env(), sudo=False)
+            execution_env=self._create_agent_env())
 
     def configure_agent(self):
         self._run_daemon_command('configure')

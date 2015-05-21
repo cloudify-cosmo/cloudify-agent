@@ -37,7 +37,8 @@ DEFAULT_REMOTE_EXECUTION_PORT = 22
 COMMON_ENV = {
     'warn_only': True,
     'forward_agent': True,
-    'abort_on_prompts': True
+    'abort_on_prompts': True,
+    'disable_known_hosts': True
 }
 
 
