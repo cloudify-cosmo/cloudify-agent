@@ -105,6 +105,8 @@ def connection_attributes(cloudify_agent):
         if not ip:
             raise_missing_attribute('ip')
         cloudify_agent['ip'] = ip
+    if cloudify_agent['windows'] and 'password' not in cloudify_agent:
+        raise_missing_attribute('password')
 
 
 @group('installation')
