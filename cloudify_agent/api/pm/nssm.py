@@ -70,7 +70,8 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
         env_string = self._create_env_string()
         if env_string:
-            self.logger.debug('Created extra environment: {0}'.format(env_string))
+            self.logger.debug('Created extra environment: {0}'
+                              .format(env_string))
 
         if os.path.exists(self.config_path):
             raise errors.DaemonError(
