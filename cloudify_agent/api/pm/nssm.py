@@ -13,6 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import codecs
 import os
 import logging
 
@@ -130,15 +131,15 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
         # apparently nssm output is encoded in utf16 without BOM
         # encode to ascii to be able to parse this
-        app_parameters = output.decode('utf16').encode('ascii')
+        app_parameters = output.decode('utf16').encode('utf-8').rstrip()
 
         includes = app_parameters.split('--include=')[1].split()[0]
         new_includes = '{0},{1}'.format(includes, tasks)
 
         new_app_parameters = app_parameters.replace(includes, new_includes)
 
-        self.logger.debug('Setting new parameters for {0}: {0}'.format(
-            new_app_parameters))
+        self.logger.debug('Setting new parameters for {0}: {1}'.format(
+            self.agent_service_name, app_parameters))
         self.runner.run('{0} set {1} AppParameters {2}'
                         .format(self.nssm_path, self.agent_service_name,
                                 new_app_parameters))

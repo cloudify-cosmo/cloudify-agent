@@ -360,9 +360,6 @@ class Daemon(object):
         self.logger.debug('Listing modules of plugin: {0}'
                           .format(plugin))
         tasks = utils.list_plugin_files(plugin)
-        self.logger.debug('Following modules will be appended to '
-                          'includes: {0}'
-                          .format(tasks))
 
         # process management specific implementation
         self.update_includes(tasks)
@@ -412,13 +409,21 @@ class Daemon(object):
 
         if delete_amqp_queue:
             self._delete_amqp_queues()
+        self.logger.debug('Running start command for: {0}'.format(self.name))
         self.runner.run(self.start_command())
         end_time = time.time() + timeout
         while time.time() < end_time:
+            self.logger.debug('Checking agent {0} stats'.format(self.name))
             stats = utils.get_agent_stats(self.name, self.celery)
             if stats:
+                self.logger.debug('Agent {0} has started'.format(self.name))
                 return
+            self.logger.debug('Agent {0} has not started yet. '
+                              'Sleeping {1} seconds...'
+                              .format(self.name, interval))
             time.sleep(interval)
+        self.logger.debug('Verifying no unhandled errors on startup for {0}'
+                          .format(self.name))
         self._verify_no_celery_error()
         raise exceptions.DaemonStartupTimeout(timeout, self.name)
 
