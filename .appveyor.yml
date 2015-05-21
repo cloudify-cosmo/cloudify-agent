@@ -56,7 +56,7 @@ install:
 #  # the parent CMD process).
 #  ############################################################################
 #
-#  - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
+  - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
 #
 #  ##########################################################################
 #  # Check that we have the expected version and architecture for Python
