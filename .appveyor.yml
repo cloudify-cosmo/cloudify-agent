@@ -65,9 +65,13 @@ install:
   - python --version
   - python -c "import struct; print(struct.calcsize('P') * 8)"
 
+  - echo Upgrading pip...
+  - pip install --upgrade pip
+
 build: false # Not a C# project, build stuff at the test step instead.
 
 before_test:
+  - echo Installing tox (2.0.0)
   - "%CMD_IN_ENV% pip install tox==2.0.0"
 
 test_script:
