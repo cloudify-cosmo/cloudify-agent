@@ -47,11 +47,11 @@ class RemoteLinuxAgentInstaller(AgentInstaller):
             fabric_env=cloudify_agent.get('fabric_env'))
 
     @property
-    def download(self):
+    def downloader(self):
         return self.runner.download
 
     @property
-    def untar(self):
+    def extractor(self):
         return self.runner.untar
 
     def _run_agent_command(self, command, execution_env=None, sudo=True):
@@ -63,9 +63,13 @@ class RemoteLinuxAgentInstaller(AgentInstaller):
         if sudo:
             full_command = 'sudo {0}'.format(full_command)
 
-        return self.runner.run(
+        response = self.runner.run(
             command=full_command,
             execution_env=execution_env)
+        if response.output:
+            for line in response.output.splitlines():
+                self.logger.info(line)
+        return response
 
     def _run_daemon_command(self, command,
                             execution_env=None,
@@ -78,11 +82,7 @@ class RemoteLinuxAgentInstaller(AgentInstaller):
                                        execution_env=execution_env,
                                        sudo=sudo)
 
-    def create_custom_env_file_on_target(self, environment):
-        env_file = utils.env_to_file(env_variables=environment)
-        return self.runner.put_file(src=env_file)
-
-    def create(self):
+    def create_agent(self):
         if 'source_url' in self.cloudify_agent:
             self._from_source()
         else:
@@ -91,23 +91,27 @@ class RemoteLinuxAgentInstaller(AgentInstaller):
             'create {0}'.format(self._create_process_management_options()),
             execution_env=self._create_agent_env(), sudo=False)
 
-    def configure(self):
+    def configure_agent(self):
         self._run_daemon_command('configure')
 
-    def start(self):
+    def start_agent(self):
         self._run_daemon_command('start')
 
-    def stop(self):
+    def stop_agent(self):
         self._run_daemon_command('stop')
 
-    def delete(self):
+    def delete_agent(self):
         self._run_daemon_command('delete')
         self.runner.run('rm -rf {0}'.format(self.cloudify_agent['agent_dir']))
 
-    def restart(self):
+    def restart_agent(self):
         self._run_daemon_command('restart')
 
-    def close_installer(self):
+    def create_custom_env_file_on_target(self, environment):
+        env_file = utils.env_to_file(env_variables=environment)
+        return self.runner.put_file(src=env_file)
+
+    def close(self):
         self.runner.close()
 
     def _from_source(self):
@@ -117,7 +121,7 @@ class RemoteLinuxAgentInstaller(AgentInstaller):
         requirements = self.cloudify_agent.get('requirements')
         source_url = self.cloudify_agent['source_url']
 
-        get_pip = self.download(get_pip_url)
+        get_pip = self.downloader(get_pip_url)
 
         self.logger.info('Installing pip...')
         self.runner.run('sudo python {0}'.format(get_pip))
@@ -147,11 +151,11 @@ class RemoteLinuxAgentInstaller(AgentInstaller):
             self.cloudify_agent['package_url']
         ))
 
-        package_path = self.download(
+        package_path = self.downloader(
             url=self.cloudify_agent['package_url'])
         self.logger.info('Untaring Agent package...')
-        self.untar(archive=package_path,
-                   destination=self.cloudify_agent['agent_dir'])
+        self.extractor(archive=package_path,
+                       destination=self.cloudify_agent['agent_dir'])
         configure = '--relocated-env'
         if self.cloudify_agent.get('disable_requiretty') is True:
             configure = '{0} --disable-requiretty'.format(configure)
@@ -169,11 +173,11 @@ class LocalLinuxAgentInstaller(RemoteLinuxAgentInstaller):
     def create_custom_env_file_on_target(self, environment):
         return utils.env_to_file(env_variables=environment)
 
-    def close_installer(self):
+    def close(self):
         pass
 
     @property
-    def download(self):
+    def downloader(self):
 
         def _download(url, output_path=None):
             if output_path is None:
@@ -184,7 +188,7 @@ class LocalLinuxAgentInstaller(RemoteLinuxAgentInstaller):
         return _download
 
     @property
-    def untar(self):
+    def extractor(self):
 
         def _untar(archive, destination, strip=1):
             if not os.path.exists(destination):

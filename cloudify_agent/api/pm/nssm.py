@@ -22,6 +22,7 @@ from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.api.pm.base import Daemon
 from cloudify_agent import operations
+from cloudify_agent.api import errors
 
 
 ###########################################
@@ -70,11 +71,18 @@ class NonSuckingServiceManagerDaemon(Daemon):
         env_string = self._create_env_string()
         self.logger.debug('Created environment: {0}'.format(env_string))
 
+        if os.path.exists(self.config_path):
+            raise errors.DaemonError(
+                'Failed configuring daemon {0}: {1} already exists.'
+                .format(self.name, self.config_path))
+
         # creating the installation script
         utils.render_template_to_file(
             template_path='pm/nssm/nssm.conf.template',
             file_path=self.config_path,
             queue=self.queue,
+            built_in_includes=','.join(
+                operations.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES),
             nssm_path=self.nssm_path,
             celery_log_level=self.celery_log_level,
             celery_log_file=self.celery_log_file,
@@ -96,7 +104,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
             failure_restart_delay=self.failure_restart_delay
         )
 
-        self.logger.debug('Rendered configuration script: {0}'.format(
+        self.logger.info('Rendered configuration script: {0}'.format(
             self.config_path))
 
         # run the configuration script
@@ -108,6 +116,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
         # register plugins
         for plugin in self.plugins:
+            self.logger.info('Registering plugin: {0}'.format(plugin))
             self.register(plugin)
 
     def update_includes(self, tasks):

@@ -12,7 +12,7 @@ echo Installing the agent as a windows service...
 --loglevel={{ celery_log_level }} ^
 --pidfile={{ celery_pid_file }} ^
 --logfile={{ celery_log_file }} ^
---include=cloudify_agent.operations ^
+--include={{ built_in_includes }} ^
 -Ofair
 
 if %errorlevel% neq 0 exit /b %errorlevel%

@@ -79,14 +79,14 @@ class GenericLinuxDaemon(Daemon):
         _validate(self.script_path)
         _validate(self.config_path)
 
-        self.logger.debug('Creating includes file: {0}'
-                          .format(self.includes_path))
+        self.logger.info('Creating includes file: {0}'
+                         .format(self.includes_path))
         self._create_includes()
-        self.logger.debug('Creating daemon script: {0}'
-                          .format(self.script_path))
+        self.logger.info('Creating daemon script: {0}'
+                         .format(self.script_path))
         self._create_script()
-        self.logger.debug('Creating daemon conf file: {0}'
-                          .format(self.config_path))
+        self.logger.info('Creating daemon conf file: {0}'
+                         .format(self.config_path))
         self._create_config()
 
         if self.start_on_boot:
@@ -113,13 +113,13 @@ class GenericLinuxDaemon(Daemon):
             self.stop()
 
         if os.path.exists(self.script_path):
-            self.logger.debug('Deleting {0}'.format(self.script_path))
+            self.logger.info('Deleting {0}'.format(self.script_path))
             self.runner.run('sudo rm {0}'.format(self.script_path))
         if os.path.exists(self.config_path):
-            self.logger.debug('Deleting {0}'.format(self.config_path))
+            self.logger.info('Deleting {0}'.format(self.config_path))
             self.runner.run('sudo rm {0}'.format(self.config_path))
         if os.path.exists(self.includes_path):
-            self.logger.debug('Deleting {0}'.format(self.includes_path))
+            self.logger.info('Deleting {0}'.format(self.includes_path))
             self.runner.run('sudo rm {0}'.format(self.includes_path))
 
     def update_includes(self, tasks):

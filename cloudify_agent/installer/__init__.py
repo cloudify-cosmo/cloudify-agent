@@ -15,6 +15,7 @@
 
 import os
 import copy
+import json
 from functools import wraps
 
 from cloudify import ctx
@@ -63,7 +64,7 @@ def init_agent_installer(func):
         try:
             return func(*args, **kwargs)
         finally:
-            installer.close_installer()
+            installer.close()
 
     return wrapper
 
@@ -74,22 +75,22 @@ class AgentInstaller(object):
         self.cloudify_agent = cloudify_agent
         self.logger = logger or setup_logger(self.__class__.__name__)
 
-    def create(self):
+    def create_agent(self):
         raise NotImplementedError('Must be implemented by sub-class')
 
-    def configure(self):
+    def configure_agent(self):
         raise NotImplementedError('Must be implemented by sub-class')
 
-    def start(self):
+    def start_agent(self):
         raise NotImplementedError('Must be implemented by sub-class')
 
-    def stop(self):
+    def stop_agent(self):
         raise NotImplementedError('Must be implemented by sub-class')
 
-    def delete(self):
+    def delete_agent(self):
         raise NotImplementedError('Must be implemented by sub-class')
 
-    def restart(self):
+    def restart_agent(self):
         raise NotImplementedError('Must be implemented by sub-class')
 
     def create_custom_env_file_on_target(self, environment):
@@ -140,7 +141,8 @@ class AgentInstaller(object):
         execution_env = utils.stringify_values(execution_env)
 
         ctx.logger.debug('Cloudify Agent will be created using the following '
-                         'environment: {0}'.format(execution_env))
+                         'environment: {0}'
+                         .format(json.dumps(execution_env, indent=2)))
 
         return execution_env
 

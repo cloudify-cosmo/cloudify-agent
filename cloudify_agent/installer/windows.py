@@ -41,11 +41,11 @@ class RemoteWindowsAgentInstaller(AgentInstaller):
             logger=self.logger)
 
     @property
-    def download(self):
+    def downloader(self):
         return self.runner.download
 
     @property
-    def unzip(self):
+    def extractor(self):
         return self.runner.unzip
 
     def _run_agent_command(self, command, execution_env=None):
@@ -53,9 +53,13 @@ class RemoteWindowsAgentInstaller(AgentInstaller):
         if execution_env is None:
             execution_env = {}
 
-        return self.runner.run(
+        response = self.runner.run(
             command='{0} {1}'.format(self.cfy_agent_path, command),
             execution_env=execution_env)
+        if response.output:
+            for line in response.output.splitlines():
+                self.logger.info(line)
+        return response
 
     def _run_daemon_command(self, command,
                             execution_env=None):
@@ -65,11 +69,7 @@ class RemoteWindowsAgentInstaller(AgentInstaller):
             .format(command, self.cloudify_agent['name']),
             execution_env=execution_env)
 
-    def create_custom_env_file_on_target(self, environment):
-        env_file = utils.env_to_file(env_variables=environment)
-        return self.runner.put_file(src=env_file)
-
-    def create(self):
+    def create_agent(self):
         if 'source_url' in self.cloudify_agent:
             self._from_source()
         else:
@@ -78,24 +78,28 @@ class RemoteWindowsAgentInstaller(AgentInstaller):
             'create {0}'.format(self._create_process_management_options()),
             execution_env=self._create_agent_env())
 
-    def configure(self):
+    def configure_agent(self):
         self._run_daemon_command('configure')
 
-    def start(self):
+    def start_agent(self):
         self._run_daemon_command('start')
 
-    def stop(self):
+    def stop_agent(self):
         self._run_daemon_command('stop')
 
-    def delete(self):
+    def delete_agent(self):
         self._run_daemon_command('delete')
         self.runner.delete(self.cloudify_agent['agent_dir'],
                            ignore_missing=True)
 
-    def restart(self):
+    def restart_agent(self):
         self._run_daemon_command('restart')
 
-    def close_installer(self):
+    def create_custom_env_file_on_target(self, environment):
+        env_file = utils.env_to_file(env_variables=environment)
+        return self.runner.put_file(src=env_file)
+
+    def close(self):
         pass
 
     def _from_source(self):
@@ -105,7 +109,7 @@ class RemoteWindowsAgentInstaller(AgentInstaller):
         requirements = self.cloudify_agent.get('requirements')
         source_url = self.cloudify_agent['source_url']
 
-        get_pip = self.download(get_pip_url)
+        get_pip = self.downloader(get_pip_url)
 
         self.logger.info('Installing pip...')
         self.runner.run('python {0}'.format(get_pip))
@@ -134,11 +138,11 @@ class RemoteWindowsAgentInstaller(AgentInstaller):
         self.logger.info('Downloading Agent Package from {0}'.format(
             self.cloudify_agent['package_url']
         ))
-        package_path = self.download(
+        package_path = self.downloader(
             url=self.cloudify_agent['package_url'])
         self.logger.info('Untaring Agent package...')
-        self.unzip(archive=package_path,
-                   destination=self.cloudify_agent['agent_dir'])
+        self.extractor(archive=package_path,
+                       destination=self.cloudify_agent['agent_dir'])
         configure = '--relocated-env'
         if self.cloudify_agent['disable_requiretty']:
             configure = '{0} --disable-requiretty'.format(configure)
@@ -161,7 +165,7 @@ class LocalWindowsAgentInstaller(RemoteWindowsAgentInstaller):
         pass
 
     @property
-    def download(self):
+    def downloader(self):
 
         def _download(url, output_path=None):
             if output_path is None:
@@ -172,7 +176,7 @@ class LocalWindowsAgentInstaller(RemoteWindowsAgentInstaller):
         return _download
 
     @property
-    def unzip(self):
+    def extractor(self):
 
         def _unzip(archive, destination=None):
 

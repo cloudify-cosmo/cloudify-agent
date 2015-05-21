@@ -363,7 +363,7 @@ class Daemon(object):
         tasks = utils.list_plugin_files(plugin)
         self.logger.debug('Following modules will be appended to '
                           'includes: {0}'
-                          .format(json.dumps(tasks, indent=2)))
+                          .format(tasks))
 
         # process management specific implementation
         self.update_includes(tasks)
