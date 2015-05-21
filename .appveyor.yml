@@ -16,10 +16,10 @@ environment:
 
 install:
 
-  #################################
-  # Download and install Erlang
-  #################################
-
+#  #################################
+#  # Download and install Erlang
+#  #################################
+#
 #  - echo Downloading Erlang...
 #  - ps: (new-object System.Net.WebClient).Downloadfile('http://www.erlang.org/download/otp_win32_17.5.exe', 'C:\Users\appveyor\erlang.exe')
 #  - echo Installing Erlang...
@@ -36,43 +36,16 @@ install:
 #  - start /B /WAIT C:\Users\appveyor\rabbit.exe /S
 #  - ps: (Get-Service -Name RabbitMQ).Status
 
-##  ###################################
-##  # Download setup scripts and unzip
-##  ###################################
-##
-##  - ps: (new-object System.Net.WebClient).Downloadfile('https://github.com/cloudify-cosmo/appveyor-utils/archive/master.zip', 'C:\Users\appveyor\master.zip')
-##  - 7z e C:\Users\appveyor\master.zip */appveyor/* -oappveyor
-##
-##  ##############################################################################
-##  # Install Python (from the official .msi of http://python.org) and pip when
-##  # not already installed.
-##  ##############################################################################
-##
-##  - powershell ./appveyor/install.ps1
-#
-#  ############################################################################
-#  # Prepend newly installed Python to the PATH of this build (this cannot be
-#  # done from inside the powershell script as it would require to restart
-#  # the parent CMD process).
-#  ############################################################################
-#
   - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
-#
-#  ##########################################################################
-#  # Check that we have the expected version and architecture for Python
-#  ##########################################################################
-#
-#  - python --version
-#  - python -c "import struct; print(struct.calcsize('P') * 8)"
 
-#  - echo Upgrading pip...
-#  - pip install --upgrade pip
+  - echo Upgrading pip...
+  - pip install --upgrade pip
 
 build: false # Not a C# project, build stuff at the test step instead.
 
 before_test:
   - echo Installing tox (2.0.0)
-  - pip install tox==2.0.0
+  - runas /noprofile /user:Administrator "pip install tox==2.0.0"
 
 test_script:
   - tox -e %TOX_ENV%
