@@ -141,9 +141,9 @@ def raise_missing_attribute(attribute_name):
     context_path = 'bootstrap_context.cloudify_agent'
     raise exceptions.AgentInstallerConfigurationError(
         '{0} was not found in any of the following: \n'
-        '1. {1}; \n'
-        '2. {2}; \n'
-        '3. {3}; \n'
+        '1. {1} \n'
+        '2. {2} \n'
+        '3. {3} \n'
         '4. {4}'
         .format(attribute_name,
                 inputs_path,

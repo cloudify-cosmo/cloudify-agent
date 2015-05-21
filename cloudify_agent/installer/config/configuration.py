@@ -96,7 +96,14 @@ def connection_attributes(cloudify_agent):
         cloudify_agent['windows'] = False
 
     if not cloudify_agent['local'] and 'ip' not in cloudify_agent:
-        raise_missing_attribute('ip')
+        # support 'ip' attribute as direct node property or runtime
+        # property (as opposed to nested inside the cloudify_agent dict)
+        ip = ctx.instance.runtime_properties.get('ip')
+        if not ip:
+            ip = ctx.node.properties.get('ip')
+        if not ip:
+            raise_missing_attribute('ip')
+        cloudify_agent['ip'] = ip
 
 
 @group('installation')

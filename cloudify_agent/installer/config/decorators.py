@@ -70,7 +70,7 @@ def attribute(name):
             else:
                 # apply the function itself
                 ctx.logger.info('Applying function:{0} on Attribute '
-                                '<{0}>'.format(function.__name__, name))
+                                '<{1}>'.format(function.__name__, name))
                 value = function(cloudify_agent)
                 if value is not None:
                     ctx.logger.info('{0} set by function:{1}'
