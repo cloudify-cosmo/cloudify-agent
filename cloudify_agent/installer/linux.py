@@ -13,14 +13,14 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from setuptools import archive_util
+import os
+
+from cloudify_agent.installer import LinuxInstallerMixin
+from cloudify_agent.installer import LocalInstallerMixin
+from cloudify_agent.installer import RemoteInstallerMixin
 
 
-from cloudify_agent.installer import AgentInstaller
-from cloudify_agent.installer import LinuxMixin, LocalMixin
-
-
-class RemoteLinuxAgentInstaller(AgentInstaller, LinuxMixin):
+class RemoteLinuxAgentInstaller(LinuxInstallerMixin, RemoteInstallerMixin):
 
     def __init__(self, cloudify_agent, logger=None):
         super(RemoteLinuxAgentInstaller, self).__init__(
@@ -48,7 +48,7 @@ class RemoteLinuxAgentInstaller(AgentInstaller, LinuxMixin):
         return self._runner
 
 
-class LocalLinuxAgentInstaller(AgentInstaller, LocalMixin, LinuxMixin):
+class LocalLinuxAgentInstaller(LinuxInstallerMixin, LocalInstallerMixin):
 
     def __init__(self, cloudify_agent, logger=None):
         super(LocalLinuxAgentInstaller, self).__init__(
@@ -56,7 +56,10 @@ class LocalLinuxAgentInstaller(AgentInstaller, LocalMixin, LinuxMixin):
         )
 
     def extract(self, archive, destination):
-        self.logger.debug('Extracting {0} to {1}'
-                          .format(archive, destination))
-        archive_util.unpack_zipfile(archive, destination)
+        self.logger.info('Extracting {0} to {1}'
+                         .format(archive, destination))
+        if not os.path.exists(destination):
+            os.makedirs(destination)
+        self.runner.run('tar xzvf {0} --strip=1 -C {1}'
+                        .format(archive, destination))
         return destination

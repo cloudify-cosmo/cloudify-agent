@@ -16,11 +16,12 @@
 from setuptools import archive_util
 
 from cloudify_agent.installer.runners.winrm_runner import WinRMRunner
-from cloudify_agent.installer import AgentInstaller
-from cloudify_agent.installer import WindowsMixin, LocalMixin, RemoteMixin
+from cloudify_agent.installer import WindowsInstallerMixin
+from cloudify_agent.installer import LocalInstallerMixin
+from cloudify_agent.installer import RemoteInstallerMixin
 
 
-class RemoteWindowsAgentInstaller(AgentInstaller, WindowsMixin, RemoteMixin):
+class RemoteWindowsAgentInstaller(WindowsInstallerMixin, RemoteInstallerMixin):
 
     def __init__(self, cloudify_agent, logger=None):
         super(RemoteWindowsAgentInstaller, self).__init__(
@@ -42,7 +43,7 @@ class RemoteWindowsAgentInstaller(AgentInstaller, WindowsMixin, RemoteMixin):
         return self._runner
 
 
-class LocalWindowsAgentInstaller(AgentInstaller, WindowsMixin, LocalMixin):
+class LocalWindowsAgentInstaller(WindowsInstallerMixin, LocalInstallerMixin):
 
     def __init__(self, cloudify_agent, logger=None):
         super(LocalWindowsAgentInstaller, self).__init__(

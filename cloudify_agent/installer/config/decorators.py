@@ -43,19 +43,19 @@ def attribute(name):
 
             # if the property was given in the invocation, use it.
             if name in cloudify_agent:
-                ctx.logger.info('{0} found in operation.inputs'.format(name))
+                ctx.logger.debug('{0} found in operation.inputs'.format(name))
                 pass
 
             # if the property is inside a runtime property, use it.
             elif name in runtime_properties:
-                ctx.logger.info('{0} found in node.instance.'
-                                'runtime_properties'.format(name))
+                ctx.logger.debug('{0} found in node.instance.'
+                                 'runtime_properties'.format(name))
                 cloudify_agent[name] = runtime_properties[
                     name]
 
             # if the property is declared on the node, use it
             elif name in node_properties:
-                ctx.logger.info('{0} found in node.properties'.format(name))
+                ctx.logger.debug('{0} found in node.properties'.format(name))
                 cloudify_agent[name] = node_properties[name]
 
             # if the property is inside the bootstrap context,
@@ -63,18 +63,18 @@ def attribute(name):
             elif hasattr(agent_context, context_attribute):
                 value = getattr(agent_context, context_attribute)
                 if value is not None:
-                    ctx.logger.info('{0} found in bootstrap_context'
-                                    '.cloudify_agent'.format(name))
+                    ctx.logger.debug('{0} found in bootstrap_context'
+                                     '.cloudify_agent'.format(name))
                     cloudify_agent[name] = value
 
             else:
                 # apply the function itself
-                ctx.logger.info('Applying function:{0} on Attribute '
-                                '<{1}>'.format(function.__name__, name))
+                ctx.logger.debug('Applying function:{0} on Attribute '
+                                 '<{1}>'.format(function.__name__, name))
                 value = function(cloudify_agent)
                 if value is not None:
-                    ctx.logger.info('{0} set by function:{1}'
-                                    .format(name, value))
+                    ctx.logger.debug('{0} set by function:{1}'
+                                     .format(name, value))
                     cloudify_agent[name] = value
 
         return wrapper
@@ -95,8 +95,8 @@ def group(name):
                 if attr_value.get('group') == name:
                     group_attributes[attr_name] = attr_value
 
-            ctx.logger.info('Scanning Attributes '
-                            'of Group <{0}>'.format(name))
+            ctx.logger.debug('Scanning Attributes '
+                             'of Group <{0}>'.format(name))
             for group_attr_name in group_attributes.iterkeys():
                 # iterate and try to set all the attributes of the group as
                 # defined in the heuristics of @attribute.
@@ -104,18 +104,18 @@ def group(name):
                 def setter(_):
                     pass
 
-                ctx.logger.info('Lookup Attribute <{0}> [cloudify_agent={1}]'
-                                .format(group_attr_name,
-                                        json.dumps(cloudify_agent)))
+                ctx.logger.debug('Lookup Attribute <{0}> [cloudify_agent={1}]'
+                                 .format(group_attr_name,
+                                         json.dumps(cloudify_agent)))
                 setter(cloudify_agent)
 
             # when we are done, invoke the group function to
             # apply group logic
-            ctx.logger.info('Applying function:{0} on Group <{1}> '
-                            '[cloudify_agent={2}]'
-                            .format(group_function.__name__,
-                                    name,
-                                    json.dumps(cloudify_agent)))
+            ctx.logger.debug('Applying function:{0} on Group <{1}> '
+                             '[cloudify_agent={2}]'
+                             .format(group_function.__name__,
+                                     name,
+                                     json.dumps(cloudify_agent)))
             group_function(cloudify_agent)
 
         return wrapper

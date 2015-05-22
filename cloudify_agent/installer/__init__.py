@@ -46,13 +46,13 @@ def init_agent_installer(func):
 
         cloudify_agent = kwargs.get('cloudify_agent', {})
 
-        ctx.logger.info('Processing connection configuration. '
-                        '[cloudify_agent={0}] '
-                        .format(json.dumps(cloudify_agent)))
+        ctx.logger.debug('Processing connection configuration. '
+                         '[cloudify_agent={0}] '
+                         .format(json.dumps(cloudify_agent)))
         # first prepare all connection details
         cloudify_agent = configuration.prepare_connection(cloudify_agent)
-        ctx.logger.info('Processed [cloudify_agent={0}]'
-                        .format(json.dumps(cloudify_agent)))
+        ctx.logger.debug('Processed [cloudify_agent={0}]'
+                         .format(json.dumps(cloudify_agent)))
 
         # create the correct runner according to os
         # and local/remote execution. we need this runner now because it
@@ -82,13 +82,13 @@ def init_agent_installer(func):
 
         setattr(current_ctx.get_ctx(), 'runner', runner)
 
-        ctx.logger.info('Processing agent configuration. '
-                        '[cloudify_agent={0}] '
-                        .format(json.dumps(cloudify_agent)))
+        ctx.logger.debug('Processing agent configuration. '
+                         '[cloudify_agent={0}] '
+                         .format(json.dumps(cloudify_agent)))
         # now we can create all other agent attributes
         cloudify_agent = configuration.prepare_agent(cloudify_agent)
-        ctx.logger.info('Processed [cloudify_agent={0}]'
-                        .format(json.dumps(cloudify_agent)))
+        ctx.logger.debug('Processed [cloudify_agent={0}]'
+                         .format(json.dumps(cloudify_agent)))
 
         # now we can validate mandatory attributes
         for attr, value in AGENT_ATTRIBUTES.iteritems():
@@ -178,24 +178,18 @@ class AgentInstaller(object):
 
     def _from_source(self):
 
-        get_pip_url = 'https://bootstrap.pypa.io/get-pip.py'
-
         requirements = self.cloudify_agent.get('requirements')
         source_url = self.cloudify_agent['source_url']
 
-        get_pip = self.download(get_pip_url)
-
         self.logger.info('Installing pip...')
-        self.runner.run('python {0}'.format(get_pip))
+        pip_path = self.install_pip()
         self.logger.info('Installing virtualenv...')
-        self.runner.run('pip install virtualenv')
+        self.install_virtualenv()
 
         self.logger.info('Creating virtualenv at {0}'.format(
             self.cloudify_agent['envdir']))
         self.runner.run('virtualenv {0}'.format(
             self.cloudify_agent['envdir']))
-
-        pip_path = '{0}\\Scripts\\pip'.format(self.cloudify_agent['envdir'])
 
         if requirements:
             self.logger.info('Installing requirements file: {0}'
@@ -218,7 +212,7 @@ class AgentInstaller(object):
         self.extract(archive=package_path,
                      destination=self.cloudify_agent['agent_dir'])
         configure = '--relocated-env'
-        if self.cloudify_agent['disable_requiretty']:
+        if self.cloudify_agent.get('disable_requiretty') is True:
             configure = '{0} --disable-requiretty'.format(configure)
         self.run_agent_command('configure {0}'.format(configure))
 
@@ -226,6 +220,12 @@ class AgentInstaller(object):
         raise NotImplementedError('Must be implemented by sub-class')
 
     def extract(self, archive, destination):
+        raise NotImplementedError('Must be implemented by sub-class')
+
+    def install_pip(self):
+        raise NotImplementedError('Must be implemented by sub-class')
+
+    def install_virtualenv(self):
         raise NotImplementedError('Must be implemented by sub-class')
 
     def create_custom_env_file_on_target(self, environment):
@@ -292,23 +292,41 @@ class AgentInstaller(object):
         return ' '.join(options)
 
 
-class WindowsMixin(AgentInstaller):
+class WindowsInstallerMixin(AgentInstaller):
 
     @property
     def cfy_agent_path(self):
         return '{0}\\Scripts\\cfy-agent'.format(
             self.cloudify_agent['envdir'])
 
+    def install_pip(self):
+        get_pip_url = 'https://bootstrap.pypa.io/get-pip.py'
+        get_pip = self.download(get_pip_url)
+        self.runner.run('python {0}'.format(get_pip))
+        return '{0}\\Scripts\\pip'.format(self.cloudify_agent['envdir'])
 
-class LinuxMixin(AgentInstaller):
+    def install_virtualenv(self):
+        self.runner.run('pip install virtualenv')
+
+
+class LinuxInstallerMixin(AgentInstaller):
 
     @property
     def cfy_agent_path(self):
         return '{0}/bin/python {0}/bin/cfy-agent'.format(
             self.cloudify_agent['envdir'])
 
+    def install_pip(self):
+        get_pip_url = 'https://bootstrap.pypa.io/get-pip.py'
+        get_pip = self.download(get_pip_url)
+        self.runner.run('sudo python {0}'.format(get_pip))
+        return '{0}/bin/pip'.format(self.cloudify_agent['envdir'])
 
-class LocalMixin(AgentInstaller):
+    def install_virtualenv(self):
+        self.runner.run('sudo pip install virtualenv')
+
+
+class LocalInstallerMixin(AgentInstaller):
 
     @property
     def runner(self):
@@ -330,7 +348,7 @@ class LocalMixin(AgentInstaller):
         return utils.env_to_file(env_variables=environment, posix=posix)
 
 
-class RemoteMixin(AgentInstaller):
+class RemoteInstallerMixin(AgentInstaller):
 
     def create_custom_env_file_on_target(self, environment):
         posix = not self.cloudify_agent['windows']
