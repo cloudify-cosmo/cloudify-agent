@@ -25,7 +25,7 @@ from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
 
 from cloudify_agent import operations
-from cloudify_agent.api.utils import get_pip_path, get_cfy_agent_path
+from cloudify_agent.api import utils as api_utils
 
 from cloudify_agent.tests import utils
 from cloudify_agent.tests import BaseTest
@@ -62,7 +62,8 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
         cls.fs.stop()
 
     def _assert_plugin_installed(self, plugin_name):
-        out = self.runner.run('{0} list'.format(get_pip_path())).output
+        out = self.runner.run('{0} list'
+                              .format(api_utils.get_pip_path())).output
         self.assertIn(plugin_name, out)
 
     def _create_plugin_url(self, plugin_tar_name):
@@ -70,12 +71,12 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
 
     @only_ci
     def test_install_plugins_and_restart(self):
-        name = 'cloudify-agent-{0}'.format(uuid.uuid4())
+        name = api_utils.generate_agent_name()
         queue = '{0}-queue'.format(name)
 
         self._start_agent(name, queue)
 
-        new_name = 'cloudify-agent-{0}'.format(uuid.uuid4())
+        new_name = api_utils.generate_agent_name()
 
         try:
             # now lets send the install_plugins task
@@ -117,7 +118,7 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
     @only_ci
     def test_stop(self):
 
-        name = 'cloudify-agent-{0}'.format(uuid.uuid4())
+        name = api_utils.generate_agent_name()
         queue = '{0}-queue'.format(name)
 
         self._start_agent(name, queue)
@@ -139,16 +140,16 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
                         '--manager-ip=127.0.0.1 --name={1} '
                         '--process-management={2} '
                         '--queue={3}'
-                        .format(get_cfy_agent_path(),
+                        .format(api_utils.get_cfy_agent_path(),
                                 name, process_management, queue),
                         stdout_pipe=False)
         self.runner.run('{0} --debug daemons '
                         'configure --name={1}'
-                        .format(get_cfy_agent_path(), name),
+                        .format(api_utils.get_cfy_agent_path(), name),
                         stdout_pipe=False)
         self.runner.run('{0} --debug daemons '
                         'start --name={1}'
-                        .format(get_cfy_agent_path(), name),
+                        .format(api_utils.get_cfy_agent_path(), name),
                         stdout_pipe=False)
 
 

@@ -43,4 +43,4 @@ def configure(disable_requiretty, relocated_env):
         api_utils.disable_requiretty()
     if relocated_env:
         api_utils.fix_virtualenv()
-    click.echo('Successfully configured cloudify-agent')
+    click.echo('Successfully configured cfy-agent')
