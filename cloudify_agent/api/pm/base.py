@@ -30,7 +30,6 @@ from cloudify_agent.api import errors
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import defaults
 from cloudify_agent.api.utils import get_storage_directory
-from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent import operations
 
 
@@ -357,18 +356,13 @@ class Daemon(object):
         # process management specific implementation
         self.set_includes()
 
-        # save the plugin again because the 'plugins' attribute
-        # has changed
-        DaemonFactory.save(self)
-
     def create(self):
 
         """
-        Creates the agent. This method saves the daemon properties in the
-        storage folder and register plugins.
+        Creates the agent. This method may be served as a hook to some custom
+        logic that needs to be implemented after the instance was instantiated
         """
-
-        DaemonFactory.save(self)
+        pass
 
     def start(self,
               interval=defaults.START_INTERVAL,

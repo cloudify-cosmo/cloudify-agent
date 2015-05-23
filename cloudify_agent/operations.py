@@ -77,6 +77,7 @@ def restart(new_name=None, delay_period=5, **_):
 
     # create the new daemon
     new_daemon.create()
+    _save_daemon(new_daemon)
 
     # configure the new daemon
     new_daemon.configure()

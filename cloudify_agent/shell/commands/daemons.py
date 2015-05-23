@@ -120,6 +120,7 @@ def create(**params):
     )
 
     daemon.create()
+    DaemonFactory.save(daemon)
     click.echo('Successfully created daemon: {0}'
                .format(daemon.name))
 
