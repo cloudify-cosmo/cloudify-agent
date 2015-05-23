@@ -171,7 +171,7 @@ class GenericLinuxDaemon(Daemon):
             virtualenv_path=VIRTUALENV,
             extra_env_path=self.extra_env_path,
             name=self.name,
-            storage_dir=utils.get_storage_directory()
+            storage_dir=utils.get_storage_directory(self.user)
         )
 
         self.runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))

@@ -14,7 +14,10 @@
 #  * limitations under the License.
 
 import logging
+import os
 from mock import patch
+
+from cloudify.exceptions import CommandExecutionException
 
 from cloudify_agent.api.pm.nssm import NonSuckingServiceManagerDaemon
 
@@ -87,13 +90,27 @@ class TestNonSuckingServiceManagerDaemon(BaseDaemonLiveTestCase):
         self._test_two_daemons_impl()
 
     def test_configure(self):
-        raise NotImplementedError()
+        daemon = self.create_daemon()
+        daemon.create()
+
+        daemon.configure()
+        self.assertTrue(os.path.exists(daemon.config_path))
 
     def test_configure_existing_agent(self):
         self._test_configure_existing_agent_impl()
 
     def test_delete(self):
-        raise NotImplementedError()
+        daemon = self.create_daemon()
+        daemon.create()
+        daemon.configure()
+        daemon.start()
+        daemon.stop()
+        daemon.delete()
+        self.assertFalse(os.path.exists(daemon.config_path))
+        self.assertRaises(
+            CommandExecutionException,
+            self.runner.run,
+            'sc getdisplayname {0}'.format(daemon.name))
 
     def test_delete_before_stop(self):
         self._test_delete_before_stop_impl()

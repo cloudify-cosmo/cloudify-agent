@@ -94,7 +94,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
             includes=','.join(self.includes),
             virtualenv_path=VIRTUALENV,
             name=self.name,
-            storage_dir=utils.get_storage_directory(),
+            storage_dir=utils.get_storage_directory(self.user),
             custom_environment=env_string,
             startup_policy=self.startup_policy,
             failure_reset_timeout=self.failure_reset_timeout,
@@ -142,7 +142,12 @@ class NonSuckingServiceManagerDaemon(Daemon):
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
         stats = utils.get_agent_stats(self.name, self.celery)
         if stats:
-            raise exceptions.DaemonStillRunningException(self.name)
+            if not force:
+                raise exceptions.DaemonStillRunningException(self.name)
+            self.logger.debug(
+                'Requested to delete daemon with force, '
+                'stopping daemon {0} before deletion.'.format(self.name))
+            self.stop()
 
         self.logger.info('Removing {0} service'.format(
             self.name))
