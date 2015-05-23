@@ -486,12 +486,14 @@ class Daemon(object):
         # exception and it wrote its content
         # to the file above because of our custom exception
         # handler (see app.py)
-        self.logger.info('looking in {0}'.format(error_dump_path))
         if os.path.exists(error_dump_path):
+            self.logger.info('looking in {0}'.format(error_dump_path))
             with open(error_dump_path) as f:
                 error = f.read()
             os.remove(error_dump_path)
             raise exceptions.DaemonException(error)
+        else:
+            self.logger.info('{0} does not exist'.format(error_dump_path))
 
     def _delete_amqp_queues(self):
         client = amqp_client.create_client(self.broker_ip)

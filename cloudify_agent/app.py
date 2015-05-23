@@ -79,13 +79,19 @@ if agent_name:
             f1.write('Type: {0}\n'.format(exception_type))
             f1.write('Value: {0}\n'.format(value))
 
-        with open(error_dump_path, 'w') as f:
-            f.write('Type: {0}\n'.format(exception_type))
-            f.write('Value: {0}\n'.format(value))
-            traceback.print_tb(the_traceback, file=f)
-        with open('C:\\Users\\appveyor\\dump.log', 'a') as f1:
-            f1.write('wrote to file: {0}'.format(
-                error_dump_path))
+        try:
+            with open(error_dump_path, 'w') as f:
+                f.write('Type: {0}\n'.format(exception_type))
+                f.write('Value: {0}\n'.format(value))
+                traceback.print_tb(the_traceback, file=f)
+            with open('C:\\Users\\appveyor\\dump.log', 'a') as f1:
+                f1.write('wrote to file: {0}'.format(
+                    error_dump_path))
+        except BaseException as e:
+            with open('C:\\Users\\appveyor\\dump.log', 'a') as f1:
+                f1.write('failed writing to file {0}: {1}'.format(
+                    error_dump_path, str(e)))
+
         current_excepthook(exception_type, value, the_traceback)
 
     sys.excepthook = new_excepthook
