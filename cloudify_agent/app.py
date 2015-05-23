@@ -18,10 +18,10 @@ import sys
 import traceback
 from celery import Celery
 
-from cloudify.utils import get_agent_name
-from cloudify.utils import get_agent_storage_directory
 from cloudify import constants
 
+from cloudify.utils import get_daemon_name
+from cloudify.utils import get_daemon_storage_dir
 
 """
 This module is loaded on celery startup. It is not intended to be
@@ -33,7 +33,7 @@ broker_url = os.environ.get(constants.CELERY_BROKER_URL_KEY, 'amqp://')
 
 try:
     # running inside an agent
-    agent_name = get_agent_name()
+    agent_name = get_daemon_name()
 except KeyError:
     # running outside an agent
     agent_name = None
@@ -67,7 +67,7 @@ if agent_name:
         # been created under a different user, in which case we don't have
         # permissions to write to it.
         error_dump_path = os.path.join(
-            get_agent_storage_directory(),
+            get_daemon_storage_dir(),
             '{0}.err'.format(agent_name))
 
         with open(error_dump_path, 'w') as f:

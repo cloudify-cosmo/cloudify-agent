@@ -56,7 +56,8 @@ class DaemonFactory(object):
         raise errors.DaemonNotImplementedError(process_management)
 
     @staticmethod
-    def new(logger_level=logging.INFO, logger_format=None, **attributes):
+    def new(logger_level=logging.INFO, logger_format=None,
+            username=None, storage=None, **attributes):
 
         """
         Creates a daemon instance that implements the required process
@@ -72,6 +73,18 @@ class DaemonFactory(object):
         the logger creating and configuring the daemon.
         :type logger_format: str
 
+        :param username:
+
+            the username the daemon is registered under.
+            if no username if passed, the currently logged user
+            will be used. this setting is used for computing
+            the storage directory, hence, if `storage` is passed,
+            the username will be ignored.
+
+        :type username: str
+        :param storage: the storage directory
+        :type storage: str
+
         :param attributes: parameters passed to the daemon class constructor.
         :type attributes: dict
 
@@ -84,7 +97,7 @@ class DaemonFactory(object):
             # an explicit name was passed, make sure we don't already
             # have a daemon with that name
             try:
-                DaemonFactory.load(name)
+                DaemonFactory.load(name, username=username, storage=storage)
                 # this means we do have one, raise an error
                 raise errors.DaemonAlreadyExistsError(name)
             except errors.DaemonNotFoundError:
@@ -96,13 +109,36 @@ class DaemonFactory(object):
                       logger_format=logger_format, **attributes)
 
     @staticmethod
-    def load_all():
+    def load_all(username=None, storage=None):
 
-        if not os.path.exists(utils.get_storage_directory()):
+        """
+        Loads all daemons from local storage.
+
+        :param username:
+
+            the username the daemon is registered under.
+            if no username if passed, the currently logged user
+            will be used. this setting is used for computing
+            the storage directory, hence, if `storage` is passed,
+            the username will be ignored.
+
+        :type username: str
+        :param storage: the storage directory
+        :type storage: str
+
+        :return: all daemons instances.
+        :rtype: list
+
+        """
+
+        if storage is None:
+            storage = utils.get_storage_directory(username)
+
+        if not os.path.exists(storage):
             return []
 
         daemons = []
-        daemon_files = os.listdir(utils.get_storage_directory())
+        daemon_files = os.listdir(storage)
         for daemon_file in daemon_files:
             full_path = os.path.join(
                 utils.get_storage_directory(),
@@ -116,8 +152,9 @@ class DaemonFactory(object):
                 daemons.append(daemon(**daemon_as_json))
         return daemons
 
-    @classmethod
-    def load(cls, name, logger_level=None, logger_format=None, username=None, storage=None):
+    @staticmethod
+    def load(name, logger_level=None, logger_format=None,
+             username=None, storage=None):
 
         """
         Loads a daemon from local storage.
@@ -138,11 +175,13 @@ class DaemonFactory(object):
             instantiation will be used.
         :type logger_format: int
         :param username:
+
             the username the daemon is registered under.
             if no username if passed, the currently logged user
             will be used. this setting is used for computing
             the storage directory, hence, if `storage` is passed,
             the username will be ignored.
+
         :type username: str
         :param storage: the storage directory
         :type storage: str
@@ -177,8 +216,8 @@ class DaemonFactory(object):
         daemon = DaemonFactory._find_implementation(process_management)
         return daemon(**daemon_as_json)
 
-    @classmethod
-    def save(cls, daemon, storage=None):
+    @staticmethod
+    def save(daemon, username=None, storage=None):
 
         """
         Saves a daemon to the local storage. The daemon is stored in json
@@ -186,10 +225,23 @@ class DaemonFactory(object):
 
         :param daemon: The daemon instance to save.
         :type daemon: cloudify_agent.api.daemon.base.Daemon
+
+        :param username:
+
+            the username the daemon is registered under.
+            if no username if passed, the currently logged user
+            will be used. this setting is used for computing
+            the storage directory, hence, if `storage` is passed,
+            the username will be ignored.
+
+        :type username: str
+        :param storage: the storage directory
+        :type storage: str
+
         """
 
         if storage is None:
-            storage = utils.get_storage_directory(daemon.user)
+            storage = utils.get_storage_directory(username)
 
         if not os.path.exists(storage):
             os.makedirs(storage)
@@ -205,19 +257,32 @@ class DaemonFactory(object):
             json.dump(props, f, indent=2)
             f.write(os.linesep)
 
-    @classmethod
-    def delete(cls, name):
+    @staticmethod
+    def delete(name, username=None, storage=None):
 
         """
         Deletes a daemon from local storage.
 
         :param name: The name of the daemon to delete.
         :type name: str
+        :param username:
+
+            the username the daemon is registered under.
+            if no username if passed, the currently logged user
+            will be used. this setting is used for computing
+            the storage directory, hence, if `storage` is passed,
+            the username will be ignored.
+
+        :type username: str
+        :param storage: the storage directory
+        :type storage: str
+
         """
 
-        storage_directory = utils.get_storage_directory()
+        if storage is None:
+            storage = utils.get_storage_directory(username)
 
         daemon_path = os.path.join(
-            storage_directory, '{0}.json'.format(name))
+            storage, '{0}.json'.format(name))
         if os.path.exists(daemon_path):
             os.remove(daemon_path)

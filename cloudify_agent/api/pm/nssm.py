@@ -21,7 +21,6 @@ from cloudify_agent.api import defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.api.pm.base import Daemon
-from cloudify_agent import operations
 from cloudify_agent.api import errors
 from cloudify_agent.included_plugins import included_plugins
 

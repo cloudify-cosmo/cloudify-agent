@@ -1,11 +1,11 @@
 # Cloudify plugins environment variables
+export CLOUDIFY_DAEMON_NAME={{ name }}
+export CLOUDIFY_DAEMON_STORAGE_DIRECTORY={{ storage_dir }}
+export CLOUDIFY_DAEMON_USER={{ user }}
 export MANAGEMENT_IP={{ manager_ip }}
 export MANAGER_REST_PORT={{ manager_port }}
 export MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229
 export MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL=http://{{ manager_ip }}:53229/blueprints
-export AGENT_NAME={{ name }}
-export AGENT_STORAGE_DIR={{ storage_dir }}
-export AGENT_USERNAME={{ user }}
 
 # Celery worker environment variables
 export CELERY_BROKER_URL={{ broker_url }}
@@ -13,7 +13,6 @@ export CELERY_APP=cloudify_agent.app.app
 export CELERY_TASK_SERIALIZER=json
 export CELERY_RESULT_SERIALIZER=json
 export CELERY_RESULT_BACKEND=${CELERY_BROKER_URL}
-export CELERYD_WORK_DIR={{ workdir }}
 export C_FORCE_ROOT="true"
 
 # Daemon variables, used by the daemonization script

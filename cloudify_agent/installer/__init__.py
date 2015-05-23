@@ -27,10 +27,10 @@ from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
 
 from cloudify_agent.installer.config import configuration
-from cloudify_agent.shell import env
 from cloudify_agent.api import utils
 from cloudify_agent.installer.config.attributes import AGENT_ATTRIBUTES
 from cloudify_agent.installer.config.attributes import raise_missing_attribute
+from cloudify_agent.shell import env
 
 
 def init_agent_installer(func):
@@ -255,7 +255,6 @@ class AgentInstaller(object):
             env.CLOUDIFY_BROKER_IP: self.cloudify_agent.get('broker_ip'),
             env.CLOUDIFY_BROKER_PORT: self.cloudify_agent.get('broker_port'),
             env.CLOUDIFY_BROKER_URL: self.cloudify_agent.get('broker_url'),
-            env.CLOUDIFY_DAEMON_GROUP: self.cloudify_agent.get('group'),
             env.CLOUDIFY_MANAGER_PORT: self.cloudify_agent.get('manager_port'),
             env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(
                 'max_workers'),

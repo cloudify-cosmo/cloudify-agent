@@ -44,8 +44,8 @@ from cloudify_agent.shell import utils
 @click.option('--includes',
               help='A comma separated list of module names '
                    'to be included in the daemon. [env {0}]'
-              .format(env.CLOUDIFY_AGENT_INCLUDES),
-              envvar=env.CLOUDIFY_AGENT_INCLUDES)
+              .format(env.CLOUDIFY_DAEMON_INCLUDES),
+              envvar=env.CLOUDIFY_DAEMON_INCLUDES)
 @click.option('--name',
               help='The name of the daemon. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_NAME),

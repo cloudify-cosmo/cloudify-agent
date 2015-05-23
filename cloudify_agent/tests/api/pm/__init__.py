@@ -311,12 +311,11 @@ class BaseDaemonLiveTestCase(BaseTest):
                     'http://{0}:53229'.format(daemon.manager_ip),
                 constants.MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL_KEY:
                     'http://{0}:53229/blueprints'.format(daemon.manager_ip),
-                constants.CELERYD_WORK_DIR_KEY: daemon.workdir,
-                constants.CELERY_RESULT_BACKEND_KEY: daemon.broker_url,
                 constants.CELERY_BROKER_URL_KEY: daemon.broker_url,
-                constants.AGENT_STORAGE_DIRECTORY_KEY:
+                constants.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY:
                     utils.get_storage_directory(),
-                constants.AGENT_NAME_KEY: daemon.name
+                constants.CLOUDIFY_DAEMON_NAME_KEY: daemon.name,
+                constants.CLOUDIFY_DAEMON_USER_KEY: daemon.user
             }
 
             def _check_env_var(var, expected_value):

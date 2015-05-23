@@ -17,8 +17,6 @@ import os
 import logging
 from mock import patch
 
-from cloudify_agent.api import exceptions
-from cloudify_agent.api import errors
 from cloudify_agent.api.pm.initd import GenericLinuxDaemon
 
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase

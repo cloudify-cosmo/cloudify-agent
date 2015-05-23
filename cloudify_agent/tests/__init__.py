@@ -18,7 +18,7 @@ import tempfile
 import unittest2 as unittest
 
 
-def get_storage_directory():
+def get_storage_directory(_=None):
     return os.path.join(tempfile.gettempdir(), 'cfy-agent-tests-daemons')
 
 

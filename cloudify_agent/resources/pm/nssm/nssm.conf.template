@@ -24,15 +24,14 @@ MANAGEMENT_IP={{ manager_ip }} ^
 MANAGER_REST_PORT={{ manager_port }} ^
 MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229 ^
 MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL=http://{{ manager_ip }}:53229/blueprints ^
-AGENT_NAME={{ name }} ^
-AGENT_USERNAME={{ user }} ^
-AGENT_STORAGE_DIR={{ storage_dir }} ^
+CLOUDIFY_DAEMON_NAME={{ name }} ^
+CLOUDIFY_DAEMON_STORAGE_DIRECTORY={{ user }} ^
+CLOUDIFY_DAEMON_USER={{ storage_dir }} ^
 CELERY_BROKER_URL={{ broker_url }} ^
 CELERY_APP=cloudify_agent.app.app ^
 CELERY_TASK_SERIALIZER=json ^
 CELERY_RESULT_SERIALIZER=json ^
-CELERY_RESULT_BACKEND={{ broker_url }} ^
-CELERYD_WORK_DIR={{ workdir }} {{ custom_environment }}
+CELERY_RESULT_BACKEND={{ broker_url }} ^ {{ custom_environment }}
 
 if %errorlevel% neq 0 exit /b %errorlevel%
 
