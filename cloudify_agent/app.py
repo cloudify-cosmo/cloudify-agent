@@ -73,7 +73,7 @@ if agent_name:
             get_daemon_storage_dir(),
             '{0}.err'.format(agent_name))
 
-        with open('C:\\Users\\appveyor\\dump.log', 'w') as f1:
+        with open('C:\\Users\\appveyor\\dump.log', 'a') as f1:
             f1.write('In new exception hook. path is: {0}'.format(
                 error_dump_path))
             f1.write('Type: {0}\n'.format(exception_type))
@@ -83,6 +83,9 @@ if agent_name:
             f.write('Type: {0}\n'.format(exception_type))
             f.write('Value: {0}\n'.format(value))
             traceback.print_tb(the_traceback, file=f)
+        with open('C:\\Users\\appveyor\\dump.log', 'a') as f1:
+            f1.write('wrote to file: {0}'.format(
+                error_dump_path))
         current_excepthook(exception_type, value, the_traceback)
 
     sys.excepthook = new_excepthook
