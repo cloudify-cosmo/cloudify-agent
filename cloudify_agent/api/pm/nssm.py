@@ -76,6 +76,8 @@ class NonSuckingServiceManagerDaemon(Daemon):
                 .format(self.name, self.config_path))
 
         # creating the installation script
+        directory = utils.get_storage_directory(self.user)
+        self.logger.info('Storage dir will be: {0}'.format(directory))
         utils.render_template_to_file(
             template_path='pm/nssm/nssm.conf.template',
             file_path=self.config_path,
@@ -94,7 +96,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
             includes=','.join(self.includes),
             virtualenv_path=VIRTUALENV,
             name=self.name,
-            storage_dir=utils.get_storage_directory(self.user),
+            storage_dir=directory,
             custom_environment=env_string,
             startup_policy=self.startup_policy,
             failure_reset_timeout=self.failure_reset_timeout,
