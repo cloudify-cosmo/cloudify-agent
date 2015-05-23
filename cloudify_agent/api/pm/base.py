@@ -479,15 +479,13 @@ class Daemon(object):
     def _verify_no_celery_error(self):
 
         error_dump_path = os.path.join(
-            get_storage_directory(),
+            get_storage_directory(self.user),
             '{0}.err'.format(self.name))
 
         # this means the celery worker had an uncaught
         # exception and it wrote its content
         # to the file above because of our custom exception
         # handler (see app.py)
-        self.logger.info('Looking for an error in: {0}'
-                         .format(error_dump_path))
         if os.path.exists(error_dump_path):
             with open(error_dump_path) as f:
                 error = f.read()
