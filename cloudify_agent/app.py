@@ -61,8 +61,8 @@ if agent_name:
     # is later read for querying if celery has started successfully.
     current_excepthook = sys.excepthook
 
-    with open('C:\\Users\\appveyor\\dump.log', 'w') as f:
-        f.write('Setting new exception hook')
+    with open('C:\\Users\\appveyor\\dump.log', 'w') as f2:
+        f2.write('Setting new exception hook')
 
     def new_excepthook(exception_type, value, the_traceback):
 
@@ -73,8 +73,11 @@ if agent_name:
             get_daemon_storage_dir(),
             '{0}.err'.format(agent_name))
 
-        with open('C:\\Users\\appveyor\\dump.log', 'w') as f:
-            f.write('In new exception hook. path is: {0}'.format(error_dump_path))
+        with open('C:\\Users\\appveyor\\dump.log', 'w') as f1:
+            f1.write('In new exception hook. path is: {0}'.format(
+                error_dump_path))
+            f1.write('Type: {0}\n'.format(exception_type))
+            f1.write('Value: {0}\n'.format(value))
 
         with open(error_dump_path, 'w') as f:
             f.write('Type: {0}\n'.format(exception_type))

@@ -200,7 +200,7 @@ class BaseDaemonLiveTestCase(BaseTest):
         try:
             daemon.register('mock-plugin-error')
             try:
-                daemon.start(timeout=5)
+                daemon.start()
                 self.fail('Expected start operation to fail '
                           'due to bad import')
             except exceptions.DaemonException as e:
