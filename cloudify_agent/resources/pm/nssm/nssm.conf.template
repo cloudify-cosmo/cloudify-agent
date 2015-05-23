@@ -12,7 +12,7 @@ echo Installing the agent as a windows service...
 --loglevel={{ celery_log_level }} ^
 --pidfile={{ celery_pid_file }} ^
 --logfile={{ celery_log_file }} ^
---include={{ built_in_includes }} ^
+--include={{ includes }} ^
 -Ofair
 
 if %errorlevel% neq 0 exit /b %errorlevel%
@@ -25,6 +25,7 @@ MANAGER_REST_PORT={{ manager_port }} ^
 MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229 ^
 MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL=http://{{ manager_ip }}:53229/blueprints ^
 AGENT_NAME={{ name }} ^
+AGENT_USERNAME={{ user }} ^
 AGENT_STORAGE_DIR={{ storage_dir }} ^
 CELERY_BROKER_URL={{ broker_url }} ^
 CELERY_APP=cloudify_agent.app.app ^

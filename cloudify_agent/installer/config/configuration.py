@@ -86,6 +86,7 @@ def connection_attributes(cloudify_agent):
 
     if cloudify_agent['local']:
 
+        # auto-detect os if running locally
         cloudify_agent['windows'] = os.name == 'nt'
 
         # we are installing an agent locally, all we need is the username
@@ -95,8 +96,6 @@ def connection_attributes(cloudify_agent):
             cloudify_agent['user'] = getpass.getuser()
     else:
         cloudify_agent['windows'] = False
-
-    if not cloudify_agent['local'] and 'ip' not in cloudify_agent:
         # support 'ip' attribute as direct node property or runtime
         # property (as opposed to nested inside the cloudify_agent dict)
         ip = ctx.instance.runtime_properties.get('ip')
@@ -105,8 +104,8 @@ def connection_attributes(cloudify_agent):
         if not ip:
             raise_missing_attribute('ip')
         cloudify_agent['ip'] = ip
-    if cloudify_agent['windows'] and 'password' not in cloudify_agent:
-        raise_missing_attribute('password')
+        if cloudify_agent['windows'] and 'password' not in cloudify_agent:
+            raise_missing_attribute('password')
 
 
 @group('installation')

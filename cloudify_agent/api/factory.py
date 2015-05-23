@@ -117,7 +117,7 @@ class DaemonFactory(object):
         return daemons
 
     @classmethod
-    def load(cls, name, logger_level=None, logger_format=None):
+    def load(cls, name, logger_level=None, logger_format=None, username=None, storage=None):
 
         """
         Loads a daemon from local storage.
@@ -137,7 +137,15 @@ class DaemonFactory(object):
             if not specified, the value given at first
             instantiation will be used.
         :type logger_format: int
-
+        :param username:
+            the username the daemon is registered under.
+            if no username if passed, the currently logged user
+            will be used. this setting is used for computing
+            the storage directory, hence, if `storage` is passed,
+            the username will be ignored.
+        :type username: str
+        :param storage: the storage directory
+        :type storage: str
 
         :return: A daemon instance.
         :rtype: cloudify_agent.api.pm.base.Daemon
@@ -146,16 +154,18 @@ class DaemonFactory(object):
         file does not exist.
         """
 
-        storage_directory = utils.get_storage_directory()
+        if storage is None:
+            storage = utils.get_storage_directory(username)
+
+        logger.info('Loading daemon {0} from storage: {1}'
+                    .format(name, storage))
 
         daemon_path = os.path.join(
-            storage_directory,
+            storage,
             '{0}.json'.format(name)
         )
         if not os.path.exists(daemon_path):
             raise errors.DaemonNotFoundError(name)
-        logger.debug('Loading daemon {0} from storage: {1}'
-                     .format(name, storage_directory))
         daemon_as_json = utils.json_load(daemon_path)
         if logger_level:
             daemon_as_json['logger_level'] = logger_level
@@ -168,7 +178,7 @@ class DaemonFactory(object):
         return daemon(**daemon_as_json)
 
     @classmethod
-    def save(cls, daemon):
+    def save(cls, daemon, storage=None):
 
         """
         Saves a daemon to the local storage. The daemon is stored in json
@@ -178,13 +188,14 @@ class DaemonFactory(object):
         :type daemon: cloudify_agent.api.daemon.base.Daemon
         """
 
-        storage_directory = os.path.join(utils.get_storage_directory())
+        if storage is None:
+            storage = utils.get_storage_directory(daemon.user)
 
-        if not os.path.exists(storage_directory):
-            os.makedirs(storage_directory)
+        if not os.path.exists(storage):
+            os.makedirs(storage)
 
         daemon_path = os.path.join(
-            storage_directory, '{0}.json'.format(
+            storage, '{0}.json'.format(
                 daemon.name)
         )
         logger.debug('Saving daemon configuration at: {0}'

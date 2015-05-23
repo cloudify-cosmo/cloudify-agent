@@ -43,8 +43,15 @@ except KeyError:
 #   1. Celery command line --app options.
 #   2. The operation decorator uses app.task as the underlying
 #      celery task decorator. (cloudify.decorators)
-app = Celery(broker=broker_url,
-             backend=broker_url)
+app = Celery(broker=broker_url)
+
+# result backend should be configured like this
+# instead of in the constructor because of an issue with celery
+# result backends running on windows hosts
+# see https://github.com/celery/celery/issues/897
+app.conf.update(
+    CELERY_RESULT_BACKEND=broker_url
+)
 
 
 if agent_name:

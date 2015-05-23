@@ -59,12 +59,10 @@ class NonSuckingServiceManagerDaemon(Daemon):
         self.failure_restart_delay = params.get('failure_restart_delay', 5000)
 
         self.celery_log_level = params.get('celery_log_level', 'debug')
-        self.celery_log_file = params.get(
-            'celery_log_file',
-            os.path.join(self.workdir, '{0}-celery.log'.format(self.name)))
-        self.celery_pid_file = params.get(
-            'celery_pid_file',
-            os.path.join(self.workdir, '{0}-celery.pid'.format(self.name)))
+        self.celery_log_file = os.path.join(self.workdir,
+                                            '{0}-celery.log'.format(self.name))
+        self.celery_pid_file = os.path.join(self.workdir,
+                                            '{0}-celery.pid'.format(self.name))
 
     def configure(self):
 
@@ -83,19 +81,18 @@ class NonSuckingServiceManagerDaemon(Daemon):
             template_path='pm/nssm/nssm.conf.template',
             file_path=self.config_path,
             queue=self.queue,
-            built_in_includes=','.join(
-                operations.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES),
             nssm_path=self.nssm_path,
             celery_log_level=self.celery_log_level,
             celery_log_file=self.celery_log_file,
             celery_pid_file=self.celery_pid_file,
             workdir=self.workdir,
+            user=self.user,
             manager_ip=self.manager_ip,
             manager_port=self.manager_port,
             broker_url=self.broker_url,
             min_workers=self.min_workers,
             max_workers=self.max_workers,
-            includes=','.join(operations.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES),
+            includes=','.join(self.includes),
             virtualenv_path=VIRTUALENV,
             name=self.name,
             storage_dir=utils.get_storage_directory(),

@@ -127,15 +127,7 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
         self.assertTrue(os.path.exists(daemon.includes_path))
 
     def test_configure_existing_agent(self):
-        daemon = self.create_daemon()
-        daemon.create()
-
-        daemon.configure()
-        self.assertTrue(os.path.exists(daemon.script_path))
-        self.assertTrue(os.path.exists(daemon.config_path))
-        self.assertTrue(os.path.exists(daemon.includes_path))
-
-        self.assertRaises(errors.DaemonError, daemon.configure)
+        self._test_configure_existing_agent_impl()
 
     @only_ci
     def test_configure_start_on_boot(self):
@@ -155,17 +147,7 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
         self.assertFalse(os.path.exists(daemon.includes_path))
 
     def test_delete_before_stop(self):
-        daemon = self.create_daemon()
-        daemon.create()
-        daemon.configure()
-        daemon.start()
-        self.assertRaises(exceptions.DaemonStillRunningException,
-                          daemon.delete)
+        self._test_delete_before_stop_impl()
 
     def test_delete_before_stop_with_force(self):
-        daemon = self.create_daemon()
-        daemon.create()
-        daemon.configure()
-        daemon.start()
-        daemon.delete(force=True)
-        self.assert_daemon_dead(self.name)
+        self._test_delete_before_stop_with_force_impl()

@@ -59,17 +59,23 @@ def get_agent_stats(name, celery):
     return stats
 
 
-def get_storage_directory():
+def get_storage_directory(username=None):
 
     """
     Retrieve path to the directory where all daemon
-    properties will be stored.
+    registered under a specific username will be stored.
 
+    :param username: the user
+    :type username: str
     :return: path to the directory
     :rtype str
 
     """
-    return os.path.join(get_home_dir(), '.cfy-agent')
+
+    if username:
+        logger.info('Retrieving storage directory '
+                    'for user: {0}'.format(username))
+    return os.path.join(get_home_dir(username), '.cfy-agent')
 
 
 def daemon_to_dict(daemon):

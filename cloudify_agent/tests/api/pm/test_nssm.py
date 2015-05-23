@@ -90,13 +90,13 @@ class TestNonSuckingServiceManagerDaemon(BaseDaemonLiveTestCase):
         raise NotImplementedError()
 
     def test_configure_existing_agent(self):
-        raise NotImplementedError()
+        self._test_configure_existing_agent_impl()
 
     def test_delete(self):
         raise NotImplementedError()
 
     def test_delete_before_stop(self):
-        raise NotImplementedError()
+        self._test_delete_before_stop_impl()
 
     def test_delete_before_stop_with_force(self):
-        raise NotImplementedError()
+        self._test_delete_before_stop_with_force_impl()

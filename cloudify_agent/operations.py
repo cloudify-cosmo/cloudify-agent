@@ -34,6 +34,7 @@ from cloudify_agent.api import utils
 ##########################################################################
 CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES = ['cloudify_agent.operations']
 
+import os
 
 @operation
 def install_plugins(plugins, **_):
@@ -45,7 +46,10 @@ def install_plugins(plugins, **_):
         args = get_plugin_args(plugin)
         ctx.logger.info('Installing plugin: {0}'.format(plugin['name']))
         package_name = installer.install(source, args)
-        daemon = DaemonFactory.load(name=get_agent_name())
+        daemon = DaemonFactory.load(
+            name=get_agent_name(),
+            username=os.environ['AGENT_USERNAME'],
+            storage=os.environ['AGENT_STORAGE_DIR'])
         daemon.register(package_name)
 
 
@@ -55,7 +59,10 @@ def restart(new_name=None, delay_period=5, **_):
     if new_name is None:
         new_name = utils.generate_agent_name()
 
-    daemon = DaemonFactory.load(name=get_agent_name())
+    daemon = DaemonFactory.load(
+        name=get_agent_name(),
+        username=os.environ['AGENT_USERNAME'],
+        storage=os.environ['AGENT_STORAGE_DIR'])
 
     # make the current master stop listening to the current queue
     # to avoid a situation where we have two masters listening on the
@@ -70,6 +77,7 @@ def restart(new_name=None, delay_period=5, **_):
 
     # clone the current daemon to preserve all the attributes
     attributes = utils.daemon_to_dict(daemon)
+    ctx.logger.info('Cloned current Cloudify Agent: {0}'.format(attributes))
 
     # give the new daemon the new name
     attributes['name'] = new_name
@@ -101,7 +109,9 @@ def restart(new_name=None, delay_period=5, **_):
 
 
 @operation
-def stop(delay_period=0, **_):
+def stop(delay_period=5, **_):
+    ctx.logger.info('Scheduling Cloudify Agent {0} for shutdown'
+                    .format(get_agent_name()))
     thread = threading.Thread(target=shutdown_current_master,
                               args=[delay_period, ctx.logger])
     thread.daemon = True
@@ -111,7 +121,11 @@ def stop(delay_period=0, **_):
 def shutdown_current_master(delay_period, logger):
     if delay_period > 0:
         time.sleep(delay_period)
-    daemon = DaemonFactory.load(name=get_agent_name())
+    import os
+    daemon = DaemonFactory.load(
+        name=get_agent_name(),
+        username=os.environ['AGENT_USERNAME'],
+        storage=os.environ['AGENT_STORAGE_DIR'])
     daemon.logger = logger
     logger.info('Shutting down agent: {0}'
                 .format(get_agent_name()))

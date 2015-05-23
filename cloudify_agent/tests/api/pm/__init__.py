@@ -35,6 +35,7 @@ from cloudify.utils import setup_logger
 from cloudify_agent.api import utils
 from cloudify_agent.api import factory
 from cloudify_agent.api import exceptions
+from cloudify_agent.api import errors
 
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests import resources
@@ -121,6 +122,7 @@ class BaseDaemonLiveTestCase(BaseTest):
 
         self.name = utils.generate_agent_name()
         self.queue = '{0}-queue'.format(self.name)
+        self.additional_names = []
 
         self.runner = LocalCommandRunner(self.logger)
         self.temp_folder = tempfile.mkdtemp(prefix='cfy-agent-tests-')
@@ -134,17 +136,20 @@ class BaseDaemonLiveTestCase(BaseTest):
         os.chdir(self.currdir)
         if os.name == 'nt':
             # with windows we need to stop and remove the service
-            nssm_path = utils.get_full_resource_path(
-                os.path.join('pm', 'nssm', 'nssm.exe'))
-            self.runner.run('sc stop {0}'.format(self.name),
-                            exit_on_failure=False,
-                            stderr_pipe=False,
-                            stdout_pipe=False)
-            self.runner.run('{0} remove {1} confirm'
-                            .format(nssm_path, self.name),
-                            exit_on_failure=False,
-                            stderr_pipe=False,
-                            stdout_pipe=False)
+            names = self.additional_names
+            names.append(self.name)
+            for name in names:
+                nssm_path = utils.get_full_resource_path(
+                    os.path.join('pm', 'nssm', 'nssm.exe'))
+                self.runner.run('sc stop {0}'.format(name),
+                                exit_on_failure=False,
+                                stderr_pipe=False,
+                                stdout_pipe=False)
+                self.runner.run('{0} remove {1} confirm'
+                                .format(nssm_path, name),
+                                exit_on_failure=False,
+                                stderr_pipe=False,
+                                stdout_pipe=False)
         else:
             self.runner.run("pkill -9 -f 'celery'", exit_on_failure=False)
 
@@ -158,6 +163,13 @@ class BaseDaemonLiveTestCase(BaseTest):
     def _test_create_impl(self):
         daemon = self.create_daemon()
         daemon.create()
+
+    def _test_configure_existing_agent_impl(self):
+        daemon = self.create_daemon()
+        daemon.create()
+
+        daemon.configure()
+        self.assertRaises(errors.DaemonError, daemon.configure)
 
     def _test_start_impl(self):
         daemon = self.create_daemon()

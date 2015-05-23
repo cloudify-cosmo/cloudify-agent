@@ -71,12 +71,12 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
 
     @only_ci
     def test_install_plugins_and_restart(self):
-        name = api_utils.generate_agent_name()
-        queue = '{0}-queue'.format(name)
+        queue = '{0}-queue'.format(self.name)
 
-        self._start_agent(name, queue)
+        self._start_agent(self.name, queue)
 
         new_name = api_utils.generate_agent_name()
+        self.additional_names.append(new_name)
 
         try:
             # now lets send the install_plugins task
@@ -104,7 +104,7 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
             self.wait_for_daemon_alive(new_name)
 
             # lets see that the old daemon is dead
-            self.wait_for_daemon_dead(name=name)
+            self.wait_for_daemon_dead(name=self.name)
 
             # lets make sure the new agent recognizes the installed plugin
             self.celery.send_task(
@@ -118,10 +118,9 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
     @only_ci
     def test_stop(self):
 
-        name = api_utils.generate_agent_name()
-        queue = '{0}-queue'.format(name)
+        queue = '{0}-queue'.format(self.name)
 
-        self._start_agent(name, queue)
+        self._start_agent(self.name, queue)
 
         # now lets send the stop task
         # this simulates what they cloudify manager will do
@@ -131,7 +130,7 @@ class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
             ).get(timeout=30)
 
         # lets see that the old daemon is dead
-        self.wait_for_daemon_dead(name=name)
+        self.wait_for_daemon_dead(name=self.name)
 
     def _start_agent(self, name, queue):
         process_management = 'init.d' if os.name == 'posix' else 'nssm'
