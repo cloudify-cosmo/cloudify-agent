@@ -207,8 +207,6 @@ class BaseDaemonLiveTestCase(BaseTest):
                 self.assertIn('cannot import name non_existent', str(e))
         finally:
             test_utils.uninstall_package_if_exists('mock-plugin-error')
-            with open('C:\\Users\\appveyor\\dump.log') as f:
-                self.logger.info(f.read())
 
     def _test_start_short_timeout_impl(self):
         daemon = self.create_daemon()
