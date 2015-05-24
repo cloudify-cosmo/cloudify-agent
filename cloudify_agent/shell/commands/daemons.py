@@ -22,7 +22,6 @@ from cloudify_agent.api import utils as api_utils
 from cloudify_agent.shell import env
 from cloudify_agent.shell.decorators import handle_failures
 from cloudify_agent.shell import utils
-from cloudify_agent.shell.main import get_logger
 
 
 @click.command(context_settings=dict(ignore_unknown_options=True))
@@ -112,6 +111,7 @@ def create(**params):
     custom_arg = attributes.pop('custom_options', ())
     attributes.update(utils.parse_custom_options(custom_arg))
     click.echo('Creating...')
+    from cloudify_agent.shell.main import get_logger
     daemon = DaemonFactory().new(
         logger=get_logger(),
         **attributes
@@ -310,12 +310,14 @@ def ls():
 
     """
 
+    from cloudify_agent.shell.main import get_logger
     daemons = DaemonFactory().load_all(logger=get_logger())
     for daemon in daemons:
         click.echo(daemon.name)
 
 
 def _load_daemon(name):
+    from cloudify_agent.shell.main import get_logger
     return DaemonFactory().load(name, logger=get_logger())
 
 

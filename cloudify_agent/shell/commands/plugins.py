@@ -19,7 +19,6 @@ from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.shell.decorators import handle_failures
-from cloudify_agent.shell.main import get_logger
 
 
 @click.command()
@@ -37,6 +36,7 @@ def install(source, args):
     register the plugin to all daemons created from this virtualenv.
     """
 
+    from cloudify_agent.shell.main import get_logger
     click.echo('Installing plugin from {0}'.format(source))
     installer = PluginInstaller(logger=get_logger())
     name = installer.install(source, args)
