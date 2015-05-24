@@ -14,7 +14,6 @@
 #  * limitations under the License.
 
 import os
-import logging
 
 from cloudify_agent.api import utils
 from cloudify_agent.api.pm.base import Daemon
@@ -35,14 +34,8 @@ class GenericLinuxDaemon(Daemon):
     CONFIG_DIR = '/etc/default'
     PROCESS_MANAGEMENT = 'init.d'
 
-    def __init__(self,
-                 logger_level=logging.INFO,
-                 logger_format=None,
-                 **params):
-        super(GenericLinuxDaemon, self).__init__(
-            logger_level=logger_level,
-            logger_format=logger_format,
-            **params)
+    def __init__(self, logger=None, **params):
+        super(GenericLinuxDaemon, self).__init__(logger=logger, **params)
 
         # init.d specific configuration
         self.script_path = os.path.join(self.SCRIPT_DIR, self.name)
@@ -79,14 +72,14 @@ class GenericLinuxDaemon(Daemon):
         _validate(self.script_path)
         _validate(self.config_path)
 
-        self.logger.info('Creating includes file: {0}'
-                         .format(self.includes_path))
+        self.logger.debug('Creating includes file: {0}'
+                          .format(self.includes_path))
         self._create_includes()
-        self.logger.info('Creating daemon script: {0}'
-                         .format(self.script_path))
+        self.logger.debug('Creating daemon script: {0}'
+                          .format(self.script_path))
         self._create_script()
-        self.logger.info('Creating daemon conf file: {0}'
-                         .format(self.config_path))
+        self.logger.debug('Creating daemon conf file: {0}'
+                          .format(self.config_path))
         self._create_config()
 
         if self.start_on_boot:
@@ -103,28 +96,24 @@ class GenericLinuxDaemon(Daemon):
 
         """
 
+        self.logger.debug('Retrieving daemon stats')
         stats = utils.get_agent_stats(self.name, self.celery)
         if stats:
             if not force:
                 raise exceptions.DaemonStillRunningException(self.name)
-            self.logger.debug(
-                'Requested to delete daemon with force, '
-                'stopping daemon {0} before deletion.'.format(self.name))
             self.stop()
 
         if os.path.exists(self.script_path):
-            self.logger.info('Deleting {0}'.format(self.script_path))
+            self.logger.debug('Deleting {0}'.format(self.script_path))
             self.runner.run('sudo rm {0}'.format(self.script_path))
         if os.path.exists(self.config_path):
-            self.logger.info('Deleting {0}'.format(self.config_path))
+            self.logger.debug('Deleting {0}'.format(self.config_path))
             self.runner.run('sudo rm {0}'.format(self.config_path))
         if os.path.exists(self.includes_path):
-            self.logger.info('Deleting {0}'.format(self.includes_path))
+            self.logger.debug('Deleting {0}'.format(self.includes_path))
             self.runner.run('sudo rm {0}'.format(self.includes_path))
 
     def set_includes(self):
-        self.logger.debug('Setting includes configuration '
-                          'with: {0}'.format(self.includes))
         if not os.path.isfile(self.includes_path):
             raise errors.DaemonNotConfiguredError(self.name)
         with open(self.includes_path, 'w') as f:
@@ -143,10 +132,10 @@ class GenericLinuxDaemon(Daemon):
         open(self.includes_path, 'w').close()
 
         for plugin in included_plugins:
-            self.logger.info('Registering plugin: {0}'.format(plugin))
             self.register(plugin)
 
     def _create_script(self):
+        self.logger.debug('Rendering init.d script from template')
         rendered = utils.render_template_to_file(
             template_path='pm/initd/initd.template',
             daemon_name=self.name,
@@ -157,6 +146,7 @@ class GenericLinuxDaemon(Daemon):
         self.runner.run('sudo chmod +x {0}'.format(self.script_path))
 
     def _create_config(self):
+        self.logger.debug('Rendering configuration script from template')
         rendered = utils.render_template_to_file(
             template_path='pm/initd/initd.conf.template',
             queue=self.queue,

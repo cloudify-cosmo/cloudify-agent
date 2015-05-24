@@ -72,9 +72,6 @@ def get_storage_directory(username=None):
 
     """
 
-    if username:
-        logger.info('Retrieving storage directory '
-                    'for user: {0}'.format(username))
     return os.path.join(get_home_dir(username), '.cfy-agent')
 
 
@@ -93,8 +90,9 @@ def daemon_to_dict(daemon):
 
     """
 
-    attr = getattr(daemon, '__dict__')
-    if not attr:
+    try:
+        getattr(daemon, '__dict__')
+    except AttributeError:
         raise ValueError('Cannot save a daemon with no __dict__ attribute.')
 
     # don't use deepcopy here because we this will try to copy
@@ -427,9 +425,6 @@ def list_plugin_files(plugin_name):
     :rtype: list of str
     """
 
-    logger.debug('Listing modules of plugin: {0}'
-                 .format(plugin_name))
-
     module_paths = []
     runner = LocalCommandRunner(logger)
 
@@ -591,7 +586,8 @@ def stringify_values(dictionary):
 def purge_none_values(dictionary):
 
     """
-    Given a dictionary remove all key who's value is None.
+    Given a dictionary remove all key who's value is None. Does not purge
+    nested values.
 
     :param dictionary: the dictionary to convert
     :return: a copy of the dictionary where no key has a None value
@@ -617,7 +613,6 @@ def json_load(file_path):
     :rtype: dict
     """
 
-    logger.debug('Loading JSON from {0}'.format(file_path))
     with open(file_path) as f:
         return json_loads(f.read())
 

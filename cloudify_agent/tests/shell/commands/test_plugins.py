@@ -13,27 +13,27 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import mock
+from mock import patch
 from mock import MagicMock
 
 from cloudify_agent import VIRTUALENV
+from cloudify_agent.shell.main import get_logger
 from cloudify_agent.tests.shell.commands import BaseCommandLineTestCase
 
 
-@mock.patch('cloudify_agent.api.plugins.installer.PluginInstaller.install')
-@mock.patch('cloudify_agent.shell.commands.plugins.DaemonFactory')
+@patch('cloudify_agent.api.plugins.installer.PluginInstaller.install')
+@patch('cloudify_agent.shell.commands.plugins.DaemonFactory.load_all')
 class TestConfigureCommandLine(BaseCommandLineTestCase):
 
-    def test_install(self, factory, mock_install):
+    def test_install(self, load_all, mock_install):
         daemon1 = MagicMock()
         daemon1.virtualenv = VIRTUALENV
         daemon2 = MagicMock()
         daemon2.virtualenv = VIRTUALENV
-        factory.load_all.return_value = [daemon1, daemon2]
+        load_all.return_value = [daemon1, daemon2]
         self._run('cfy-agent plugins install --source=source --args=args')
         mock_install.assert_called_once_with('source', 'args')
-        load_all = factory.load_all
-        load_all.assert_called_once_with()
+        load_all.assert_called_once_with(logger=get_logger())
         daemons = load_all.return_value
         for daemon in daemons:
             register = daemon.register

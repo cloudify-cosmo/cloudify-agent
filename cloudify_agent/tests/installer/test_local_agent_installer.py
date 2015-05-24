@@ -45,7 +45,7 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.logger = setup_logger('test_tasks')
+        cls.logger = setup_logger(cls.__name__)
         cls.resource_base = tempfile.mkdtemp(
             prefix='file-server-resource-base')
         cls.fs = test_utils.FileServer(

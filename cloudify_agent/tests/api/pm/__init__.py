@@ -33,7 +33,6 @@ from cloudify.utils import setup_logger
 
 
 from cloudify_agent.api import utils
-from cloudify_agent.api import factory
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import errors
 
@@ -53,7 +52,13 @@ BUILT_IN_TASKS = [
     'diamond_agent.tasks.del_collectors',
     'cloudify_agent.operations.install_plugins',
     'cloudify_agent.operations.restart',
-    'cloudify_agent.operations.stop'
+    'cloudify_agent.operations.stop',
+    'cloudify_agent.installer.operations.create',
+    'cloudify_agent.installer.operations.configure',
+    'cloudify_agent.installer.operations.start',
+    'cloudify_agent.installer.operations.stop',
+    'cloudify_agent.installer.operations.delete',
+    'cloudify_agent.installer.operations.restart'
 ]
 
 
@@ -74,7 +79,7 @@ def only_ci(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not ci():
+        if ci():
             raise RuntimeError('Error! This test cannot be executed '
                                'outside of the travis CI '
                                'system since it may corrupt '
@@ -118,7 +123,6 @@ class BaseDaemonLiveTestCase(BaseTest):
             logger_level=logging.DEBUG)
 
         utils.logger.setLevel(logging.DEBUG)
-        factory.logger.setLevel(logging.DEBUG)
 
         self.name = utils.generate_agent_name()
         self.queue = '{0}-queue'.format(self.name)

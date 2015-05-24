@@ -34,7 +34,10 @@ from cloudify_agent.app import app
 # this array is used for creating the initial includes file of the agent
 # it should contain tasks that are inside the cloudify-agent project.
 ##########################################################################
-CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES = ['cloudify_agent.operations']
+CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES = [
+    'cloudify_agent.operations',
+    'cloudify_agent.installer.operations'
+]
 
 
 @operation
@@ -47,7 +50,7 @@ def install_plugins(plugins, **_):
         args = get_plugin_args(plugin)
         ctx.logger.info('Installing plugin: {0}'.format(plugin['name']))
         package_name = installer.install(source, args)
-        daemon = _load_daemon()
+        daemon = _load_daemon(logger=ctx.logger)
         daemon.register(package_name)
         _save_daemon(daemon)
 
@@ -58,7 +61,7 @@ def restart(new_name=None, delay_period=5, **_):
     if new_name is None:
         new_name = utils.generate_agent_name()
 
-    daemon = _load_daemon()
+    daemon = _load_daemon(logger=ctx.logger)
 
     # make the current master stop listening to the current queue
     # to avoid a situation where we have two masters listening on the
@@ -73,7 +76,7 @@ def restart(new_name=None, delay_period=5, **_):
 
     # give the new daemon the new name
     attributes['name'] = new_name
-    new_daemon = DaemonFactory.new(**attributes)
+    new_daemon = DaemonFactory().new(logger=ctx.logger, **attributes)
 
     # create the new daemon
     new_daemon.create()
@@ -103,8 +106,7 @@ def stop(delay_period=5, **_):
 def shutdown_current_master(delay_period, logger):
     if delay_period > 0:
         time.sleep(delay_period)
-    daemon = _load_daemon()
-    daemon.logger = logger
+    daemon = _load_daemon(logger=logger)
     daemon.stop()
 
 
@@ -145,15 +147,15 @@ def get_plugin_source(plugin, blueprint_id=None):
     return source
 
 
-def _load_daemon():
-    return DaemonFactory.load(
-        name=get_daemon_name(),
+def _load_daemon(logger):
+    factory = DaemonFactory(
         username=get_daemon_user(),
         storage=get_daemon_storage_dir())
+    return factory.load(get_daemon_name(), logger=logger)
 
 
 def _save_daemon(daemon):
-    DaemonFactory.save(
-        daemon=daemon,
+    factory = DaemonFactory(
         username=get_daemon_user(),
         storage=get_daemon_storage_dir())
+    factory.save(daemon)

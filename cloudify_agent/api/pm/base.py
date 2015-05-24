@@ -16,7 +16,6 @@
 import getpass
 import os
 import time
-import logging
 
 from celery import Celery
 
@@ -37,7 +36,9 @@ class Daemon(object):
 
     """
     Base class for daemon implementations.
-    Following is all the available common daemon keyword arguments:
+    Following is all the available common daemon keyword arguments. These
+    will be available to any daemon without any configuration as instance
+    attributes.
 
     ``manager_ip``:
 
@@ -110,57 +111,62 @@ class Daemon(object):
 
         path to a file containing environment variables to be added to the
         daemon environment. the file should be in the format of
-        multiple 'export A=B' lines. defaults to None.
+        multiple 'export A=B' lines for linux, ot 'set A=B' for windows.
+        defaults to None.
 
     ``includes``:
 
         a comma separated list of modules to include with this agent.
         if none if specified, only the built-in modules will be included.
-        see operation.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES. This option may
-        also be passed as a regular JSON list.
+
+        see `cloudify_agent.operations.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES`
+
+        This option may also be passed as a regular JSON list.
 
     """
 
     # override this when adding implementations.
     PROCESS_MANAGEMENT = None
 
-    # add specific mandatory parameters for different implementations
+    # add specific mandatory parameters for different implementations.
     # they will be validated upon daemon creation
     MANDATORY_PARAMS = [
         'manager_ip'
     ]
 
-    def __init__(self,
-                 logger_level=logging.INFO,
-                 logger_format=None,
-                 **params):
+    def __init__(self, logger=None, **params):
 
         """
 
         ####################################################################
         # When subclassing this, do not implement any logic inside the
         # constructor expect for in-memory calculations and settings, as the
-        # agent may be instantiated many times for an existing agent.
+        # daemon may be instantiated many times for an existing agent.
         ####################################################################
 
-        :param logger_level: logging level for the daemon operations.
-        :type logger_level: int
+        :param logger: a logger to be used to log various subsequent
+        operations.
+        :type logger: logging.Logger
 
         :param params: key-value pairs as stated above.
         :type params dict
 
-        :return: an instance of a daemon.
-        :rtype: cloudify_agent.api.pm.base.Daemon
         """
+
+        # configure logger
+        self.logger = logger or setup_logger(
+            logger_name='cloudify_agent.api.pm.{0}'
+            .format(self.PROCESS_MANAGEMENT))
+
+        # configure command runner
+        self.runner = LocalCommandRunner(logger=self.logger)
 
         # Mandatory parameters
         self.validate_mandatory(params)
-
         self.manager_ip = params['manager_ip']
 
         # Optional parameters
         self.validate_optional(params)
-
         self.user = params.get('user') or getpass.getuser()
         self.broker_ip = params.get(
             'broker_ip') or self.manager_ip
@@ -184,6 +190,10 @@ class Daemon(object):
             'workdir') or os.getcwd()
         self.extra_env_path = params.get('extra_env_path')
 
+        # accept the 'includes' parameter as a string as well
+        # as a list. the string acceptance is important because this
+        # class is instantiated by a CLI as well as API, and its not very
+        # convenient to pass proper lists on CLI.
         includes = params.get('includes')
         if includes:
             if isinstance(includes, str):
@@ -197,29 +207,21 @@ class Daemon(object):
         else:
             self.includes = []
 
-        # add built-in operations
-        self.includes.extend(operations.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES)
+        # add built-in operations. check they don't already exist to avoid
+        # duplicates, which may happen when cloning daemons.
+        for module in operations.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES:
+            if module not in self.includes:
+                self.includes.append(module)
 
         # create working directory if its missing
         if not os.path.exists(self.workdir):
+            self.logger.debug('Creating directory: {0}'.format(self.workdir))
             os.makedirs(self.workdir)
 
-        # save as attributes so that they will be persisted in the json files
+        # save as attributes so that they will be persisted in the json files.
         # we will make use of these values when loading agents by name.
         self.process_management = self.PROCESS_MANAGEMENT
         self.virtualenv = VIRTUALENV
-        self.logger_level = logger_level
-        self.logger_format = logger_format
-
-        # configure logger
-        self.logger = setup_logger(
-            logger_name='cloudify_agent.api.pm.{0}'
-                        .format(self.PROCESS_MANAGEMENT),
-            logger_level=logger_level,
-            logger_format=logger_format)
-
-        # configure command runner
-        self.runner = LocalCommandRunner(logger=self.logger)
 
         # initialize an internal celery client
         self.celery = Celery(broker=self.broker_url,
@@ -234,8 +236,8 @@ class Daemon(object):
         :param params: parameters of the daemon.
         :type params: dict
 
-        :raise DaemonMissingMandatoryPropertyError:
-        in case one of the mandatory parameters is missing.
+        :raise DaemonMissingMandatoryPropertyError: in case one of the
+        mandatory parameters is missing.
         """
 
         for param in cls.MANDATORY_PARAMS:
@@ -285,14 +287,17 @@ class Daemon(object):
 
     ########################################################################
     # the following methods must be implemented by the sub-classes as they
-    # may exhibit custom logic
+    # may exhibit custom logic. usually this would be related to process
+    # management specific configuration files.
     ########################################################################
 
     def configure(self):
 
         """
-        Creates any necessary resources for the daemon. This method MUST be
-        This method must create all necessary configuration of the daemon.
+        Creates any necessary resources for the daemon. This method must
+        create all necessary configuration of the daemon. After this method
+        was completed successfully, it should be possible to start the daemon
+        by running the command returned by the `start_command` method.
 
         :return: The daemon name.
         :rtype: str
@@ -313,7 +318,7 @@ class Daemon(object):
     def set_includes(self):
 
         """
-        sets the includes list of the agent. This method must modify the
+        Sets the includes list of the agent. This method must modify the
         includes configuration used when starting the agent.
         """
         raise NotImplementedError('Must be implemented by a subclass')
@@ -335,7 +340,7 @@ class Daemon(object):
         raise NotImplementedError('Must be implemented by a subclass')
 
     ########################################################################
-    # the following methods are the common logic that should apply to any
+    # the following methods is the common logic that would apply to any
     # process management implementation.
     ########################################################################
 
@@ -349,18 +354,21 @@ class Daemon(object):
         :type plugin: str
         """
 
+        self.logger.debug('Listing modules of plugin: {0}'.format(plugin))
         modules = utils.list_plugin_files(plugin)
 
         self.includes.extend(modules)
 
         # process management specific implementation
+        self.logger.debug('Setting includes: {0}'.format(self.includes))
         self.set_includes()
 
     def create(self):
 
         """
         Creates the agent. This method may be served as a hook to some custom
-        logic that needs to be implemented after the instance was instantiated
+        logic that needs to be implemented after the instance
+        was instantiated.
         """
         pass
 
@@ -380,6 +388,10 @@ class Daemon(object):
         ready.
         :type timeout: int
 
+        :param delete_amqp_queue: delete any queues with the name of the
+        current daemon queue in the broker.
+        :type delete_amqp_queue: bool
+
         :raise DaemonStartupTimeout: in case the agent failed to start in the
         given amount of time.
         :raise DaemonException: in case an error happened during the agent
@@ -389,21 +401,21 @@ class Daemon(object):
 
         if delete_amqp_queue:
             self._delete_amqp_queues()
-        self.logger.debug('Running start command for: {0}'.format(self.name))
-        self.runner.run(self.start_command())
+        start_command = self.start_command()
+        self.logger.debug('Starting daemon with command: {0}'
+                          .format(start_command))
+        self.runner.run(start_command)
         end_time = time.time() + timeout
         while time.time() < end_time:
-            self.logger.debug('Checking agent {0} stats'.format(self.name))
+            self.logger.debug('Validating daemon {0} stats'.format(self.name))
             stats = utils.get_agent_stats(self.name, self.celery)
             if stats:
-                self.logger.debug('Agent {0} has started'.format(self.name))
+                self.logger.debug('Daemon {0} has started'.format(self.name))
                 return
-            self.logger.debug('Agent {0} has not started yet. '
-                              'Sleeping {1} seconds...'
+            self.logger.debug('Daemon {0} has not started yet. '
+                              'Sleeping for {1} seconds...'
                               .format(self.name, interval))
             time.sleep(interval)
-        self.logger.debug('Verifying no unhandled errors on startup for {0}'
-                          .format(self.name))
         self._verify_no_celery_error()
         raise exceptions.DaemonStartupTimeout(timeout, self.name)
 
@@ -427,12 +439,22 @@ class Daemon(object):
         shutdown.
 
         """
-        self.runner.run(self.stop_command())
+
+        stop_command = self.stop_command()
+        self.logger.debug('Stopping daemon with command: {0}'
+                          .format(stop_command))
+        self.runner.run(stop_command)
         end_time = time.time() + timeout
         while time.time() < end_time:
+            self.logger.debug('Validating daemon {0} stats'.format(self.name))
             stats = utils.get_agent_stats(self.name, self.celery)
             if not stats:
+                self.logger.debug('Daemon {0} has shutdown'
+                                  .format(self.name, interval))
                 return
+            self.logger.debug('Daemon {0} is still running. '
+                              'Sleeping for {1} seconds...'
+                              .format(self.name, interval))
             time.sleep(interval)
         self._verify_no_celery_error()
         raise exceptions.DaemonShutdownTimeout(timeout, self.name)
@@ -496,9 +518,11 @@ class Daemon(object):
         client = amqp_client.create_client(self.broker_ip)
         try:
             channel = client.connection.channel()
+            self.logger.debug('Deleting queue: {0}'.format(self.queue))
             channel.queue_delete(self.queue)
-            channel.queue_delete('celery@{0}.celery.pidbox'
-                                 .format(self.queue))
+            pid_box_queue = 'celery@{0}.celery.pidbox'.format(self.queue)
+            self.logger.debug('Deleting queue: {0}'.format(pid_box_queue))
+            channel.queue_delete(pid_box_queue)
         finally:
             try:
                 client.close()

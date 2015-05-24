@@ -17,45 +17,33 @@ import logging
 
 import click
 
+from cloudify.utils import setup_logger
+
 from cloudify_agent.api.utils import logger as api_utils_logger
-from cloudify_agent.api.factory import logger as api_factory_logger
 
 
-_log_level = logging.INFO
+_logger = setup_logger('cloudify_agent.shell.main',
+                       logger_format='%(message)s',
+                       logger_level=logging.INFO)
 
 
-def get_log_level():
-    return _log_level
+def get_logger():
+    return _logger
 
 
 @click.group()
 @click.option('--debug', default=False, is_flag=True)
 def main(debug):
 
-    def reformat_logger(logger):
-
-        """
-        set the format of the logger to be shell like.
-
-        """
-
-        formatter = logging.Formatter(fmt='%(message)s',
-                                      datefmt='%H:%M:%S')
-        logger.handlers[0].setFormatter(formatter)
-
-    reformat_logger(api_utils_logger)
-    reformat_logger(api_factory_logger)
-
     if debug:
 
-        # configure global logging level
-        global _log_level
-        _log_level = logging.DEBUG
+        # configure global logger level
+        global _logger
+        _logger.setLevel(logging.DEBUG)
 
         # configure api loggers so that there logging level does not rely
         # on imports from the shell modules
         api_utils_logger.setLevel(logging.DEBUG)
-        api_factory_logger.setLevel(logging.DEBUG)
 
 
 @click.group('daemons')

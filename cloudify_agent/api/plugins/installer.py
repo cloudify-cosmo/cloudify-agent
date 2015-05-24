@@ -28,13 +28,20 @@ default_logger = setup_logger('cloudify_agent.api.plugins.installer')
 class PluginInstaller(object):
 
     def __init__(self, logger=None):
+
+        """
+        :param logger: a logger to be used to log various subsequent
+        operations.
+        :type logger: logging.Logger
+        """
+
         self.logger = logger or default_logger
         self.runner = LocalCommandRunner(logger=self.logger)
 
     def install(self, source, args=''):
 
         """
-        Install the plugin to the current virtualenv.
+        Install the plugin in the current virtualenv.
 
         :param source: URL to the plugin source code.
         :type source: str
@@ -44,11 +51,18 @@ class PluginInstaller(object):
 
         plugin_dir = None
         try:
+            self.logger.debug('Extracting archive: {0}'.format(source))
             plugin_dir = utils.extract_package_to_dir(source)
+            self.logger.debug('Installing from directory: {0} '
+                              '[args={1}]'.format(plugin_dir, args))
             self._install_package(plugin_dir, args)
             plugin_name = utils.extract_package_name(plugin_dir)
+            self.logger.debug('Retrieved plugin name: {0}'
+                              .format(plugin_name))
         finally:
             if plugin_dir:
+                self.logger.debug('Removing directory: {0}'
+                                  .format(plugin_dir))
                 shutil.rmtree(plugin_dir)
 
         return plugin_name

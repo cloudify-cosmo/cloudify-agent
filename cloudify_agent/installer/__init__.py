@@ -18,7 +18,6 @@ import shutil
 import urllib
 import os
 import copy
-import json
 from functools import wraps
 
 from cloudify import ctx
@@ -48,11 +47,11 @@ def init_agent_installer(func):
 
         ctx.logger.debug('Processing connection configuration. '
                          '[cloudify_agent={0}] '
-                         .format(json.dumps(cloudify_agent)))
+                         .format(cloudify_agent))
         # first prepare all connection details
         cloudify_agent = configuration.prepare_connection(cloudify_agent)
         ctx.logger.debug('Processed [cloudify_agent={0}]'
-                         .format(json.dumps(cloudify_agent)))
+                         .format(cloudify_agent))
 
         # create the correct runner according to os
         # and local/remote execution. we need this runner now because it
@@ -84,11 +83,11 @@ def init_agent_installer(func):
 
         ctx.logger.debug('Processing agent configuration. '
                          '[cloudify_agent={0}] '
-                         .format(json.dumps(cloudify_agent)))
+                         .format(cloudify_agent))
         # now we can create all other agent attributes
         cloudify_agent = configuration.prepare_agent(cloudify_agent)
         ctx.logger.debug('Processed [cloudify_agent={0}]'
-                         .format(json.dumps(cloudify_agent)))
+                         .format(cloudify_agent))
 
         # now we can validate mandatory attributes
         for attr, value in AGENT_ATTRIBUTES.iteritems():
@@ -152,8 +151,10 @@ class AgentInstaller(object):
 
     def create_agent(self):
         if 'source_url' in self.cloudify_agent:
+            self.logger.info('Creating agent from source')
             self._from_source()
         else:
+            self.logger.info('Creating agent from package')
             self._from_package()
         self.run_daemon_command(
             command='create {0}'
@@ -272,8 +273,7 @@ class AgentInstaller(object):
         execution_env = utils.stringify_values(execution_env)
 
         ctx.logger.debug('Cloudify Agent will be created using the following '
-                         'environment: {0}'
-                         .format(json.dumps(execution_env, indent=2)))
+                         'environment: {0}'.format(execution_env))
 
         return execution_env
 

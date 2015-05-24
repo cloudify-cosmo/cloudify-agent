@@ -34,7 +34,7 @@ class DaemonConfigurationError(DaemonError):
 class DaemonPropertiesError(DaemonError):
 
     """
-    Error indicates the faulty parameters have been passed to the daemon
+    Error indicates that faulty parameters have been passed to the daemon
     constructor.
     """
     pass

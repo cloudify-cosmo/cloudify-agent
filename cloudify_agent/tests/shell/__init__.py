@@ -33,7 +33,7 @@ class BaseShellTest(BaseTest):
             logger_level=logging.DEBUG)
 
         utils.logger.setLevel(logging.DEBUG)
-        factory.logger.setLevel(logging.DEBUG)
+        factory.default_logger.setLevel(logging.DEBUG)
 
         self.currdir = os.getcwd()
         self.workdir = tempfile.mkdtemp(

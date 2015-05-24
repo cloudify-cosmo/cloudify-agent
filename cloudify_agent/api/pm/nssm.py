@@ -14,7 +14,6 @@
 #  * limitations under the License.
 
 import os
-import logging
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
@@ -38,14 +37,9 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
     PROCESS_MANAGEMENT = 'nssm'
 
-    def __init__(self,
-                 logger_level=logging.INFO,
-                 logger_format=None,
-                 **params):
+    def __init__(self, logger=None, **params):
         super(NonSuckingServiceManagerDaemon, self).__init__(
-            logger_level,
-            logger_format,
-            **params)
+            logger=logger, **params)
 
         # nssm specific configuration
         self.config_path = os.path.join(
@@ -58,6 +52,10 @@ class NonSuckingServiceManagerDaemon(Daemon):
         self.failure_restart_delay = params.get('failure_restart_delay', 5000)
 
         self.celery_log_level = params.get('celery_log_level', 'debug')
+
+        # there is currently a limitation on exposing there attributes
+        # as parameters. This is because it causes cloned daemons to have
+        # the same files as the original daemon, even if they have a new name.
         self.celery_log_file = os.path.join(self.workdir,
                                             '{0}-celery.log'.format(self.name))
         self.celery_pid_file = os.path.join(self.workdir,
@@ -66,9 +64,6 @@ class NonSuckingServiceManagerDaemon(Daemon):
     def configure(self):
 
         env_string = self._create_env_string()
-        if env_string:
-            self.logger.debug('Created extra environment: {0}'
-                              .format(env_string))
 
         if os.path.exists(self.config_path):
             raise errors.DaemonError(
@@ -76,6 +71,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
                 .format(self.name, self.config_path))
 
         # creating the installation script
+        self.logger.debug('Rendering configuration script from template')
         utils.render_template_to_file(
             template_path='pm/nssm/nssm.conf.template',
             file_path=self.config_path,
@@ -111,19 +107,15 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
         # register plugins
         for plugin in included_plugins:
-            self.logger.info('Registering plugin: {0}'.format(plugin))
             self.register(plugin)
 
     def set_includes(self):
-        self.logger.debug('Setting includes configuration '
-                          'with: {0}'.format(self.includes))
-
         output = self.runner.run('{0} get {1} AppParameters'
                                  .format(self.nssm_path,
                                          self.name)
                                  ).output
 
-        # apparently nssm output is encoded in utf16 without BOM
+        # apparently nssm output is encoded in utf16.
         # encode to ascii to be able to parse this
         app_parameters = output.decode('utf16').encode('utf-8').rstrip()
 
@@ -133,20 +125,16 @@ class NonSuckingServiceManagerDaemon(Daemon):
             current_includes,
             ','.join(self.includes))
 
-        self.logger.debug('Setting new parameters for {0}: {1}'.format(
-            self.name, app_parameters))
         self.runner.run('{0} set {1} AppParameters {2}'
                         .format(self.nssm_path, self.name,
                                 new_app_parameters))
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
+        self.logger.debug('Retrieving daemon stats')
         stats = utils.get_agent_stats(self.name, self.celery)
         if stats:
             if not force:
                 raise exceptions.DaemonStillRunningException(self.name)
-            self.logger.debug(
-                'Requested to delete daemon with force, '
-                'stopping daemon {0} before deletion.'.format(self.name))
             self.stop()
 
         self.logger.info('Removing {0} service'.format(
@@ -155,10 +143,9 @@ class NonSuckingServiceManagerDaemon(Daemon):
             self.nssm_path,
             self.name))
 
-        self.logger.info('Deleting files...')
+        self.logger.debug('Deleting {0}'.format(self.config_path))
         if os.path.exists(self.config_path):
             os.remove(self.config_path)
-        self.logger.info('Deleted successfully')
 
     def start_command(self):
         return 'sc start {0}'.format(self.name)
@@ -167,12 +154,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
         return 'sc stop {0}'.format(self.name)
 
     def _create_env_string(self):
-        # convert the custom environment file to a dictionary
-        # file should be a callable batch file in the form of multiple
-        # set A=B lines (comments are allowed as well)
         env_string = ''
-        self.logger.debug('Creating environment string from file: {'
-                          '0}'.format(self.extra_env_path))
         if self.extra_env_path and os.path.exists(self.extra_env_path):
             with open(self.extra_env_path) as f:
                 content = f.read()

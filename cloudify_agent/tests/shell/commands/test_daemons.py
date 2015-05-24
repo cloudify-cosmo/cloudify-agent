@@ -13,28 +13,31 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import logging
-
 from mock import patch
 
 from cloudify_agent.api import utils
+from cloudify_agent.shell.main import get_logger
 from cloudify_agent.tests.shell.commands import BaseCommandLineTestCase
 from cloudify_agent.tests import get_storage_directory
 
 
 @patch('cloudify_agent.api.utils.get_storage_directory',
        get_storage_directory)
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory')
+@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.new')
+@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.save')
+@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load')
+@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.delete')
+@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load_all')
 class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
 
     PROCESS_MANAGEMENT = 'init.d'
 
-    def test_create(self, factory):
+    def test_create(self, *factory_methods):
         self._run('cfy-agent daemons create --name=name '
                   '--process-management=init.d '
                   '--queue=queue --manager-ip=127.0.0.1 --user=user ')
 
-        factory_new = factory.new
+        factory_new = factory_methods[4]
         factory_new.assert_called_once_with(
             name='name',
             queue='queue',
@@ -50,20 +53,19 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             broker_port=None,
             manager_port=None,
             extra_env_path=None,
-            logger_level=logging.INFO,
-            logger_format='%(message)s'
+            logger=get_logger(),
         )
 
         daemon = factory_new.return_value
         daemon.create.assert_called_once_with()
 
-    def test_create_with_custom_options(self, factory):
+    def test_create_with_custom_options(self, *factory_methods):
         self._run('cfy-agent daemons create --name=name '
                   '--queue=queue --manager-ip=127.0.0.1 --user=user '
                   '--process-management=init.d '
                   '--key=value --complex-key=complex-value')
 
-        factory_new = factory.new
+        factory_new = factory_methods[4]
         factory_new.assert_called_once_with(
             name='name',
             queue='queue',
@@ -79,29 +81,28 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             includes=None,
             manager_port=None,
             extra_env_path=None,
-            logger_format='%(message)s',
-            logger_level=logging.INFO,
+            logger=get_logger(),
             key='value',
             complex_key='complex-value'
         )
 
-    def test_configure(self, factory):
+    def test_configure(self, *factory_methods):
         self._run('cfy-agent daemons configure --name=name ')
 
-        factory_load = factory.load
+        factory_load = factory_methods[2]
         factory_load.assert_called_once_with('name',
-                                             logger_level=logging.INFO)
+                                             logger=get_logger())
 
         daemon = factory_load.return_value
         daemon.configure.assert_called_once_with()
 
-    def test_start(self, factory):
+    def test_start(self, *factory_methods):
         self._run('cfy-agent daemons start --name=name '
                   '--interval 5 --timeout 20 --delete-amqp-queue')
 
-        factory_load = factory.load
+        factory_load = factory_methods[2]
         factory_load.assert_called_once_with('name',
-                                             logger_level=logging.INFO)
+                                             logger=get_logger())
 
         daemon = factory_load.return_value
         daemon.start.assert_called_once_with(
@@ -110,13 +111,13 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             delete_amqp_queue=True,
         )
 
-    def test_stop(self, factory):
+    def test_stop(self, *factory_methods):
         self._run('cfy-agent daemons stop --name=name '
                   '--interval 5 --timeout 20')
 
-        factory_load = factory.load
+        factory_load = factory_methods[2]
         factory_load.assert_called_once_with('name',
-                                             logger_level=logging.INFO)
+                                             logger=get_logger())
 
         daemon = factory_load.return_value
         daemon.stop.assert_called_once_with(
@@ -124,51 +125,51 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             timeout=20
         )
 
-    def test_delete(self, factory):
+    def test_delete(self, *factory_methods):
         self._run('cfy-agent daemons delete --name=name')
 
-        factory_load = factory.load
+        factory_load = factory_methods[2]
         factory_load.assert_called_once_with('name',
-                                             logger_level=logging.INFO)
+                                             logger=get_logger())
 
         daemon = factory_load.return_value
         daemon.delete.assert_called_once_with()
 
-    def test_restart(self, factory):
+    def test_restart(self, *factory_methods):
         self._run('cfy-agent daemons restart --name=name')
 
-        factory_load = factory.load
+        factory_load = factory_methods[2]
         factory_load.assert_called_once_with('name',
-                                             logger_level=logging.INFO)
+                                             logger=get_logger())
 
         daemon = factory_load.return_value
         daemon.restart.assert_called_once_with()
 
-    def test_register(self, factory):
+    def test_register(self, *factory_methods):
         self._run('cfy-agent daemons register '
                   '--name=name --plugin=plugin')
 
-        factory_load = factory.load
-        factory_load.assert_called_once_with('name', logger_level=logging.INFO)
+        factory_load = factory_methods[2]
+        factory_load.assert_called_once_with('name', logger=get_logger())
 
         daemon = factory_load.return_value
         daemon.register.assert_called_once_with('plugin')
 
     @patch('cloudify_agent.shell.commands.daemons.api_utils.daemon_to_dict')
-    def test_inspect(self, daemon_to_dict, factory):
+    def test_inspect(self, daemon_to_dict, *factory_methods):
 
         daemon_to_dict.return_value = {}
 
         name = utils.generate_agent_name()
         self._run('cfy-agent daemons inspect --name={0}'.format(name))
 
-        factory_load = factory.load
-        factory_load.assert_called_once_with(name)
+        factory_load = factory_methods[2]
+        factory_load.assert_called_once_with(name, logger=get_logger())
         daemon = factory_load.return_value
 
         daemon_to_dict.assert_called_once_with(daemon)
 
-    def test_required(self, _):
+    def test_required(self, *_):
         self._run('cfy-agent daemons create --manager-ip=manager '
                   '--process-management=init.d', raise_system_exit=True)
 

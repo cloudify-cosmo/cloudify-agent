@@ -33,10 +33,10 @@ broker_url = os.environ.get(constants.CELERY_BROKER_URL_KEY, 'amqp://')
 
 try:
     # running inside an agent
-    agent_name = get_daemon_name()
+    daemon_name = get_daemon_name()
 except KeyError:
     # running outside an agent
-    agent_name = None
+    daemon_name = None
 
 # This attribute is used as the celery App instance.
 # it is referenced in two ways:
@@ -54,7 +54,7 @@ app.conf.update(
 )
 
 
-if agent_name:
+if daemon_name:
 
     # Setting a new exception hook to catch any exceptions
     # on celery startup and write them to a file. This file
@@ -71,7 +71,7 @@ if agent_name:
             os.makedirs(storage)
         error_dump_path = os.path.join(
             get_daemon_storage_dir(),
-            '{0}.err'.format(agent_name))
+            '{0}.err'.format(daemon_name))
         with open(error_dump_path, 'w') as f:
             f.write('Type: {0}\n'.format(exception_type))
             f.write('Value: {0}\n'.format(value))

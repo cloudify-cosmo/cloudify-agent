@@ -15,14 +15,13 @@
 
 import os
 import json
-import logging
 
 from cloudify.utils import setup_logger
 
 from cloudify_agent.api import errors
 from cloudify_agent.api import utils
 
-logger = setup_logger('cloudify_agent.api.factory')
+default_logger = setup_logger('cloudify_agent.api.factory')
 
 
 class DaemonFactory(object):
@@ -31,6 +30,36 @@ class DaemonFactory(object):
     Factory class for manipulating various daemon instances.
 
     """
+    def __init__(self, username=None, storage=None, logger=None):
+
+        """
+        :param username:
+
+            the username the daemons are registered under.
+            if no username if passed, the currently logged user
+            will be used. this setting is used for computing
+            the storage directory, hence, if `storage` is passed,
+            the username will be ignored.
+
+        :type username: str
+
+        :param storage:
+
+            the storage directory where daemons are stored.
+            if no directory is passed, it will computed using the
+            `utils.get_storage_directory` function.
+
+        :type storage: str
+
+        :param logger: a logger to be used to log various subsequent
+        operations.
+        :type logger: logging.Logger
+
+        """
+
+        self.username = username
+        self.storage = storage or utils.get_storage_directory(self.username)
+        self.logger = logger or default_logger
 
     @staticmethod
     def _find_implementation(process_management):
@@ -55,35 +84,15 @@ class DaemonFactory(object):
                 return daemon
         raise errors.DaemonNotImplementedError(process_management)
 
-    @staticmethod
-    def new(logger_level=logging.INFO, logger_format=None,
-            username=None, storage=None, **attributes):
+    def new(self, logger=None, **attributes):
 
         """
         Creates a daemon instance that implements the required process
         management.
 
-        :param logger_level: the daemon logger level. Note that this is not
-        the log level of the daemon itself, but rather the log level for
-        the logger creating and configuring the daemon
-        :type logger_level: int
-
-        :param logger_format: the daemon logger format. Note that this is not
-        the log format of the daemon itself, but rather the log format for
-        the logger creating and configuring the daemon.
-        :type logger_format: str
-
-        :param username:
-
-            the username the daemon is registered under.
-            if no username if passed, the currently logged user
-            will be used. this setting is used for computing
-            the storage directory, hence, if `storage` is passed,
-            the username will be ignored.
-
-        :type username: str
-        :param storage: the storage directory
-        :type storage: str
+        :param logger: a logger to be used by the daemon to log various
+        operations.
+        :type logger: logging.Logger
 
         :param attributes: parameters passed to the daemon class constructor.
         :type attributes: dict
@@ -97,7 +106,7 @@ class DaemonFactory(object):
             # an explicit name was passed, make sure we don't already
             # have a daemon with that name
             try:
-                DaemonFactory.load(name, username=username, storage=storage)
+                self.load(name, logger=logger)
                 # this means we do have one, raise an error
                 raise errors.DaemonAlreadyExistsError(name)
             except errors.DaemonNotFoundError:
@@ -105,119 +114,76 @@ class DaemonFactory(object):
 
         process_management = attributes['process_management']
         daemon = DaemonFactory._find_implementation(process_management)
-        return daemon(logger_level=logger_level,
-                      logger_format=logger_format, **attributes)
+        return daemon(logger=logger, **attributes)
 
-    @staticmethod
-    def load_all(username=None, storage=None):
+    def load_all(self, logger=None):
 
         """
         Loads all daemons from local storage.
 
-        :param username:
-
-            the username the daemon is registered under.
-            if no username if passed, the currently logged user
-            will be used. this setting is used for computing
-            the storage directory, hence, if `storage` is passed,
-            the username will be ignored.
-
-        :type username: str
-        :param storage: the storage directory
-        :type storage: str
+        :param logger: a logger to be used by the daemons to log various
+        operations.
+        :type logger: logging.Logger
 
         :return: all daemons instances.
         :rtype: list
 
         """
 
-        if storage is None:
-            storage = utils.get_storage_directory(username)
-
-        if not os.path.exists(storage):
+        if not os.path.exists(self.storage):
             return []
 
         daemons = []
-        daemon_files = os.listdir(storage)
+        daemon_files = os.listdir(self.storage)
         for daemon_file in daemon_files:
             full_path = os.path.join(
-                utils.get_storage_directory(),
+                self.storage,
                 daemon_file
             )
             if full_path.endswith('json'):
-                logger.debug('Loading daemon from: {0}'.format(full_path))
+                self.logger.debug('Loading daemon from: {0}'.format(full_path))
                 daemon_as_json = utils.json_load(full_path)
                 process_management = daemon_as_json.pop('process_management')
                 daemon = DaemonFactory._find_implementation(process_management)
-                daemons.append(daemon(**daemon_as_json))
+                daemons.append(daemon(logger=logger, **daemon_as_json))
         return daemons
 
-    @staticmethod
-    def load(name, logger_level=None, logger_format=None,
-             username=None, storage=None):
+    def load(self, name, logger=None):
 
         """
         Loads a daemon from local storage.
 
         :param name: The name of the daemon to load.
         :type name: str
-        :param logger_level:
-
-            The level of the logger of the loaded daemon.
-            if not specified, the value given at first
-            instantiation will be used.
-        :type logger_level: int
-
-        :param logger_format:
-
-            The format of the logger of the loaded daemon.
-            if not specified, the value given at first
-            instantiation will be used.
-        :type logger_format: int
-        :param username:
-
-            the username the daemon is registered under.
-            if no username if passed, the currently logged user
-            will be used. this setting is used for computing
-            the storage directory, hence, if `storage` is passed,
-            the username will be ignored.
-
-        :type username: str
-        :param storage: the storage directory
-        :type storage: str
 
         :return: A daemon instance.
         :rtype: cloudify_agent.api.pm.base.Daemon
+
+        :param logger: a logger to be used by the daemon to log various
+        operations.
+        :type logger: logging.Logger
 
         :raise CloudifyAgentNotFoundException: in case the daemon
         file does not exist.
         """
 
-        if storage is None:
-            storage = utils.get_storage_directory(username)
-
-        logger.info('Loading daemon {0} from storage: {1}'
-                    .format(name, storage))
+        self.logger.info('Loading daemon {0} from storage: {1}'
+                         .format(name, self.storage))
 
         daemon_path = os.path.join(
-            storage,
+            self.storage,
             '{0}.json'.format(name)
         )
         if not os.path.exists(daemon_path):
             raise errors.DaemonNotFoundError(name)
         daemon_as_json = utils.json_load(daemon_path)
-        if logger_level:
-            daemon_as_json['logger_level'] = logger_level
-        if logger_format:
-            daemon_as_json['logger_format'] = logger_format
-        logger.debug('Daemon {0} loaded: {1}'.format(name, json.dumps(
+        self.logger.debug('Daemon {0} loaded: {1}'.format(name, json.dumps(
             daemon_as_json, indent=2)))
         process_management = daemon_as_json.pop('process_management')
         daemon = DaemonFactory._find_implementation(process_management)
-        return daemon(**daemon_as_json)
+        return daemon(logger=logger, **daemon_as_json)
 
-    @staticmethod
-    def save(daemon, username=None, storage=None):
+    def save(self, daemon):
 
         """
         Saves a daemon to the local storage. The daemon is stored in json
@@ -226,63 +192,33 @@ class DaemonFactory(object):
         :param daemon: The daemon instance to save.
         :type daemon: cloudify_agent.api.daemon.base.Daemon
 
-        :param username:
-
-            the username the daemon is registered under.
-            if no username if passed, the currently logged user
-            will be used. this setting is used for computing
-            the storage directory, hence, if `storage` is passed,
-            the username will be ignored.
-
-        :type username: str
-        :param storage: the storage directory
-        :type storage: str
-
         """
 
-        if storage is None:
-            storage = utils.get_storage_directory(username)
-
-        if not os.path.exists(storage):
-            os.makedirs(storage)
+        if not os.path.exists(self.storage):
+            os.makedirs(self.storage)
 
         daemon_path = os.path.join(
-            storage, '{0}.json'.format(
+            self.storage, '{0}.json'.format(
                 daemon.name)
         )
-        logger.debug('Saving daemon configuration at: {0}'
-                     .format(daemon_path))
+        self.logger.debug('Saving daemon configuration at: {0}'
+                          .format(daemon_path))
         with open(daemon_path, 'w') as f:
             props = utils.daemon_to_dict(daemon)
             json.dump(props, f, indent=2)
             f.write(os.linesep)
 
-    @staticmethod
-    def delete(name, username=None, storage=None):
+    def delete(self, name):
 
         """
         Deletes a daemon from local storage.
 
         :param name: The name of the daemon to delete.
         :type name: str
-        :param username:
-
-            the username the daemon is registered under.
-            if no username if passed, the currently logged user
-            will be used. this setting is used for computing
-            the storage directory, hence, if `storage` is passed,
-            the username will be ignored.
-
-        :type username: str
-        :param storage: the storage directory
-        :type storage: str
 
         """
 
-        if storage is None:
-            storage = utils.get_storage_directory(username)
-
         daemon_path = os.path.join(
-            storage, '{0}.json'.format(name))
+            self.storage, '{0}.json'.format(name))
         if os.path.exists(daemon_path):
             os.remove(daemon_path)

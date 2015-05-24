@@ -38,6 +38,7 @@ def prepare_connection(cloudify_agent):
 
     fixed_cloudify_agent = fixed_dict(**copy.deepcopy(cloudify_agent))
 
+    ctx.logger.debug('Preparing cloudify_agent connection attributes')
     connection_attributes(fixed_cloudify_agent)
 
     return copy.deepcopy(fixed_cloudify_agent)
@@ -47,7 +48,9 @@ def prepare_agent(cloudify_agent):
 
     fixed_cloudify_agent = fixed_dict(**copy.deepcopy(cloudify_agent))
 
+    ctx.logger.debug('Preparing cloudify_agent cfy_agent attributes')
     cfy_agent_attributes(fixed_cloudify_agent)
+    ctx.logger.debug('Preparing cloudify_agent installation attributes')
     installation_attributes(fixed_cloudify_agent)
 
     return copy.deepcopy(fixed_cloudify_agent)

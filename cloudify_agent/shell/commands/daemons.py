@@ -22,6 +22,7 @@ from cloudify_agent.api import utils as api_utils
 from cloudify_agent.shell import env
 from cloudify_agent.shell.decorators import handle_failures
 from cloudify_agent.shell import utils
+from cloudify_agent.shell.main import get_logger
 
 
 @click.command(context_settings=dict(ignore_unknown_options=True))
@@ -107,20 +108,17 @@ def create(**params):
 
     """
 
-    from cloudify_agent.shell.main import get_log_level
-
     attributes = dict(**params)
     custom_arg = attributes.pop('custom_options', ())
     attributes.update(utils.parse_custom_options(custom_arg))
     click.echo('Creating...')
-    daemon = DaemonFactory.new(
-        logger_level=get_log_level(),
-        logger_format='%(message)s',
+    daemon = DaemonFactory().new(
+        logger=get_logger(),
         **attributes
     )
 
     daemon.create()
-    DaemonFactory.save(daemon)
+    _save_daemon(daemon)
     click.echo('Successfully created daemon: {0}'
                .format(daemon.name))
 
@@ -170,7 +168,7 @@ def register(name, plugin):
 
     # we need to save the daemon here because the includes attribute
     # has changed - added a new plugin
-    DaemonFactory.save(daemon)
+    _save_daemon(daemon)
 
     click.echo('Successfully registered {0} with daemon: {1}'
                .format(plugin, name))
@@ -281,7 +279,7 @@ def delete(name):
     click.echo('Deleting...')
     daemon = _load_daemon(name)
     daemon.delete()
-    DaemonFactory.delete(name)
+    DaemonFactory().delete(name)
     click.echo('Successfully deleted daemon: {0}'.format(name))
 
 
@@ -299,7 +297,7 @@ def inspect(name):
 
     """
 
-    daemon = DaemonFactory.load(name)
+    daemon = _load_daemon(name)
     click.echo(json.dumps(api_utils.daemon_to_dict(daemon), indent=2))
 
 
@@ -312,11 +310,14 @@ def ls():
 
     """
 
-    daemons = DaemonFactory.load_all()
+    daemons = DaemonFactory().load_all(logger=get_logger())
     for daemon in daemons:
         click.echo(daemon.name)
 
 
 def _load_daemon(name):
-    from cloudify_agent.shell.main import get_log_level
-    return DaemonFactory.load(name, logger_level=get_log_level())
+    return DaemonFactory().load(name, logger=get_logger())
+
+
+def _save_daemon(daemon):
+    DaemonFactory().save(daemon)
