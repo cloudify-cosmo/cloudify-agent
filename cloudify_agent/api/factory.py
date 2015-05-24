@@ -167,8 +167,8 @@ class DaemonFactory(object):
         file does not exist.
         """
 
-        self.logger.info('Loading daemon {0} from storage: {1}'
-                         .format(name, self.storage))
+        self.logger.debug('Loading daemon {0} from storage: {1}'
+                          .format(name, self.storage))
 
         daemon_path = os.path.join(
             self.storage,

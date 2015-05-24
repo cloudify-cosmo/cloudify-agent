@@ -17,6 +17,8 @@ from cloudify.decorators import operation
 from cloudify import ctx
 
 from cloudify_agent.installer import init_agent_installer
+from cloudify_agent.api import utils
+from cloudify_agent.app import app
 
 
 @operation
@@ -27,8 +29,10 @@ def create(cloudify_agent, **_):
     # to other operation even in case the create failed.
     ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
 
-    ctx.logger.info('Creating Agent {0}'.format(cloudify_agent['name']))
-    ctx.installer.create_agent()
+    remote_execution = ctx.node.properties['remote_execution']
+    if remote_execution:
+        ctx.logger.info('Creating Agent {0}'.format(cloudify_agent['name']))
+        ctx.installer.create_agent()
 
 
 @operation
@@ -41,8 +45,18 @@ def configure(cloudify_agent, **_):
 @operation
 @init_agent_installer
 def start(cloudify_agent, **_):
-    ctx.logger.info('Starting Agent {0}'.format(cloudify_agent['name']))
-    ctx.installer.start_agent()
+
+    remote_execution = ctx.node.properties['remote_execution']
+    if remote_execution:
+        ctx.logger.info('Starting Agent {0}'.format(cloudify_agent['name']))
+        ctx.installer.start_agent()
+    stats = utils.get_agent_stats(cloudify_agent['name'], app)
+    if stats:
+        ctx.logger.info('Agent has started')
+    else:
+        return ctx.operation.retry(
+            message='Waiting for Agent to start...',
+            retry_after=5)
 
 
 @operation
