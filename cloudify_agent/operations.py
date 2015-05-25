@@ -61,6 +61,10 @@ def restart(new_name=None, delay_period=5, **_):
     if new_name is None:
         new_name = utils.generate_agent_name()
 
+    # update agent name in runtime properties so that the workflow will
+    # what the name of the worker handling tasks to this instance.
+    ctx.instance.runtime_properties['cloudify_agent']['name'] = new_name
+
     daemon = _load_daemon(logger=ctx.logger)
 
     # make the current master stop listening to the current queue
