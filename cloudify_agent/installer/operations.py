@@ -38,8 +38,10 @@ def create(cloudify_agent, **_):
 @operation
 @init_agent_installer
 def configure(cloudify_agent, **_):
-    ctx.logger.info('Configuring Agent {0}'.format(cloudify_agent['name']))
-    ctx.installer.configure_agent()
+    remote_execution = ctx.node.properties['remote_execution']
+    if remote_execution:
+        ctx.logger.info('Configuring Agent {0}'.format(cloudify_agent['name']))
+        ctx.installer.configure_agent()
 
 
 @operation
