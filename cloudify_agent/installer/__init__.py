@@ -24,6 +24,7 @@ from cloudify import ctx
 from cloudify.state import current_ctx
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
+from cloudify.exceptions import CommandExecutionError
 
 from cloudify_agent.installer.config import configuration
 from cloudify_agent.api import utils
@@ -60,24 +61,28 @@ def init_agent_installer(func):
         if cloudify_agent['local']:
             runner = LocalCommandRunner(logger=ctx.logger)
         else:
-            if cloudify_agent['windows']:
-                runner = winrm_runner.WinRMRunner(
-                    host=cloudify_agent['ip'],
-                    user=cloudify_agent['user'],
-                    password=cloudify_agent['password'],
-                    port=cloudify_agent.get('port'),
-                    protocol=cloudify_agent.get('protocol'),
-                    uri=cloudify_agent.get('user'),
-                    logger=ctx.logger)
-            else:
-                runner = fabric_runner.FabricRunner(
-                    logger=ctx.logger,
-                    host=cloudify_agent['ip'],
-                    user=cloudify_agent['user'],
-                    port=cloudify_agent.get('port'),
-                    key=cloudify_agent.get('key'),
-                    password=cloudify_agent.get('password'),
-                    fabric_env=cloudify_agent.get('fabric_env'))
+            try:
+                if cloudify_agent['windows']:
+                    runner = winrm_runner.WinRMRunner(
+                        host=cloudify_agent['ip'],
+                        user=cloudify_agent['user'],
+                        password=cloudify_agent['password'],
+                        port=cloudify_agent.get('port'),
+                        protocol=cloudify_agent.get('protocol'),
+                        uri=cloudify_agent.get('user'),
+                        logger=ctx.logger)
+                else:
+                    runner = fabric_runner.FabricRunner(
+                        logger=ctx.logger,
+                        host=cloudify_agent['ip'],
+                        user=cloudify_agent['user'],
+                        port=cloudify_agent.get('port'),
+                        key=cloudify_agent.get('key'),
+                        password=cloudify_agent.get('password'),
+                        fabric_env=cloudify_agent.get('fabric_env'))
+            except CommandExecutionError as e:
+                return ctx.operation.retry(message=e.error,
+                                           retry_after=5)
 
         setattr(current_ctx.get_ctx(), 'runner', runner)
 
