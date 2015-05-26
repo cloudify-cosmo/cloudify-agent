@@ -140,6 +140,7 @@ def configure(name):
     click.echo('Configuring...')
     daemon = _load_daemon(name)
     daemon.configure()
+    _save_daemon(daemon)
     click.echo('Successfully configured daemon: {0}'
                .format(daemon.name))
 
@@ -322,4 +323,4 @@ def _load_daemon(name):
 
 
 def _save_daemon(daemon):
-    DaemonFactory().save(daemon)
+    DaemonFactory(username=daemon.user).save(daemon)

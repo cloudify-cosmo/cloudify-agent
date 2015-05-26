@@ -47,5 +47,10 @@ def install(source, args):
                    .format(name, daemon.name))
         if daemon.virtualenv == VIRTUALENV:
             daemon.register(name)
+            _save_daemon(daemon)
 
     click.echo('Successfully installed plugin: {0}'.format(name))
+
+
+def _save_daemon(daemon):
+    DaemonFactory(username=daemon.user).save(daemon)
