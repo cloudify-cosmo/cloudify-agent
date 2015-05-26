@@ -185,7 +185,8 @@ class FileServer(object):
 
         if os.name == 'nt':
             self.runner.run('taskkill /F /T /PID {0}'.format(self.process.pid),
-                            stdout_pipe=False, stderr_pipe=False)
+                            stdout_pipe=False, stderr_pipe=False,
+                            exit_on_failure=False)
         else:
             self.runner.run('kill -9 {0}'.format(self.process.pid))
 
