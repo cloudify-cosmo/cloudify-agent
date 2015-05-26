@@ -63,10 +63,11 @@ def restart(new_name=None, delay_period=5, **_):
 
     # update agent name in runtime properties so that the workflow will
     # what the name of the worker handling tasks to this instance.
-    ctx.logger.info('Current runtime: {0}'.format(
-        ctx.instance.runtime_properties['cloudify_agent']))
-    ctx.logger.info('Setting cloudify_agent.name to {0}'.format(new_name))
     ctx.instance.runtime_properties['cloudify_agent']['name'] = new_name
+
+    # must update instance here because the process is shutdown before
+    # the decorator has a chance to do it.
+    ctx.instance.update()
 
     daemon = _load_daemon(logger=ctx.logger)
 
