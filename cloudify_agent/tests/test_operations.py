@@ -13,145 +13,23 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import os
-import tempfile
-
-from celery import Celery
+from cloudify import constants
 
 from cloudify.exceptions import NonRecoverableError
-from cloudify import constants
-from cloudify.utils import setup_logger
-from cloudify.utils import LocalCommandRunner
-
 from cloudify_agent import operations
-from cloudify_agent.api import utils as api_utils
 
 from cloudify_agent.tests import utils
 from cloudify_agent.tests import BaseTest
-from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
-from cloudify_agent.tests.api.pm import only_ci
 
 
-class CloudifyAgentLiveTasksTest(BaseDaemonLiveTestCase):
+class TestOperations(BaseTest):
 
-    fs = None
-
-    @classmethod
-    def setUpClass(cls):
-
-        cls.logger = setup_logger('cloudify_agent.tests.test_tasks')
-        cls.runner = LocalCommandRunner(cls.logger)
-
-        cls.file_server_resource_base = tempfile.mkdtemp(
-            prefix='file-server-resource-base')
-        cls.fs = utils.FileServer(
-            root_path=cls.file_server_resource_base)
-        cls.fs.start()
-        cls.file_server_url = 'http://localhost:{0}'.format(cls.fs.port)
-
-        utils.create_plugin_tar(
-            plugin_dir_name='mock-plugin',
-            target_directory=cls.file_server_resource_base)
-
-        cls.celery = Celery(broker='amqp://',
-                            backend='amqp://')
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.fs.stop()
-
-    def _assert_plugin_installed(self, plugin_name):
-        out = self.runner.run('{0} list'
-                              .format(api_utils.get_pip_path())).output
-        self.assertIn(plugin_name, out)
-
-    def _create_plugin_url(self, plugin_tar_name):
-        return '{0}/{1}'.format(self.file_server_url, plugin_tar_name)
-
-    @only_ci
-    def test_install_plugins_and_restart(self):
-        queue = '{0}-queue'.format(self.name)
-
-        self._start_agent(self.name, queue)
-
-        new_name = api_utils.generate_agent_name()
-        self.additional_names.append(new_name)
-
-        try:
-            # now lets send the install_plugins task
-            # this simulates what they cloudify manager will do
-            self.logger.info('Installing mock-plugin on the current agent')
-            self.celery.send_task(
-                name='cloudify_agent.operations.install_plugins',
-                queue=queue,
-                args=[[{'source': '{0}/mock-plugin.tar'
-                       .format(self.file_server_url),
-                        'name': 'mock-plugin'}]],
-                ).get(timeout=30)
-            self._assert_plugin_installed('mock-plugin')
-
-            # now lets send the restart task
-            # this simulates what they cloudify manager will do
-            self.logger.info('Attempting to restart the agent')
-            self.celery.send_task(
-                name='cloudify_agent.operations.restart',
-                queue=queue,
-                args=[new_name],
-                ).get()
-
-            # lets wait for the new daemon to start
-            self.wait_for_daemon_alive(new_name)
-
-            # lets see that the old daemon is dead
-            self.wait_for_daemon_dead(name=self.name)
-
-            # lets make sure the new agent recognizes the installed plugin
-            self.celery.send_task(
-                name='mock_plugin.tasks.run',
-                queue=queue
-            ).get(timeout=5)
-
-        finally:
-            utils.uninstall_package_if_exists('mock-plugin')
-
-    @only_ci
-    def test_stop(self):
-
-        queue = '{0}-queue'.format(self.name)
-
-        self._start_agent(self.name, queue)
-
-        # now lets send the stop task
-        # this simulates what they cloudify manager will do
-        self.celery.send_task(
-            name='cloudify_agent.operations.stop',
-            queue=queue
-            ).get(timeout=30)
-
-        # lets see that the old daemon is dead
-        self.wait_for_daemon_dead(name=self.name)
-
-    def _start_agent(self, name, queue):
-        process_management = 'init.d' if os.name == 'posix' else 'nssm'
-
-        self.runner.run('{0} --debug daemons create '
-                        '--manager-ip=127.0.0.1 --name={1} '
-                        '--process-management={2} '
-                        '--queue={3}'
-                        .format(api_utils.get_cfy_agent_path(),
-                                name, process_management, queue),
-                        stdout_pipe=False)
-        self.runner.run('{0} --debug daemons '
-                        'configure --name={1}'
-                        .format(api_utils.get_cfy_agent_path(), name),
-                        stdout_pipe=False)
-        self.runner.run('{0} --debug daemons '
-                        'start --name={1}'
-                        .format(api_utils.get_cfy_agent_path(), name),
-                        stdout_pipe=False)
-
-
-class CloudifyAgentTasksUnitTest(BaseTest):
+    """
+    Note that this test case only tests the utility methods inside
+    this module. the operation themselves are tested as part of a system test.
+    unfortunately the operations cannot currently be unittested because
+    they use the ctx object and they cannot be exeucted as local workflows.
+    """
 
     def test_get_url_and_args_http_no_args(self):
         plugin = {'source': 'http://google.com'}

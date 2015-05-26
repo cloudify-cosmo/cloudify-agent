@@ -41,6 +41,11 @@ from cloudify_agent.tests.api.pm import only_os
 
 class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
+    """
+    these tests run local workflows in order to invoke the installer
+    operations. the remote use case is tested as part of the system tests.
+    """
+
     fs = None
 
     @classmethod
