@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import time
+import copy
 import threading
 
 from cloudify import ctx
@@ -63,7 +64,12 @@ def restart(new_name=None, delay_period=5, **_):
 
     # update agent name in runtime properties so that the workflow will
     # what the name of the worker handling tasks to this instance.
-    ctx.instance.runtime_properties['cloudify_agent']['name'] = new_name
+    # the update cannot be done by setting a nested property directly
+    # because they are not recognized as 'dirty'
+    cloudify_agent = copy.deepcopy(
+        ctx.instance.runtime_properties['cloudify_agent'])
+    cloudify_agent['name'] = new_name
+    ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
 
     # must update instance here because the process is shutdown before
     # the decorator has a chance to do it.
