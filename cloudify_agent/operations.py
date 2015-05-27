@@ -82,7 +82,7 @@ def restart(new_name=None, delay_period=5, **_):
     # same queue.
     app.control.cancel_consumer(
         queue=daemon.queue,
-        destination=[daemon.name]
+        destination=['celery@{0}'.format(daemon.name)]
     )
 
     # clone the current daemon to preserve all the attributes
