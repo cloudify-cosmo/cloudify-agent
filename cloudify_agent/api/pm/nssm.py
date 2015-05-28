@@ -140,7 +140,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
         return 'sc start {0}'.format(self.name)
 
     def stop_command(self):
-        return 'stop stop {0}'.format(self.name)
+        return 'sc stop {0}'.format(self.name)
 
     def status_command(self):
         return '{0} status {1}'.format(self.nssm_path, self.name)
