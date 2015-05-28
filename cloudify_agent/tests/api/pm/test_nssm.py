@@ -49,7 +49,7 @@ class TestNonSuckingServiceManagerDaemon(BaseDaemonLiveTestCase):
             manager_ip='127.0.0.1',
             user=self.username,
             workdir=self.temp_folder,
-            logger_level=logging.DEBUG,
+            logger=self.logger,
             **attributes
         )
 
