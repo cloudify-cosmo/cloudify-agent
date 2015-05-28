@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2013 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 
 import os
 
+from cloudify.exceptions import CommandExecutionException
+
 from cloudify_agent.api import utils
 from cloudify_agent.api.pm.base import CronSupervisorMixin
 from cloudify_agent.api import exceptions
@@ -27,7 +29,9 @@ from cloudify_agent.included_plugins import included_plugins
 class GenericLinuxDaemon(CronSupervisorMixin):
 
     """
-    Implementation for the init.d process management.
+    Implementation for the init.d process management. Note that since init.d
+    daemons are not re-spawned on failure, this class inherits the
+    CronSupervisorMixin in order to provide re-spawning capabilities as well.
     """
 
     SCRIPT_DIR = '/etc/init.d'
@@ -132,6 +136,15 @@ class GenericLinuxDaemon(CronSupervisorMixin):
     def status_command(self):
         return status_command(self)
 
+    def status(self):
+        try:
+            response = self.runner.run(self.status_command())
+            self.logger.info(response.output)
+            return True
+        except CommandExecutionException as e:
+            self.logger.debug(str(e))
+            return False
+
     def _create_includes(self):
         dirname = os.path.dirname(self.includes_path)
         if not os.path.exists(dirname):
@@ -168,7 +181,10 @@ class GenericLinuxDaemon(CronSupervisorMixin):
             virtualenv_path=VIRTUALENV,
             extra_env_path=self.extra_env_path,
             name=self.name,
-            storage_dir=utils.get_storage_directory(self.user)
+            storage_dir=utils.get_storage_directory(self.user),
+            log_level=self.log_level,
+            log_file=self.log_file,
+            pid_file=self.pid_file,
         )
 
         self.runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))

@@ -90,6 +90,12 @@ def restart(new_name=None, delay_period=5, **_):
 
     # give the new daemon the new name
     attributes['name'] = new_name
+
+    # remove the log file and pid file so that new ones will be created
+    # for the new agent
+    del attributes['log_file']
+    del attributes['pid_file']
+
     new_daemon = DaemonFactory().new(logger=ctx.logger, **attributes)
 
     # create the new daemon

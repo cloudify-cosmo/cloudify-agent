@@ -89,6 +89,20 @@ from cloudify_agent.shell import utils
                    'the autoscale configuration. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_MAX_WORKERS),
               envvar=env.CLOUDIFY_DAEMON_MAX_WORKERS)
+@click.option('--log-level',
+              help='Log level of the daemon. [env {0}]'
+              .format(env.CLOUDIFY_DAEMON_LOG_LEVEL),
+              envvar=env.CLOUDIFY_DAEMON_LOG_LEVEL)
+@click.option('--pid-file',
+              help='Path to a location where the daemon pid file will be '
+                   'stored. [env {0}]'
+              .format(env.CLOUDIFY_DAEMON_PID_FILE),
+              envvar=env.CLOUDIFY_DAEMON_PID_FILE)
+@click.option('--log-file',
+              help='Path to a location where the daemon log file will be '
+                   'stored. [env {0}]'
+              .format(env.CLOUDIFY_DAEMON_LOG_FILE),
+              envvar=env.CLOUDIFY_DAEMON_LOG_FILE)
 @click.option('--extra-env-path',
               help='Path to an environment file to be added to the daemon. ['
                    'env {0}]'

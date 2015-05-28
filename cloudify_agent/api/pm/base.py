@@ -116,6 +116,20 @@ class Daemon(object):
         multiple 'export A=B' lines for linux, ot 'set A=B' for windows.
         defaults to None.
 
+    ``log_level``:
+
+        log level of the daemon process itself. defaults to debug.
+
+    ``log_file``:
+
+        location of the daemon log file. defaults to
+        <workdir>/<name>.log
+
+    ``pid_file``:
+
+        location of the daemon pid file. defaults to
+        <workdir>/<name>.pid
+
     ``includes``:
 
         a comma separated list of modules to include with this agent.
@@ -191,6 +205,13 @@ class Daemon(object):
         self.workdir = params.get(
             'workdir') or os.getcwd()
         self.extra_env_path = params.get('extra_env_path')
+        self.log_level = params.get('log_level') or defaults.LOG_LEVEL
+        self.log_file = params.get(
+            'log_file') or os.path.join(self.workdir,
+                                        '{0}.log'.format(self.name))
+        self.pid_file = params.get(
+            'pid_file') or os.path.join(self.workdir,
+                                        '{0}.pid'.format(self.name))
 
         # accept the 'includes' parameter as a string as well
         # as a list. the string acceptance is important because this
@@ -349,6 +370,16 @@ class Daemon(object):
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
+    def status(self):
+
+        """
+        Query the daemon status, usually by running the status_command.
+
+        :return: True if the service is running, False otherwise
+        :rtype: bool
+        """
+        raise NotImplementedError('Must be implemented by a subclass')
+
     ########################################################################
     # the following methods is the common logic that would apply to any
     # process management implementation.
@@ -468,15 +499,6 @@ class Daemon(object):
             time.sleep(interval)
         self._verify_no_celery_error()
         raise exceptions.DaemonShutdownTimeout(timeout, self.name)
-
-    def status(self):
-        try:
-            self.runner.run(self.status_command(),
-                            stdout_pipe=False,
-                            stderr_pipe=False)
-        except CommandExecutionException:
-            return False
-        return True
 
     def restart(self,
                 start_timeout=defaults.START_TIMEOUT,

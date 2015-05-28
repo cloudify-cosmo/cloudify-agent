@@ -15,6 +15,8 @@
 
 import os
 
+from cloudify.exceptions import CommandExecutionException
+
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
 from cloudify_agent.api import exceptions
@@ -24,15 +26,12 @@ from cloudify_agent.api import errors
 from cloudify_agent.included_plugins import included_plugins
 
 
-###########################################
-# Based on the nssm service management.
-# see https://nssm.cc/
-###########################################
-
 class NonSuckingServiceManagerDaemon(Daemon):
 
     """
     Implementation for the nssm windows service management.
+    Based on the nssm service management. see https://nssm.cc/
+
     """
 
     PROCESS_MANAGEMENT = 'nssm'
@@ -51,16 +50,6 @@ class NonSuckingServiceManagerDaemon(Daemon):
         self.failure_reset_timeout = params.get('failure_reset_timeout', 60)
         self.failure_restart_delay = params.get('failure_restart_delay', 5000)
 
-        self.celery_log_level = params.get('celery_log_level', 'debug')
-
-        # there is currently a limitation on exposing there attributes
-        # as parameters. This is because it causes cloned daemons to have
-        # the same files as the original daemon, even if they have a new name.
-        self.celery_log_file = os.path.join(self.workdir,
-                                            '{0}-celery.log'.format(self.name))
-        self.celery_pid_file = os.path.join(self.workdir,
-                                            '{0}-celery.pid'.format(self.name))
-
     def configure(self):
 
         env_string = self._create_env_string()
@@ -77,9 +66,9 @@ class NonSuckingServiceManagerDaemon(Daemon):
             file_path=self.config_path,
             queue=self.queue,
             nssm_path=self.nssm_path,
-            celery_log_level=self.celery_log_level,
-            celery_log_file=self.celery_log_file,
-            celery_pid_file=self.celery_pid_file,
+            log_level=self.log_level,
+            log_file=self.log_file,
+            pid_file=self.pid_file,
             workdir=self.workdir,
             user=self.user,
             manager_ip=self.manager_ip,
@@ -155,6 +144,22 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
     def status_command(self):
         return '{0} status {1}'.format(self.nssm_path, self.name)
+
+    def status(self):
+        try:
+            response = self.runner.run(self.status_command())
+            # apparently nssm output is encoded in utf16.
+            # encode to ascii to be able to parse this
+            state = response.output.decode('utf16').encode(
+                'utf-8').rstrip()
+            self.logger.info(state)
+            if state == 'SERVICE_RUNNING':
+                return True
+            else:
+                return False
+        except CommandExecutionException as e:
+            self.logger.debug(str(e))
+            return False
 
     def _create_env_string(self):
         env_string = ''

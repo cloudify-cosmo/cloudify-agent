@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2013 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,18 +13,17 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-START_TIMEOUT = 15
-START_INTERVAL = 1
-STOP_TIMEOUT = 15
-STOP_INTERVAL = 1
-MANAGER_PORT = 80
-BROKER_PORT = 5672
-DISABLE_REQUIRETTY = False
-RELOCATED = False
-MIN_WORKERS = 0
-MAX_WORKERS = 5
-BROKER_URL = 'amqp://guest:guest@{0}:{1}//'
-DELETE_AMQP_QUEUE_BEFORE_START = False
-DAEMON_FORCE_DELETE = False
-CLOUDIFY_AGENT_PREFIX = 'cfy-agent'
-LOG_LEVEL = 'debug'
+from cloudify_agent.api.pm.base import CronSupervisorMixin
+
+
+class DetachedDaemon(CronSupervisorMixin):
+
+    """
+    This process management is not really a full process management. It
+    merely runs the celery commands in detached mode and uses crontab for
+    re-spawning the daemon on failure. The advantage of this kind of daemon
+    is that it does not require privileged permissions to execute.
+    """
+
+    def configure(self):
+        pass
