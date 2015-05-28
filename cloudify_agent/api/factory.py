@@ -77,8 +77,17 @@ class DaemonFactory(object):
         :raise DaemonNotImplementedError: if no implementation could be found.
         """
 
+        daemons = []
+
+        def _find_daemons(daemon_superclass):
+            daemons.append(daemon_superclass)
+            subclasses = daemon_superclass.__subclasses__()
+            if subclasses:
+                for subclass in subclasses:
+                    _find_daemons(subclass)
+
         from cloudify_agent.api.pm.base import Daemon
-        daemons = Daemon.__subclasses__()
+        _find_daemons(Daemon)
         for daemon in daemons:
             if daemon.PROCESS_MANAGEMENT == process_management:
                 return daemon

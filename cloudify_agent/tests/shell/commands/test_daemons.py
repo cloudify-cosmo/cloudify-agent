@@ -172,6 +172,13 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
 
         daemon_to_dict.assert_called_once_with(daemon)
 
+    def test_status(self, *factory_methods):
+        name = utils.generate_agent_name()
+        self._run('cfy-agent daemons status --name={0}'.format(name))
+        factory_load = factory_methods[2]
+        daemon = factory_load.return_value
+        daemon.status.assert_called_once_with()
+
     def test_required(self, *_):
         self._run('cfy-agent daemons create --manager-ip=manager '
                   '--process-management=init.d', raise_system_exit=True)

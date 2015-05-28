@@ -77,6 +77,9 @@ class TestNonSuckingServiceManagerDaemon(BaseDaemonLiveTestCase):
     def test_conf_env_variables(self):
         self._test_conf_env_variables_impl()
 
+    def test_status(self):
+        self._test_status_impl()
+
     def test_start_delete_amqp_queue(self):
         self._test_start_delete_amqp_queue_impl()
 

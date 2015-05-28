@@ -16,7 +16,7 @@
 import os
 
 from cloudify_agent.api import utils
-from cloudify_agent.api.pm.base import Daemon
+from cloudify_agent.api.pm.base import CronSupervisorMixin
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import errors
 from cloudify_agent import VIRTUALENV
@@ -24,7 +24,7 @@ from cloudify_agent.api import defaults
 from cloudify_agent.included_plugins import included_plugins
 
 
-class GenericLinuxDaemon(Daemon):
+class GenericLinuxDaemon(CronSupervisorMixin):
 
     """
     Implementation for the init.d process management.
@@ -42,7 +42,11 @@ class GenericLinuxDaemon(Daemon):
         self.config_path = os.path.join(self.CONFIG_DIR, self.name)
         self.includes_path = os.path.join(
             self.workdir, '{0}-includes'.format(self.name))
+        self.respawn_path = os.path.join(
+            self.workdir, '{0}-respawn'.format(self.name))
         self.start_on_boot = params.get('start_on_boot', False)
+        self.respawn_delay_minutes = params.get('respawn_delay_minutes', 1)
+        self.cron_respawn = params.get('cron_respawn', False)
 
     def configure(self):
 
@@ -125,6 +129,9 @@ class GenericLinuxDaemon(Daemon):
     def start_command(self):
         return start_command(self)
 
+    def status_command(self):
+        return status_command(self)
+
     def _create_includes(self):
         dirname = os.path.dirname(self.includes_path)
         if not os.path.exists(dirname):
@@ -196,3 +203,7 @@ def start_command(daemon):
 
 def stop_command(daemon):
     return 'sudo service {0} stop'.format(daemon.name)
+
+
+def status_command(daemon):
+    return 'sudo service {0} status'.format(daemon.name)

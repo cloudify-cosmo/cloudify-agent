@@ -317,6 +317,17 @@ def ls():
         click.echo(daemon.name)
 
 
+@click.command()
+@click.option('--name',
+              help='The name of the daemon. [env {0}]'
+              .format(env.CLOUDIFY_DAEMON_NAME),
+              required=True,
+              envvar=env.CLOUDIFY_DAEMON_NAME)
+@handle_failures
+def status(name):
+    _load_daemon(name).status()
+
+
 def _load_daemon(name):
     from cloudify_agent.shell.main import get_logger
     return DaemonFactory().load(name, logger=get_logger())

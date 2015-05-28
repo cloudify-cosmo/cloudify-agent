@@ -22,15 +22,13 @@ from cloudify_agent.shell.decorators import handle_failures
 @click.command()
 @click.option('--disable-requiretty',
               help='Disables the requiretty directive in the sudoers file.',
-              is_flag=True,
-              default=False)
+              is_flag=True)
 @click.option('--relocated-env',
               help='Indication that this virtualenv was relocated. '
                    'If this option is passed, an auto-correction '
                    'to the virtualenv shabang entries '
                    'will be performed',
-              is_flag=True,
-              default=False)
+              is_flag=True)
 @handle_failures
 def configure(disable_requiretty, relocated_env):
 

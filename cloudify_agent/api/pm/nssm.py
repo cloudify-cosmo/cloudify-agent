@@ -148,10 +148,13 @@ class NonSuckingServiceManagerDaemon(Daemon):
             os.remove(self.config_path)
 
     def start_command(self):
-        return 'sc start {0}'.format(self.name)
+        return '{0} start {1}'.format(self.nssm_path, self.name)
 
     def stop_command(self):
-        return 'sc stop {0}'.format(self.name)
+        return '{0} stop {1}'.format(self.nssm_path, self.name)
+
+    def status_command(self):
+        return '{0} status {1}'.format(self.nssm_path, self.name)
 
     def _create_env_string(self):
         env_string = ''

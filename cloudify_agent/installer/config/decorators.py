@@ -18,13 +18,19 @@ import json
 from functools import wraps
 
 from cloudify import ctx
-
+from cloudify import context
 from cloudify_agent.installer.config.attributes import AGENT_ATTRIBUTES
 
 
 def attribute(name):
 
     def decorator(function):
+
+        if ctx.type == context.DEPLOYMENT:
+
+            # if its a deployment context than all the code below is
+            # completely irrelevant
+            return function
 
         @wraps(function)
         def wrapper(cloudify_agent):

@@ -79,7 +79,7 @@ def only_ci(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not ci():
+        if ci():
             raise RuntimeError('Error! This test cannot be executed '
                                'outside of the travis CI '
                                'system since it may corrupt '
@@ -220,6 +220,14 @@ class BaseDaemonLiveTestCase(BaseTest):
             daemon.start(timeout=-1)
         except exceptions.DaemonStartupTimeout as e:
             self.assertTrue('failed to start in -1 seconds' in str(e))
+
+    def _test_status_impl(self):
+        daemon = self.create_daemon()
+        daemon.create()
+        daemon.configure()
+        self.assertFalse(daemon.status())
+        daemon.start()
+        self.assertTrue(daemon.status())
 
     def _test_stop_impl(self):
         daemon = self.create_daemon()
@@ -416,7 +424,7 @@ class BaseDaemonLiveTestCase(BaseTest):
                 return
             self.logger.info('Waiting for daemon {0} to start...'
                              .format(name))
-            time.sleep(1)
+            time.sleep(5)
         raise RuntimeError('Failed waiting for daemon {0} to start. Waited '
                            'for {1} seconds'.format(name, timeout))
 

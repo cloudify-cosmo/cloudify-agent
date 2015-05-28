@@ -73,6 +73,7 @@ daemon_sub_command.add_command(daemons.restart)
 daemon_sub_command.add_command(daemons.register)
 daemon_sub_command.add_command(daemons.inspect)
 daemon_sub_command.add_command(daemons.ls)
+daemon_sub_command.add_command(daemons.status)
 
 plugins_sub_command.add_command(plugins.install)
 

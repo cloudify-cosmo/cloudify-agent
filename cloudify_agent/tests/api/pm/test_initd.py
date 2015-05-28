@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import os
+import time
 from mock import patch
 
 from cloudify_agent.api.pm.initd import GenericLinuxDaemon
@@ -33,6 +34,10 @@ def _non_service_stop_command(daemon):
     return 'sudo {0} stop'.format(daemon.script_path)
 
 
+def _non_service_status_command(daemon):
+    return 'sudo {0} status'.format(daemon.script_path)
+
+
 SCRIPT_DIR = '/tmp/etc/init.d'
 CONFIG_DIR = '/tmp/etc/default'
 
@@ -47,6 +52,9 @@ CONFIG_DIR = '/tmp/etc/default'
 @patch_unless_ci(
     'cloudify_agent.api.pm.initd.GenericLinuxDaemon.CONFIG_DIR',
     CONFIG_DIR)
+@patch_unless_ci(
+    'cloudify_agent.api.pm.initd.status_command',
+    _non_service_status_command)
 @patch_unless_ci(
     'cloudify_agent.api.pm.initd.start_command',
     _non_service_start_command)
@@ -102,6 +110,9 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
     def test_conf_env_variables(self):
         self._test_conf_env_variables_impl()
 
+    def test_status(self):
+        self._test_status_impl()
+
     def test_start_delete_amqp_queue(self):
         self._test_start_delete_amqp_queue_impl()
 
@@ -148,3 +159,25 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
 
     def test_delete_before_stop_with_force(self):
         self._test_delete_before_stop_with_force_impl()
+
+    def test_cron_respawn(self):
+        daemon = self.create_daemon(cron_respawn=True, respawn_delay=1)
+        daemon.create()
+        daemon.configure()
+        daemon.start()
+
+        # lets kill the process
+        self.runner.run("pkill -9 -f 'celery'")
+        self.wait_for_daemon_dead(daemon.name)
+
+        # check it was respawned
+        timeout = daemon.respawn_delay_minutes * 60 + 10
+        self.wait_for_daemon_alive(daemon.name, timeout=timeout)
+
+        # this should also disable the crontab entry
+        daemon.stop()
+        self.wait_for_daemon_dead(daemon.name)
+
+        # sleep the cron delay time and make sure the daemon is still dead
+        time.sleep(daemon.respawn_delay_minutes * 60 + 5)
+        self.assert_daemon_dead(daemon.name)

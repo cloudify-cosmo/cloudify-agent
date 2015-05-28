@@ -13,6 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import tempfile
 import getpass
 import os
 import time
@@ -22,6 +23,7 @@ from celery import Celery
 from cloudify.utils import LocalCommandRunner
 from cloudify.utils import setup_logger
 from cloudify import amqp_client
+from cloudify.exceptions import CommandExecutionException
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
@@ -339,6 +341,14 @@ class Daemon(object):
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
+    def status_command(self):
+
+        """
+        A command line for querying the daemon status.
+        (e.g sudo service <name> status)
+        """
+        raise NotImplementedError('Must be implemented by a subclass')
+
     ########################################################################
     # the following methods is the common logic that would apply to any
     # process management implementation.
@@ -459,6 +469,15 @@ class Daemon(object):
         self._verify_no_celery_error()
         raise exceptions.DaemonShutdownTimeout(timeout, self.name)
 
+    def status(self):
+        try:
+            self.runner.run(self.status_command(),
+                            stdout_pipe=False,
+                            stderr_pipe=False)
+        except CommandExecutionException:
+            return False
+        return True
+
     def restart(self,
                 start_timeout=defaults.START_TIMEOUT,
                 start_interval=defaults.START_INTERVAL,
@@ -529,3 +548,86 @@ class Daemon(object):
             except Exception as e:
                 self.logger.warning('Failed closing amqp client: {0}'
                                     .format(e))
+
+
+class CronSupervisorMixin(Daemon):
+
+    """
+    This Mixin provides the ability for daemons to be supervised by the
+    Linux crontab process. A crontab job will run periodically and query
+    the daemon status, if the status command failed, the job will trigger
+    the start command in order to respawn the daemon.
+
+    Note that usually, process management systems have the re-spawning
+    capability built in, this mixin should be used by basic process
+    management implementation that are lacking it.
+    """
+
+    def __init__(self, logger=None, **params):
+        super(CronSupervisorMixin, self).__init__(logger, **params)
+        self.cron_respawn_delay = params.get('cron_respawn_delay', 1)
+        self.cron_respawn = params.get('cron_respawn', False)
+        self.cron_respawn_path = os.path.join(
+            self.workdir, '{0}-respawn'.format(self.name))
+
+    def start(self, interval=defaults.START_INTERVAL,
+              timeout=defaults.START_TIMEOUT,
+              delete_amqp_queue=defaults.DELETE_AMQP_QUEUE_BEFORE_START):
+        super(CronSupervisorMixin, self).start(interval, timeout,
+                                               delete_amqp_queue)
+
+        if self.cron_respawn:
+            self._enable_cron_respawn()
+
+    def stop(self, interval=defaults.STOP_INTERVAL,
+             timeout=defaults.STOP_TIMEOUT):
+        super(CronSupervisorMixin, self).stop(interval, timeout)
+
+        if self.cron_respawn:
+            self._disable_cron_respawn()
+
+    def _enable_cron_respawn(self):
+        self.logger.debug('Rendering respawn script from template')
+        rendered = utils.render_template_to_file(
+            template_path='respawn.sh.template',
+            start_command=self.start_command(),
+            status_command=self.status_command()
+        )
+
+        self.runner.run('cp {0} {1}'.format(
+            rendered, self.cron_respawn_path))
+        self.runner.run('rm {0}'.format(rendered))
+        self.runner.run('chmod +x {0}'.format(self.cron_respawn_path))
+        self.logger.debug('Respawn script created at {0}'
+                          .format(self.cron_respawn_path))
+
+        self.logger.debug('Adding respawn script to crontab')
+        temp_cron = tempfile.mkstemp()[1]
+        try:
+            crontab = self.runner.run('crontab -l').output
+        except CommandExecutionException as e:
+            # no crontab entries, that's ok
+            self.logger.warning(str(e))
+            crontab = ''
+        with open(temp_cron, 'a') as f:
+            if crontab:
+                f.write(crontab)
+                f.write(os.linesep)
+            f.write('*/{0} * * * * {1}'.format(
+                self.cron_respawn_delay, self.cron_respawn_path))
+            f.write(os.linesep)
+        self.runner.run('crontab {0}'.format(temp_cron))
+        self.runner.run('rm {0}'.format(temp_cron))
+        self.logger.debug('Successfully added respawn script to crontab')
+
+    def _disable_cron_respawn(self):
+        self.logger.debug('Removing respawn crontab entry')
+        crontab = self.runner.run('crontab -l').output
+        new_cron = tempfile.mkstemp()[1]
+        with open(new_cron, 'a') as f:
+            for entry in crontab.splitlines():
+                # filter out entry for this daemon
+                if self.name not in entry:
+                    f.write(entry)
+        self.runner.run('crontab {0}'.format(new_cron))
+        self.logger.debug('Successfully removed respawn crontab entry')
