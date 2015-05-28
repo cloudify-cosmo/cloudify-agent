@@ -1,0 +1,19 @@
+#!/bin/bash -e
+
+# sourcing the configuration file
+. {{ config_path }}
+
+{{ virtualenv_path }}/bin/celery worker \
+--events \
+--queues={{ queue }} \
+--hostname={{ name }} \
+--autoscale={{ max_workers }},{{ min_workers }} \
+--maxtasksperchild=10 \
+--without-gossip \
+--without-mingle \
+--loglevel={{ log_level }} \
+--pidfile={{ pid_file }} \
+--logfile={{ log_file }} \
+--include=$(cat {{ includes_path }}) \
+--detach \
+-Ofair

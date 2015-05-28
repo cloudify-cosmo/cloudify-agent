@@ -36,6 +36,8 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
     PROCESS_MANAGEMENT = 'nssm'
 
+    RUNNING_STATES = ['SERVICE_RUNNING', 'SERVICE_STOP_PENDING']
+
     def __init__(self, logger=None, **params):
         super(NonSuckingServiceManagerDaemon, self).__init__(
             logger=logger, **params)
@@ -142,18 +144,16 @@ class NonSuckingServiceManagerDaemon(Daemon):
     def stop_command(self):
         return 'sc stop {0}'.format(self.name)
 
-    def status_command(self):
-        return '{0} status {1}'.format(self.nssm_path, self.name)
-
     def status(self):
         try:
-            response = self.runner.run(self.status_command())
+            command = '{0} status {1}'.format(self.nssm_path, self.name)
+            response = self.runner.run(command)
             # apparently nssm output is encoded in utf16.
             # encode to ascii to be able to parse this
             state = response.output.decode('utf16').encode(
                 'utf-8').rstrip()
             self.logger.info(state)
-            if state == 'SERVICE_RUNNING':
+            if state in self.RUNNING_STATES:
                 return True
             else:
                 return False

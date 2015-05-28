@@ -362,14 +362,6 @@ class Daemon(object):
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
-    def status_command(self):
-
-        """
-        A command line for querying the daemon status.
-        (e.g sudo service <name> status)
-        """
-        raise NotImplementedError('Must be implemented by a subclass')
-
     def status(self):
 
         """
@@ -488,11 +480,16 @@ class Daemon(object):
         end_time = time.time() + timeout
         while time.time() < end_time:
             self.logger.debug('Validating daemon {0} stats'.format(self.name))
+            # check the process has shutdown
             stats = utils.get_agent_stats(self.name, self.celery)
             if not stats:
-                self.logger.debug('Daemon {0} has shutdown'
-                                  .format(self.name, interval))
-                return
+                # make sure the status command also recognizes the
+                # daemon is down
+                status = self.status()
+                if not status:
+                    self.logger.debug('Daemon {0} has shutdown'
+                                      .format(self.name, interval))
+                    return
             self.logger.debug('Daemon {0} is still running. '
                               'Sleeping for {1} seconds...'
                               .format(self.name, interval))
@@ -591,6 +588,18 @@ class CronSupervisorMixin(Daemon):
         self.cron_respawn = params.get('cron_respawn', False)
         self.cron_respawn_path = os.path.join(
             self.workdir, '{0}-respawn'.format(self.name))
+
+    def status_command(self):
+
+        """
+        A command line for querying the daemon status. This must be
+        implemented for the crontab detector to work.
+        The command should result in a zero return code if the service is
+        running, and a non-zero return code otherwise.
+        (e.g sudo service <name> status)
+
+        """
+        raise NotImplementedError('Must be implemented by a subclass')
 
     def start(self, interval=defaults.START_INTERVAL,
               timeout=defaults.START_TIMEOUT,

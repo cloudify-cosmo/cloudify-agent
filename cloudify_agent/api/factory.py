@@ -57,6 +57,15 @@ class DaemonFactory(object):
 
         """
 
+        ######################################################################
+        # `username` and `storage` are arguments because the default home
+        # directory may change depending on how the daemon process is
+        # executed. For example if running in a Windows Service, the home
+        # directory changes. This means that we must the ability to specify
+        # exactly where the storage directory is, and not let the code
+        # auto-detect it in any scenario.
+        #####################################################################
+
         self.username = username
         self.storage = storage or utils.get_storage_directory(self.username)
         self.logger = logger or default_logger

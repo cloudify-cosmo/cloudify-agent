@@ -46,11 +46,7 @@ class GenericLinuxDaemon(CronSupervisorMixin):
         self.config_path = os.path.join(self.CONFIG_DIR, self.name)
         self.includes_path = os.path.join(
             self.workdir, '{0}-includes'.format(self.name))
-        self.respawn_path = os.path.join(
-            self.workdir, '{0}-respawn'.format(self.name))
         self.start_on_boot = params.get('start_on_boot', False)
-        self.respawn_delay_minutes = params.get('respawn_delay_minutes', 1)
-        self.cron_respawn = params.get('cron_respawn', False)
 
     def configure(self):
 
