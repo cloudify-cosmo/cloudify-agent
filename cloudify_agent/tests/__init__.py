@@ -14,8 +14,13 @@
 #  * limitations under the License.
 
 import os
+import logging
 import tempfile
+import getpass
 import unittest2 as unittest
+
+
+from cloudify.utils import setup_logger
 
 
 def get_storage_directory(_=None):
@@ -23,4 +28,22 @@ def get_storage_directory(_=None):
 
 
 class BaseTest(unittest.TestCase):
-    pass
+
+    def setUp(self):
+        self.logger = setup_logger(
+            'cloudify-agent.tests',
+            logger_level=logging.DEBUG)
+
+        # set api utils logger to debug
+        from cloudify_agent.api import utils
+        utils.logger.setLevel(logging.DEBUG)
+
+        self.curr_dir = os.getcwd()
+        self.temp_folder = tempfile.mkdtemp(prefix='cfy-agent-tests-')
+        self.username = getpass.getuser()
+        self.logger.info('Working directory: {0}'.format(self.temp_folder))
+        os.chdir(self.temp_folder)
+
+    def tearDown(self):
+        super(BaseTest, self).tearDown()
+        os.chdir(self.curr_dir)

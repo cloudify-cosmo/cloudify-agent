@@ -95,7 +95,7 @@ class GenericLinuxDaemon(CronSupervisorMixin):
             self.logger.debug('Deleting {0}'.format(self.includes_path))
             self.runner.run('sudo rm {0}'.format(self.includes_path))
 
-    def set_includes(self):
+    def apply_includes(self):
         if not os.path.isfile(self.includes_path):
             raise errors.DaemonNotConfiguredError(self.name)
         with open(self.includes_path, 'w') as f:
@@ -135,6 +135,8 @@ class GenericLinuxDaemon(CronSupervisorMixin):
             daemon_name=self.name,
             config_path=self.config_path
         )
+        self.runner.run('sudo mkdir -p {0}'.format(
+            os.path.dirname(self.script_path)))
         self.runner.run('sudo cp {0} {1}'.format(rendered, self.script_path))
         self.runner.run('sudo rm {0}'.format(rendered))
         self.runner.run('sudo chmod +x {0}'.format(self.script_path))
@@ -160,7 +162,8 @@ class GenericLinuxDaemon(CronSupervisorMixin):
             log_file=self.log_file,
             pid_file=self.pid_file,
         )
-
+        self.runner.run('sudo mkdir -p {0}'.format(
+            os.path.dirname(self.config_path)))
         self.runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))
         self.runner.run('sudo rm {0}'.format(rendered))
 

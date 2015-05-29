@@ -52,5 +52,32 @@ def install(source, args):
     click.echo('Successfully installed plugin: {0}'.format(name))
 
 
+@click.command()
+@click.option('--plugin',
+              help='The plugin name to uninstall')
+@handle_failures
+def uninstall(plugin):
+
+    """
+    Install a cloudify plugin into the current virtualenv. This will also
+    register the plugin to all daemons created from this virtualenv.
+    """
+
+    from cloudify_agent.shell.main import get_logger
+    click.echo('Uninstalling plugin {0}'.format(plugin))
+    installer = PluginInstaller(logger=get_logger())
+    installer.uninstall(plugin)
+
+    daemons = DaemonFactory().load_all(logger=get_logger())
+    for daemon in daemons:
+        click.echo('Un-registering plugin {0} from {1}'
+                   .format(plugin, daemon.name))
+        if daemon.virtualenv == VIRTUALENV:
+            daemon.unregister(plugin)
+            _save_daemon(daemon)
+
+    click.echo('Successfully installed plugin: {0}'.format(plugin))
+
+
 def _save_daemon(daemon):
     DaemonFactory(username=daemon.user).save(daemon)

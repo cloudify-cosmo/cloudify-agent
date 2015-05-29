@@ -126,7 +126,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
         for plugin in included_plugins:
             self.register(plugin)
 
-    def set_includes(self):
+    def apply_includes(self):
         output = self.runner.run('{0} get {1} AppParameters'
                                  .format(self.nssm_path,
                                          self.name)

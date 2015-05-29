@@ -15,11 +15,12 @@
 
 import time
 import os
+import nose.tools
 from mock import patch
 
 from cloudify_agent.api.pm.detach import DetachedDaemon
 
-from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
+from cloudify_agent.tests.api.pm import BaseDaemonProcessManagementTest
 from cloudify_agent.tests.api.pm import only_os
 from cloudify_agent.tests import get_storage_directory
 
@@ -28,25 +29,13 @@ from cloudify_agent.tests import get_storage_directory
        get_storage_directory)
 @patch('cloudify_agent.api.pm.base.get_storage_directory',
        get_storage_directory)
+@nose.tools.istest
 @only_os('posix')
-class TestDetachedDaemon(BaseDaemonLiveTestCase):
+class TestDetachedDaemon(BaseDaemonProcessManagementTest):
 
-    def create_daemon(self, name=None, queue=None, **attributes):
-
-        if name is None:
-            name = self.name
-        if queue is None:
-            queue = self.queue
-
-        return DetachedDaemon(
-            name=name,
-            queue=queue,
-            manager_ip='127.0.0.1',
-            user=self.username,
-            workdir=self.temp_folder,
-            logger=self.logger,
-            **attributes
-        )
+    @property
+    def daemon_cls(self):
+        return DetachedDaemon
 
     def test_configure(self):
         daemon = self.create_daemon()
@@ -56,21 +45,6 @@ class TestDetachedDaemon(BaseDaemonLiveTestCase):
         self.assertTrue(os.path.exists(daemon.script_path))
         self.assertTrue(os.path.exists(daemon.config_path))
         self.assertTrue(os.path.exists(daemon.includes_path))
-
-    def test_start(self):
-        self._test_start_impl()
-
-    def test_stop(self):
-        self._test_stop_impl()
-
-    def test_stop_short_timeout(self):
-        self._test_stop_short_timeout_impl()
-
-    def test_delete_before_stop(self):
-        self._test_delete_before_stop_impl()
-
-    def test_delete_before_stop_with_force(self):
-        self._test_delete_before_stop_with_force_impl()
 
     def test_delete(self):
         daemon = self.create_daemon()
@@ -84,36 +58,6 @@ class TestDetachedDaemon(BaseDaemonLiveTestCase):
         self.assertFalse(os.path.exists(daemon.includes_path))
         self.assertFalse(os.path.exists(daemon.log_file))
         self.assertFalse(os.path.exists(daemon.pid_file))
-
-    def test_register(self):
-        self._test_register_impl()
-
-    def test_restart(self):
-        self._test_restart_impl()
-
-    def test_create(self):
-        self._test_create_impl()
-
-    def test_extra_env_path(self):
-        self._test_extra_env_path_impl()
-
-    def test_conf_env_variables(self):
-        self._test_conf_env_variables_impl()
-
-    def test_status(self):
-        self._test_status_impl()
-
-    def test_start_delete_amqp_queue(self):
-        self._test_start_delete_amqp_queue_impl()
-
-    def test_start_with_error(self):
-        self._test_start_with_error_impl()
-
-    def test_start_short_timeout(self):
-        self._test_start_short_timeout_impl()
-
-    def test_two_daemons(self):
-        self._test_two_daemons_impl()
 
     def test_cron_respawn(self):
         daemon = self.create_daemon(cron_respawn=True, respawn_delay=1)

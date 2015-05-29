@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import os
 import getpass
 from mock import patch
 
@@ -28,14 +27,14 @@ from cloudify_agent.tests import get_storage_directory
        get_storage_directory)
 class TestDaemonDefaults(BaseTest):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.daemon = Daemon(
+    def setUp(self):
+        super(TestDaemonDefaults, self).setUp()
+        self.daemon = Daemon(
             manager_ip='manager_ip'
         )
 
-    def test_default_basedir(self):
-        self.assertEqual(os.getcwd(), self.daemon.workdir)
+    def test_default_workdir(self):
+        self.assertEqual(self.temp_folder, self.daemon.workdir)
 
     def test_default_manager_port(self):
         self.assertEqual(80, self.daemon.manager_port)
@@ -133,7 +132,7 @@ class TestNotImplemented(BaseTest):
         )
 
     def test_set_includes(self):
-        self.assertRaises(NotImplementedError, self.daemon.set_includes)
+        self.assertRaises(NotImplementedError, self.daemon.apply_includes)
 
     def start_command(self):
         self.assertRaises(NotImplementedError, self.daemon.start_command)

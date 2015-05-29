@@ -71,11 +71,13 @@ daemon_sub_command.add_command(daemons.stop)
 daemon_sub_command.add_command(daemons.delete)
 daemon_sub_command.add_command(daemons.restart)
 daemon_sub_command.add_command(daemons.register)
+daemon_sub_command.add_command(daemons.unregister)
 daemon_sub_command.add_command(daemons.inspect)
 daemon_sub_command.add_command(daemons.ls)
 daemon_sub_command.add_command(daemons.status)
 
 plugins_sub_command.add_command(plugins.install)
+plugins_sub_command.add_command(plugins.uninstall)
 
 main.add_command(daemon_sub_command)
 main.add_command(plugins_sub_command)

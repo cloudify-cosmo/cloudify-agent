@@ -22,10 +22,10 @@ from cloudify.workflows import local
 from cloudify.utils import setup_logger
 
 import cloudify_agent
-from cloudify_agent.api import utils
+from cloudify_agent.api.utils import generate_agent_name
 
 from cloudify_agent.tests import resources
-from cloudify_agent.tests import utils as test_utils
+from cloudify_agent.tests.utils import FileServer
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.tests.api.pm import only_os
@@ -53,7 +53,7 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
         cls.logger = setup_logger(cls.__name__)
         cls.resource_base = tempfile.mkdtemp(
             prefix='file-server-resource-base')
-        cls.fs = test_utils.FileServer(
+        cls.fs = FileServer(
             root_path=cls.resource_base)
         cls.fs.start()
         project_dir = os.path.dirname(
@@ -72,7 +72,7 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
     @only_os('posix')
     def test_local_agent_from_package(self, _):
 
-        agent_name = utils.generate_agent_name()
+        agent_name = generate_agent_name()
 
         blueprint_path = resources.get_resource(
             'blueprints/agent-from-package/local-agent-blueprint.yaml')
@@ -100,7 +100,7 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
     @patch('cloudify.workflows.local._validate_node')
     def test_local_agent_from_source(self, _):
 
-        agent_name = utils.generate_agent_name()
+        agent_name = generate_agent_name()
 
         inputs = {
             'source_url': self.source_url,

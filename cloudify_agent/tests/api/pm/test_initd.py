@@ -14,12 +14,13 @@
 #  * limitations under the License.
 
 import os
+import nose.tools
 import time
 from mock import patch
 
 from cloudify_agent.api.pm.initd import GenericLinuxDaemon
 
-from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
+from cloudify_agent.tests.api.pm import BaseDaemonProcessManagementTest
 from cloudify_agent.tests.api.pm import patch_unless_ci
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.tests.api.pm import only_os
@@ -61,69 +62,13 @@ CONFIG_DIR = '/tmp/etc/default'
 @patch_unless_ci(
     'cloudify_agent.api.pm.initd.stop_command',
     _non_service_stop_command)
+@nose.tools.istest
 @only_os('posix')
-class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
+class TestGenericLinuxDaemon(BaseDaemonProcessManagementTest):
 
-    def setUp(self):
-        super(TestGenericLinuxDaemon, self).setUp()
-        self._smakedirs(CONFIG_DIR)
-        self._smakedirs(SCRIPT_DIR)
-
-    def create_daemon(self, name=None, queue=None, **attributes):
-
-        if name is None:
-            name = self.name
-        if queue is None:
-            queue = self.queue
-
-        return GenericLinuxDaemon(
-            name=name,
-            queue=queue,
-            manager_ip='127.0.0.1',
-            user=self.username,
-            workdir=self.temp_folder,
-            logger=self.logger,
-            **attributes
-        )
-
-    def test_start(self):
-        self._test_start_impl()
-
-    def test_stop(self):
-        self._test_stop_impl()
-
-    def test_stop_short_timeout(self):
-        self._test_stop_short_timeout_impl()
-
-    def test_register(self):
-        self._test_register_impl()
-
-    def test_restart(self):
-        self._test_restart_impl()
-
-    def test_create(self):
-        self._test_create_impl()
-
-    def test_extra_env_path(self):
-        self._test_extra_env_path_impl()
-
-    def test_conf_env_variables(self):
-        self._test_conf_env_variables_impl()
-
-    def test_status(self):
-        self._test_status_impl()
-
-    def test_start_delete_amqp_queue(self):
-        self._test_start_delete_amqp_queue_impl()
-
-    def test_start_with_error(self):
-        self._test_start_with_error_impl()
-
-    def test_start_short_timeout(self):
-        self._test_start_short_timeout_impl()
-
-    def test_two_daemons(self):
-        self._test_two_daemons_impl()
+    @property
+    def daemon_cls(self):
+        return GenericLinuxDaemon
 
     def test_configure(self):
         daemon = self.create_daemon()
@@ -133,15 +78,6 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
         self.assertTrue(os.path.exists(daemon.script_path))
         self.assertTrue(os.path.exists(daemon.config_path))
         self.assertTrue(os.path.exists(daemon.includes_path))
-
-    def test_configure_existing_agent(self):
-        self._test_configure_existing_agent_impl()
-
-    @only_ci
-    def test_configure_start_on_boot(self):
-        daemon = self.create_daemon(start_on_boot=True)
-        daemon.create()
-        daemon.configure()
 
     def test_delete(self):
         daemon = self.create_daemon()
@@ -154,11 +90,11 @@ class TestGenericLinuxDaemon(BaseDaemonLiveTestCase):
         self.assertFalse(os.path.exists(daemon.config_path))
         self.assertFalse(os.path.exists(daemon.includes_path))
 
-    def test_delete_before_stop(self):
-        self._test_delete_before_stop_impl()
-
-    def test_delete_before_stop_with_force(self):
-        self._test_delete_before_stop_with_force_impl()
+    @only_ci
+    def test_configure_start_on_boot(self):
+        daemon = self.create_daemon(start_on_boot=True)
+        daemon.create()
+        daemon.configure()
 
     def test_cron_respawn(self):
         daemon = self.create_daemon(cron_respawn=True, respawn_delay=1)

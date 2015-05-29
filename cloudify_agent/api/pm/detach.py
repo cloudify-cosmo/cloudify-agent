@@ -98,7 +98,7 @@ class DetachedDaemon(CronSupervisorMixin):
             self.logger.debug('Removing {0}'.format(self.script_path))
             os.remove(self.script_path)
 
-    def set_includes(self):
+    def apply_includes(self):
         if not os.path.isfile(self.includes_path):
             raise errors.DaemonNotConfiguredError(self.name)
         with open(self.includes_path, 'w') as f:

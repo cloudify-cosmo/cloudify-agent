@@ -15,22 +15,18 @@
 
 import tempfile
 import logging
-from mock import patch
 
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
+from cloudify.exceptions import CommandExecutionException
 
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api import utils
 
 from cloudify_agent.tests import utils as test_utils
 from cloudify_agent.tests import BaseTest
-from cloudify_agent.tests import get_storage_directory
-from cloudify_agent.tests.utils import uninstall_package_if_exists
 
 
-@patch('cloudify_agent.api.utils.get_storage_directory',
-       get_storage_directory)
 class PluginInstallerTest(BaseTest):
 
     fs = None
@@ -38,9 +34,7 @@ class PluginInstallerTest(BaseTest):
     @classmethod
     def setUpClass(cls):
 
-        cls.logger = setup_logger(
-            'cloudify-agent.tests.api.plugins.test_installer',
-            logger_level=logging.DEBUG)
+        cls.logger = setup_logger(cls.__name__, logger_level=logging.DEBUG)
         cls.runner = LocalCommandRunner(cls.logger)
 
         cls.file_server_resource_base = tempfile.mkdtemp(
@@ -60,7 +54,13 @@ class PluginInstallerTest(BaseTest):
                 plugin_dir_name=plugin_dir,
                 target_directory=cls.file_server_resource_base)
 
-        cls.installer = PluginInstaller(logger=cls.logger)
+    def setUp(self):
+        self.installer = PluginInstaller(logger=self.logger)
+
+    def tearDown(self):
+        self.installer.uninstall('mock-plugin')
+        self.installer.uninstall('TowelStuff')
+        self.installer.uninstall('mock-plugin-with-requirements')
 
     @classmethod
     def tearDownClass(cls):
@@ -72,33 +72,39 @@ class PluginInstallerTest(BaseTest):
     def _assert_plugin_installed(self, plugin_name, dependencies=None):
         if not dependencies:
             dependencies = []
-        out = self.runner.run('{0} list'.format(utils.get_pip_path())).output
+        out = self.runner.run('{0} freeze'.format(utils.get_pip_path())).output
+        packages = []
+        for line in out.splitlines():
+            packages.append(line.split('==')[0])
         self.assertIn(plugin_name, out)
         for dependency in dependencies:
-            self.assertIn(dependency, out)
+            self.assertIn(dependency, packages)
+
+    def _assert_plugin_not_installed(self, plugin_name):
+        out = self.runner.run('{0} freeze'.format(utils.get_pip_path())).output
+        packages = []
+        for line in out.splitlines():
+            packages.append(line.split('==')[0])
+        self.assertNotIn(plugin_name, packages)
 
     def test_install(self):
-        try:
-            self.installer.install(self._create_plugin_url('mock-plugin.tar'))
-            self._assert_plugin_installed('mock-plugin')
-        finally:
-            uninstall_package_if_exists('mock-plugin')
+        self.installer.install(self._create_plugin_url('mock-plugin.tar'))
+        self._assert_plugin_installed('mock-plugin')
 
     def test_install_with_requirements(self):
+        self.installer.install(self._create_plugin_url(
+            'mock-plugin-with-requirements.tar'),
+            '-r requirements.txt')
+        self._assert_plugin_installed(
+            plugin_name='mock-plugin-with-requirements',
+            dependencies=['TowelStuff'])
 
-        try:
-            self.installer.install(
-                self._create_plugin_url(
-                    'mock-plugin-with-requirements.tar'),
-                '-r requirements.txt')
-            self._assert_plugin_installed(
-                plugin_name='mock-plugin-with-requirements',
-                dependencies=['TowelStuff'])
-        finally:
-            uninstall_package_if_exists('mock-plugin-with-requirements')
+    def test_uninstall(self):
+        self.installer.install(self._create_plugin_url('mock-plugin.tar'))
+        self._assert_plugin_installed('mock-plugin')
+        self.installer.uninstall('mock-plugin')
+        self._assert_plugin_not_installed('mock-plugin')
 
-            #############################################################
-            # TowelStuff is a sample package inside PyPi, it doesn't do
-            # anything. we use it to test requirement files support
-            #############################################################
-            uninstall_package_if_exists('TowelStuff')
+    def test_uninstall_ignore_missing_false(self):
+        self.assertRaises(CommandExecutionException,
+                          self.installer.uninstall, 'missing-plugin', False)

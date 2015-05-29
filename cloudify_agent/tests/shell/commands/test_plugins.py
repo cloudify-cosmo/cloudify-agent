@@ -25,11 +25,12 @@ from cloudify_agent.tests import get_storage_directory
 @patch('cloudify_agent.api.utils.get_storage_directory',
        get_storage_directory)
 @patch('cloudify_agent.api.plugins.installer.PluginInstaller.install')
+@patch('cloudify_agent.api.plugins.installer.PluginInstaller.uninstall')
 @patch('cloudify_agent.shell.commands.plugins.DaemonFactory.load_all')
 @patch('cloudify_agent.shell.commands.plugins.DaemonFactory.save')
 class TestConfigureCommandLine(BaseCommandLineTestCase):
 
-    def test_install(self, save, load_all, mock_install):
+    def test_install(self, save, load_all, _, mock_install):
         daemon1 = MagicMock()
         daemon1.virtualenv = VIRTUALENV
         daemon2 = MagicMock()
@@ -42,5 +43,21 @@ class TestConfigureCommandLine(BaseCommandLineTestCase):
         for daemon in daemons:
             register = daemon.register
             register.assert_called_once_with(mock_install.return_value)
+
+        self.assertEqual(save.call_count, 2)
+
+    def test_uninstall(self, save, load_all, mock_uninstall, _):
+        daemon1 = MagicMock()
+        daemon1.virtualenv = VIRTUALENV
+        daemon2 = MagicMock()
+        daemon2.virtualenv = VIRTUALENV
+        load_all.return_value = [daemon1, daemon2]
+        self._run('cfy-agent plugins uninstall --plugin=plugin')
+        mock_uninstall.assert_called_once_with('plugin')
+        load_all.assert_called_once_with(logger=get_logger())
+        daemons = load_all.return_value
+        for daemon in daemons:
+            unregister = daemon.unregister
+            unregister.assert_called_once_with('plugin')
 
         self.assertEqual(save.call_count, 2)

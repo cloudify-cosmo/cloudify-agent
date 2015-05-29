@@ -328,10 +328,10 @@ class Daemon(object):
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
-    def set_includes(self):
+    def apply_includes(self):
 
         """
-        Sets the includes list of the agent. This method must modify the
+        Apply the includes list of the agent. This method must modify the
         includes configuration used when starting the agent.
         """
         raise NotImplementedError('Must be implemented by a subclass')
@@ -400,7 +400,34 @@ class Daemon(object):
 
         # process management specific implementation
         self.logger.debug('Setting includes: {0}'.format(self.includes))
-        self.set_includes()
+        self.apply_includes()
+
+    def unregister(self, plugin):
+
+        """
+        Un-registers a plugin from the daemon. After applying this method,
+        the daemon will no longer recognize operations defined in that plugin.
+
+        #####################################################################
+        # Note this method changes the
+        # internal 'includes' list, that means you must persist the daemon
+        # after running this method (by calling DaemonFactory.save) in order
+        # to be able to properly load this daemon at future times.
+        #####################################################################
+
+        :param plugin: the plugin name to register.
+        :type plugin: str
+
+        """
+        self.logger.debug('Listing modules of plugin: {0}'.format(plugin))
+        modules = utils.list_plugin_files(plugin)
+
+        for module in modules:
+            self.includes.remove(module)
+
+        # process management specific implementation
+        self.logger.debug('Setting includes: {0}'.format(self.includes))
+        self.apply_includes()
 
     def create(self):
 

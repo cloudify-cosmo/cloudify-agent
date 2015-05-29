@@ -13,6 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import os
 import shutil
 
 from cloudify.utils import setup_logger
@@ -51,24 +52,51 @@ class PluginInstaller(object):
 
         plugin_dir = None
         try:
-            self.logger.debug('Extracting archive: {0}'.format(source))
-            plugin_dir = utils.extract_package_to_dir(source)
+            if os.path.isabs(source):
+                plugin_dir = source
+            else:
+                self.logger.debug('Extracting archive: {0}'.format(source))
+                plugin_dir = utils.extract_package_to_dir(source)
             self.logger.debug('Installing from directory: {0} '
                               '[args={1}]'.format(plugin_dir, args))
-            self._install_package(plugin_dir, args)
+            command = '{0} install {1} {2}'.format(
+                get_pip_path(), plugin_dir, args)
+            self.runner.run(command, cwd=plugin_dir)
             self.logger.debug('Retrieving plugin name')
             plugin_name = utils.extract_package_name(plugin_dir)
             self.logger.debug('Retrieved plugin name: {0}'
                               .format(plugin_name))
         finally:
-            if plugin_dir:
+            if plugin_dir and not os.path.isabs(source):
                 self.logger.debug('Removing directory: {0}'
                                   .format(plugin_dir))
                 shutil.rmtree(plugin_dir)
 
         return plugin_name
 
-    def _install_package(self, plugin_dir, args):
-        command = '{0} install {1} {2}'.format(
-            get_pip_path(), args, plugin_dir)
-        self.runner.run(command, cwd=plugin_dir)
+    def uninstall(self, plugin, ignore_missing=True):
+
+        """
+        Uninstall the plugin from the current virtualenv.
+
+        :param plugin: the plugin name as stated in the setup.py file
+        :type plugin: str
+        """
+
+        if not ignore_missing:
+            self.runner.run('{0} uninstall -y {1}'.format(
+                utils.get_pip_path(), plugin))
+        else:
+            out = self.runner.run('{0} freeze'
+                                  .format(utils.get_pip_path())).output
+
+            packages = []
+            for line in out.splitlines():
+                packages.append(line.split('==')[0])
+
+            if plugin in packages:
+                self.runner.run('{0} uninstall -y {1}'.format(
+                    utils.get_pip_path(), plugin))
+            else:
+                self.logger.info('{0} not installed. Nothing to do'
+                                 .format(plugin))
