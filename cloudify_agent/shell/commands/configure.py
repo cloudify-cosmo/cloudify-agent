@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2013 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 
 import click
 
+from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils as api_utils
 from cloudify_agent.shell.decorators import handle_failures
 
@@ -38,7 +39,9 @@ def configure(disable_requiretty, relocated_env):
 
     click.echo('Configuring...')
     if disable_requiretty:
+        click.echo('Disabling requiretty directive in sudoers file')
         api_utils.disable_requiretty()
     if relocated_env:
+        click.echo('Auto-correcting virtualenv {0}'.format(VIRTUALENV))
         api_utils.fix_virtualenv()
     click.echo('Successfully configured cfy-agent')

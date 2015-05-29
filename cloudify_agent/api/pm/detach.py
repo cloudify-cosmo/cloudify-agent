@@ -23,6 +23,7 @@ from cloudify_agent.api import utils
 from cloudify_agent.api.pm.base import CronSupervisorMixin
 from cloudify_agent.included_plugins import included_plugins
 from cloudify_agent.api import errors
+from cloudify_agent.api import exceptions
 
 
 class DetachedDaemon(CronSupervisorMixin):
@@ -30,7 +31,10 @@ class DetachedDaemon(CronSupervisorMixin):
     """
     This process management is not really a full process management. It
     merely runs the celery command in detached mode and uses crontab for
-    re-spawning the daemon on failure. The advantage of this kind of daemon
+    re-spawning the daemon on failure. This means that idempotency in the
+    start and stop commands is not guaranteed.
+
+    The advantage of this kind of daemon
     is that it does not require privileged permissions to execute.
     """
 
@@ -38,8 +42,6 @@ class DetachedDaemon(CronSupervisorMixin):
 
     def __init__(self, logger=None, **params):
         super(DetachedDaemon, self).__init__(logger, **params)
-        self.env_file = os.path.join(self.workdir, '{0}-env'.format(self.name))
-        # init.d specific configuration
         self.script_path = os.path.join(self.workdir, self.name)
         self.config_path = os.path.join(self.workdir, '{0}.conf'.
                                         format(self.name))
@@ -72,12 +74,29 @@ class DetachedDaemon(CronSupervisorMixin):
         self._create_config()
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        self.logger.debug('Removing {0}'.format(self.log_file))
-        os.remove(self.log_file)
-        self.logger.debug('Removing {0}'.format(self.pid_file))
-        os.remove(self.pid_file)
-        self.logger.debug('Removing {0}'.format(self.includes_path))
-        os.remove(self.includes_path)
+
+        self.logger.debug('Retrieving daemon stats')
+        stats = utils.get_agent_stats(self.name, self.celery)
+        if stats:
+            if not force:
+                raise exceptions.DaemonStillRunningException(self.name)
+            self.stop()
+
+        if os.path.exists(self.log_file):
+            self.logger.debug('Removing {0}'.format(self.log_file))
+            os.remove(self.log_file)
+        if os.path.exists(self.pid_file):
+            self.logger.debug('Removing {0}'.format(self.pid_file))
+            os.remove(self.pid_file)
+        if os.path.exists(self.includes_path):
+            self.logger.debug('Removing {0}'.format(self.includes_path))
+            os.remove(self.includes_path)
+        if os.path.exists(self.config_path):
+            self.logger.debug('Removing {0}'.format(self.config_path))
+            os.remove(self.config_path)
+        if os.path.exists(self.script_path):
+            self.logger.debug('Removing {0}'.format(self.script_path))
+            os.remove(self.script_path)
 
     def set_includes(self):
         if not os.path.isfile(self.includes_path):
@@ -110,9 +129,9 @@ class DetachedDaemon(CronSupervisorMixin):
             return False
 
     def _create_includes(self):
-        dirname = os.path.dirname(self.includes_path)
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
+        dir_name = os.path.dirname(self.includes_path)
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
         open(self.includes_path, 'w').close()
 
         for plugin in included_plugins:
@@ -134,6 +153,8 @@ class DetachedDaemon(CronSupervisorMixin):
             includes_path=self.includes_path,
             virtualenv_path=VIRTUALENV
         )
+
+        # no sudo needed, yey!
         self.runner.run('cp {0} {1}'.format(rendered, self.script_path))
         self.runner.run('rm {0}'.format(rendered))
         self.runner.run('chmod +x {0}'.format(self.script_path))

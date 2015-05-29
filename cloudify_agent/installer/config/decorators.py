@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2014 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -127,11 +127,3 @@ def group(name):
         return wrapper
 
     return decorator
-
-
-class fixed_dict(dict):
-
-    def __setitem__(self, key, value):
-        if key in self.keys():
-            return
-        super(fixed_dict, self).__setitem__(key, value)

@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2014 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,8 +27,9 @@ class RemoteLinuxAgentInstaller(LinuxInstallerMixin, RemoteInstallerMixin):
             cloudify_agent, logger)
 
         # importing fabric stuff is a bit expensive and kind of shaky
-        # because the import may fail on windows boxes that don't the pywin32
-        # extensions installed. so lets import only when we really have to.
+        # because the import may fail on windows boxes that don't have the
+        # pywin32 extensions installed. so lets import only when we really
+        # have to.
         from cloudify_agent.installer.runners.fabric_runner \
             import FabricRunner
         self._runner = FabricRunner(

@@ -41,7 +41,6 @@ class GenericLinuxDaemon(CronSupervisorMixin):
     def __init__(self, logger=None, **params):
         super(GenericLinuxDaemon, self).__init__(logger=logger, **params)
 
-        # init.d specific configuration
         self.script_path = os.path.join(self.SCRIPT_DIR, self.name)
         self.config_path = os.path.join(self.CONFIG_DIR, self.name)
         self.includes_path = os.path.join(
@@ -49,19 +48,6 @@ class GenericLinuxDaemon(CronSupervisorMixin):
         self.start_on_boot = params.get('start_on_boot', False)
 
     def configure(self):
-
-        """
-        This method creates the following files:
-
-        1. an init.d script located under /etc/init.d
-        2. a configuration file located under /etc/default
-        3. an includes file containing a comma separated list of modules
-           that will be imported at startup.
-
-        :return: The daemon name.
-        :rtype: str
-
-        """
 
         def _validate(file_path):
             if os.path.exists(file_path):
@@ -91,14 +77,6 @@ class GenericLinuxDaemon(CronSupervisorMixin):
             self._create_start_on_boot_entry()
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-
-        """
-        Deletes all the files created on the create method.
-
-        :raise DaemonStillRunningException:
-        in case the daemon process is still running.
-
-        """
 
         self.logger.debug('Retrieving daemon stats')
         stats = utils.get_agent_stats(self.name, self.celery)
@@ -142,9 +120,9 @@ class GenericLinuxDaemon(CronSupervisorMixin):
             return False
 
     def _create_includes(self):
-        dirname = os.path.dirname(self.includes_path)
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
+        dir_name = os.path.dirname(self.includes_path)
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
         open(self.includes_path, 'w').close()
 
         for plugin in included_plugins:
@@ -207,6 +185,8 @@ class GenericLinuxDaemon(CronSupervisorMixin):
             "distribution base. Supported distributions bases are "
             "debian and RPM"
         )
+
+# this is extracted here so that it is easily mocked in tests
 
 
 def start_command(daemon):

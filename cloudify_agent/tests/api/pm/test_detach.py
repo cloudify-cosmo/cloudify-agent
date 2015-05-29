@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2014 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import time
+import os
 from mock import patch
 
 from cloudify_agent.api.pm.detach import DetachedDaemon
@@ -47,6 +48,15 @@ class TestDetachedDaemon(BaseDaemonLiveTestCase):
             **attributes
         )
 
+    def test_configure(self):
+        daemon = self.create_daemon()
+        daemon.create()
+
+        daemon.configure()
+        self.assertTrue(os.path.exists(daemon.script_path))
+        self.assertTrue(os.path.exists(daemon.config_path))
+        self.assertTrue(os.path.exists(daemon.includes_path))
+
     def test_start(self):
         self._test_start_impl()
 
@@ -55,6 +65,25 @@ class TestDetachedDaemon(BaseDaemonLiveTestCase):
 
     def test_stop_short_timeout(self):
         self._test_stop_short_timeout_impl()
+
+    def test_delete_before_stop(self):
+        self._test_delete_before_stop_impl()
+
+    def test_delete_before_stop_with_force(self):
+        self._test_delete_before_stop_with_force_impl()
+
+    def test_delete(self):
+        daemon = self.create_daemon()
+        daemon.create()
+        daemon.configure()
+        daemon.start()
+        daemon.stop()
+        daemon.delete()
+        self.assertFalse(os.path.exists(daemon.script_path))
+        self.assertFalse(os.path.exists(daemon.config_path))
+        self.assertFalse(os.path.exists(daemon.includes_path))
+        self.assertFalse(os.path.exists(daemon.log_file))
+        self.assertFalse(os.path.exists(daemon.pid_file))
 
     def test_register(self):
         self._test_register_impl()

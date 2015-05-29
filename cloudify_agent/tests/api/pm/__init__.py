@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2014 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ def only_ci(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not ci():
+        if ci():
             raise RuntimeError('Error! This test cannot be executed '
                                'outside of the travis CI '
                                'system since it may corrupt '
@@ -143,7 +143,7 @@ class BaseDaemonLiveTestCase(BaseTest):
             names = self.additional_names
             names.append(self.name)
             for name in names:
-                nssm_path = utils.get_full_resource_path(
+                nssm_path = utils.get_absolute_resource_path(
                     os.path.join('pm', 'nssm', 'nssm.exe'))
                 self.runner.run('sc stop {0}'.format(name),
                                 exit_on_failure=False,
@@ -207,7 +207,7 @@ class BaseDaemonLiveTestCase(BaseTest):
                 daemon.start()
                 self.fail('Expected start operation to fail '
                           'due to bad import')
-            except exceptions.DaemonException as e:
+            except errors.DaemonError as e:
                 self.assertIn('cannot import name non_existent', str(e))
         finally:
             test_utils.uninstall_package_if_exists('mock-plugin-error')

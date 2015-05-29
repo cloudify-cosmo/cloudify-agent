@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2013 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +17,10 @@ import json
 import click
 
 from cloudify_agent.api import defaults
-from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.api import utils as api_utils
+from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.shell import env
 from cloudify_agent.shell.decorators import handle_failures
-from cloudify_agent.shell import utils
 
 
 @click.command(context_settings=dict(ignore_unknown_options=True))
@@ -110,8 +109,8 @@ from cloudify_agent.shell import utils
               envvar=env.CLOUDIFY_DAEMON_EXTRA_ENV)
 # this is defined in order to allow passing any kind of option to the
 # command line. in order to support creating daemons of different kind via
-# the same command line. this argument is parsed as keyword arguments and
-# passed on the the daemon constructor.
+# the same command line. this argument is parsed as keyword arguments which
+# are later passed to the daemon constructor.
 @click.argument('custom-options', nargs=-1, type=click.UNPROCESSED)
 @handle_failures
 def create(**params):
@@ -123,7 +122,7 @@ def create(**params):
 
     attributes = dict(**params)
     custom_arg = attributes.pop('custom_options', ())
-    attributes.update(utils.parse_custom_options(custom_arg))
+    attributes.update(_parse_custom_options(custom_arg))
     click.echo('Creating...')
     from cloudify_agent.shell.main import get_logger
     daemon = DaemonFactory().new(
@@ -349,3 +348,19 @@ def _load_daemon(name):
 
 def _save_daemon(daemon):
     DaemonFactory(username=daemon.user).save(daemon)
+
+
+def _parse_custom_options(options):
+
+    parsed = {}
+    for option_string in options:
+        parts = option_string.split('=')
+        key = parts[0][2:].replace('-', '_')  # options start with '--'
+        if len(parts) == 1:
+            # flag given
+            value = True
+        else:
+            value = parts[1]
+        parsed[key] = value
+
+    return parsed

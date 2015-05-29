@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2014 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 import winrm
 
 from cloudify.exceptions import CommandExecutionException
+from cloudify.exceptions import CommandExecutionError
 from cloudify.utils import CommandExecutionResponse
 from cloudify.utils import setup_logger
 
@@ -142,7 +143,13 @@ class WinRMRunner(object):
 
         if remote_env_file:
             command = 'call {0} & {1}'.format(command)
-        response = self.session.run_cmd(command)
+        try:
+            response = self.session.run_cmd(command)
+        except BaseException as e:
+            raise WinRMCommandExecutionError(
+                command=command,
+                error=str(e)
+            )
         _chk(response)
         return WinRMCommandExecutionResponse(
             command=command,
@@ -464,6 +471,16 @@ class WinRMRunner(object):
 
     def close(self):
         pass
+
+
+class WinRMCommandExecutionError(CommandExecutionError):
+
+    """
+    Indicates a failure occurred while trying to execute the command.
+
+    """
+
+    pass
 
 
 class WinRMCommandExecutionException(CommandExecutionException):

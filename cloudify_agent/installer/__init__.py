@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2014 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,19 +27,19 @@ from cloudify.utils import LocalCommandRunner
 from cloudify.exceptions import CommandExecutionError
 
 from cloudify_agent.installer.config import configuration
-from cloudify_agent.api import utils
 from cloudify_agent.installer.config.attributes import AGENT_ATTRIBUTES
 from cloudify_agent.installer.config.attributes import raise_missing_attribute
+from cloudify_agent.api import utils
 from cloudify_agent.shell import env
 
 
 def init_agent_installer(func):
 
     # import here to avoid circular dependency
-    from cloudify_agent.installer.runners import fabric_runner
-    from cloudify_agent.installer.runners import winrm_runner
     from cloudify_agent.installer import linux
     from cloudify_agent.installer import windows
+    from cloudify_agent.installer.runners import fabric_runner
+    from cloudify_agent.installer.runners import winrm_runner
 
     @wraps(func)
     def wrapper(*args, **kwargs):

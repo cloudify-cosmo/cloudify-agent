@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2014 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -181,8 +181,8 @@ class FabricRunner(object):
 
         :return: a response object containing information
                  about the execution
-        :rtype: worker_installer.fabric_runner.FabricCommandExecutionResponse
-        :raise: worker_installer.fabric_runner.FabricCommandExecutionException
+        :rtype: FabricCommandExecutionResponse
+        :raise: FabricCommandExecutionException
         """
 
         return self.run('sudo {0}'.format(command), **attributes)
@@ -202,8 +202,8 @@ class FabricRunner(object):
 
         :return: a response object containing information
                  about the execution
-        :rtype: worker_installer.fabric_runner.FabricCommandExecutionResponse
-        :raise: worker_installer.fabric_runner.FabricCommandExecutionException
+        :rtype: FabricCommandExecutionResponse
+        :raise: FabricCommandExecutionException
         """
 
         if not args:
@@ -322,8 +322,8 @@ class FabricRunner(object):
 
         :return: a response object containing information
                  about the execution
-        :rtype: worker_installer.fabric_runner.FabricCommandExecutionResponse
-        :raise: worker_installer.fabric_runner.FabricCommandExecutionException
+        :rtype: FabricCommandExecutionResponse
+        :raise: FabricCommandExecutionException
         """
 
         if not self.exists(destination, **attributes):
@@ -342,8 +342,8 @@ class FabricRunner(object):
 
         :return: a response object containing information
                  about the execution
-        :rtype: worker_installer.fabric_runner.FabricCommandExecutionResponse
-        :raise: worker_installer.fabric_runner.FabricCommandExecutionException
+        :rtype: FabricCommandExecutionResponse
+        :raise: FabricCommandExecutionException
         """
 
         return self.run('echo', **attributes)
@@ -363,7 +363,7 @@ class FabricRunner(object):
 
         :return: the temporary path
         :rtype: str
-        :raise: worker_installer.fabric_runner.FabricCommandExecutionException
+        :raise: FabricCommandExecutionException
         """
 
         flags = []
@@ -387,7 +387,7 @@ class FabricRunner(object):
 
         :return: the temporary path
         :rtype: str
-        :raise: worker_installer.fabric_runner.FabricCommandExecutionException
+        :raise: FabricCommandExecutionException
         """
 
         return self.mktemp(create=create, directory=True, **attributes)
@@ -412,7 +412,7 @@ class FabricRunner(object):
 
         :return: the output path.
         :rtype: str
-        :raise: worker_installer.fabric_runner.FabricCommandExecutionException
+        :raise: FabricCommandExecutionException
         """
 
         if output_path is None:
@@ -438,6 +438,14 @@ class FabricRunner(object):
         return output_path
 
     def home_dir(self, username):
+
+        """
+        Retrieve the path of the user's home directory.
+
+        :param username: the username
+        :return: path to the home directory
+        :rtype: str
+        """
         return self.python(
             imports_line='import pwd',
             command='pwd.getpwnam(\'{0}\').pw_dir'
@@ -464,7 +472,7 @@ class FabricRunner(object):
         :return: the string representation of the return value of
                  the python command
         :rtype: str
-        :raise: worker_installer.fabric_runner.FabricCommandExecutionException
+        :raise: FabricCommandExecutionException
         """
 
         start = '###CLOUDIFYCOMMANDOPEN'
@@ -492,10 +500,10 @@ class FabricRunner(object):
         :type: key-value argument
 
         :return: dictionary of the platform distribution as returned from
-        'platform.dist()'
+                 'platform.dist()'
 
         :rtype: dict
-        :raise: worker_installer.fabric_runner.FabricCommandExecutionException
+        :raise: FabricCommandExecutionException
 
         """
 

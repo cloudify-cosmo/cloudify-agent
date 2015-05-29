@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2013 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ class DaemonFactory(object):
         :type storage: str
 
         :param logger: a logger to be used to log various subsequent
-        operations.
+                       operations.
         :type logger: logging.Logger
 
         """
@@ -109,7 +109,7 @@ class DaemonFactory(object):
         management.
 
         :param logger: a logger to be used by the daemon to log various
-        operations.
+                       operations.
         :type logger: logging.Logger
 
         :param attributes: parameters passed to the daemon class constructor.
@@ -140,7 +140,7 @@ class DaemonFactory(object):
         Loads all daemons from local storage.
 
         :param logger: a logger to be used by the daemons to log various
-        operations.
+                       operations.
         :type logger: logging.Logger
 
         :return: all daemons instances.
@@ -178,7 +178,7 @@ class DaemonFactory(object):
         :rtype: cloudify_agent.api.pm.base.Daemon
 
         :param logger: a logger to be used by the daemon to log various
-        operations.
+                       operations.
         :type logger: logging.Logger
 
         :raise CloudifyAgentNotFoundException: in case the daemon

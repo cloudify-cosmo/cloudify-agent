@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2013 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ class Daemon(object):
 
         the queue this daemon will listen to. It is possible to create
         different workers with the same queue, however this is discouraged.
-        to create more workers that process tasks of a given queue, use the
+        to create more workers that process tasks from a given queue, use the
         'min_workers' and 'max_workers' keys. defaults to <name>-queue.
 
     ``workdir``:
@@ -122,13 +122,11 @@ class Daemon(object):
 
     ``log_file``:
 
-        location of the daemon log file. defaults to
-        <workdir>/<name>.log
+        location of the daemon log file. defaults to <workdir>/<name>.log
 
     ``pid_file``:
 
-        location of the daemon pid file. defaults to
-        <workdir>/<name>.pid
+        location of the daemon pid file. defaults to <workdir>/<name>.pid
 
     ``includes``:
 
@@ -174,15 +172,18 @@ class Daemon(object):
             logger_name='cloudify_agent.api.pm.{0}'
             .format(self.PROCESS_MANAGEMENT))
 
+        # save params
+        self.params = params
+
         # configure command runner
         self.runner = LocalCommandRunner(logger=self.logger)
 
         # Mandatory parameters
-        self.validate_mandatory(params)
+        self.validate_mandatory()
         self.manager_ip = params['manager_ip']
 
         # Optional parameters
-        self.validate_optional(params)
+        self.validate_optional()
         self.user = params.get('user') or getpass.getuser()
         self.broker_ip = params.get(
             'broker_ip') or self.manager_ip
@@ -250,38 +251,30 @@ class Daemon(object):
         self.celery = Celery(broker=self.broker_url,
                              backend=self.broker_url)
 
-    @classmethod
-    def validate_mandatory(cls, params):
+    def validate_mandatory(self):
 
         """
         Validates that all mandatory parameters are given.
-
-        :param params: parameters of the daemon.
-        :type params: dict
 
         :raise DaemonMissingMandatoryPropertyError: in case one of the
         mandatory parameters is missing.
         """
 
-        for param in cls.MANDATORY_PARAMS:
-            if param not in params:
+        for param in self.MANDATORY_PARAMS:
+            if param not in self.params:
                 raise errors.DaemonMissingMandatoryPropertyError(param)
 
-    @staticmethod
-    def validate_optional(params):
+    def validate_optional(self):
 
         """
         Validates any optional parameters given to the daemon.
-
-        :param params: parameters of the daemon.
-        :type params: dict
 
         :raise DaemonPropertiesError:
         in case one of the parameters is faulty.
         """
 
-        min_workers = params.get('min_workers')
-        max_workers = params.get('max_workers')
+        min_workers = self.params.get('min_workers')
+        max_workers = self.params.get('max_workers')
 
         if min_workers:
             if not str(min_workers).isdigit():
@@ -317,23 +310,20 @@ class Daemon(object):
     def configure(self):
 
         """
-        Creates any necessary resources for the daemon. This method must
-        create all necessary configuration of the daemon. After this method
+        Creates any necessary resources for the daemon. After this method
         was completed successfully, it should be possible to start the daemon
         by running the command returned by the `start_command` method.
 
-        :return: The daemon name.
-        :rtype: str
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
 
         """
-        Delete any resources created by the daemon.
+        Delete any resources created for the daemon in the 'configure' method.
 
         :param force: if the daemon is still running, stop it before
-        deleting it.
+                      deleting it.
         :type force: bool
         """
         raise NotImplementedError('Must be implemented by a subclass')
@@ -349,23 +339,32 @@ class Daemon(object):
     def start_command(self):
 
         """
-        A command line for starting the daemon.
+        Construct a command line for starting the daemon.
         (e.g sudo service <name> start)
+
+        :return a one liner command to start the daemon process.
+        :rtype: str
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
     def stop_command(self):
 
         """
-        A command line for stopping the daemon.
+        Construct a command line for stopping the daemon.
         (e.g sudo service <name> stop)
+
+        :return a one liner command to stop the daemon process.
+        :rtype: str
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
     def status(self):
 
         """
-        Query the daemon status, usually by running the status_command.
+        Query the daemon status, This method will can be usually
+        implemented by simply running the status command. However, this is
+        not always the case as different commands and process management
+        tools may behave differently.
 
         :return: True if the service is running, False otherwise
         :rtype: bool
@@ -383,7 +382,14 @@ class Daemon(object):
         Register an additional plugin. This method will enable the addition
         of operations defined in the plugin.
 
-        :param plugin: The plugin name to register.
+        #####################################################################
+        # Note this method changes the
+        # internal 'includes' list, that means you must persist the daemon
+        # after running this method (by calling DaemonFactory.save) in order
+        # to be able to properly load this daemon at future times.
+        #####################################################################
+
+        :param plugin: the plugin name to register.
         :type plugin: str
         """
 
@@ -402,8 +408,9 @@ class Daemon(object):
         Creates the agent. This method may be served as a hook to some custom
         logic that needs to be implemented after the instance
         was instantiated.
+
         """
-        pass
+        self.logger.debug('Daemon created')
 
     def start(self,
               interval=defaults.START_INTERVAL,
@@ -414,15 +421,15 @@ class Daemon(object):
         Starts the daemon process.
 
         :param interval: the interval in seconds to sleep when waiting for
-        the daemon to be ready.
+                         the daemon to be ready.
         :type interval: int
 
         :param timeout: the timeout in seconds to wait for the daemon to be
-        ready.
+                        ready.
         :type timeout: int
 
         :param delete_amqp_queue: delete any queues with the name of the
-        current daemon queue in the broker.
+                                  current daemon queue in the broker.
         :type delete_amqp_queue: bool
 
         :raise DaemonStartupTimeout: in case the agent failed to start in the
@@ -433,6 +440,7 @@ class Daemon(object):
         """
 
         if delete_amqp_queue:
+            self.logger.debug('Deleting AMQP queues')
             self._delete_amqp_queues()
         start_command = self.start_command()
         self.logger.debug('Starting daemon with command: {0}'
@@ -440,15 +448,21 @@ class Daemon(object):
         self.runner.run(start_command)
         end_time = time.time() + timeout
         while time.time() < end_time:
-            self.logger.debug('Validating daemon {0} stats'.format(self.name))
+            self.logger.debug('Querying daemon {0} stats'.format(self.name))
             stats = utils.get_agent_stats(self.name, self.celery)
             if stats:
-                self.logger.debug('Daemon {0} has started'.format(self.name))
-                return
+                # make sure the status command recognizes the daemon is up
+                status = self.status()
+                if status:
+                    self.logger.debug('Daemon {0} has started'
+                                      .format(self.name))
+                    return
             self.logger.debug('Daemon {0} has not started yet. '
                               'Sleeping for {1} seconds...'
                               .format(self.name, interval))
             time.sleep(interval)
+        self.logger.debug('Verifying there were no un-handled '
+                          'exception during startup')
         self._verify_no_celery_error()
         raise exceptions.DaemonStartupTimeout(timeout, self.name)
 
@@ -460,7 +474,7 @@ class Daemon(object):
         Stops the daemon process.
 
         :param interval: the interval in seconds to sleep when waiting for
-        the daemon to stop.
+                         the daemon to stop.
         :type interval: int
 
         :param timeout: the timeout in seconds to wait for the daemon to stop.
@@ -479,7 +493,7 @@ class Daemon(object):
         self.runner.run(stop_command)
         end_time = time.time() + timeout
         while time.time() < end_time:
-            self.logger.debug('Validating daemon {0} stats'.format(self.name))
+            self.logger.debug('Querying daemon {0} stats'.format(self.name))
             # check the process has shutdown
             stats = utils.get_agent_stats(self.name, self.celery)
             if not stats:
@@ -494,6 +508,8 @@ class Daemon(object):
                               'Sleeping for {1} seconds...'
                               .format(self.name, interval))
             time.sleep(interval)
+        self.logger.debug('Verifying there were no un-handled '
+                          'exception during startup')
         self._verify_no_celery_error()
         raise exceptions.DaemonShutdownTimeout(timeout, self.name)
 
@@ -550,7 +566,7 @@ class Daemon(object):
             with open(error_dump_path) as f:
                 error = f.read()
             os.remove(error_dump_path)
-            raise exceptions.DaemonException(error)
+            raise errors.DaemonError(error)
 
     def _delete_amqp_queues(self):
         client = amqp_client.create_client(self.broker_ip)
@@ -580,6 +596,18 @@ class CronSupervisorMixin(Daemon):
     Note that usually, process management systems have the re-spawning
     capability built in, this mixin should be used by basic process
     management implementation that are lacking it.
+
+    Following are all possible custom key-word arguments
+    (in addition to the ones available in the base daemon)
+
+    ``cron_respawn``
+
+        pass True to enable cron detection. False otherwise
+
+    ``cron_respawn_delay``
+
+        the amount of minutes to wait before each cron invocation.
+
     """
 
     def __init__(self, logger=None, **params):
@@ -592,29 +620,42 @@ class CronSupervisorMixin(Daemon):
     def status_command(self):
 
         """
-        A command line for querying the daemon status. This must be
-        implemented for the crontab detector to work.
-        The command should result in a zero return code if the service is
-        running, and a non-zero return code otherwise.
+        Construct a command line for querying the status of the daemon.
         (e.g sudo service <name> status)
 
+        the command execution should result in a zero return code if the
+        service is running, and a non-zero return code otherwise.
+
+        :return a one liner command to start the daemon process.
+        :rtype: str
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
     def start(self, interval=defaults.START_INTERVAL,
               timeout=defaults.START_TIMEOUT,
               delete_amqp_queue=defaults.DELETE_AMQP_QUEUE_BEFORE_START):
+
+        # overriding the start method in order to add the crontab entry
+        # immediately after starting the daemon.
         super(CronSupervisorMixin, self).start(interval, timeout,
                                                delete_amqp_queue)
 
         if self.cron_respawn:
+            # add the crontab entry if requested
+            self.logger.info('Adding respawn crontab entry')
             self._enable_cron_respawn()
 
     def stop(self, interval=defaults.STOP_INTERVAL,
              timeout=defaults.STOP_TIMEOUT):
+
+        # overriding the stop method in order to remove the crontab entry
+        # immediately after stopping the daemon.
+
         super(CronSupervisorMixin, self).stop(interval, timeout)
 
         if self.cron_respawn:
+            # remove the crontab entry if requested
+            self.logger.info('Removing respawn crontab entry')
             self._disable_cron_respawn()
 
     def _enable_cron_respawn(self):
@@ -632,13 +673,14 @@ class CronSupervisorMixin(Daemon):
         self.logger.debug('Respawn script created at {0}'
                           .format(self.cron_respawn_path))
 
-        self.logger.debug('Adding respawn script to crontab')
         temp_cron = tempfile.mkstemp()[1]
         try:
             crontab = self.runner.run('crontab -l').output
         except CommandExecutionException as e:
-            # no crontab entries, that's ok
-            self.logger.warning(str(e))
+            # no crontab entries, that's ok.
+            # log the exception just so that we don't loose any
+            # potential important debug information.
+            self.logger.debug(str(e))
             crontab = ''
         with open(temp_cron, 'a') as f:
             if crontab:
@@ -649,10 +691,8 @@ class CronSupervisorMixin(Daemon):
             f.write(os.linesep)
         self.runner.run('crontab {0}'.format(temp_cron))
         self.runner.run('rm {0}'.format(temp_cron))
-        self.logger.debug('Successfully added respawn script to crontab')
 
     def _disable_cron_respawn(self):
-        self.logger.debug('Removing respawn crontab entry')
         crontab = self.runner.run('crontab -l').output
         new_cron = tempfile.mkstemp()[1]
         with open(new_cron, 'a') as f:
@@ -661,4 +701,3 @@ class CronSupervisorMixin(Daemon):
                 if self.name not in entry:
                     f.write(entry)
         self.runner.run('crontab {0}'.format(new_cron))
-        self.logger.debug('Successfully removed respawn crontab entry')

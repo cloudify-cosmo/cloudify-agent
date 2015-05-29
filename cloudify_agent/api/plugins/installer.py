@@ -31,7 +31,7 @@ class PluginInstaller(object):
 
         """
         :param logger: a logger to be used to log various subsequent
-        operations.
+                       operations.
         :type logger: logging.Logger
         """
 
@@ -41,9 +41,9 @@ class PluginInstaller(object):
     def install(self, source, args=''):
 
         """
-        Install the plugin in the current virtualenv.
+        Install the plugin to the current virtualenv.
 
-        :param source: URL to the plugin source code.
+        :param source: URL to the plugin. Any pip acceptable URL is ok.
         :type source: str
         :param args: extra installation arguments passed to the pip command
         :type args: str
@@ -56,6 +56,7 @@ class PluginInstaller(object):
             self.logger.debug('Installing from directory: {0} '
                               '[args={1}]'.format(plugin_dir, args))
             self._install_package(plugin_dir, args)
+            self.logger.debug('Retrieving plugin name')
             plugin_name = utils.extract_package_name(plugin_dir)
             self.logger.debug('Retrieved plugin name: {0}'
                               .format(plugin_name))

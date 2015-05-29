@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2013 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -176,7 +176,7 @@ def get_resource(resource_path):
     )
 
 
-def get_full_resource_path(resource_path):
+def get_absolute_resource_path(resource_path):
     return pkg_resources.resource_filename(
         cloudify_agent.__name__,
         os.path.join('resources', resource_path)

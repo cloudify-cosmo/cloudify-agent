@@ -3,6 +3,7 @@
 # sourcing the configuration file
 . {{ config_path }}
 
+# running the celery worker command directly
 {{ virtualenv_path }}/bin/celery worker \
 --events \
 --queues={{ queue }} \

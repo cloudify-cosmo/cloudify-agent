@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2014 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -50,8 +50,8 @@ class TestUtils(BaseTest):
     def tearDownClass(cls):
         cls.fs.stop()
 
-    def test_get_full_resource_path(self):
-        full_path = utils.get_full_resource_path(
+    def test_get_absolute_resource_path(self):
+        full_path = utils.get_absolute_resource_path(
             os.path.join('pm', 'nssm', 'nssm.exe'))
         expected = os.path.join(
             os.path.dirname(cloudify_agent.__file__),
