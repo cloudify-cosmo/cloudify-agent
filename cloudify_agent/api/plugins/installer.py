@@ -23,13 +23,11 @@ from cloudify_agent.api import utils
 from cloudify_agent.api.utils import get_pip_path
 
 
-default_logger = setup_logger('cloudify_agent.api.plugins.installer')
-
-
 class PluginInstaller(object):
 
     def __init__(self, logger=None):
-        self.logger = logger or default_logger
+        self.logger = logger or setup_logger(
+            'cloudify_agent.api.plugins.installer')
         self.runner = LocalCommandRunner(logger=self.logger)
 
     def install(self, source, args=''):
@@ -67,22 +65,23 @@ class PluginInstaller(object):
     def uninstall(self, package_name, ignore_missing=True):
 
         """
-        Uninstall the plugin from the current virtualenv.
+        Uninstall the plugin from the current virtualenv. By default this
+        operation will fail when trying to uninstall a plugin that is not
+        installed, use `ignore_missing` to change this behavior.
 
         :param package_name: the package name as stated in the setup.py file
+        :param ignore_missing: ignore failures in uninstalling missing plugins.
         """
 
         if not ignore_missing:
             self.runner.run('{0} uninstall -y {1}'.format(
                 utils.get_pip_path(), package_name))
         else:
-            out = self.runner.run('{0} freeze'
-                                  .format(utils.get_pip_path())).output
-
+            out = self.runner.run(
+                '{0} freeze'.format(utils.get_pip_path())).output
             packages = []
             for line in out.splitlines():
                 packages.append(line.split('==')[0])
-
             if package_name in packages:
                 self.runner.run('{0} uninstall -y {1}'.format(
                     utils.get_pip_path(), package_name))

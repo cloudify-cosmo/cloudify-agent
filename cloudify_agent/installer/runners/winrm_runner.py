@@ -96,18 +96,15 @@ class WinRMRunner(object):
 
         """
         :param command: The command to execute.
-        :type command: str
-        :param raise_on_failure:
-            by default, this will raise an exception
-            if the command fails. You can use raise_on_failure=False to
-            just log the error and not raise an exception.
-        :type raise_on_failure: bool
+        :param raise_on_failure: by default, this will raise an exception
+                                 if the command fails. You can use
+                                 raise_on_failure=False to just log the
+                                 error and not raise an exception.
         :param execution_env: environment variables to be applied before
                               running the command
-        :type execution_env: dict
 
+        :return a response object with information about the execution
         :rtype WinRMCommandExecutionResponse.
-        :raise WinRMCommandExecutionException.
         """
 
         if execution_env is None:
@@ -161,8 +158,8 @@ class WinRMRunner(object):
         """
         Tests that the winrm connection is working.
 
+        :return a response object with information about the execution
         :rtype WinRMCommandExecutionResponse.
-        :raise WinRMCommandExecutionException.
         """
 
         return self.run('echo')
@@ -173,8 +170,7 @@ class WinRMRunner(object):
         :param url: URL to the resource to download.
         :param output_path: Local path the resource will be saved as.
 
-        :rtype WinRMCommandExecutionResponse.
-        :raise WinRMCommandExecutionException.
+        :return the destination path the url was downloaded to.
         """
 
         if output_path is None:
@@ -195,8 +191,8 @@ class WinRMRunner(object):
         :param src: Path to the source item.
         :param dst: Path to the destination item.
 
+        :return a response object with information about the execution
         :rtype WinRMCommandExecutionResponse.
-        :raise WinRMCommandExecutionException.
         """
 
         return self.run(
@@ -212,8 +208,8 @@ class WinRMRunner(object):
         :param dst: Path to the destination item.
         :param force: Creates missing path if needed.
 
+        :return a response object with information about the execution
         :rtype WinRMCommandExecutionResponse.
-        :raise WinRMCommandExecutionException.
         """
 
         if force:
@@ -231,8 +227,7 @@ class WinRMRunner(object):
 
         :param path: The path to tests.
 
-        :rtype boolean
-        :raise WinRMCommandExecutionException
+        :return whether or not the path exists
         """
 
         response = self.run(
@@ -245,13 +240,10 @@ class WinRMRunner(object):
         """
         Deletes the resource in the given path.
 
-        :param path:
+        :param path: The path do delete. Can be either a file or a folder.
 
-           The path do delete.
-           Can be either a file or a folder.
-
+        :return a response object with information about the execution
         :rtype WinRMCommandExecutionResponse.
-        :raise WinRMCommandExecutionException.
         """
 
         return self.run(
@@ -264,16 +256,13 @@ class WinRMRunner(object):
         Creates a temporary path.
 
         :return: the temporary path
-        :rtype: str
-
-        :rtype WinRMCommandExecutionResponse.
-        :raise WinRMCommandExecutionException.
         """
 
         temp = self.run(
             '''@powershell -Command "[System.IO.Path]::GetTempFileName()"'''
         ).output
-        return self.new_file(temp)
+        self.new_file(temp)
+        return temp
 
     def new_dir(self, path):
 
@@ -282,8 +271,8 @@ class WinRMRunner(object):
 
         :param path: The directory path to create.
 
+        :return a response object with information about the execution
         :rtype WinRMCommandExecutionResponse.
-        :raise WinRMCommandExecutionException.
         """
 
         return self.run(
@@ -297,8 +286,8 @@ class WinRMRunner(object):
 
         :param path: The file path to create.
 
+        :return a response object with information about the execution
         :rtype WinRMCommandExecutionResponse.
-        :raise WinRMCommandExecutionException.
         """
 
         return self.run(
@@ -323,8 +312,7 @@ class WinRMRunner(object):
                 - 'Paused'
                 - 'Unknown'
 
-        :rtype string.
-        :raise WinRMCommandExecutionException.
+        :return the state of the service.
         """
 
         response = self.run(
@@ -339,10 +327,6 @@ class WinRMRunner(object):
 
         :return: dictionary of the platform distribution as returned from
         'platform.dist()'
-
-        :rtype: dict
-        :raise: worker_installer.fabric_runner.FabricCommandExecutionException
-
         """
 
         response = self.python(
@@ -362,14 +346,10 @@ class WinRMRunner(object):
         and the following closing brackets to retrieve the original output.
 
         :param imports_line: The imports needed for the command.
-        :type imports_line: str
         :param command: The python command to run.
-        :type command: str
 
         :return: the string representation of the return value of
                  the python command
-        :rtype: str
-        :raise: worker_installer.fabric_runner.FabricCommandExecutionException
         """
 
         start = '###CLOUDIFYCOMMANDOPEN'
@@ -393,13 +373,11 @@ class WinRMRunner(object):
         Writes the contents to a file in the given path.
 
         :param contents: The contents to write. string based.
-        :param path:
+        :param path: Path to a file.
+                     The file must be inside an existing directory.
 
-            Path to a file.
-            The file must be inside an existing directory.
-
+        :return a response object with information about the execution
         :rtype WinRMCommandExecutionResponse.
-        :raise WinRMCommandExecutionException.
         """
 
         return self.run(
@@ -413,8 +391,7 @@ class WinRMRunner(object):
 
         :param path: Path to a file.
 
-        :rtype string.
-        :raise WinRMCommandExecutionException.
+        :return the content of the file in the given path.
         """
 
         return self.run(
@@ -428,14 +405,10 @@ class WinRMRunner(object):
         so any archive supported by it is ok.
 
         :param archive: path to the archive.
-        :type archive: str
         :param destination: destination directory
-        :type destination: str
 
-        :return: a response object containing information
-                 about the execution
+        :return a response object with information about the execution
         :rtype WinRMCommandExecutionResponse.
-        :raise WinRMCommandExecutionException.
         """
 
         self.run(
@@ -454,12 +427,9 @@ class WinRMRunner(object):
         on the target machine
 
         :param src: Path to a local file.
-        :type src: str
         :param dst: The remote path the file will copied to.
-        :type dst: str
 
         :return: the destination path
-        :rtype: str
         """
 
         with open(src) as f:
@@ -467,7 +437,8 @@ class WinRMRunner(object):
 
         if not dst:
             dst = self.mktemp()
-        return self.put(contents=content, path=dst)
+        self.put(contents=content, path=dst)
+        return dst
 
     def close(self):
         pass

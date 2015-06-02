@@ -112,20 +112,15 @@ class FabricRunner(object):
         Execute a command.
 
         :param command: The command to execute.
-        :type command: str
         :param execution_env: environment variables to be applied before
                               running the command
-        :type execution_env: dict
         :param quiet: run the command silently
-        :type quiet: bool
         :param attributes: custom attributes passed directly to
                            fabric's run command
-        :type: key-value argument
 
         :return: a response object containing information
                  about the execution
-        :rtype: worker_installer.fabric_runner.FabricCommandExecutionResponse
-        :raise: worker_installer.fabric_runner.FabricCommandExecutionException
+        :rtype: FabricCommandExecutionResponse
         """
 
         if execution_env is None:
@@ -174,15 +169,12 @@ class FabricRunner(object):
         Execute a command under sudo.
 
         :param command: The command to execute.
-        :type command: str
         :param attributes: custom attributes passed directly to
                            fabric's run command
-        :type: key-value argument
 
         :return: a response object containing information
                  about the execution
         :rtype: FabricCommandExecutionResponse
-        :raise: FabricCommandExecutionException
         """
 
         return self.run('sudo {0}'.format(command), **attributes)
@@ -193,12 +185,9 @@ class FabricRunner(object):
         Execute a script.
 
         :param script: The path to the script to execute.
-        :type script: str
         :param args: arguments to the script
-        :type args: bytearray
         :param attributes: custom attributes passed directly to
                            fabric's run command
-        :type: key-value argument
 
         :return: a response object containing information
                  about the execution
@@ -222,13 +211,10 @@ class FabricRunner(object):
         Test if the given path exists.
 
         :param path: The path to tests.
-        :type path: str
         :param attributes: custom attributes passed directly to
                            fabric's run command
-        :type: key-value argument
 
         :return: true if the path exists, false otherwise
-        :rtype boolean
         """
 
         with settings(**self.env):
@@ -240,18 +226,13 @@ class FabricRunner(object):
         Copies a file from the src path to the dst path.
 
         :param src: Path to a local file.
-        :type src: str
         :param dst: The remote path the file will copied to.
-        :type dst: str
         :param sudo: indicates that this operation
                      will require sudo permissions
-        :type sudo: bool
         :param attributes: custom attributes passed directly to
                            fabric's run command
-        :type: key-value argument
 
         :return: the destination path
-        :rtype: str
         """
 
         if not dst:
@@ -278,12 +259,9 @@ class FabricRunner(object):
         Copies a file from the src path to the dst path.
 
         :param src: Path to a local file.
-        :type src: str
         :param dst: The remote path the file will copied to.
-        :type dst: str
 
         :return: the destination path
-        :rtype: str
         """
 
         if not dst:
@@ -311,19 +289,14 @@ class FabricRunner(object):
         so any archive supported by it is ok.
 
         :param archive: path to the archive.
-        :type archive: str
         :param destination: destination directory
-        :type destination: str
         :param strip: the strip count.
-        :type strip: int
         :param attributes: custom attributes passed directly to
                            fabric's run command
-        :type: key-value argument
 
         :return: a response object containing information
                  about the execution
         :rtype: FabricCommandExecutionResponse
-        :raise: FabricCommandExecutionException
         """
 
         if not self.exists(destination, **attributes):
@@ -338,12 +311,10 @@ class FabricRunner(object):
 
         :param attributes: custom attributes passed directly to
                            fabric's run command
-        :type: key-value argument
 
         :return: a response object containing information
                  about the execution
         :rtype: FabricCommandExecutionResponse
-        :raise: FabricCommandExecutionException
         """
 
         return self.run('echo', **attributes)
@@ -354,16 +325,11 @@ class FabricRunner(object):
         Creates a temporary path.
 
         :param create: actually create the file or just construct the path
-        :type create: bool
         :param directory: path should be a directory or not.
-        :type directory: bool
         :param attributes: custom attributes passed directly to
                            fabric's run command
-        :type: key-value argument
 
         :return: the temporary path
-        :rtype: str
-        :raise: FabricCommandExecutionException
         """
 
         flags = []
@@ -380,14 +346,10 @@ class FabricRunner(object):
         Creates a temporary directory path.
 
         :param create: actually create the file or just construct the path
-        :type create: bool
         :param attributes: custom attributes passed directly to
                            fabric's run command
-        :type: key-value argument
 
         :return: the temporary path
-        :rtype: str
-        :raise: FabricCommandExecutionException
         """
 
         return self.mktemp(create=create, directory=True, **attributes)
@@ -403,16 +365,12 @@ class FabricRunner(object):
             3. if failed, raise a NonRecoverableError
 
         :param url: URL to the resource.
-        :type url: str
         :param output_path: Path where the resource will be downloaded to.
                             If not specified, a temporary file will be used.
         :param attributes: custom attributes passed directly to
                            fabric's run command
-        :type: key-value argument
 
         :return: the output path.
-        :rtype: str
-        :raise: FabricCommandExecutionException
         """
 
         if output_path is None:
@@ -443,8 +401,8 @@ class FabricRunner(object):
         Retrieve the path of the user's home directory.
 
         :param username: the username
+
         :return: path to the home directory
-        :rtype: str
         """
         return self.python(
             imports_line='import pwd',
@@ -462,17 +420,12 @@ class FabricRunner(object):
         and the following closing brackets to retrieve the original output.
 
         :param imports_line: The imports needed for the command.
-        :type imports_line: str
         :param command: The python command to run.
-        :type command: str
         :param attributes: custom attributes passed directly to
                            fabric's run command
-        :type: key-value argument
 
         :return: the string representation of the return value of
                  the python command
-        :rtype: str
-        :raise: FabricCommandExecutionException
         """
 
         start = '###CLOUDIFYCOMMANDOPEN'
@@ -497,13 +450,9 @@ class FabricRunner(object):
 
         :param attributes: custom attributes passed directly to
                            fabric's run command
-        :type: key-value argument
 
         :return: dictionary of the platform distribution as returned from
                  'platform.dist()'
-
-        :rtype: dict
-        :raise: FabricCommandExecutionException
 
         """
 

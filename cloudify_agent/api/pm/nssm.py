@@ -82,11 +82,6 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
         env_string = self._create_env_string()
 
-        if os.path.exists(self.config_path):
-            raise errors.DaemonError(
-                'Failed configuring daemon {0}: {1} already exists.'
-                .format(self.name, self.config_path))
-
         # creating the installation script
         self.logger.debug('Rendering configuration script from template')
         utils.render_template_to_file(
@@ -127,10 +122,9 @@ class NonSuckingServiceManagerDaemon(Daemon):
             self.register(plugin)
 
     def apply_includes(self):
-        output = self.runner.run('{0} get {1} AppParameters'
-                                 .format(self.nssm_path,
-                                         self.name)
-                                 ).output
+        output = self.runner.run(
+            '{0} get {1} AppParameters'.format(
+                self.nssm_path, self.name)).output
 
         # apparently nssm output is encoded in utf16.
         # encode to ascii to be able to parse this
@@ -165,6 +159,8 @@ class NonSuckingServiceManagerDaemon(Daemon):
             os.remove(self.config_path)
 
     def start_command(self):
+        if not os.path.isfile(self.config_path):
+            raise errors.DaemonNotConfiguredError(self.name)
         return 'sc start {0}'.format(self.name)
 
     def stop_command(self):

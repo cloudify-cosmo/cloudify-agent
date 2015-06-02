@@ -43,9 +43,7 @@ def get_agent_stats(name, celery):
     Query for agent stats based on agent name.
 
     :param name: the agent name
-    :type name: str
     :param celery: the celery client to use
-    :type celery: celery.Celery
 
     :return: agents stats
     :rtype: dict
@@ -66,9 +64,8 @@ def get_storage_directory(username=None):
     registered under a specific username will be stored.
 
     :param username: the user
-    :type username: str
+
     :return: path to the directory
-    :rtype str
 
     """
 
@@ -110,8 +107,6 @@ def generate_agent_name():
     Generates a unique name with a pre-defined prefix
 
     :return: an agent name
-    :rtype: str
-
     """
 
     return '{0}-{1}'.format(
@@ -125,16 +120,10 @@ def render_template_to_file(template_path, file_path=None, **values):
     Render a 'jinja' template resource to a temporary file.
 
     :param template_path: relative path to the template.
-    :type template_path: str
-
     :param file_path: absolute path to the desired output file.
-    :type file_path: str
-
     :param values: keyword arguments passed to jinja.
-    :type values: dict
 
     :return path to the temporary file.
-    :rtype `str`
     """
 
     template = get_resource(template_path)
@@ -148,10 +137,8 @@ def resource_to_tempfile(resource_path):
     Copy a resource into a temporary file.
 
     :param resource_path: relative path to the resource.
-    :type resource_path: str
 
     :return path to the temporary file.
-    :rtype `str`
     """
 
     resource = get_resource(resource_path)
@@ -164,10 +151,8 @@ def get_resource(resource_path):
     Loads the resource into a string.
 
     :param resource_path: relative path to the resource.
-    :type resource_path: str
 
     :return the resource as a string.
-    :rtype `str`
     """
 
     return pkg_resources.resource_string(
@@ -177,6 +162,15 @@ def get_resource(resource_path):
 
 
 def get_absolute_resource_path(resource_path):
+
+    """
+    Retrieves the absolute path in the file system of a resource of the
+    package.
+
+    :param resource_path: the relative path to the resource
+
+    :return: absolute path to that resource.
+    """
     return pkg_resources.resource_filename(
         cloudify_agent.__name__,
         os.path.join('resources', resource_path)
@@ -189,13 +183,9 @@ def content_to_file(content, file_path=None):
     Write string to a temporary file.
 
     :param content:
-    :type content: str
-
     :param file_path: absolute path to the desired output file.
-    :type file_path: str
 
     :return path to the temporary file.
-    :rtype `str`
     """
 
     if not file_path:
@@ -282,7 +272,6 @@ def parse_pip_version(pip_version=''):
     Parses a pip version string to identify major, minor, micro versions.
 
     :param pip_version: the version of pip
-    :type pip_version: str
 
     :return: major, minor, micro version of pip
     :rtype: tuple
@@ -334,10 +323,8 @@ def extract_package_to_dir(package_url):
     Extracts a pip package to a temporary directory.
 
     :param package_url: the URL to the package source.
-    :type package_url: str
 
     :return: the directory the package was extracted to.
-    :rtype: str
     """
 
     plugin_dir = None
@@ -375,10 +362,8 @@ def is_pip6_or_higher(pip_version=None):
     Determines if the pip version passed is higher than version 6.
 
     :param pip_version: the version of pip
-    :type pip_version: str
 
     :return: whether or not the version is higher than version 6.
-    :rtype: bool
     """
 
     major, minor, micro = parse_pip_version(pip_version)
@@ -395,10 +380,8 @@ def extract_package_name(package_dir):
     specified in the package setup.py file.
 
     :param package_dir: the directory the package was extracted to.
-    :type package_dir: str
 
     :return: the package name
-    :rtype: str
     """
     runner = LocalCommandRunner()
     plugin_name = runner.run(
@@ -419,7 +402,6 @@ def list_plugin_files(plugin_name):
     __init__ file are filtered out.
 
     :param plugin_name: The plugin name.
-    :type plugin_name: string
 
     :return: A list of file paths.
     :rtype: list of str
@@ -450,11 +432,8 @@ def dict_to_options(dictionary):
     will be translated into the --key=value option.
 
     :param dictionary: the options dictionary
-    :type dictionary: dict
 
     :return: the options string representing the dictionary
-    :rtype: str
-
     """
 
     options_string = ''
@@ -463,6 +442,22 @@ def dict_to_options(dictionary):
         option = '--{0}={1}'.format(key, value)
         options_string = '{0} {1}'.format(options_string, option)
     return options_string.lstrip()
+
+
+def get_executable_path(executable):
+
+    """
+    Lookup the path to the executable, os agnostic
+
+    :param executable: the name of the executable
+
+    :return: path to the executable
+    """
+
+    if os.name == 'posix':
+        return '{0}/bin/{1}'.format(VIRTUALENV, executable)
+    else:
+        return '{0}\\Scripts\\{1}'.format(VIRTUALENV, executable)
 
 
 def get_cfy_agent_path():
@@ -474,10 +469,7 @@ def get_cfy_agent_path():
     :rtype: str
     """
 
-    if os.name == 'posix':
-        return '{0}/bin/cfy-agent'.format(VIRTUALENV)
-    else:
-        return '{0}\\Scripts\\cfy-agent'.format(VIRTUALENV)
+    return get_executable_path('cfy-agent')
 
 
 def get_pip_path():
@@ -489,10 +481,7 @@ def get_pip_path():
     :rtype: str
     """
 
-    if os.name == 'posix':
-        return '{0}/bin/pip'.format(VIRTUALENV)
-    else:
-        return '{0}\\Scripts\\pip'.format(VIRTUALENV)
+    return get_executable_path('pip')
 
 
 def get_celery_path():
@@ -504,10 +493,7 @@ def get_celery_path():
     :rtype: str
     """
 
-    if os.name == 'posix':
-        return '{0}/bin/celery'.format(VIRTUALENV)
-    else:
-        return '{0}\\Scripts\\celery'.format(VIRTUALENV)
+    return get_executable_path('celery')
 
 
 def get_python_path():
@@ -519,10 +505,7 @@ def get_python_path():
     :rtype: str
     """
 
-    if os.name == 'posix':
-        return '{0}/bin/pip'.format(VIRTUALENV)
-    else:
-        return '{0}\\Scripts\\python'.format(VIRTUALENV)
+    return get_executable_path('python')
 
 
 def env_to_file(env_variables, destination_path=None, posix=True):
@@ -531,18 +514,14 @@ def env_to_file(env_variables, destination_path=None, posix=True):
     Write environment variables to a file.
 
     :param env_variables: environment variables
-    :type env_variables: dict
-
     :param destination_path: destination path of a file where the
-    environment variables will be stored. the stored variables will be a
-    bash script you can then source.
-    :type destination_path: str
+                             environment variables will be stored. the
+                             stored variables will be a bash script you can
+                             then source.
     :param posix: false if the target of the generated file will be a
-    windows machine
-    :type posix: bool
+                  windows machine
 
     :return: path to the file containing the env variables
-    :rtype `str`
     """
 
     if not env_variables:
@@ -585,6 +564,7 @@ def stringify_values(dictionary):
     the value. useful for dicts that only allow string values (like os.environ)
 
     :param dictionary: the dictionary to convert
+
     :return: a copy of the dictionary where all values are now string.
     :rtype: dict
     """
@@ -606,6 +586,7 @@ def purge_none_values(dictionary):
     nested values.
 
     :param dictionary: the dictionary to convert
+
     :return: a copy of the dictionary where no key has a None value
     :rtype: dict
     """
@@ -623,10 +604,8 @@ def json_load(file_path):
     Loads a JSON file into a dictionary.
 
     :param file_path: path to the json file
-    :type file_path: str
 
     :return: the dictionary
-    :rtype: dict
     """
 
     with open(file_path) as f:
@@ -642,10 +621,8 @@ def json_loads(content):
 
 
     :param content: the string to load
-    :type content: str
 
     :return: the dictionary
-    :rtype: dict
     """
 
     try:

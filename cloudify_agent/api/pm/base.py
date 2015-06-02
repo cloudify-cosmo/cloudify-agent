@@ -322,7 +322,6 @@ class Daemon(object):
 
         :param force: if the daemon is still running, stop it before
                       deleting it.
-        :type force: bool
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
@@ -341,7 +340,6 @@ class Daemon(object):
         (e.g sudo service <name> start)
 
         :return a one liner command to start the daemon process.
-        :rtype: str
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
@@ -352,7 +350,6 @@ class Daemon(object):
         (e.g sudo service <name> stop)
 
         :return a one liner command to stop the daemon process.
-        :rtype: str
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
@@ -365,7 +362,6 @@ class Daemon(object):
         tools may behave differently.
 
         :return: True if the service is running, False otherwise
-        :rtype: bool
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
@@ -388,7 +384,6 @@ class Daemon(object):
         #####################################################################
 
         :param plugin: the plugin name to register.
-        :type plugin: str
         """
 
         self.logger.debug('Listing modules of plugin: {0}'.format(plugin))
@@ -414,7 +409,6 @@ class Daemon(object):
         #####################################################################
 
         :param plugin: the plugin name to register.
-        :type plugin: str
 
         """
         self.logger.debug('Listing modules of plugin: {0}'.format(plugin))
@@ -424,7 +418,7 @@ class Daemon(object):
             self.includes.remove(module)
 
         # process management specific implementation
-        self.logger.debug('Setting includes: {0}'.format(self.includes))
+        self.logger.debug('Applying includes: {0}'.format(self.includes))
         self.apply_includes()
 
     def create(self):
@@ -447,15 +441,10 @@ class Daemon(object):
 
         :param interval: the interval in seconds to sleep when waiting for
                          the daemon to be ready.
-        :type interval: int
-
         :param timeout: the timeout in seconds to wait for the daemon to be
                         ready.
-        :type timeout: int
-
         :param delete_amqp_queue: delete any queues with the name of the
                                   current daemon queue in the broker.
-        :type delete_amqp_queue: bool
 
         :raise DaemonStartupTimeout: in case the agent failed to start in the
         given amount of time.
@@ -500,10 +489,7 @@ class Daemon(object):
 
         :param interval: the interval in seconds to sleep when waiting for
                          the daemon to stop.
-        :type interval: int
-
         :param timeout: the timeout in seconds to wait for the daemon to stop.
-        :type timeout: int
 
         :raise DaemonShutdownTimeout: in case the agent failed to be stopped
         in the given amount of time.
@@ -548,20 +534,13 @@ class Daemon(object):
         Restart the daemon process.
 
         :param start_interval: the interval in seconds to sleep when waiting
-        for the daemon to start.
-        :type start_interval: int
-
+                               for the daemon to start.
         :param start_timeout: The timeout in seconds to wait for the daemon
-        to start.
-        :type start_timeout: int
-
+                              to start.
         :param stop_interval: the interval in seconds to sleep when waiting
-        for the daemon to stop.
-        :type stop_interval: int
-
+                              for the daemon to stop.
         :param stop_timeout: the timeout in seconds to wait for the daemon
-        to stop.
-        :type stop_timeout: int
+                             to stop.
 
         :raise DaemonStartupTimeout: in case the agent failed to start in the
         given amount of time.
@@ -613,6 +592,13 @@ class Daemon(object):
 class CronRespawnMixin(Daemon):
 
     """
+    This Mixin exposes capabilities for adding a cron job that re-spawns
+    the daemon in case of a failure.
+
+    Usage:
+
+        run(self.create_enable_cron_script)
+        run(self.create_disable_cron_script)
 
     Following are all possible custom key-word arguments
     (in addition to the ones available in the base daemon)

@@ -134,7 +134,7 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
         }
 
         blueprint_path = resources.get_resource(
-            'blueprints/3-2-agent-from-source/3-2-agent-from-source.yaml')
+            'blueprints/3_2-agent-from-source/3_2-agent-from-source.yaml')
         self.logger.info('Initiating local env')
         env = local.init_env(name=self._testMethodName,
                              blueprint_path=blueprint_path,

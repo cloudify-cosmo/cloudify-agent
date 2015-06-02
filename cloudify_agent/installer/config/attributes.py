@@ -17,6 +17,11 @@ from cloudify import ctx
 
 from cloudify_agent.installer import exceptions
 
+#######################################################################
+# these are all the attributes exposed by the cloudify_agent property.
+# adding an attribute here will automatically make it available via an
+# operation input, runtime property, node property or bootstrap context
+#######################################################################
 
 AGENT_ATTRIBUTES = {
 

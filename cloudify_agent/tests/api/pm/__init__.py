@@ -87,7 +87,7 @@ def only_ci(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if ci():
+        if not ci():
             raise RuntimeError('Error! This test cannot be executed '
                                'outside of the travis CI '
                                'system since it may corrupt '
@@ -230,13 +230,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
 
     def test_configure(self):
         raise NotImplementedError('Must be implemented by sub-class')
-
-    def test_configure_existing_agent(self):
-        daemon = self.create_daemon()
-        daemon.create()
-
-        daemon.configure()
-        self.assertRaises(errors.DaemonError, daemon.configure)
 
     def test_start(self):
         daemon = self.create_daemon()

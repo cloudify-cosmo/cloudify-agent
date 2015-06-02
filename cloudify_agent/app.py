@@ -13,6 +13,11 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
+"""
+This module is loaded on celery startup. It is not intended to be
+used outside the scope of an @operation.
+"""
+
 import os
 import sys
 import traceback
@@ -22,11 +27,6 @@ from cloudify import constants
 
 from cloudify.utils import get_daemon_name
 from cloudify.utils import get_daemon_storage_dir
-
-"""
-This module is loaded on celery startup. It is not intended to be
-used outside the scope of an @operation.
-"""
 
 
 broker_url = os.environ.get(constants.CELERY_BROKER_URL_KEY, 'amqp://')

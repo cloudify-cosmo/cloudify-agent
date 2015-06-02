@@ -31,6 +31,9 @@ class GenericLinuxDaemon(CronRespawnMixin):
     """
     Implementation for the init.d process management.
 
+    Following are all possible custom key-word arguments
+    (in addition to the ones available in the base daemon)
+
     ``start_on_boot``
 
         start this daemon when the system boots.
@@ -53,19 +56,6 @@ class GenericLinuxDaemon(CronRespawnMixin):
         self.start_on_boot = params.get('start_on_boot', False)
 
     def configure(self):
-
-        def _validate(file_path):
-            if os.path.exists(file_path):
-                raise errors.DaemonError(
-                    'Failed configuring daemon {0}: {1} already exists.'
-                    .format(self.name, file_path))
-
-        # make sure none of the necessary files exist before we create them
-        # currently re-configuring an agent is not supported.
-
-        _validate(self.includes_path)
-        _validate(self.script_path)
-        _validate(self.config_path)
 
         self.logger.debug('Creating includes file: {0}'
                           .format(self.includes_path))
@@ -101,8 +91,6 @@ class GenericLinuxDaemon(CronRespawnMixin):
             self.runner.run('sudo rm {0}'.format(self.includes_path))
 
     def apply_includes(self):
-        if not os.path.isfile(self.includes_path):
-            raise errors.DaemonNotConfiguredError(self.name)
         with open(self.includes_path, 'w') as f:
             f.write(','.join(self.includes))
 
@@ -110,6 +98,8 @@ class GenericLinuxDaemon(CronRespawnMixin):
         return stop_command(self)
 
     def start_command(self):
+        if not os.path.isfile(self.script_path):
+            raise errors.DaemonNotConfiguredError(self.name)
         return start_command(self)
 
     def status_command(self):

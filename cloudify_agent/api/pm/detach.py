@@ -31,11 +31,14 @@ class DetachedDaemon(CronRespawnMixin):
     """
     This process management is not really a full process management. It
     merely runs the celery command in detached mode and uses crontab for
-    re-spawning the daemon on failure. This means that idempotency in the
-    start and stop commands is not guaranteed.
+    re-spawning the daemon on failure. As such, it has the following
+    limitations:
 
-    The advantage of this kind of daemon
-    is that it does not require privileged permissions to execute.
+        - Daemon does not start on system boot.
+        - Crontab re-spawning capabilities are lost after reboot.
+
+    However, the advantage of this kind of daemon is that it does not
+    require privileged permissions to execute.
     """
 
     PROCESS_MANAGEMENT = 'detach'
@@ -66,19 +69,6 @@ class DetachedDaemon(CronRespawnMixin):
         self.runner.run(self.create_disable_cron_script())
 
     def configure(self):
-
-        def _validate(file_path):
-            if os.path.exists(file_path):
-                raise errors.DaemonError(
-                    'Failed configuring daemon {0}: {1} already exists.'
-                    .format(self.name, file_path))
-
-        # make sure none of the necessary files exist before we create them
-        # currently re-configuring an agent is not supported.
-
-        _validate(self.includes_path)
-        _validate(self.script_path)
-        _validate(self.config_path)
 
         self.logger.debug('Creating includes file: {0}'
                           .format(self.includes_path))
@@ -116,12 +106,12 @@ class DetachedDaemon(CronRespawnMixin):
             os.remove(self.script_path)
 
     def apply_includes(self):
-        if not os.path.isfile(self.includes_path):
-            raise errors.DaemonNotConfiguredError(self.name)
         with open(self.includes_path, 'w') as f:
             f.write(','.join(self.includes))
 
     def start_command(self):
+        if not os.path.isfile(self.script_path):
+            raise errors.DaemonNotConfiguredError(self.name)
         return self.script_path
 
     def stop_command(self):

@@ -21,8 +21,6 @@ from cloudify.utils import setup_logger
 from cloudify_agent.api import errors
 from cloudify_agent.api import utils
 
-default_logger = setup_logger('cloudify_agent.api.factory')
-
 
 class DaemonFactory(object):
 
@@ -33,27 +31,16 @@ class DaemonFactory(object):
     def __init__(self, username=None, storage=None, logger=None):
 
         """
-        :param username:
-
-            the username the daemons are registered under.
-            if no username if passed, the currently logged user
-            will be used. this setting is used for computing
-            the storage directory, hence, if `storage` is passed,
-            the username will be ignored.
-
-        :type username: str
-
-        :param storage:
-
-            the storage directory where daemons are stored.
-            if no directory is passed, it will computed using the
-            `utils.get_storage_directory` function.
-
-        :type storage: str
-
+        :param username: the username the daemons are registered under.
+                         if no username if passed, the currently logged user
+                         will be used. this setting is used for computing
+                         the storage directory, hence, if `storage` is passed,
+                         the username will be ignored.
+        :param storage: the storage directory where daemons are stored.
+                        if no directory is passed, it will computed using the
+                        `utils.get_storage_directory` function.
         :param logger: a logger to be used to log various subsequent
                        operations.
-        :type logger: logging.Logger
 
         """
 
@@ -68,7 +55,7 @@ class DaemonFactory(object):
 
         self.username = username
         self.storage = storage or utils.get_storage_directory(self.username)
-        self.logger = logger or default_logger
+        self.logger = logger or setup_logger('cloudify_agent.api.factory')
 
     @staticmethod
     def _find_implementation(process_management):
@@ -78,10 +65,9 @@ class DaemonFactory(object):
         process management system. For this to work, all implementations
         need to be imported at this time.
 
-        see api/internal/daemon/__init__.py
+        see api/pm/__init__.py
 
         :param process_management: The process management type.
-        :type process_management: str
 
         :raise DaemonNotImplementedError: if no implementation could be found.
         """
@@ -110,10 +96,7 @@ class DaemonFactory(object):
 
         :param logger: a logger to be used by the daemon to log various
                        operations.
-        :type logger: logging.Logger
-
         :param attributes: parameters passed to the daemon class constructor.
-        :type attributes: dict
 
         :return: A daemon instance.
         :rtype: cloudify_agent.api.pm.base.Daemon
@@ -141,7 +124,6 @@ class DaemonFactory(object):
 
         :param logger: a logger to be used by the daemons to log various
                        operations.
-        :type logger: logging.Logger
 
         :return: all daemons instances.
         :rtype: list
@@ -172,14 +154,11 @@ class DaemonFactory(object):
         Loads a daemon from local storage.
 
         :param name: The name of the daemon to load.
-        :type name: str
+        :param logger: a logger to be used by the daemon to log various
+                       operations.
 
         :return: A daemon instance.
         :rtype: cloudify_agent.api.pm.base.Daemon
-
-        :param logger: a logger to be used by the daemon to log various
-                       operations.
-        :type logger: logging.Logger
 
         :raise CloudifyAgentNotFoundException: in case the daemon
         file does not exist.
@@ -232,7 +211,6 @@ class DaemonFactory(object):
         Deletes a daemon from local storage.
 
         :param name: The name of the daemon to delete.
-        :type name: str
 
         """
 
