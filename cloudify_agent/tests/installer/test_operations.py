@@ -120,3 +120,28 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
         env.execute('uninstall', task_retries=1)
         self.wait_for_daemon_dead(name=agent_name)
+
+    @only_ci
+    @patch('cloudify.workflows.local._validate_node')
+    def test_3_2_backwards(self, _):
+
+        agent_name = generate_agent_name()
+
+        inputs = {
+            'source_url': self.source_url,
+            'requirements_file': self.requirements_file,
+            'name': agent_name
+        }
+
+        blueprint_path = resources.get_resource(
+            'blueprints/3-2-agent-from-source/3-2-agent-from-source.yaml')
+        self.logger.info('Initiating local env')
+        env = local.init_env(name=self._testMethodName,
+                             blueprint_path=blueprint_path,
+                             inputs=inputs)
+
+        env.execute('install', task_retries=0)
+        self.assert_daemon_alive(name=agent_name)
+
+        env.execute('uninstall', task_retries=1)
+        self.wait_for_daemon_dead(name=agent_name)

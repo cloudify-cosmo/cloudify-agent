@@ -117,7 +117,7 @@ def create(cloudify_agent, **_):
     # to other operation even in case the create failed.
     if ctx.type == context.NODE_INSTANCE:
         ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
-        remote_execution = ctx.node.properties['remote_execution']
+        remote_execution = ctx.node.properties.get('remote_execution', True)
     else:
         remote_execution = False
 
@@ -130,7 +130,7 @@ def create(cloudify_agent, **_):
 @init_agent_installer
 def configure(cloudify_agent, **_):
     if ctx.type == context.NODE_INSTANCE:
-        remote_execution = ctx.node.properties['remote_execution']
+        remote_execution = ctx.node.properties.get('remote_execution', True)
     else:
         remote_execution = False
 
@@ -144,7 +144,7 @@ def configure(cloudify_agent, **_):
 def start(cloudify_agent, **_):
 
     if ctx.type == context.NODE_INSTANCE:
-        remote_execution = ctx.node.properties['remote_execution']
+        remote_execution = ctx.node.properties.get('remote_execution', True)
     else:
         remote_execution = False
 

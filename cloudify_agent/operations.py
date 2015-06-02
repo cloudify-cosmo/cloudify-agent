@@ -37,15 +37,18 @@ from cloudify_agent.app import app
 ##########################################################################
 CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES = [
     'cloudify_agent.operations',
-    'cloudify_agent.installer.operations'
+    'cloudify_agent.installer.operations',
+
+    # maintain backwards compatibility with version < 3.3
+    'worker_installer.tasks',
+    'windows_agent_installer.tasks',
+    'plugin_installer.tasks',
+    'windows_plugin_installer.tasks'
 ]
 
 
-@operation
-def install_plugins(plugins, **_):
-
+def _install_plugins(plugins):
     installer = PluginInstaller(logger=ctx.logger)
-
     for plugin in plugins:
         source = get_plugin_source(plugin, ctx.blueprint.id)
         args = get_plugin_args(plugin)
@@ -54,6 +57,11 @@ def install_plugins(plugins, **_):
         daemon = _load_daemon(logger=ctx.logger)
         daemon.register(package_name)
         _save_daemon(daemon)
+
+
+@operation
+def install_plugins(plugins, **_):
+    _install_plugins(plugins)
 
 
 @operation

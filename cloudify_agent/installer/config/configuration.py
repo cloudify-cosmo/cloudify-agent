@@ -54,9 +54,18 @@ def connection_attributes(cloudify_agent):
             cloudify_agent['user'] = getpass.getuser()
     else:
 
-        # installing an agent on a remote host, check which os
-        cloudify_agent['windows'] = ctx.node.properties[
-            'os']['type'] == 'Windows'
+        if 'windows' not in cloudify_agent:
+
+            if ctx.plugin == 'windows_agent_installer':
+                # 3.2 Compute node, installing windows
+                cloudify_agent['windows'] = True
+            if ctx.plugin == 'agent_installer':
+                # 3.2 Compute node, installing linux
+                cloudify_agent['windows'] = False
+            if ctx.plugin == 'agent':
+                # 3.3 Compute node, determine by new property 'os'
+                cloudify_agent['windows'] = ctx.node.properties[
+                    'os']['type'].lower() == 'windows'
 
         if 'ip' not in cloudify_agent:
 

@@ -54,7 +54,19 @@ BUILT_IN_TASKS = [
     'cloudify_agent.installer.operations.start',
     'cloudify_agent.installer.operations.stop',
     'cloudify_agent.installer.operations.delete',
-    'cloudify_agent.installer.operations.restart'
+    'cloudify_agent.installer.operations.restart',
+    'worker_installer.tasks.install',
+    'worker_installer.tasks.start',
+    'worker_installer.tasks.stop',
+    'worker_installer.tasks.restart',
+    'worker_installer.tasks.uninstall',
+    'windows_agent_installer.tasks.install',
+    'windows_agent_installer.tasks.start',
+    'windows_agent_installer.tasks.stop',
+    'windows_agent_installer.tasks.restart',
+    'windows_agent_installer.tasks.uninstall',
+    'plugin_installer.tasks.install',
+    'windows_plugin_installer.tasks.install'
 ]
 
 
@@ -75,7 +87,7 @@ def only_ci(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not ci():
+        if ci():
             raise RuntimeError('Error! This test cannot be executed '
                                'outside of the travis CI '
                                'system since it may corrupt '
@@ -249,9 +261,9 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon = self.create_daemon()
         daemon.create()
         daemon.configure()
-        self.installer.install(os.path.join(
-            resources.get_resource('plugins'),
-            'mock-plugin-error'))
+        self.installer.install(
+            os.path.join(resources.get_resource('plugins'),
+                         'mock-plugin-error'))
         daemon.register('mock-plugin-error')
         try:
             daemon.start()
@@ -299,10 +311,9 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon = self.create_daemon()
         daemon.create()
         daemon.configure()
-        self.installer.install(os.path.join(
-            resources.get_resource('plugins'),
-            'mock-plugin'
-        ))
+        self.installer.install(
+            os.path.join(resources.get_resource('plugins'),
+                         'mock-plugin'))
         daemon.register('mock-plugin')
         daemon.start()
         self.assert_registered_tasks(
@@ -315,10 +326,9 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon = self.create_daemon()
         daemon.create()
         daemon.configure()
-        self.installer.install(os.path.join(
-            resources.get_resource('plugins'),
-            'mock-plugin'
-        ))
+        self.installer.install(
+            os.path.join(resources.get_resource('plugins'),
+                         'mock-plugin'))
         daemon.register('mock-plugin')
         daemon.start()
         self.assert_registered_tasks(
@@ -334,10 +344,9 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon = self.create_daemon()
         daemon.create()
         daemon.configure()
-        self.installer.install(os.path.join(
-            resources.get_resource('plugins'),
-            'mock-plugin'
-        ))
+        self.installer.install(
+            os.path.join(resources.get_resource('plugins'),
+                         'mock-plugin'))
         daemon.start()
         daemon.register('mock-plugin')
         daemon.restart()
@@ -368,10 +377,9 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon = self.create_daemon()
         daemon.create()
         daemon.configure()
-        self.installer.install(os.path.join(
-            resources.get_resource('plugins'),
-            'mock-plugin'
-        ))
+        self.installer.install(
+            os.path.join(resources.get_resource('plugins'),
+                         'mock-plugin'))
         daemon.register('mock-plugin')
         daemon.start()
 
@@ -407,10 +415,9 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         )
         daemon.create()
         daemon.configure()
-        self.installer.install(os.path.join(
-            resources.get_resource('plugins'),
-            'mock-plugin'
-        ))
+        self.installer.install(
+            os.path.join(resources.get_resource('plugins'),
+                         'mock-plugin'))
         daemon.register('mock-plugin')
         daemon.start()
 

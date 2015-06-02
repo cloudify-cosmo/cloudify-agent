@@ -29,13 +29,6 @@ default_logger = setup_logger('cloudify_agent.api.plugins.installer')
 class PluginInstaller(object):
 
     def __init__(self, logger=None):
-
-        """
-        :param logger: a logger to be used to log various subsequent
-                       operations.
-        :type logger: logging.Logger
-        """
-
         self.logger = logger or default_logger
         self.runner = LocalCommandRunner(logger=self.logger)
 
@@ -45,9 +38,7 @@ class PluginInstaller(object):
         Install the plugin to the current virtualenv.
 
         :param source: URL to the plugin. Any pip acceptable URL is ok.
-        :type source: str
         :param args: extra installation arguments passed to the pip command
-        :type args: str
         """
 
         plugin_dir = None
@@ -62,30 +53,28 @@ class PluginInstaller(object):
             command = '{0} install {1} {2}'.format(
                 get_pip_path(), plugin_dir, args)
             self.runner.run(command, cwd=plugin_dir)
-            self.logger.debug('Retrieving plugin name')
-            plugin_name = utils.extract_package_name(plugin_dir)
-            self.logger.debug('Retrieved plugin name: {0}'
-                              .format(plugin_name))
+            package_name = utils.extract_package_name(plugin_dir)
+            self.logger.debug('Retrieved package name: {0}'
+                              .format(package_name))
         finally:
             if plugin_dir and not os.path.isabs(source):
                 self.logger.debug('Removing directory: {0}'
                                   .format(plugin_dir))
                 shutil.rmtree(plugin_dir)
 
-        return plugin_name
+        return package_name
 
-    def uninstall(self, plugin, ignore_missing=True):
+    def uninstall(self, package_name, ignore_missing=True):
 
         """
         Uninstall the plugin from the current virtualenv.
 
-        :param plugin: the plugin name as stated in the setup.py file
-        :type plugin: str
+        :param package_name: the package name as stated in the setup.py file
         """
 
         if not ignore_missing:
             self.runner.run('{0} uninstall -y {1}'.format(
-                utils.get_pip_path(), plugin))
+                utils.get_pip_path(), package_name))
         else:
             out = self.runner.run('{0} freeze'
                                   .format(utils.get_pip_path())).output
@@ -94,9 +83,9 @@ class PluginInstaller(object):
             for line in out.splitlines():
                 packages.append(line.split('==')[0])
 
-            if plugin in packages:
+            if package_name in packages:
                 self.runner.run('{0} uninstall -y {1}'.format(
-                    utils.get_pip_path(), plugin))
+                    utils.get_pip_path(), package_name))
             else:
                 self.logger.info('{0} not installed. Nothing to do'
-                                 .format(plugin))
+                                 .format(package_name))

@@ -34,6 +34,10 @@ setup(
     author='Gigaspaces',
     author_email='cloudify@gigaspaces.com',
     packages=[
+        'worker_installer',
+        'windows_agent_installer',
+        'plugin_installer',
+        'windows_plugin_installer',
         'cloudify_agent',
         'cloudify_agent.api',
         'cloudify_agent.api.pm',
