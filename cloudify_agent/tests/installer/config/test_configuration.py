@@ -46,12 +46,12 @@ class TestConfiguration(BaseTest):
     def test_prepare(self):
 
         cloudify_agent = {'local': True}
-        cloudify_agent = configuration.prepare_connection(cloudify_agent)
-        cloudify_agent = configuration.prepare_agent(cloudify_agent)
+        configuration.prepare_connection(cloudify_agent)
+        configuration.prepare_agent(cloudify_agent)
 
         user = getpass.getuser()
         basedir = utils.get_home_dir(user)
-        agent_dir = os.path.join(basedir, 'test_node')
+        agent_dir = os.path.join(basedir, 'test_deployment')
         envdir = os.path.join(agent_dir, 'env')
         workdir = os.path.join(agent_dir, 'work')
         distro = platform.dist()[0].lower()
@@ -63,12 +63,18 @@ class TestConfiguration(BaseTest):
                 {'name': 'init.d' if os.name == 'posix' else 'nssm'},
             'distro_codename': distro_codename,
             'basedir': basedir,
-            'name': 'test_node',
+            'name': 'test_deployment',
             'manager_ip': 'localhost',
-            'queue': 'test_node',
+            'queue': 'test_deployment',
             'envdir': envdir,
             'user': user,
             'local': True,
+            'disable_requiretty': True,
+            'env': {},
+            'fabric_env': {},
+            'port': 22,
+            'max_workers': 5,
+            'min_workers': 0,
             'workdir': workdir,
             'windows': os.name == 'nt',
             'package_url': 'localhost/packages/agents/'
@@ -77,17 +83,3 @@ class TestConfiguration(BaseTest):
         }
         self.maxDiff = None
         self.assertDictEqual(expected, cloudify_agent)
-
-    @patch('cloudify_agent.installer.config.configuration.ctx',
-           mock_context())
-    @patch('cloudify_agent.installer.config.decorators.ctx',
-           mock_context())
-    @patch('cloudify_agent.installer.config.attributes.ctx',
-           mock_context())
-    def test_fixed_attribute(self):
-
-        cloudify_agent = {'basedir': 'custom', 'local': True}
-        cloudify_agent = configuration.prepare_connection(cloudify_agent)
-        cloudify_agent = configuration.prepare_agent(cloudify_agent)
-
-        self.assertEqual(cloudify_agent['basedir'], 'custom')

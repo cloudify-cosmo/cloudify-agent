@@ -218,6 +218,16 @@ start_workers () {
                  $CELERY_APP_ARG                    \
                  $CELERYD_OPTS
 }
+enable_cron_respawn () {
+    if [ ${CELERYD_CRON_RESPAWN} = true ]; then
+        ${CELERYD_ENABLE_CRON_SCRIPT}
+    fi
+}
+disable_cron_respawn () {
+    if [ ${CELERYD_CRON_RESPAWN} = true ]; then
+        ${CELERYD_DISABLE_CRON_SCRIPT}
+    fi
+}
 dryrun () {
     (C_FAKEFORK=1 start_workers --verbose)
 }
@@ -287,10 +297,12 @@ case "$1" in
         check_dev_null
         check_paths
         start_workers
+        enable_cron_respawn
     ;;
     stop)
         check_dev_null
         check_paths
+        disable_cron_respawn
         stop_workers
     ;;
     reload|force-reload)

@@ -13,12 +13,11 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import json
-
 from functools import wraps
 
 from cloudify import ctx
 from cloudify import context
+
 from cloudify_agent.installer.config.attributes import AGENT_ATTRIBUTES
 
 
@@ -49,39 +48,43 @@ def attribute(name):
 
             # if the property was given in the invocation, use it.
             if name in cloudify_agent:
-                ctx.logger.debug('{0} found in operation.inputs'.format(name))
-                pass
+                return
 
             # if the property is inside a runtime property, use it.
-            elif name in runtime_properties:
-                ctx.logger.debug('{0} found in node.instance.'
-                                 'runtime_properties'.format(name))
+            if name in runtime_properties:
                 cloudify_agent[name] = runtime_properties[
                     name]
+                return
 
             # if the property is declared on the node, use it
-            elif name in node_properties:
-                ctx.logger.debug('{0} found in node.properties'.format(name))
+            if name in node_properties:
                 cloudify_agent[name] = node_properties[name]
+                return
 
             # if the property is inside the bootstrap context,
             # and its value is not None, use it
-            elif hasattr(agent_context, context_attribute):
+            if hasattr(agent_context, context_attribute):
                 value = getattr(agent_context, context_attribute)
                 if value is not None:
-                    ctx.logger.debug('{0} found in bootstrap_context'
-                                     '.cloudify_agent'.format(name))
                     cloudify_agent[name] = value
+                return
 
-            else:
-                # apply the function itself
-                ctx.logger.debug('Applying function:{0} on Attribute '
-                                 '<{1}>'.format(function.__name__, name))
-                value = function(cloudify_agent)
-                if value is not None:
-                    ctx.logger.debug('{0} set by function:{1}'
-                                     .format(name, value))
-                    cloudify_agent[name] = value
+            # apply the function itself
+            ctx.logger.debug('Applying function:{0} on Attribute '
+                             '<{1}>'.format(function.__name__, name))
+            value = function(cloudify_agent)
+            if value is not None:
+                ctx.logger.debug('{0} set by function:{1}'
+                                 .format(name, value))
+                cloudify_agent[name] = value
+                return
+
+            # set default value
+            default = AGENT_ATTRIBUTES[name].get('default')
+            if default is not None:
+                ctx.logger.debug('{0} set by default value'
+                                 .format(name, value))
+                cloudify_agent[name] = default
 
         return wrapper
 
@@ -101,8 +104,6 @@ def group(name):
                 if attr_value.get('group') == name:
                     group_attributes[attr_name] = attr_value
 
-            ctx.logger.debug('Scanning Attributes '
-                             'of Group <{0}>'.format(name))
             for group_attr_name in group_attributes.iterkeys():
                 # iterate and try to set all the attributes of the group as
                 # defined in the heuristics of @attribute.
@@ -110,18 +111,10 @@ def group(name):
                 def setter(_):
                     pass
 
-                ctx.logger.debug('Lookup Attribute <{0}> [cloudify_agent={1}]'
-                                 .format(group_attr_name,
-                                         json.dumps(cloudify_agent)))
                 setter(cloudify_agent)
 
             # when we are done, invoke the group function to
             # apply group logic
-            ctx.logger.debug('Applying function:{0} on Group <{1}> '
-                             '[cloudify_agent={2}]'
-                             .format(group_function.__name__,
-                                     name,
-                                     json.dumps(cloudify_agent)))
             group_function(cloudify_agent)
 
         return wrapper

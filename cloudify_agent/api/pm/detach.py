@@ -20,13 +20,13 @@ from cloudify.exceptions import CommandExecutionException
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
 from cloudify_agent.api import utils
-from cloudify_agent.api.pm.base import CronSupervisorMixin
 from cloudify_agent.included_plugins import included_plugins
 from cloudify_agent.api import errors
 from cloudify_agent.api import exceptions
+from cloudify_agent.api.pm.base import CronRespawnMixin
 
 
-class DetachedDaemon(CronSupervisorMixin):
+class DetachedDaemon(CronRespawnMixin):
 
     """
     This process management is not really a full process management. It
@@ -47,6 +47,23 @@ class DetachedDaemon(CronSupervisorMixin):
                                         format(self.name))
         self.includes_path = os.path.join(
             self.workdir, '{0}-includes'.format(self.name))
+
+    def start(self, interval=defaults.START_INTERVAL,
+              timeout=defaults.START_TIMEOUT,
+              delete_amqp_queue=defaults.DELETE_AMQP_QUEUE_BEFORE_START):
+        super(DetachedDaemon, self).start(interval, timeout, delete_amqp_queue)
+
+        # add cron job to re-spawn the process
+        self.logger.debug('Adding cron JOB')
+        self.runner.run(self.create_enable_cron_script())
+
+    def stop(self, interval=defaults.STOP_INTERVAL,
+             timeout=defaults.STOP_TIMEOUT):
+        super(DetachedDaemon, self).stop(interval, timeout)
+
+        # remove cron job
+        self.logger.debug('Removing cron JOB')
+        self.runner.run(self.create_disable_cron_script())
 
     def configure(self):
 

@@ -18,20 +18,23 @@ import os
 from cloudify.exceptions import CommandExecutionException
 
 from cloudify_agent.api import utils
-from cloudify_agent.api.pm.base import CronSupervisorMixin
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import errors
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
 from cloudify_agent.included_plugins import included_plugins
+from cloudify_agent.api.pm.base import CronRespawnMixin
 
 
-class GenericLinuxDaemon(CronSupervisorMixin):
+class GenericLinuxDaemon(CronRespawnMixin):
 
     """
-    Implementation for the init.d process management. Note that since init.d
-    daemons are not re-spawned on failure, this class inherits the
-    CronSupervisorMixin in order to provide re-spawning capabilities as well.
+    Implementation for the init.d process management.
+
+    ``start_on_boot``
+
+        start this daemon when the system boots.
+
     """
 
     SCRIPT_DIR = '/etc/init.d'
@@ -45,6 +48,8 @@ class GenericLinuxDaemon(CronSupervisorMixin):
         self.config_path = os.path.join(self.CONFIG_DIR, self.name)
         self.includes_path = os.path.join(
             self.workdir, '{0}-includes'.format(self.name))
+
+        # initd specific configuration
         self.start_on_boot = params.get('start_on_boot', False)
 
     def configure(self):
@@ -161,6 +166,9 @@ class GenericLinuxDaemon(CronSupervisorMixin):
             log_level=self.log_level,
             log_file=self.log_file,
             pid_file=self.pid_file,
+            cron_respawn=str(self.cron_respawn).lower(),
+            enable_cron_script=self.create_enable_cron_script(),
+            disable_cron_script=self.create_disable_cron_script()
         )
         self.runner.run('sudo mkdir -p {0}'.format(
             os.path.dirname(self.config_path)))
@@ -188,8 +196,6 @@ class GenericLinuxDaemon(CronSupervisorMixin):
             "distribution base. Supported distributions bases are "
             "debian and RPM"
         )
-
-# this is extracted here so that it is easily mocked in tests
 
 
 def start_command(daemon):

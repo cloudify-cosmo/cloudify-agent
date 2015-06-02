@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import copy
 import getpass
 import os
 import platform
@@ -24,91 +23,107 @@ from cloudify import utils
 
 from cloudify_agent.installer.config.decorators import group
 from cloudify_agent.installer.config.attributes import raise_missing_attribute
-
-
-class fixed_dict(dict):
-
-    def __setitem__(self, key, value):
-        if key in self.keys():
-            return
-        super(fixed_dict, self).__setitem__(key, value)
+from cloudify_agent.installer.config.attributes import raise_missing_attributes
 
 
 def prepare_connection(cloudify_agent):
-
-    fixed_cloudify_agent = fixed_dict(**copy.deepcopy(cloudify_agent))
-
-    ctx.logger.debug('Preparing cloudify_agent connection attributes')
-    connection_attributes(fixed_cloudify_agent)
-
-    return copy.deepcopy(fixed_cloudify_agent)
+    connection_attributes(cloudify_agent)
 
 
 def prepare_agent(cloudify_agent):
-
-    fixed_cloudify_agent = fixed_dict(**copy.deepcopy(cloudify_agent))
-
-    ctx.logger.debug('Preparing cloudify_agent cfy_agent attributes')
-    cfy_agent_attributes(fixed_cloudify_agent)
-    ctx.logger.debug('Preparing cloudify_agent installation attributes')
-    installation_attributes(fixed_cloudify_agent)
-
-    return copy.deepcopy(fixed_cloudify_agent)
-
-
-@group('cfy-agent')
-def cfy_agent_attributes(cloudify_agent):
-
-    if cloudify_agent['windows']:
-        cloudify_agent['process_management'] = {'name': 'nssm'}
-    else:
-        cloudify_agent['process_management'] = {'name': 'init.d'}
-
-    if ctx.type == context.DEPLOYMENT:
-        workflows_worker = cloudify_agent.get('workflows_worker', False)
-        suffix = '_workflows' if workflows_worker else ''
-        queue = '{0}{1}'.format(ctx.deployment.id, suffix)
-    else:
-        queue = ctx.instance.id
-    cloudify_agent['queue'] = queue
-
-    cloudify_agent['name'] = cloudify_agent['queue']
-
-    if 'manager_ip' not in cloudify_agent:
-
-        # double check here because get_manager_ip function will
-        # fail we the env variable is not set, but this is ok since
-        # the manager_ip might have been explicitly set.
-        cloudify_agent['manager_ip'] = utils.get_manager_ip()
+    cfy_agent_attributes(cloudify_agent)
+    installation_attributes(cloudify_agent)
 
 
 @group('connection')
 def connection_attributes(cloudify_agent):
 
-    cloudify_agent['local'] = ctx.type == context.DEPLOYMENT
+    if 'local' not in cloudify_agent:
+        cloudify_agent['local'] = ctx.type == context.DEPLOYMENT
 
     if cloudify_agent['local']:
 
-        # auto-detect os if running locally
+        # if installing an agent locally, we auto-detect which
+        # os the agent is dedicated for
         cloudify_agent['windows'] = os.name == 'nt'
 
-        # we are installing an agent locally, all we need is the username
+        # if installing locally, we install the agent with the same user the
+        # current agent is running under. we don't care about any other
+        # connection details
         if 'user' not in cloudify_agent:
-
-            # default user will be the currently logged user
             cloudify_agent['user'] = getpass.getuser()
     else:
-        cloudify_agent['windows'] = False
-        # support 'ip' attribute as direct node property or runtime
-        # property (as opposed to nested inside the cloudify_agent dict)
-        ip = ctx.instance.runtime_properties.get('ip')
-        if not ip:
-            ip = ctx.node.properties.get('ip')
-        if not ip:
-            raise_missing_attribute('ip')
-        cloudify_agent['ip'] = ip
+
+        # installing an agent on a remote host, check which os
+        cloudify_agent['windows'] = ctx.node.properties[
+            'os']['type'] == 'Windows'
+
+        if 'ip' not in cloudify_agent:
+
+            # support 'ip' attribute as direct node property or runtime
+            # property (as opposed to nested inside the cloudify_agent dict)
+            ip = ctx.instance.runtime_properties.get('ip')
+            if not ip:
+                ip = ctx.node.properties.get('ip')
+            if not ip:
+                raise_missing_attribute('ip')
+            cloudify_agent['ip'] = ip
+
+        # a remote windows installation requires a password to connect to
+        # the machine
         if cloudify_agent['windows'] and 'password' not in cloudify_agent:
             raise_missing_attribute('password')
+
+        # a remote installation requires the username that the agent will run
+        # under.
+        if 'user' not in cloudify_agent:
+            raise_missing_attribute('user')
+
+        # a remote installation requires the ip to connect to.
+        if 'ip' not in cloudify_agent:
+            raise_missing_attribute('ip')
+
+        # a remote linux installation requires either a password or a key file
+        # in order to connect to the remote machine.
+        if not cloudify_agent['windows'] and 'password' not in \
+                cloudify_agent and 'key' not in cloudify_agent:
+            raise_missing_attributes('key', 'password')
+
+
+@group('cfy-agent')
+def cfy_agent_attributes(cloudify_agent):
+
+    if 'process_management' not in cloudify_agent:
+
+        # user did not specify process management configuration, choose the
+        # default one according to os type.
+        if cloudify_agent['windows']:
+            cloudify_agent['process_management'] = {
+                'name': 'nssm'
+            }
+        else:
+            cloudify_agent['process_management'] = {
+                'name': 'init.d'
+            }
+
+    if 'name' not in cloudify_agent:
+        if cloudify_agent['local']:
+            workflows_worker = cloudify_agent.get('workflows_worker', False)
+            suffix = '_workflows' if workflows_worker else ''
+            name = '{0}{1}'.format(ctx.deployment.id, suffix)
+        else:
+            name = ctx.instance.id
+        cloudify_agent['name'] = name
+
+    if 'queue' not in cloudify_agent:
+
+        # by default, the queue of the agent is the same as the name
+        cloudify_agent['queue'] = cloudify_agent['name']
+
+    if 'manager_ip' not in cloudify_agent:
+
+        # by default, the manager ip will be set by an environment variable
+        cloudify_agent['manager_ip'] = utils.get_manager_ip()
 
 
 @group('installation')
@@ -116,52 +131,56 @@ def installation_attributes(cloudify_agent):
 
     if 'source_url' not in cloudify_agent:
 
-        # user did not specify package_url, automatically build one from
-        # distro and distro_codename
-        if cloudify_agent['local']:
-            cloudify_agent['distro'] = platform.dist()[0].lower()
-        else:
-            dist = ctx.runner.machine_distribution()
-            cloudify_agent['distro'] = dist[0].lower()
-
-        # distro was not specified, try to auto-detect
-        if cloudify_agent['local']:
-            cloudify_agent['distro_codename'] = platform.dist()[2].lower()
-        else:
-            dist = ctx.runner.machine_distribution()
-            cloudify_agent['distro_codename'] = dist[2].lower()
-
         if 'package_url' not in cloudify_agent:
+            # user did not specify package_url, automatically build one from
+            # distro and distro_codename
+            if cloudify_agent['local']:
+                cloudify_agent['distro'] = platform.dist()[0].lower()
+            else:
+                dist = ctx.runner.machine_distribution()
+                cloudify_agent['distro'] = dist[0].lower()
+
+            # distro was not specified, try to auto-detect
+            if cloudify_agent['local']:
+                cloudify_agent['distro_codename'] = platform.dist()[2].lower()
+            else:
+                dist = ctx.runner.machine_distribution()
+                cloudify_agent['distro_codename'] = dist[2].lower()
+
             cloudify_agent['package_url'] = '{0}/packages/agents' \
                                             '/{1}-{2}-agent.tar.gz' \
                 .format(utils.get_manager_file_server_url(),
                         cloudify_agent['distro'],
                         cloudify_agent['distro_codename'])
 
-    if cloudify_agent['local']:
-        basedir = utils.get_home_dir(cloudify_agent['user'])
-    else:
-        basedir = ctx.runner.home_dir(cloudify_agent['user'])
-    cloudify_agent['basedir'] = basedir
+    if 'basedir' not in cloudify_agent:
+        if cloudify_agent['local']:
+            basedir = utils.get_home_dir(cloudify_agent['user'])
+        else:
+            basedir = ctx.runner.home_dir(cloudify_agent['user'])
+        cloudify_agent['basedir'] = basedir
 
-    name = cloudify_agent['name']
-    basedir = cloudify_agent['basedir']
-    if cloudify_agent['windows']:
-        agent_dir = '{0}\\{1}'.format(basedir, name)
-    else:
-        agent_dir = os.path.join(basedir, name)
-    cloudify_agent['agent_dir'] = agent_dir
+    if 'agent_dir' not in cloudify_agent:
+        name = cloudify_agent['name']
+        basedir = cloudify_agent['basedir']
+        if cloudify_agent['windows']:
+            agent_dir = '{0}\\{1}'.format(basedir, name)
+        else:
+            agent_dir = os.path.join(basedir, name)
+        cloudify_agent['agent_dir'] = agent_dir
 
-    agent_dir = cloudify_agent['agent_dir']
-    if cloudify_agent['windows']:
-        workdir = '{0}\\{1}'.format(agent_dir, 'work')
-    else:
-        workdir = os.path.join(agent_dir, 'work')
-    cloudify_agent['workdir'] = workdir
+    if 'workdir' not in cloudify_agent:
+        agent_dir = cloudify_agent['agent_dir']
+        if cloudify_agent['windows']:
+            workdir = '{0}\\{1}'.format(agent_dir, 'work')
+        else:
+            workdir = os.path.join(agent_dir, 'work')
+        cloudify_agent['workdir'] = workdir
 
-    agent_dir = cloudify_agent['agent_dir']
-    if cloudify_agent['windows']:
-        envdir = '{0}\\{1}'.format(agent_dir, 'env')
-    else:
-        envdir = os.path.join(agent_dir, 'env')
-    cloudify_agent['envdir'] = envdir
+    if 'envdir' not in cloudify_agent:
+        agent_dir = cloudify_agent['agent_dir']
+        if cloudify_agent['windows']:
+            envdir = '{0}\\{1}'.format(agent_dir, 'env')
+        else:
+            envdir = os.path.join(agent_dir, 'env')
+        cloudify_agent['envdir'] = envdir

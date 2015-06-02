@@ -1,0 +1,17 @@
+#!/bin/bash -e
+
+crontabf={{ workdir }}/{{ name }}.crontab
+
+set +e
+current_cron=$(crontab -u {{ user }} -l)
+if [ $? -eq 1 ]; then
+    echo "No cron, nothing to do."
+else
+    echo "${current_cron}" > ${crontabf}
+    sed -i '/{{ name }}/d' ${crontabf}
+fi
+
+set -e
+
+crontab -u {{ user }} ${crontabf}
+rm ${crontabf}

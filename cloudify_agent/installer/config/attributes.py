@@ -21,114 +21,103 @@ from cloudify_agent.installer import exceptions
 AGENT_ATTRIBUTES = {
 
     'local': {
-        'mandatory': True,
         'group': 'connection'
     },
-    'windows': {
-        'mandatory': True,
-        'group': 'connection',
-        'default': False
-    },
     'user': {
-        'mandatory': True,
         'group': 'connection'
     },
     'ip': {
-        'mandatory': False,
         'group': 'connection'
     },
     'key': {
         'context_attribute': 'agent_key_path',
-        'mandatory': False,
         'group': 'connection'
     },
     'password': {
-        'mandatory': False,
         'group': 'connection'
     },
     'port': {
         'context_attribute': 'remote_execution_port',
-        'mandatory': False,
         'group': 'connection',
         'default': 22
     },
     'fabric_env': {
-        'mandatory': False,
-        'group': 'connection'
+        'group': 'connection',
+        'default': {}
     },
     'manager_ip': {
-        'mandatory': True,
         'group': 'cfy-agent'
     },
     'queue': {
-        'mandatory': True,
         'group': 'cfy-agent'
     },
     'name': {
-        'mandatory': True,
         'group': 'cfy-agent'
     },
     'process_management': {
-        'mandatory': True,
         'group': 'cfy-agent'
     },
     'min_workers': {
-        'mandatory': False,
-        'group': 'cfy-agent'
+        'group': 'cfy-agent',
+        'default': 0
     },
     'max_workers': {
-        'mandatory': False,
-        'group': 'cfy-agent'
+        'group': 'cfy-agent',
+        'default': 5
     },
     'disable_requiretty': {
-        'mandatory': False,
-        'group': 'cfy-agent'
+        'group': 'cfy-agent',
+        'default': True
     },
     'env': {
-        'mandatory': False,
-        'group': 'cfy-agent'
+        'group': 'cfy-agent',
+        'default': {}
     },
     'basedir': {
-        'mandatory': True,
         'group': 'installation'
     },
     'agent_dir': {
-        'mandatory': True,
         'group': 'installation'
     },
     'workdir': {
-        'mandatory': True,
         'group': 'installation'
     },
     'envdir': {
-        'mandatory': True,
         'group': 'installation'
     },
     'requirements': {
-        'mandatory': False,
         'group': 'installation'
     },
     'distro': {
-        'mandatory': False,
         'group': 'installation'
     },
     'distro_codename': {
-        'mandatory': False,
         'group': 'installation'
     },
     'package_url': {
-        'mandatory': False,
         'group': 'installation'
     },
     'source_url': {
-        'mandatory': False,
         'group': 'installation'
     }
 }
 
 
 def raise_missing_attribute(attribute_name):
+    raise exceptions.AgentInstallerConfigurationError(
+        '{0} must be set in one of the following: \n {1}'
+        .format(attribute_name, *_create_configuration_options())
+    )
 
+
+def raise_missing_attributes(*attributes):
+    raise exceptions.AgentInstallerConfigurationError(
+        '{0} must be set in one of the following: \n {1}'
+        .format(' or '.join(attributes), *_create_configuration_options())
+    )
+
+
+def _create_configuration_options():
     inputs_path = '{0}.interfaces.[{1}].inputs.' \
                   'cloudify_agent' \
         .format(ctx.node.name, ctx.task_name)
@@ -139,15 +128,8 @@ def raise_missing_attribute(attribute_name):
         '{0}.runtime_properties.cloudify_agent' \
         .format(ctx.instance.id)
     context_path = 'bootstrap_context.cloudify_agent'
-    raise exceptions.AgentInstallerConfigurationError(
-        '{0} was not found in any of the following: \n'
-        '1. {1} \n'
-        '2. {2} \n'
-        '3. {3} \n'
-        '4. {4}'
-        .format(attribute_name,
-                inputs_path,
-                runtime_properties_path,
-                properties_path,
-                context_path)
-    )
+    return '1. {1} \n' \
+           '2. {2} \n' \
+           '3. {3} \n' \
+           '4. {4}'.format(inputs_path, runtime_properties_path,
+                           properties_path, context_path)

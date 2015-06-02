@@ -47,14 +47,17 @@ setup(
     package_data={
         'cloudify_agent': [
             'resources/disable-requiretty.sh',
+            'resources/crontab/disable.sh.template',
+            'resources/crontab/enable.sh.template',
             'resources/respawn.sh.template',
             'resources/pm/initd/initd.conf.template',
             'resources/pm/initd/initd.template',
             'resources/pm/detach/detach.conf.template',
             'resources/pm/detach/detach.template',
             'resources/pm/nssm/nssm.exe',
-            'resources/pm/nssm/nssm.conf.template']
-        },
+            'resources/pm/nssm/nssm.conf.template',
+        ]
+    },
     description='Cloudify Agent Implementation (Celery based)',
     install_requires=install_requires,
     license='LICENSE',

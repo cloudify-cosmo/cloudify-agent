@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import tempfile
 import getpass
 import os
 import time
@@ -23,7 +22,6 @@ from celery import Celery
 from cloudify.utils import LocalCommandRunner
 from cloudify.utils import setup_logger
 from cloudify import amqp_client
-from cloudify.exceptions import CommandExecutionException
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
@@ -612,17 +610,9 @@ class Daemon(object):
                                     .format(e))
 
 
-class CronSupervisorMixin(Daemon):
+class CronRespawnMixin(Daemon):
 
     """
-    This Mixin provides the ability for daemons to be supervised by the
-    Linux crontab process. A crontab job will run periodically and query
-    the daemon status, if the status command failed, the job will trigger
-    the start command in order to respawn the daemon.
-
-    Note that usually, process management systems have the re-spawning
-    capability built in, this mixin should be used by basic process
-    management implementation that are lacking it.
 
     Following are all possible custom key-word arguments
     (in addition to the ones available in the base daemon)
@@ -638,18 +628,15 @@ class CronSupervisorMixin(Daemon):
     """
 
     def __init__(self, logger=None, **params):
-        super(CronSupervisorMixin, self).__init__(logger, **params)
+        super(CronRespawnMixin, self).__init__(logger, **params)
         self.cron_respawn_delay = params.get('cron_respawn_delay', 1)
         self.cron_respawn = params.get('cron_respawn', False)
-        self.cron_respawn_path = os.path.join(
-            self.workdir, '{0}-respawn'.format(self.name))
 
     def status_command(self):
 
         """
         Construct a command line for querying the status of the daemon.
         (e.g sudo service <name> status)
-
         the command execution should result in a zero return code if the
         service is running, and a non-zero return code otherwise.
 
@@ -658,73 +645,47 @@ class CronSupervisorMixin(Daemon):
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
-    def start(self, interval=defaults.START_INTERVAL,
-              timeout=defaults.START_TIMEOUT,
-              delete_amqp_queue=defaults.DELETE_AMQP_QUEUE_BEFORE_START):
+    def create_enable_cron_script(self):
 
-        # overriding the start method in order to add the crontab entry
-        # immediately after starting the daemon.
-        super(CronSupervisorMixin, self).start(interval, timeout,
-                                               delete_amqp_queue)
+        enable_cron_script = os.path.join(
+            self.workdir, '{0}-enable-cron.sh'.format(self.name))
 
-        if self.cron_respawn:
-            # add the crontab entry if requested
-            self.logger.info('Adding respawn crontab entry')
-            self._enable_cron_respawn()
+        cron_respawn_path = os.path.join(
+            self.workdir, '{0}-respawn.sh'.format(self.name))
 
-    def stop(self, interval=defaults.STOP_INTERVAL,
-             timeout=defaults.STOP_TIMEOUT):
-
-        # overriding the stop method in order to remove the crontab entry
-        # immediately after stopping the daemon.
-
-        super(CronSupervisorMixin, self).stop(interval, timeout)
-
-        if self.cron_respawn:
-            # remove the crontab entry if requested
-            self.logger.info('Removing respawn crontab entry')
-            self._disable_cron_respawn()
-
-    def _enable_cron_respawn(self):
         self.logger.debug('Rendering respawn script from template')
-        rendered = utils.render_template_to_file(
+        utils.render_template_to_file(
             template_path='respawn.sh.template',
+            file_path=cron_respawn_path,
             start_command=self.start_command(),
             status_command=self.status_command()
         )
+        self.runner.run('chmod +x {0}'.format(cron_respawn_path))
+        self.logger.debug('Rendering enable cron script from template')
+        utils.render_template_to_file(
+            template_path='crontab/enable.sh.template',
+            file_path=enable_cron_script,
+            cron_respawn_delay=self.cron_respawn_delay,
+            cron_respawn_path=cron_respawn_path,
+            user=self.user,
+            workdir=self.workdir,
+            name=self.name
+        )
+        self.runner.run('chmod +x {0}'.format(enable_cron_script))
+        return enable_cron_script
 
-        self.runner.run('cp {0} {1}'.format(
-            rendered, self.cron_respawn_path))
-        self.runner.run('rm {0}'.format(rendered))
-        self.runner.run('chmod +x {0}'.format(self.cron_respawn_path))
-        self.logger.debug('Respawn script created at {0}'
-                          .format(self.cron_respawn_path))
+    def create_disable_cron_script(self):
 
-        temp_cron = tempfile.mkstemp()[1]
-        try:
-            crontab = self.runner.run('crontab -l').output
-        except CommandExecutionException as e:
-            # no crontab entries, that's ok.
-            # log the exception just so that we don't loose any
-            # potential important debug information.
-            self.logger.debug(str(e))
-            crontab = ''
-        with open(temp_cron, 'a') as f:
-            if crontab:
-                f.write(crontab)
-                f.write(os.linesep)
-            f.write('*/{0} * * * * {1}'.format(
-                self.cron_respawn_delay, self.cron_respawn_path))
-            f.write(os.linesep)
-        self.runner.run('crontab {0}'.format(temp_cron))
-        self.runner.run('rm {0}'.format(temp_cron))
+        disable_cron_script = os.path.join(
+            self.workdir, '{0}-disable-cron.sh'.format(self.name))
 
-    def _disable_cron_respawn(self):
-        crontab = self.runner.run('crontab -l').output
-        new_cron = tempfile.mkstemp()[1]
-        with open(new_cron, 'a') as f:
-            for entry in crontab.splitlines():
-                # filter out entry for this daemon
-                if self.name not in entry:
-                    f.write(entry)
-        self.runner.run('crontab {0}'.format(new_cron))
+        self.logger.debug('Rendering disable cron script from template')
+        utils.render_template_to_file(
+            template_path='crontab/disable.sh.template',
+            file_path=disable_cron_script,
+            name=self.name,
+            user=self.user,
+            workdir=self.workdir
+        )
+        self.runner.run('chmod +x {0}'.format(disable_cron_script))
+        return disable_cron_script

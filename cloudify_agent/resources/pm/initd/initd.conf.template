@@ -18,6 +18,9 @@ export CELERY_RESULT_BACKEND=${CELERY_BROKER_URL}
 export C_FORCE_ROOT="true"
 
 # Daemon variables, used by the daemonization script
+CELERYD_ENABLE_CRON_SCRIPT={{ enable_cron_script }}
+CELERYD_DISABLE_CRON_SCRIPT={{ disable_cron_script }}
+CELERYD_CRON_RESPAWN={{ cron_respawn }}
 CELERYD_GROUP={{ user }}
 CELERYD_USER={{ user }}
 CELERYD_LOG_LEVEL={{ log_level }}
