@@ -129,7 +129,7 @@ class DetachedDaemon(CronRespawnMixin):
             if not os.path.exists(self.pid_file):
                 return False
             response = self.runner.run(self.status_command())
-            self.logger.info(response.output)
+            self.logger.info(response.std_out)
             return True
         except CommandExecutionException as e:
             self.logger.debug(str(e))

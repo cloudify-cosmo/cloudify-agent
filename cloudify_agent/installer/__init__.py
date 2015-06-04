@@ -38,8 +38,9 @@ class AgentInstaller(object):
         response = self.runner.run(
             command='{0} {1}'.format(self.cfy_agent_path, command),
             execution_env=execution_env)
-        if response.output:
-            for line in response.output.splitlines():
+        output = response.std_out
+        if output:
+            for line in output.splitlines():
                 self.logger.info(line)
         return response
 

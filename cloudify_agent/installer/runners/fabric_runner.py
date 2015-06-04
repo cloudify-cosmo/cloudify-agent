@@ -152,8 +152,9 @@ class FabricRunner(object):
                         )
                     return FabricCommandExecutionResponse(
                         command=command,
-                        output=r.stdout,
-                        code=r.return_code
+                        std_out=r.stdout,
+                        std_err=None,
+                        return_code=r.return_code
                     )
                 except FabricCommandExecutionException:
                     raise
@@ -338,7 +339,8 @@ class FabricRunner(object):
         if directory:
             flags.append('-d')
         return self.run('mktemp {0}'
-                        .format(' '.join(flags)), **attributes).output.rstrip()
+                        .format(' '.join(flags)),
+                        **attributes).std_out.rstrip()
 
     def mkdtemp(self, create=True, **attributes):
 
@@ -438,7 +440,7 @@ class FabricRunner(object):
                                   start,
                                   '{0}',
                                   end,
-                                  command), **attributes).output
+                                  command), **attributes).std_out
         result = stdout[stdout.find(start) - 1 + len(end):
                         stdout.find(end)]
         return result

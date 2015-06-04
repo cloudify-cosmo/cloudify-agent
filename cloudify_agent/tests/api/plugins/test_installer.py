@@ -72,7 +72,8 @@ class PluginInstallerTest(BaseTest):
     def _assert_plugin_installed(self, plugin_name, dependencies=None):
         if not dependencies:
             dependencies = []
-        out = self.runner.run('{0} freeze'.format(utils.get_pip_path())).output
+        out = self.runner.run('{0} freeze'
+                              .format(utils.get_pip_path())).std_out
         packages = []
         for line in out.splitlines():
             packages.append(line.split('==')[0])
@@ -81,7 +82,8 @@ class PluginInstallerTest(BaseTest):
             self.assertIn(dependency, packages)
 
     def _assert_plugin_not_installed(self, plugin_name):
-        out = self.runner.run('{0} freeze'.format(utils.get_pip_path())).output
+        out = self.runner.run('{0} freeze'
+                              .format(utils.get_pip_path())).std_out
         packages = []
         for line in out.splitlines():
             packages.append(line.split('==')[0])

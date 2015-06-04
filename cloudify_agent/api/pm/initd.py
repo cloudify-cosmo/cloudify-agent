@@ -108,7 +108,7 @@ class GenericLinuxDaemon(CronRespawnMixin):
     def status(self):
         try:
             response = self.runner.run(self.status_command())
-            self.logger.info(response.output)
+            self.logger.info(response.std_out)
             return True
         except CommandExecutionException as e:
             self.logger.debug(str(e))
@@ -174,10 +174,11 @@ class GenericLinuxDaemon(CronRespawnMixin):
             self.runner.run('sudo /sbin/chkconfig --add {0}'.format(self.name))
             self.runner.run('sudo /sbin/chkconfig {0} on'.format(self.name))
 
-        if self.runner.run('which dpkg', exit_on_failure=False).code == 0:
+        if self.runner.run('which dpkg',
+                           exit_on_failure=False).return_code == 0:
             _handle_debian()
             return
-        if self.runner.run('which rpm').code == 0:
+        if self.runner.run('which rpm').return_code == 0:
             _handle_rpm()
             return
 

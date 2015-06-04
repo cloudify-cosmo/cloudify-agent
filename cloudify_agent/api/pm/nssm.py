@@ -124,7 +124,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
     def apply_includes(self):
         output = self.runner.run(
             '{0} get {1} AppParameters'.format(
-                self.nssm_path, self.name)).output
+                self.nssm_path, self.name)).std_out
 
         # apparently nssm output is encoded in utf16.
         # encode to ascii to be able to parse this
@@ -172,7 +172,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
             response = self.runner.run(command)
             # apparently nssm output is encoded in utf16.
             # encode to ascii to be able to parse this
-            state = response.output.decode('utf16').encode(
+            state = response.std_out.decode('utf16').encode(
                 'utf-8').rstrip()
             self.logger.info(state)
             if state in self.RUNNING_STATES:

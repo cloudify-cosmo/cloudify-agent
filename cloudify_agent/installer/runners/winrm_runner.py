@@ -119,10 +119,11 @@ class WinRMRunner(object):
 
         def _chk(res):
             if res.status_code == 0:
-                self.logger.debug(
-                    '[{0}] out: {1}'.format(
-                        self.session_config['host'],
-                        res.std_out))
+                return WinRMCommandExecutionResponse(
+                    command=command,
+                    std_err=res.std_err,
+                    std_out=res.std_out,
+                    return_code=res.status_code)
             else:
                 error = WinRMCommandExecutionException(
                     command=command,
@@ -147,11 +148,7 @@ class WinRMRunner(object):
                 command=command,
                 error=str(e)
             )
-        _chk(response)
-        return WinRMCommandExecutionResponse(
-            command=command,
-            output=response.std_err,
-            code=response.status_code)
+        return _chk(response)
 
     def ping(self):
 
@@ -233,7 +230,7 @@ class WinRMRunner(object):
         response = self.run(
             '''@powershell -Command "Test-Path {0}"'''  # NOQA
             .format(path))
-        return response.output == 'True\r\n'
+        return response.std_out == 'True\r\n'
 
     def delete(self, path, ignore_missing=False):
 
@@ -260,7 +257,7 @@ class WinRMRunner(object):
 
         temp = self.run(
             '''@powershell -Command "[System.IO.Path]::GetTempFileName()"'''
-        ).output
+        ).std_out
         self.new_file(temp)
         return temp
 
@@ -318,7 +315,7 @@ class WinRMRunner(object):
         response = self.run(
             '''@powershell -Command "(Get-Service -Name {0}).Status"'''  # NOQA
             .format(service_name))
-        return response.output.strip()
+        return response.std_out.strip()
 
     def machine_distribution(self):
 
@@ -362,7 +359,7 @@ class WinRMRunner(object):
                                   start,
                                   '{0}',
                                   end,
-                                  command)).output
+                                  command)).std_out
         result = stdout[stdout.find(start) - 1 + len(end):
                         stdout.find(end)]
         return result
@@ -396,7 +393,7 @@ class WinRMRunner(object):
 
         return self.run(
             '''@powershell -Command "Get-Content {0}"'''
-            .format(path)).output
+            .format(path)).std_out
 
     def unzip(self, archive, destination):
 

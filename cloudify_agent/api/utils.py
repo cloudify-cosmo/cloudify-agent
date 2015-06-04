@@ -391,7 +391,7 @@ def extract_package_name(package_dir):
                          'extract_package_name.py'),
             package_dir),
         cwd=package_dir
-    ).output
+    ).std_out
     return plugin_name
 
 
@@ -413,7 +413,7 @@ def list_plugin_files(plugin_name):
     files = runner.run(
         '{0} show -f {1}'
         .format(get_pip_path(), plugin_name)
-    ).output.splitlines()
+    ).std_out.splitlines()
     for module in files:
         if module.endswith('.py') and '__init__' not in module:
             # the files paths are relative to the

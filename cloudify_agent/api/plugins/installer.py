@@ -78,7 +78,7 @@ class PluginInstaller(object):
                 utils.get_pip_path(), package_name))
         else:
             out = self.runner.run(
-                '{0} freeze'.format(utils.get_pip_path())).output
+                '{0} freeze'.format(utils.get_pip_path())).std_out
             packages = []
             for line in out.splitlines():
                 packages.append(line.split('==')[0])
