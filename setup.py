@@ -17,10 +17,10 @@
 from setuptools import setup
 
 install_requires = [
-    'cloudify-plugins-common==3.2',
-    'cloudify-rest-client==3.2',
-    'cloudify-script-plugin==1.2',
-    'cloudify-diamond-plugin==1.2',
+    'cloudify-plugins-common==3.3a1',
+    'cloudify-rest-client==3.3a1',
+    'cloudify-script-plugin==1.3a1',
+    'cloudify-diamond-plugin==1.3a1',
     'click==4.0',
     'celery==3.1.17',
     'jinja2==2.7.2',
