@@ -22,13 +22,13 @@ from celery import Celery
 from cloudify.utils import LocalCommandRunner
 from cloudify.utils import setup_logger
 from cloudify import amqp_client
+from cloudify_rest_client.client import CloudifyClient
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
 from cloudify_agent.api import errors
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import defaults
-from cloudify_agent.api.utils import get_storage_directory
 from cloudify_agent import operations
 
 
@@ -61,6 +61,20 @@ class Daemon(object):
         different workers with the same queue, however this is discouraged.
         to create more workers that process tasks from a given queue, use the
         'min_workers' and 'max_workers' keys. defaults to <name>-queue.
+
+    ``host``:
+
+        the ip address of the host the agent will be started on. this
+        property is used only when the 'queue' or 'name' property are omitted,
+        in order to retrieve the agent name and queue from the manager. in
+        such case, this property must match the 'ip' runtime property given
+        to the corresponding Compute node.
+
+    ``deployment_id``:
+
+        the deployment id this agent will be a part of. this
+        property is used only when the 'queue' or 'name' property are omitted,
+        in order to retrieve the agent name and queue from the manager.
 
     ``workdir``:
 
@@ -165,6 +179,10 @@ class Daemon(object):
 
         """
 
+        # will be populated later on with runtime properties of the host
+        # node instance this agent is dedicated for (if needed)
+        self._runtime_properties = None
+
         # configure logger
         self.logger = logger or setup_logger(
             logger_name='cloudify_agent.api.pm.{0}'
@@ -187,16 +205,18 @@ class Daemon(object):
             'broker_ip') or self.manager_ip
         self.broker_port = params.get(
             'broker_port') or defaults.BROKER_PORT
+        self.host = params.get('host')
+        self.deployment_id = params.get('deployment_id')
+        self.manager_port = params.get(
+            'manager_port') or defaults.MANAGER_PORT
         self.name = params.get(
-            'name') or utils.generate_agent_name()
+            'name') or self._get_name_from_manager()
         self.queue = params.get(
-            'queue') or '{0}-queue'.format(self.name)
+            'queue') or self._get_queue_from_manager()
         self.broker_url = params.get(
             'broker_url') or defaults.BROKER_URL.format(
             self.broker_ip,
             self.broker_port)
-        self.manager_port = params.get(
-            'manager_port') or defaults.MANAGER_PORT
         self.min_workers = params.get(
             'min_workers') or defaults.MIN_WORKERS
         self.max_workers = params.get(
@@ -271,33 +291,8 @@ class Daemon(object):
         in case one of the parameters is faulty.
         """
 
-        min_workers = self.params.get('min_workers')
-        max_workers = self.params.get('max_workers')
-
-        if min_workers:
-            if not str(min_workers).isdigit():
-                raise errors.DaemonPropertiesError(
-                    'min_workers is supposed to be a number '
-                    'but is: {0}'
-                    .format(min_workers)
-                )
-            min_workers = int(min_workers)
-
-        if max_workers:
-            if not str(max_workers).isdigit():
-                raise errors.DaemonPropertiesError(
-                    'max_workers is supposed to be a number '
-                    'but is: {0}'
-                    .format(max_workers)
-                )
-            max_workers = int(max_workers)
-
-        if min_workers and max_workers:
-            if min_workers > max_workers:
-                raise errors.DaemonPropertiesError(
-                    'min_workers cannot be greater than max_workers '
-                    '[min_workers={0}, max_workers={1}]'
-                    .format(min_workers, max_workers))
+        self._validate_autoscale()
+        self._validate_host()
 
     ########################################################################
     # the following methods must be implemented by the sub-classes as they
@@ -387,7 +382,7 @@ class Daemon(object):
         """
 
         self.logger.debug('Listing modules of plugin: {0}'.format(plugin))
-        modules = utils.list_plugin_files(plugin)
+        modules = self._list_plugin_files(plugin)
 
         self.includes.extend(modules)
 
@@ -412,7 +407,7 @@ class Daemon(object):
 
         """
         self.logger.debug('Listing modules of plugin: {0}'.format(plugin))
-        modules = utils.list_plugin_files(plugin)
+        modules = self._list_plugin_files(plugin)
 
         for module in modules:
             self.includes.remove(module)
@@ -559,7 +554,7 @@ class Daemon(object):
     def _verify_no_celery_error(self):
 
         error_dump_path = os.path.join(
-            get_storage_directory(self.user),
+            utils.internal.get_storage_directory(self.user),
             '{0}.err'.format(self.name))
 
         # this means the celery worker had an uncaught
@@ -587,6 +582,113 @@ class Daemon(object):
             except Exception as e:
                 self.logger.warning('Failed closing amqp client: {0}'
                                     .format(e))
+
+    def _validate_autoscale(self):
+        min_workers = self.params.get('min_workers')
+        max_workers = self.params.get('max_workers')
+        if min_workers:
+            if not str(min_workers).isdigit():
+                raise errors.DaemonPropertiesError(
+                    'min_workers is supposed to be a number '
+                    'but is: {0}'
+                    .format(min_workers)
+                )
+            min_workers = int(min_workers)
+        if max_workers:
+            if not str(max_workers).isdigit():
+                raise errors.DaemonPropertiesError(
+                    'max_workers is supposed to be a number '
+                    'but is: {0}'
+                    .format(max_workers)
+                )
+            max_workers = int(max_workers)
+        if min_workers and max_workers:
+            if min_workers > max_workers:
+                raise errors.DaemonPropertiesError(
+                    'min_workers cannot be greater than max_workers '
+                    '[min_workers={0}, max_workers={1}]'
+                    .format(min_workers, max_workers))
+
+    def _validate_host(self):
+        queue = self.params.get('queue')
+        host = self.params.get('host')
+        if not queue and not host:
+            raise errors.DaemonPropertiesError(
+                'host must be supplied when queue is omitted'
+            )
+
+    def _validate_deployment_id(self):
+        queue = self.params.get('queue')
+        host = self.params.get('deployment_id')
+        if not queue and not host:
+            raise errors.DaemonPropertiesError(
+                'deployment_id must be supplied when queue is omitted'
+            )
+
+    def _get_name_from_manager(self):
+        if self._runtime_properties is None:
+            self._get_runtime_properties()
+        return self._runtime_properties['cloudify_agent']['name']
+
+    def _get_queue_from_manager(self):
+        if self._runtime_properties is None:
+            self._get_runtime_properties()
+        return self._runtime_properties['cloudify_agent']['queue']
+
+    def _get_runtime_properties(self):
+        client = CloudifyClient(host=self.manager_ip, port=self.manager_port)
+        node_instances = client.node_instances.list(
+            deployment_id=self.deployment_id)
+
+        def match_ip(node_instance):
+            host_id = node_instance.host_id
+            if host_id == node_instance.id:
+                # compute node instance
+                return self.host == node_instance.runtime_properties['ip']
+            return False
+
+        matched = filter(match_ip, node_instances)
+
+        if len(matched) > 1:
+            raise errors.DaemonConfigurationError(
+                'Found multiple node instances with ip {0}: {1}'.format(
+                    self.host, ','.join(matched))
+            )
+
+        if len(matched) == 0:
+            raise errors.DaemonConfigurationError(
+                'No node instances with ip {0} were found'.format(self.host)
+            )
+        self._runtime_properties = matched[0].runtime_propreties
+
+    def _list_plugin_files(self, plugin_name):
+
+        """
+        Retrieves python files related to the plugin.
+        __init__ file are filtered out.
+
+        :param plugin_name: The plugin name.
+
+        :return: A list of file paths.
+        :rtype: list of str
+        """
+
+        module_paths = []
+        runner = LocalCommandRunner(self.logger)
+
+        files = runner.run(
+            '{0} show -f {1}'
+            .format(utils.get_pip_path(), plugin_name)
+        ).std_out.splitlines()
+        for module in files:
+            if module.endswith('.py') and '__init__' not in module:
+                # the files paths are relative to the
+                # package __init__.py file.
+                prefix = '../' if os.name == 'posix' else '..\\'
+                module_paths.append(
+                    module.replace(prefix, '')
+                    .replace(os.sep, '.').replace('.py', '').strip())
+        return module_paths
 
 
 class CronRespawnMixin(Daemon):

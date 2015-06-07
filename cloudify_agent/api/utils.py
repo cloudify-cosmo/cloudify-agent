@@ -17,24 +17,114 @@ import uuid
 import json
 import copy
 import tempfile
-import sys
-import shutil
 import os
-import pip
+import getpass
 import pkg_resources
 from jinja2 import Template
 
-from cloudify.utils import LocalCommandRunner
 from cloudify.utils import setup_logger
-from cloudify.utils import get_home_dir
-from cloudify import exceptions
 
 import cloudify_agent
 from cloudify_agent import VIRTUALENV
-from cloudify_agent.api import plugins
 from cloudify_agent.api import defaults
 
 logger = setup_logger('cloudify_agent.api.utils')
+
+
+class _Internal(object):
+
+    """
+    Contains various internal utility methods. Import this at your own
+    peril, as backwards compatibility is not guaranteed.
+    """
+
+    CLOUDIFY_DAEMON_NAME_KEY = 'CLOUDIFY_DAEMON_NAME'
+    CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY = 'CLOUDIFY_DAEMON_STORAGE_DIRECTORY'
+    CLOUDIFY_DAEMON_USER_KEY = 'CLOUDIFY_DAEMON_USER'
+
+    @classmethod
+    def get_daemon_name(cls):
+
+        """
+        Returns the name of the currently running daemon.
+        """
+
+        return os.environ[cls.CLOUDIFY_DAEMON_NAME_KEY]
+
+    @classmethod
+    def get_daemon_storage_dir(cls):
+
+        """
+        Returns the storage directory the current daemon is stored under.
+        """
+
+        return os.environ[cls.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY]
+
+    @classmethod
+    def get_daemon_user(cls):
+
+        """
+        Return the user the current daemon is running under
+        """
+
+        return os.environ[cls.CLOUDIFY_DAEMON_USER_KEY]
+
+    @staticmethod
+    def get_storage_directory(username=None):
+
+        """
+        Retrieve path to the directory where all daemon
+        registered under a specific username will be stored.
+
+        :param username: the user
+
+        """
+
+        return os.path.join(get_home_dir(username), '.cfy-agent')
+
+    @staticmethod
+    def generate_agent_name():
+
+        """
+        Generates a unique name with a pre-defined prefix
+
+        """
+
+        return '{0}-{1}'.format(
+            defaults.CLOUDIFY_AGENT_PREFIX,
+            uuid.uuid4())
+
+    @staticmethod
+    def daemon_to_dict(daemon):
+
+        """
+        Return a json representation of the daemon. This will remove return all
+        the daemon attributes except for the 'celery', 'logger' and 'runner',
+        which are not JSON serializable.
+
+        :param daemon: the daemon to serialize.
+        :type daemon: cloudify_agent.api.pm.base.Daemon
+
+        :return: a JSON serializable dictionary.
+
+        """
+
+        try:
+            getattr(daemon, '__dict__')
+        except AttributeError:
+            raise ValueError('Cannot save a daemon with '
+                             'no __dict__ attribute.')
+
+        # don't use deepcopy here because we this will try to copy
+        # the internal non primitive attributes
+        result = copy.copy(daemon.__dict__)
+        result.pop('celery')
+        result.pop('runner')
+        result.pop('logger')
+        return result
+
+
+internal = _Internal()
 
 
 def get_agent_stats(name, celery):
@@ -57,61 +147,30 @@ def get_agent_stats(name, celery):
     return stats
 
 
-def get_storage_directory(username=None):
+def get_home_dir(username=None):
 
     """
-    Retrieve path to the directory where all daemon
-    registered under a specific username will be stored.
+    Retrieve the home directory of the given user. If no user was specified,
+    the currently logged user will be used.
 
-    :param username: the user
-
-    :return: path to the directory
-
+    :param username: the user.
     """
 
-    return os.path.join(get_home_dir(username), '.cfy-agent')
-
-
-def daemon_to_dict(daemon):
-
-    """
-    Return a json representation of the daemon. This will remove return all
-    the daemon attributes except for the 'celery', 'logger' and 'runner',
-    which are not JSON serializable.
-
-    :param daemon: the daemon to serialize.
-    :type daemon: cloudify_agent.api.pm.base.Daemon
-
-    :return: a JSON serializable dictionary.
-    :rtype: dict
-
-    """
-
-    try:
-        getattr(daemon, '__dict__')
-    except AttributeError:
-        raise ValueError('Cannot save a daemon with no __dict__ attribute.')
-
-    # don't use deepcopy here because we this will try to copy
-    # the internal non primitive attributes
-    result = copy.copy(daemon.__dict__)
-    result.pop('celery')
-    result.pop('runner')
-    result.pop('logger')
-    return result
-
-
-def generate_agent_name():
-
-    """
-    Generates a unique name with a pre-defined prefix
-
-    :return: an agent name
-    """
-
-    return '{0}-{1}'.format(
-        defaults.CLOUDIFY_AGENT_PREFIX,
-        uuid.uuid4())
+    if os.name == 'nt':
+        if username is None:
+            return os.path.expanduser('~')
+        else:
+            return os.path.expanduser('~{0}'.format(username))
+    else:
+        import pwd
+        if username is None:
+            if 'SUDO_USER' in os.environ:
+                # command was executed via sudo
+                # get the original user
+                username = os.environ['SUDO_USER']
+            else:
+                username = getpass.getuser()
+        return pwd.getpwnam(username).pw_dir
 
 
 def render_template_to_file(template_path, file_path=None, **values):
@@ -122,8 +181,6 @@ def render_template_to_file(template_path, file_path=None, **values):
     :param template_path: relative path to the template.
     :param file_path: absolute path to the desired output file.
     :param values: keyword arguments passed to jinja.
-
-    :return path to the temporary file.
     """
 
     template = get_resource(template_path)
@@ -151,8 +208,6 @@ def get_resource(resource_path):
     Loads the resource into a string.
 
     :param resource_path: relative path to the resource.
-
-    :return the resource as a string.
     """
 
     return pkg_resources.resource_string(
@@ -168,8 +223,6 @@ def get_absolute_resource_path(resource_path):
     package.
 
     :param resource_path: the relative path to the resource
-
-    :return: absolute path to that resource.
     """
     return pkg_resources.resource_filename(
         cloudify_agent.__name__,
@@ -184,8 +237,6 @@ def content_to_file(content, file_path=None):
 
     :param content:
     :param file_path: absolute path to the desired output file.
-
-    :return path to the temporary file.
     """
 
     if not file_path:
@@ -196,262 +247,12 @@ def content_to_file(content, file_path=None):
     return file_path
 
 
-def disable_requiretty():
-
-    """
-    Disables the requiretty directive in the /etc/sudoers file. This
-    will enable operations that require sudo permissions to work properly.
-
-    This is needed because operations are executed
-    from within the worker process, which is not a tty process.
-
-    """
-
-    runner = LocalCommandRunner(logger)
-
-    disable_requiretty_script_path = resource_to_tempfile(
-        resource_path='disable-requiretty.sh'
-    )
-    runner.run('chmod +x {0}'.format(disable_requiretty_script_path))
-    runner.run('{0}'.format(disable_requiretty_script_path))
-
-
-def fix_virtualenv():
-
-    """
-    This method is used for auto-configuration of the virtualenv.
-    It is needed in case the environment was created using different paths
-    than the one that is used at runtime.
-
-    """
-
-    bin_dir = '{0}/bin'.format(VIRTUALENV)
-
-    logger.debug('Searching for executable files in {0}'.format(bin_dir))
-    for executable in os.listdir(bin_dir):
-        path = os.path.join(bin_dir, executable)
-        logger.debug('Checking {0}...'.format(path))
-        if not os.path.isfile(path):
-            logger.debug('{0} is not a file. Skipping...'.format(path))
-            continue
-        if os.path.islink(path):
-            logger.debug('{0} is a link. Skipping...'.format(path))
-            continue
-        basename = os.path.basename(path)
-        if basename in ['python', 'python2.7', 'python2.6']:
-            logger.debug('{0} is the python executable. Skipping...'
-                         .format(path))
-            continue
-        with open(path) as f:
-            lines = f.read().split(os.linesep)
-            if lines[0].endswith('/bin/python'):
-                new_line = '#!{0}/python'.format(bin_dir)
-                logger.debug('Replacing {0} with {1}'
-                             .format(lines[0], new_line))
-                lines[0] = new_line
-        with open(path, 'w') as f:
-            f.write(os.linesep.join(lines))
-
-    runner = LocalCommandRunner(logger)
-
-    logger.debug('Searching for links in {0}'.format(VIRTUALENV))
-    for link in ['archives', 'bin', 'include', 'lib']:
-        link_path = '{0}/local/{1}'.format(VIRTUALENV, link)
-        logger.debug('Checking {0}...'.format(link_path))
-        try:
-            runner.run('unlink {0}'.format(link_path))
-            runner.run('ln -s {0}/{1} {2}'
-                       .format(VIRTUALENV, link, link_path))
-        except exceptions.CommandExecutionException:
-            pass
-
-
-def parse_pip_version(pip_version=''):
-
-    """
-    Parses a pip version string to identify major, minor, micro versions.
-
-    :param pip_version: the version of pip
-
-    :return: major, minor, micro version of pip
-    :rtype: tuple
-    """
-
-    if not pip_version:
-        try:
-            pip_version = pip.__version__
-        except AttributeError as e:
-            raise exceptions.NonRecoverableError(
-                'Failed to get pip version: ', str(e))
-
-    if not isinstance(pip_version, basestring):
-        raise exceptions.NonRecoverableError(
-            'Invalid pip version: {0} is not a string'
-            .format(pip_version))
-
-    if not pip_version.__contains__("."):
-        raise exceptions.NonRecoverableError(
-            'Unknown formatting of pip version: "{0}", expected '
-            'dot-delimited numbers (e.g. "1.5.4", "6.0")'
-            .format(pip_version))
-
-    version_parts = pip_version.split('.')
-    major = version_parts[0]
-    minor = version_parts[1]
-    micro = ''
-    if len(version_parts) > 2:
-        micro = version_parts[2]
-
-    if not str(major).isdigit():
-        raise exceptions.NonRecoverableError(
-            'Invalid pip version: "{0}", major version is "{1}" '
-            'while expected to be a number'
-            .format(pip_version, major))
-
-    if not str(minor).isdigit():
-        raise exceptions.NonRecoverableError(
-            'Invalid pip version: "{0}", minor version is "{1}" while '
-            'expected to be a number'
-            .format(pip_version, minor))
-
-    return major, minor, micro
-
-
-def extract_package_to_dir(package_url):
-
-    """
-    Extracts a pip package to a temporary directory.
-
-    :param package_url: the URL to the package source.
-
-    :return: the directory the package was extracted to.
-    """
-
-    plugin_dir = None
-
-    try:
-        plugin_dir = tempfile.mkdtemp()
-        # check pip version and unpack plugin_url accordingly
-        if is_pip6_or_higher():
-            pip.download.unpack_url(link=pip.index.Link(package_url),
-                                    location=plugin_dir,
-                                    download_dir=None,
-                                    only_download=False)
-        else:
-            req_set = pip.req.RequirementSet(build_dir=None,
-                                             src_dir=None,
-                                             download_dir=None)
-            req_set.unpack_url(link=pip.index.Link(package_url),
-                               location=plugin_dir,
-                               download_dir=None,
-                               only_download=False)
-
-    except Exception as e:
-        if plugin_dir and os.path.exists(plugin_dir):
-            shutil.rmtree(plugin_dir)
-        raise exceptions.NonRecoverableError(
-            'Failed to download and unpack package from {0}: {1}'
-            .format(package_url, str(e)))
-
-    return plugin_dir
-
-
-def is_pip6_or_higher(pip_version=None):
-
-    """
-    Determines if the pip version passed is higher than version 6.
-
-    :param pip_version: the version of pip
-
-    :return: whether or not the version is higher than version 6.
-    """
-
-    major, minor, micro = parse_pip_version(pip_version)
-    if int(major) >= 6:
-        return True
-    else:
-        return False
-
-
-def extract_package_name(package_dir):
-
-    """
-    Detects the package name of the package located at 'package_dir' as
-    specified in the package setup.py file.
-
-    :param package_dir: the directory the package was extracted to.
-
-    :return: the package name
-    """
-    runner = LocalCommandRunner()
-    plugin_name = runner.run(
-        '{0} {1} {2}'.format(
-            sys.executable,
-            os.path.join(os.path.dirname(plugins.__file__),
-                         'extract_package_name.py'),
-            package_dir),
-        cwd=package_dir
-    ).std_out
-    return plugin_name
-
-
-def list_plugin_files(plugin_name):
-
-    """
-    Retrieves python files related to the plugin.
-    __init__ file are filtered out.
-
-    :param plugin_name: The plugin name.
-
-    :return: A list of file paths.
-    :rtype: list of str
-    """
-
-    module_paths = []
-    runner = LocalCommandRunner(logger)
-
-    files = runner.run(
-        '{0} show -f {1}'
-        .format(get_pip_path(), plugin_name)
-    ).std_out.splitlines()
-    for module in files:
-        if module.endswith('.py') and '__init__' not in module:
-            # the files paths are relative to the
-            # package __init__.py file.
-            prefix = '../' if os.name == 'posix' else '..\\'
-            module_paths.append(
-                module.replace(prefix, '')
-                .replace(os.sep, '.').replace('.py', '').strip())
-    return module_paths
-
-
-def dict_to_options(dictionary):
-
-    """
-    Transform a dictionary into an options string. any key value pair
-    will be translated into the --key=value option.
-
-    :param dictionary: the options dictionary
-
-    :return: the options string representing the dictionary
-    """
-
-    options_string = ''
-    for key, value in dictionary.iteritems():
-        key = key.replace('_', '-')
-        option = '--{0}={1}'.format(key, value)
-        options_string = '{0} {1}'.format(options_string, option)
-    return options_string.lstrip()
-
-
 def get_executable_path(executable):
 
     """
     Lookup the path to the executable, os agnostic
 
     :param executable: the name of the executable
-
-    :return: path to the executable
     """
 
     if os.name == 'posix':
@@ -466,7 +267,6 @@ def get_cfy_agent_path():
     Lookup the path to the cfy-agent executable, os agnostic
 
     :return: path to the cfy-agent executable
-    :rtype: str
     """
 
     return get_executable_path('cfy-agent')
@@ -478,7 +278,6 @@ def get_pip_path():
     Lookup the path to the pip executable, os agnostic
 
     :return: path to the pip executable
-    :rtype: str
     """
 
     return get_executable_path('pip')
@@ -490,7 +289,6 @@ def get_celery_path():
     Lookup the path to the celery executable, os agnostic
 
     :return: path to the celery executable
-    :rtype: str
     """
 
     return get_executable_path('celery')
@@ -502,7 +300,6 @@ def get_python_path():
     Lookup the path to the python executable, os agnostic
 
     :return: path to the python executable
-    :rtype: str
     """
 
     return get_executable_path('python')
@@ -521,7 +318,6 @@ def env_to_file(env_variables, destination_path=None, posix=True):
     :param posix: false if the target of the generated file will be a
                   windows machine
 
-    :return: path to the file containing the env variables
     """
 
     if not env_variables:
@@ -588,7 +384,6 @@ def purge_none_values(dictionary):
     :param dictionary: the dictionary to convert
 
     :return: a copy of the dictionary where no key has a None value
-    :rtype: dict
     """
 
     dict_copy = copy.deepcopy(dictionary)
@@ -604,8 +399,6 @@ def json_load(file_path):
     Loads a JSON file into a dictionary.
 
     :param file_path: path to the json file
-
-    :return: the dictionary
     """
 
     with open(file_path) as f:
@@ -621,8 +414,6 @@ def json_loads(content):
 
 
     :param content: the string to load
-
-    :return: the dictionary
     """
 
     try:

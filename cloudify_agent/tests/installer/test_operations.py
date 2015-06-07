@@ -22,13 +22,13 @@ from cloudify.workflows import local
 from cloudify.utils import setup_logger
 
 import cloudify_agent
-from cloudify_agent.api.utils import generate_agent_name
 
 from cloudify_agent.tests import resources
 from cloudify_agent.tests.utils import FileServer
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.tests.api.pm import only_os
+from cloudify_agent.api import utils
 
 
 ##############################################################################
@@ -72,7 +72,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
     @only_os('posix')
     def test_local_agent_from_package(self, _):
 
-        agent_name = generate_agent_name()
+        agent_name = utils.internal.generate_agent_name()
+        agent_queue = '{0}-queue'.format(agent_name)
 
         blueprint_path = resources.get_resource(
             'blueprints/agent-from-package/local-agent-blueprint.yaml')
@@ -83,6 +84,7 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
             'source_url': self.source_url,
             'requirements_file': self.requirements_file,
             'name': agent_name,
+            'queue': agent_queue,
             'file_server_port': self.fs.port
         }
 
@@ -100,12 +102,14 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
     @patch('cloudify.workflows.local._validate_node')
     def test_local_agent_from_source(self, _):
 
-        agent_name = generate_agent_name()
+        agent_name = utils.internal.generate_agent_name()
+        agent_queue = '{0}-queue'.format(agent_name)
 
         inputs = {
             'source_url': self.source_url,
             'requirements_file': self.requirements_file,
-            'name': agent_name
+            'name': agent_name,
+            'queue': agent_queue
         }
 
         blueprint_path = resources.get_resource(
@@ -125,12 +129,14 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
     @patch('cloudify.workflows.local._validate_node')
     def test_3_2_backwards(self, _):
 
-        agent_name = generate_agent_name()
+        agent_name = utils.internal.generate_agent_name()
+        agent_queue = '{0}-queue'.format(agent_name)
 
         inputs = {
             'source_url': self.source_url,
             'requirements_file': self.requirements_file,
-            'name': agent_name
+            'name': agent_name,
+            'queue': agent_queue
         }
 
         blueprint_path = resources.get_resource(

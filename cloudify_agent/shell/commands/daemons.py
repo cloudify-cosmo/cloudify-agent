@@ -53,6 +53,14 @@ from cloudify_agent.shell.decorators import handle_failures
               help='The name of the queue to register the daemon to. [env {0}]'
                    .format(env.CLOUDIFY_DAEMON_QUEUE),
               envvar=env.CLOUDIFY_DAEMON_QUEUE)
+@click.option('--host',
+              help='The ip address of the current host. [env {0}]'
+              .format(env.CLOUDIFY_DAEMON_HOST),
+              envvar=env.CLOUDIFY_DAEMON_HOST)
+@click.option('--deployment-id',
+              help='The deployment id this daemon will belong to. [env {0}]'
+              .format(env.CLOUDIFY_DAEMON_DEPLOYMENT_ID),
+              envvar=env.CLOUDIFY_DAEMON_DEPLOYMENT_ID)
 @click.option('--user',
               help='The user to create this daemon under. [env {0}]'
                    .format(env.CLOUDIFY_DAEMON_USER),
@@ -343,7 +351,7 @@ def inspect(name):
     """
 
     daemon = _load_daemon(name)
-    click.echo(json.dumps(api_utils.daemon_to_dict(daemon), indent=2))
+    click.echo(json.dumps(api_utils.internal.daemon_to_dict(daemon), indent=2))
 
 
 @click.command('list')

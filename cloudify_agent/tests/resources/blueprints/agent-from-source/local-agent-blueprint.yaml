@@ -14,6 +14,10 @@ inputs:
   name:
     description: Desired name for the agent
 
+  queue:
+    description: Desired queue for the agent
+
+
 node_templates:
 
   host:
@@ -21,6 +25,7 @@ node_templates:
     properties:
       cloudify_agent:
         name: { get_input: name }
+        queue: { get_input: queue }
         ip: 127.0.0.1
         manager_ip: 127.0.0.1
         local: true

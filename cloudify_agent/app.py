@@ -25,15 +25,13 @@ from celery import Celery
 
 from cloudify import constants
 
-from cloudify.utils import get_daemon_name
-from cloudify.utils import get_daemon_storage_dir
-
+from cloudify_agent.api import utils
 
 broker_url = os.environ.get(constants.CELERY_BROKER_URL_KEY, 'amqp://')
 
 try:
     # running inside an agent
-    daemon_name = get_daemon_name()
+    daemon_name = utils.internal.get_daemon_name()
 except KeyError:
     # running outside an agent
     daemon_name = None
@@ -66,11 +64,11 @@ if daemon_name:
         # use the storage directory because the work directory might have
         # been created under a different user, in which case we don't have
         # permissions to write to it.
-        storage = get_daemon_storage_dir()
+        storage = utils.internal.get_daemon_storage_dir()
         if not os.path.exists(storage):
             os.makedirs(storage)
         error_dump_path = os.path.join(
-            get_daemon_storage_dir(),
+            utils.internal.get_daemon_storage_dir(),
             '{0}.err'.format(daemon_name))
         with open(error_dump_path, 'w') as f:
             f.write('Type: {0}\n'.format(exception_type))

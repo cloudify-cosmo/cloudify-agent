@@ -18,7 +18,7 @@ import os
 import shutil
 
 from cloudify_agent.api import errors as api_errors
-from cloudify_agent.api.utils import generate_agent_name
+from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.tests.shell import BaseShellTest
 from cloudify_agent.tests import get_storage_directory
@@ -48,6 +48,7 @@ class TestDaemonFactory(BaseShellTest):
     def test_new_wrong_includes_attribute(self):
         self.assertRaises(ValueError, self.factory.new,
                           process_management='init.d',
+                          queue='{0}-queue'.format(self.daemon_name),
                           name=self.daemon_name,
                           manager_ip='127.0.0.1',
                           includes=set(['plugin']))
@@ -102,9 +103,9 @@ class TestDaemonFactory(BaseShellTest):
         daemons = self.factory.load_all()
         self.assertEquals(0, len(daemons))
 
-        _save_daemon(generate_agent_name())
-        _save_daemon(generate_agent_name())
-        _save_daemon(generate_agent_name())
+        _save_daemon(utils.internal.generate_agent_name())
+        _save_daemon(utils.internal.generate_agent_name())
+        _save_daemon(utils.internal.generate_agent_name())
 
         daemons = self.factory.load_all()
         self.assertEquals(3, len(daemons))

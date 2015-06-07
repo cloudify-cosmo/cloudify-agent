@@ -177,5 +177,5 @@ class DetachedDaemon(CronRespawnMixin):
             manager_ip=self.manager_ip,
             manager_port=self.manager_port,
             extra_env_path=self.extra_env_path,
-            storage_dir=utils.get_storage_directory(self.user),
+            storage_dir=utils.internal.get_storage_directory(self.user),
         )

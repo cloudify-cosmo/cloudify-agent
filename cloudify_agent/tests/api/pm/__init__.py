@@ -212,11 +212,15 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
 
     def create_daemon(self, **attributes):
 
+        name = utils.internal.generate_agent_name()
+
         params = {
             'manager_ip': '127.0.0.1',
             'user': self.username,
             'workdir': self.temp_folder,
             'logger': self.logger,
+            'name': name,
+            'queue': '{0}-queue'.format(name)
         }
         params.update(attributes)
 
@@ -384,10 +388,10 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             constants.MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL_KEY:
                 'http://{0}:53229/blueprints'.format(daemon.manager_ip),
             constants.CELERY_BROKER_URL_KEY: daemon.broker_url,
-            constants.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY:
-                utils.get_storage_directory(),
-            constants.CLOUDIFY_DAEMON_NAME_KEY: daemon.name,
-            constants.CLOUDIFY_DAEMON_USER_KEY: daemon.user
+            utils.internal.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY:
+                utils.internal.get_storage_directory(),
+            utils.internal.CLOUDIFY_DAEMON_NAME_KEY: daemon.name,
+            utils.internal.CLOUDIFY_DAEMON_USER_KEY: daemon.user
         }
 
         def _check_env_var(var, expected_value):

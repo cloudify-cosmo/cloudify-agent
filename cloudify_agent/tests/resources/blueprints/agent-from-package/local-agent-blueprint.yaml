@@ -19,6 +19,9 @@ inputs:
   name:
     description: Desired name for the agent
 
+  queue:
+    description: Desired queue for the agent
+
   file_server_port:
     description: port of the file server
 
@@ -51,6 +54,7 @@ node_templates:
           inputs:
             cloudify_agent:
               name: { get_input: name }
+              queue: { get_input: queue }
               ip: 127.0.0.1
               manager_ip: 127.0.0.1
               local: true

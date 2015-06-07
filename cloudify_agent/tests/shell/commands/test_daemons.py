@@ -21,7 +21,7 @@ from cloudify_agent.tests.shell.commands import BaseCommandLineTestCase
 from cloudify_agent.tests import get_storage_directory
 
 
-@patch('cloudify_agent.api.utils.get_storage_directory',
+@patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
 @patch('cloudify_agent.shell.commands.daemons.DaemonFactory.new')
 @patch('cloudify_agent.shell.commands.daemons.DaemonFactory.save')
@@ -55,6 +55,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             min_workers=None,
             broker_port=None,
             manager_port=None,
+            host=None,
+            deployment_id=None,
             extra_env_path=None,
             logger=get_logger(),
         )
@@ -82,6 +84,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             min_workers=None,
             broker_port=None,
             includes=None,
+            host=None,
+            deployment_id=None,
             log_level=None,
             pid_file=None,
             log_file=None,
@@ -174,12 +178,13 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
         daemon = factory_load.return_value
         daemon.unregister.assert_called_once_with('plugin')
 
-    @patch('cloudify_agent.shell.commands.daemons.api_utils.daemon_to_dict')
+    @patch('cloudify_agent.shell.commands.daemons.api_utils'
+           '.internal.daemon_to_dict')
     def test_inspect(self, daemon_to_dict, *factory_methods):
 
         daemon_to_dict.return_value = {}
 
-        name = utils.generate_agent_name()
+        name = utils.internal.generate_agent_name()
         self._run('cfy-agent daemons inspect --name={0}'.format(name))
 
         factory_load = factory_methods[2]
@@ -189,7 +194,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
         daemon_to_dict.assert_called_once_with(daemon)
 
     def test_status(self, *factory_methods):
-        name = utils.generate_agent_name()
+        name = utils.internal.generate_agent_name()
         self._run('cfy-agent daemons status --name={0}'.format(name))
         factory_load = factory_methods[2]
         daemon = factory_load.return_value
@@ -200,9 +205,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
                   '--process-management=init.d', raise_system_exit=True)
 
 
-@patch('cloudify_agent.api.utils.get_storage_directory',
-       get_storage_directory)
-@patch('cloudify_agent.shell.commands.daemons.api_utils.get_storage_directory',
+@patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
 class TestDaemonCommandLine(BaseCommandLineTestCase):
 
@@ -216,8 +219,10 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
     def test_list(self):
         self._run('cfy-agent daemons create '
                   '--process-management=init.d '
-                  '--queue=queue --manager-ip=127.0.0.1 --user=user ')
+                  '--queue=queue --name=test-name --manager-ip=127.0.0.1 '
+                  '--user=user ')
         self._run('cfy-agent daemons create '
                   '--process-management=init.d '
-                  '--queue=queue --manager-ip=127.0.0.1 --user=user ')
+                  '--queue=queue --name=test-name2 --manager-ip=127.0.0.1 '
+                  '--user=user ')
         self._run('cfy-agent daemons list')

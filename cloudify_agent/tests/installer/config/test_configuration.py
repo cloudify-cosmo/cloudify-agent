@@ -18,9 +18,9 @@ import os
 import platform
 from mock import patch
 
-from cloudify import utils
 from cloudify import constants
 
+from cloudify_agent.api import utils
 from cloudify_agent.installer.config import configuration
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests.installer.config import mock_context

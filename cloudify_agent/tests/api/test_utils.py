@@ -18,17 +18,13 @@ import os
 import tempfile
 
 from cloudify.utils import setup_logger
-from cloudify.exceptions import NonRecoverableError
 
 import cloudify_agent
 from cloudify_agent.api import utils
-
-from cloudify_agent.tests.api.pm import only_ci
-from cloudify_agent.tests.api.pm import only_os
-from cloudify_agent.tests import resources
-from cloudify_agent.tests import utils as test_utils
 from cloudify_agent.api import defaults
 from cloudify_agent.api.pm.base import Daemon
+
+from cloudify_agent.tests import utils as test_utils
 from cloudify_agent.tests import BaseTest
 
 
@@ -63,8 +59,8 @@ class TestUtils(BaseTest):
 
     def test_daemon_to_dict(self):
 
-        daemon = Daemon(manager_ip='127.0.01')
-        daemon_json = utils.daemon_to_dict(daemon)
+        daemon = Daemon(manager_ip='127.0.01', name='name', queue='queue')
+        daemon_json = utils.internal.daemon_to_dict(daemon)
         self.logger.info(json.dumps(daemon_json, indent=2))
 
     def test_get_resource(self):
@@ -99,112 +95,6 @@ class TestUtils(BaseTest):
                              .format(os.linesep),
                              f.read())
 
-    @only_ci
-    @only_os('posix')
-    def test_disable_requiretty(self):
-        utils.disable_requiretty()
-
-    @only_ci
-    @only_os('posix')
-    def test_fix_virtualenv(self):
-        utils.fix_virtualenv()
-
     def test_generate_agent_name(self):
-        name = utils.generate_agent_name()
+        name = utils.internal.generate_agent_name()
         self.assertIn(defaults.CLOUDIFY_AGENT_PREFIX, name)
-
-    def test_extract_package_to_dir(self):
-
-        # create a plugin tar file and put it in the file server
-        plugin_dir_name = 'mock-plugin-with-requirements'
-        plugin_tar_name = test_utils.create_plugin_tar(
-            plugin_dir_name,
-            self.file_server_resource_base)
-
-        plugin_source_path = resources.get_resource(os.path.join(
-            'plugins', plugin_dir_name))
-        plugin_tar_url = '{0}/{1}'.format(self.file_server_url,
-                                          plugin_tar_name)
-
-        extracted_plugin_path = utils.extract_package_to_dir(plugin_tar_url)
-        self.assertTrue(test_utils.are_dir_trees_equal(
-            plugin_source_path,
-            extracted_plugin_path))
-
-    def test_extract_package_name(self):
-        package_dir = os.path.join(resources.get_resource('plugins'),
-                                   'mock-plugin')
-        self.assertEqual(
-            'mock-plugin',
-            utils.extract_package_name(package_dir))
-
-    def test_dict_to_options(self):
-        options_string = utils.dict_to_options(
-            {'key': 'value',
-             'key2': 'value2',
-             'complex_key': 'complex_value'})
-
-        expected = set(['--key2=value2', '--complex-key=complex_value',
-                        '--key=value'])
-        self.assertEqual(expected, set(options_string.split()))
-
-
-class PipVersionParserTestCase(BaseTest):
-
-    def test_parse_long_format_version(self):
-        version_tupple = utils.parse_pip_version('1.5.4')
-        self.assertEqual(('1', '5', '4'), version_tupple)
-
-    def test_parse_short_format_version(self):
-        version_tupple = utils.parse_pip_version('6.0')
-        self.assertEqual(('6', '0', ''), version_tupple)
-
-    def test_pip6_not_higher(self):
-        result = utils.is_pip6_or_higher('1.5.4')
-        self.assertEqual(result, False)
-
-    def test_pip6_exactly(self):
-        result = utils.is_pip6_or_higher('6.0')
-        self.assertEqual(result, True)
-
-    def test_pip6_is_higher(self):
-        result = utils.is_pip6_or_higher('6.0.6')
-        self.assertEqual(result, True)
-
-    def test_parse_invalid_major_version(self):
-        expected_err_msg = 'Invalid pip version: "a.5.4", major version is ' \
-                           '"a" while expected to be a number'
-        self.assertRaisesRegex(NonRecoverableError, expected_err_msg,
-                               utils.parse_pip_version, 'a.5.4')
-
-    def test_parse_invalid_minor_version(self):
-        expected_err_msg = 'Invalid pip version: "1.a.4", minor version is ' \
-                           '"a" while expected to be a number'
-        self.assertRaisesRegex(NonRecoverableError, expected_err_msg,
-                               utils.parse_pip_version, '1.a.4')
-
-    def test_parse_too_short_version(self):
-        expected_err_msg = 'Unknown formatting of pip version: ' \
-                           '"6", expected ' \
-                           'dot-delimited numbers ' \
-                           '\(e.g. "1.5.4", "6.0"\)'
-        self.assertRaisesRegex(NonRecoverableError, expected_err_msg,
-                               utils.parse_pip_version, '6')
-
-    def test_parse_numeric_version(self):
-        expected_err_msg = 'Invalid pip version: 6 is not a string'
-        self.assertRaisesRegex(NonRecoverableError, expected_err_msg,
-                               utils.parse_pip_version, 6)
-
-    def test_parse_alpha_version(self):
-        expected_err_msg = 'Unknown formatting of pip ' \
-                           'version: "a", expected ' \
-                           'dot-delimited ' \
-                           'numbers \(e.g. "1.5.4", "6.0"\)'
-        self.assertRaisesRegex(NonRecoverableError, expected_err_msg,
-                               utils.parse_pip_version, 'a')
-
-    def test_parse_wrong_obj(self):
-        expected_err_msg = 'Invalid pip version: \[6\] is not a string'
-        self.assertRaisesRegex(NonRecoverableError, expected_err_msg,
-                               utils.parse_pip_version, [6])

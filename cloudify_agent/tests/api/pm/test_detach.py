@@ -25,9 +25,7 @@ from cloudify_agent.tests.api.pm import only_os
 from cloudify_agent.tests import get_storage_directory
 
 
-@patch('cloudify_agent.api.utils.get_storage_directory',
-       get_storage_directory)
-@patch('cloudify_agent.api.pm.base.get_storage_directory',
+@patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
 @nose.tools.istest
 @only_os('posix')
