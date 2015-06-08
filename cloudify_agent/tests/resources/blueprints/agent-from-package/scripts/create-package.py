@@ -33,7 +33,18 @@ def create_windows_installer():
               ' --requirement {req_file}'.format(wheel_dir=wheelhouse,
                                                  req_file=pip_req)
     ctx.logger.info('Building wheels into: {}'.format(wheelhouse))
-    subprocess.call(pip_cmd.split())
+    subprocess.call(pip_cmd.split(),
+                    stderr=subprocess.PIPE,
+                    stdout=subprocess.PIPE)
+
+    cfy_agent_url = 'https://github.com/cloudify-cosmo/' \
+                    'cloudify-agent/archive/CFY-2649-cloudify-agent.zip'
+    pip_cmd = 'pip wheel --find-links {wheel_dir} --wheel-dir {wheel_dir} ' \
+              '{repo_url}'.format(wheel_dir=wheelhouse, repo_url=cfy_agent_url)
+    subprocess.call(pip_cmd.split(),
+                    stderr=subprocess.PIPE,
+                    stdout=subprocess.PIPE)
+
 
 
 config = {
