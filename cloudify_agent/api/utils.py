@@ -98,15 +98,12 @@ class _Internal(object):
     def daemon_to_dict(daemon):
 
         """
-        Return a json representation of the daemon. This will remove return all
-        the daemon attributes except for the 'celery', 'logger' and 'runner',
-        which are not JSON serializable.
+        Return a json representation of the daemon by copying the __dict__
+        attribute value. Also notice that this implementation removes any
+        attributes starting with the underscore ('_') character.
 
-        :param daemon: the daemon to serialize.
+        :param daemon: the daemon.
         :type daemon: cloudify_agent.api.pm.base.Daemon
-
-        :return: a JSON serializable dictionary.
-
         """
 
         try:
@@ -117,10 +114,11 @@ class _Internal(object):
 
         # don't use deepcopy here because we this will try to copy
         # the internal non primitive attributes
-        result = copy.copy(daemon.__dict__)
-        result.pop('celery')
-        result.pop('runner')
-        result.pop('logger')
+        original = daemon.__dict__
+        result = copy.copy(original)
+        for attr in original:
+            if attr.startswith('_'):
+                result.pop(attr)
         return result
 
 

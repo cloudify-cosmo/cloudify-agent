@@ -83,7 +83,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
         env_string = self._create_env_string()
 
         # creating the installation script
-        self.logger.debug('Rendering configuration script from template')
+        self._logger.debug('Rendering configuration script from template')
         utils.render_template_to_file(
             template_path='pm/nssm/nssm.conf.template',
             file_path=self.config_path,
@@ -102,27 +102,27 @@ class NonSuckingServiceManagerDaemon(Daemon):
             includes=','.join(self.includes),
             virtualenv_path=VIRTUALENV,
             name=self.name,
-            storage_dir=utils.get_storage_directory(self.user),
+            storage_dir=utils.internal.get_storage_directory(self.user),
             custom_environment=env_string,
             startup_policy=self.startup_policy,
             failure_reset_timeout=self.failure_reset_timeout,
             failure_restart_delay=self.failure_restart_delay
         )
 
-        self.logger.debug('Rendered configuration script: {0}'.format(
+        self._logger.debug('Rendered configuration script: {0}'.format(
             self.config_path))
 
         # run the configuration script
-        self.logger.info('Running configuration script')
-        self.runner.run(self.config_path)
-        self.logger.debug('Successfully executed configuration script')
+        self._logger.info('Running configuration script')
+        self._runner.run(self.config_path)
+        self._logger.debug('Successfully executed configuration script')
 
         # register plugins
         for plugin in included_plugins:
             self.register(plugin)
 
     def apply_includes(self):
-        output = self.runner.run(
+        output = self._runner.run(
             '{0} get {1} AppParameters'.format(
                 self.nssm_path, self.name)).std_out
 
@@ -136,25 +136,25 @@ class NonSuckingServiceManagerDaemon(Daemon):
             current_includes,
             ','.join(self.includes))
 
-        self.runner.run('{0} set {1} AppParameters {2}'
-                        .format(self.nssm_path, self.name,
-                                new_app_parameters))
+        self._runner.run('{0} set {1} AppParameters {2}'
+                         .format(self.nssm_path, self.name,
+                                 new_app_parameters))
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        self.logger.debug('Retrieving daemon stats')
-        stats = utils.get_agent_stats(self.name, self.celery)
+        self._logger.debug('Retrieving daemon stats')
+        stats = utils.get_agent_stats(self.name, self._celery)
         if stats:
             if not force:
                 raise exceptions.DaemonStillRunningException(self.name)
             self.stop()
 
-        self.logger.info('Removing {0} service'.format(
+        self._logger.info('Removing {0} service'.format(
             self.name))
-        self.runner.run('{0} remove {1} confirm'.format(
+        self._runner.run('{0} remove {1} confirm'.format(
             self.nssm_path,
             self.name))
 
-        self.logger.debug('Deleting {0}'.format(self.config_path))
+        self._logger.debug('Deleting {0}'.format(self.config_path))
         if os.path.exists(self.config_path):
             os.remove(self.config_path)
 
@@ -169,18 +169,18 @@ class NonSuckingServiceManagerDaemon(Daemon):
     def status(self):
         try:
             command = '{0} status {1}'.format(self.nssm_path, self.name)
-            response = self.runner.run(command)
+            response = self._runner.run(command)
             # apparently nssm output is encoded in utf16.
             # encode to ascii to be able to parse this
             state = response.std_out.decode('utf16').encode(
                 'utf-8').rstrip()
-            self.logger.info(state)
+            self._logger.info(state)
             if state in self.RUNNING_STATES:
                 return True
             else:
                 return False
         except CommandExecutionException as e:
-            self.logger.debug(str(e))
+            self._logger.debug(str(e))
             return False
 
     def _create_env_string(self):

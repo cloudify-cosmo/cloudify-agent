@@ -167,7 +167,12 @@ class Daemon(object):
         ####################################################################
         # When subclassing this, do not implement any logic inside the
         # constructor expect for in-memory calculations and settings, as the
-        # daemon may be instantiated many times for an existing agent.
+        # daemon may be instantiated many times for an existing agent. Also,
+        # all daemon attributes must be JSON serializable, as daemons are
+        # represented as dictionaries and stored as JSON files on Disk. If
+        # you wish to have a non serializable attribute, mark it private by
+        # naming it _<name>. Attributes starting with underscore will be
+        # omitted when serializing the object.
         ####################################################################
 
         :param logger: a logger to be used to log various subsequent
@@ -184,15 +189,15 @@ class Daemon(object):
         self._runtime_properties = None
 
         # configure logger
-        self.logger = logger or setup_logger(
+        self._logger = logger or setup_logger(
             logger_name='cloudify_agent.api.pm.{0}'
             .format(self.PROCESS_MANAGEMENT))
 
         # save params
-        self.params = params
+        self._params = params
 
         # configure command runner
-        self.runner = LocalCommandRunner(logger=self.logger)
+        self._runner = LocalCommandRunner(logger=self._logger)
 
         # Mandatory parameters
         self.validate_mandatory()
@@ -257,7 +262,7 @@ class Daemon(object):
 
         # create working directory if its missing
         if not os.path.exists(self.workdir):
-            self.logger.debug('Creating directory: {0}'.format(self.workdir))
+            self._logger.debug('Creating directory: {0}'.format(self.workdir))
             os.makedirs(self.workdir)
 
         # save as attributes so that they will be persisted in the json files.
@@ -266,8 +271,8 @@ class Daemon(object):
         self.virtualenv = VIRTUALENV
 
         # initialize an internal celery client
-        self.celery = Celery(broker=self.broker_url,
-                             backend=self.broker_url)
+        self._celery = Celery(broker=self.broker_url,
+                              backend=self.broker_url)
 
     def validate_mandatory(self):
 
@@ -279,7 +284,7 @@ class Daemon(object):
         """
 
         for param in self.MANDATORY_PARAMS:
-            if param not in self.params:
+            if param not in self._params:
                 raise errors.DaemonMissingMandatoryPropertyError(param)
 
     def validate_optional(self):
@@ -381,13 +386,13 @@ class Daemon(object):
         :param plugin: the plugin name to register.
         """
 
-        self.logger.debug('Listing modules of plugin: {0}'.format(plugin))
+        self._logger.debug('Listing modules of plugin: {0}'.format(plugin))
         modules = self._list_plugin_files(plugin)
 
         self.includes.extend(modules)
 
         # process management specific implementation
-        self.logger.debug('Setting includes: {0}'.format(self.includes))
+        self._logger.debug('Setting includes: {0}'.format(self.includes))
         self.apply_includes()
 
     def unregister(self, plugin):
@@ -406,14 +411,14 @@ class Daemon(object):
         :param plugin: the plugin name to register.
 
         """
-        self.logger.debug('Listing modules of plugin: {0}'.format(plugin))
+        self._logger.debug('Listing modules of plugin: {0}'.format(plugin))
         modules = self._list_plugin_files(plugin)
 
         for module in modules:
             self.includes.remove(module)
 
         # process management specific implementation
-        self.logger.debug('Applying includes: {0}'.format(self.includes))
+        self._logger.debug('Applying includes: {0}'.format(self.includes))
         self.apply_includes()
 
     def create(self):
@@ -424,7 +429,7 @@ class Daemon(object):
         was instantiated.
 
         """
-        self.logger.debug('Daemon created')
+        self._logger.debug('Daemon created')
 
     def start(self,
               interval=defaults.START_INTERVAL,
@@ -449,29 +454,29 @@ class Daemon(object):
         """
 
         if delete_amqp_queue:
-            self.logger.debug('Deleting AMQP queues')
+            self._logger.debug('Deleting AMQP queues')
             self._delete_amqp_queues()
         start_command = self.start_command()
-        self.logger.debug('Starting daemon with command: {0}'
-                          .format(start_command))
-        self.runner.run(start_command)
+        self._logger.debug('Starting daemon with command: {0}'
+                           .format(start_command))
+        self._runner.run(start_command)
         end_time = time.time() + timeout
         while time.time() < end_time:
-            self.logger.debug('Querying daemon {0} stats'.format(self.name))
-            stats = utils.get_agent_stats(self.name, self.celery)
+            self._logger.debug('Querying daemon {0} stats'.format(self.name))
+            stats = utils.get_agent_stats(self.name, self._celery)
             if stats:
                 # make sure the status command recognizes the daemon is up
                 status = self.status()
                 if status:
-                    self.logger.debug('Daemon {0} has started'
-                                      .format(self.name))
+                    self._logger.debug('Daemon {0} has started'
+                                       .format(self.name))
                     return
-            self.logger.debug('Daemon {0} has not started yet. '
-                              'Sleeping for {1} seconds...'
-                              .format(self.name, interval))
+            self._logger.debug('Daemon {0} has not started yet. '
+                               'Sleeping for {1} seconds...'
+                               .format(self.name, interval))
             time.sleep(interval)
-        self.logger.debug('Verifying there were no un-handled '
-                          'exception during startup')
+        self._logger.debug('Verifying there were no un-handled '
+                           'exception during startup')
         self._verify_no_celery_error()
         raise exceptions.DaemonStartupTimeout(timeout, self.name)
 
@@ -494,28 +499,28 @@ class Daemon(object):
         """
 
         stop_command = self.stop_command()
-        self.logger.debug('Stopping daemon with command: {0}'
-                          .format(stop_command))
-        self.runner.run(stop_command)
+        self._logger.debug('Stopping daemon with command: {0}'
+                           .format(stop_command))
+        self._runner.run(stop_command)
         end_time = time.time() + timeout
         while time.time() < end_time:
-            self.logger.debug('Querying daemon {0} stats'.format(self.name))
+            self._logger.debug('Querying daemon {0} stats'.format(self.name))
             # check the process has shutdown
-            stats = utils.get_agent_stats(self.name, self.celery)
+            stats = utils.get_agent_stats(self.name, self._celery)
             if not stats:
                 # make sure the status command also recognizes the
                 # daemon is down
                 status = self.status()
                 if not status:
-                    self.logger.debug('Daemon {0} has shutdown'
-                                      .format(self.name, interval))
+                    self._logger.debug('Daemon {0} has shutdown'
+                                       .format(self.name, interval))
                     return
-            self.logger.debug('Daemon {0} is still running. '
-                              'Sleeping for {1} seconds...'
-                              .format(self.name, interval))
+            self._logger.debug('Daemon {0} is still running. '
+                               'Sleeping for {1} seconds...'
+                               .format(self.name, interval))
             time.sleep(interval)
-        self.logger.debug('Verifying there were no un-handled '
-                          'exception during startup')
+        self._logger.debug('Verifying there were no un-handled '
+                           'exception during startup')
         self._verify_no_celery_error()
         raise exceptions.DaemonShutdownTimeout(timeout, self.name)
 
@@ -571,21 +576,21 @@ class Daemon(object):
         client = amqp_client.create_client(self.broker_ip)
         try:
             channel = client.connection.channel()
-            self.logger.debug('Deleting queue: {0}'.format(self.queue))
+            self._logger.debug('Deleting queue: {0}'.format(self.queue))
             channel.queue_delete(self.queue)
             pid_box_queue = 'celery@{0}.celery.pidbox'.format(self.queue)
-            self.logger.debug('Deleting queue: {0}'.format(pid_box_queue))
+            self._logger.debug('Deleting queue: {0}'.format(pid_box_queue))
             channel.queue_delete(pid_box_queue)
         finally:
             try:
                 client.close()
             except Exception as e:
-                self.logger.warning('Failed closing amqp client: {0}'
-                                    .format(e))
+                self._logger.warning('Failed closing amqp client: {0}'
+                                     .format(e))
 
     def _validate_autoscale(self):
-        min_workers = self.params.get('min_workers')
-        max_workers = self.params.get('max_workers')
+        min_workers = self._params.get('min_workers')
+        max_workers = self._params.get('max_workers')
         if min_workers:
             if not str(min_workers).isdigit():
                 raise errors.DaemonPropertiesError(
@@ -610,16 +615,16 @@ class Daemon(object):
                     .format(min_workers, max_workers))
 
     def _validate_host(self):
-        queue = self.params.get('queue')
-        host = self.params.get('host')
+        queue = self._params.get('queue')
+        host = self._params.get('host')
         if not queue and not host:
             raise errors.DaemonPropertiesError(
                 'host must be supplied when queue is omitted'
             )
 
     def _validate_deployment_id(self):
-        queue = self.params.get('queue')
-        host = self.params.get('deployment_id')
+        queue = self._params.get('queue')
+        host = self._params.get('deployment_id')
         if not queue and not host:
             raise errors.DaemonPropertiesError(
                 'deployment_id must be supplied when queue is omitted'
@@ -674,7 +679,7 @@ class Daemon(object):
         """
 
         module_paths = []
-        runner = LocalCommandRunner(self.logger)
+        runner = LocalCommandRunner(self._logger)
 
         files = runner.run(
             '{0} show -f {1}'
@@ -741,15 +746,15 @@ class CronRespawnMixin(Daemon):
         cron_respawn_path = os.path.join(
             self.workdir, '{0}-respawn.sh'.format(self.name))
 
-        self.logger.debug('Rendering respawn script from template')
+        self._logger.debug('Rendering respawn script from template')
         utils.render_template_to_file(
             template_path='respawn.sh.template',
             file_path=cron_respawn_path,
             start_command=self.start_command(),
             status_command=self.status_command()
         )
-        self.runner.run('chmod +x {0}'.format(cron_respawn_path))
-        self.logger.debug('Rendering enable cron script from template')
+        self._runner.run('chmod +x {0}'.format(cron_respawn_path))
+        self._logger.debug('Rendering enable cron script from template')
         utils.render_template_to_file(
             template_path='crontab/enable.sh.template',
             file_path=enable_cron_script,
@@ -759,7 +764,7 @@ class CronRespawnMixin(Daemon):
             workdir=self.workdir,
             name=self.name
         )
-        self.runner.run('chmod +x {0}'.format(enable_cron_script))
+        self._runner.run('chmod +x {0}'.format(enable_cron_script))
         return enable_cron_script
 
     def create_disable_cron_script(self):
@@ -767,7 +772,7 @@ class CronRespawnMixin(Daemon):
         disable_cron_script = os.path.join(
             self.workdir, '{0}-disable-cron.sh'.format(self.name))
 
-        self.logger.debug('Rendering disable cron script from template')
+        self._logger.debug('Rendering disable cron script from template')
         utils.render_template_to_file(
             template_path='crontab/disable.sh.template',
             file_path=disable_cron_script,
@@ -775,5 +780,5 @@ class CronRespawnMixin(Daemon):
             user=self.user,
             workdir=self.workdir
         )
-        self.runner.run('chmod +x {0}'.format(disable_cron_script))
+        self._runner.run('chmod +x {0}'.format(disable_cron_script))
         return disable_cron_script
