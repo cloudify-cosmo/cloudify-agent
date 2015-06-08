@@ -13,28 +13,25 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import getpass
+
 from mock import patch
 from mock import MagicMock
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.shell.main import get_logger
 from cloudify_agent.tests.shell.commands import BaseCommandLineTestCase
-from cloudify_agent.tests import get_storage_directory
 
 
-@patch('cloudify_agent.api.utils.get_storage_directory',
-       get_storage_directory)
 @patch('cloudify_agent.api.plugins.installer.PluginInstaller.install')
 @patch('cloudify_agent.api.plugins.installer.PluginInstaller.uninstall')
 @patch('cloudify_agent.shell.commands.plugins.DaemonFactory.load_all')
 @patch('cloudify_agent.shell.commands.plugins.DaemonFactory.save')
-class TestConfigureCommandLine(BaseCommandLineTestCase):
+class TestPluginsCommandLine(BaseCommandLineTestCase):
 
     def test_install(self, save, load_all, _, mock_install):
-        daemon1 = MagicMock()
-        daemon1.virtualenv = VIRTUALENV
-        daemon2 = MagicMock()
-        daemon2.virtualenv = VIRTUALENV
+        daemon1 = self._create_magic_daemon()
+        daemon2 = self._create_magic_daemon()
         load_all.return_value = [daemon1, daemon2]
         self._run('cfy-agent plugins install --source=source --args=args')
         mock_install.assert_called_once_with('source', 'args')
@@ -47,10 +44,8 @@ class TestConfigureCommandLine(BaseCommandLineTestCase):
         self.assertEqual(save.call_count, 2)
 
     def test_uninstall(self, save, load_all, mock_uninstall, _):
-        daemon1 = MagicMock()
-        daemon1.virtualenv = VIRTUALENV
-        daemon2 = MagicMock()
-        daemon2.virtualenv = VIRTUALENV
+        daemon1 = self._create_magic_daemon()
+        daemon2 = self._create_magic_daemon()
         load_all.return_value = [daemon1, daemon2]
         self._run('cfy-agent plugins uninstall --plugin=plugin')
         mock_uninstall.assert_called_once_with('plugin')
@@ -61,3 +56,9 @@ class TestConfigureCommandLine(BaseCommandLineTestCase):
             unregister.assert_called_once_with('plugin')
 
         self.assertEqual(save.call_count, 2)
+
+    def _create_magic_daemon(self):
+        daemon = MagicMock()
+        daemon.user = getpass.getuser()
+        daemon.virtualenv = VIRTUALENV
+        return daemon

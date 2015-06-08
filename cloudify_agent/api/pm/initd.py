@@ -152,7 +152,7 @@ class GenericLinuxDaemon(CronRespawnMixin):
             virtualenv_path=VIRTUALENV,
             extra_env_path=self.extra_env_path,
             name=self.name,
-            storage_dir=utils.get_storage_directory(self.user),
+            storage_dir=utils.internal.get_storage_directory(self.user),
             log_level=self.log_level,
             log_file=self.log_file,
             pid_file=self.pid_file,

@@ -13,16 +13,16 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import mock
+from cloudify_agent.tests.api.pm import only_ci
+from cloudify_agent.tests.api.pm import only_os
 
 from cloudify_agent.tests.shell.commands import BaseCommandLineTestCase
 
 
-@mock.patch('cloudify_agent.shell.commands.configure.api_utils')
 class TestConfigureCommandLine(BaseCommandLineTestCase):
 
-    def test_configure(self, mock_api_utils):
+    @only_ci
+    @only_os('posix')
+    def test_configure(self):
         self._run('cfy-agent configure --disable-requiretty '
                   '--relocated-env')
-        mock_api_utils.disable_requiretty.assert_called_once()
-        mock_api_utils.fix_virtualenv.assert_called_once()

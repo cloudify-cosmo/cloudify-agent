@@ -30,13 +30,13 @@ def get_storage_directory(_=None):
 class BaseTest(unittest.TestCase):
 
     def setUp(self):
+
+        # change levels to 'DEBUG' to troubleshoot.
         self.logger = setup_logger(
             'cloudify-agent.tests',
-            logger_level=logging.DEBUG)
-
-        # set api utils logger to debug
+            logger_level=logging.INFO)
         from cloudify_agent.api import utils
-        utils.logger.setLevel(logging.DEBUG)
+        utils.logger.setLevel(logging.INFO)
 
         self.curr_dir = os.getcwd()
         self.temp_folder = tempfile.mkdtemp(prefix='cfy-agent-tests-')

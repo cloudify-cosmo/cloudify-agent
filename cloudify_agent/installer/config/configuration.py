@@ -19,8 +19,10 @@ import platform
 
 from cloudify import ctx
 from cloudify import context
-from cloudify import utils
+from cloudify.utils import get_manager_ip
+from cloudify.utils import get_manager_file_server_url
 
+from cloudify_agent.api import utils
 from cloudify_agent.installer.config.decorators import group
 from cloudify_agent.installer.config.attributes import raise_missing_attribute
 from cloudify_agent.installer.config.attributes import raise_missing_attributes
@@ -132,7 +134,7 @@ def cfy_agent_attributes(cloudify_agent):
     if 'manager_ip' not in cloudify_agent:
 
         # by default, the manager ip will be set by an environment variable
-        cloudify_agent['manager_ip'] = utils.get_manager_ip()
+        cloudify_agent['manager_ip'] = get_manager_ip()
 
 
 @group('installation')
@@ -158,7 +160,7 @@ def installation_attributes(cloudify_agent):
 
             cloudify_agent['package_url'] = '{0}/packages/agents' \
                                             '/{1}-{2}-agent.tar.gz' \
-                .format(utils.get_manager_file_server_url(),
+                .format(get_manager_file_server_url(),
                         cloudify_agent['distro'],
                         cloudify_agent['distro_codename'])
 

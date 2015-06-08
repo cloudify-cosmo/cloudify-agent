@@ -14,19 +14,17 @@
 #  * limitations under the License.
 
 import time
-import copy
 import threading
+import sys
 
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import get_manager_file_server_blueprints_root_url
-from cloudify.utils import get_daemon_name
-from cloudify.utils import get_daemon_storage_dir
-from cloudify.utils import get_daemon_user
 from cloudify.decorators import operation
 
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api.factory import DaemonFactory
+from cloudify_agent.api import errors
 from cloudify_agent.api import utils
 from cloudify_agent.app import app
 
@@ -53,7 +51,13 @@ def _install_plugins(plugins):
         source = get_plugin_source(plugin, ctx.blueprint.id)
         args = get_plugin_args(plugin)
         ctx.logger.info('Installing plugin: {0}'.format(plugin['name']))
-        package_name = installer.install(source, args)
+        try:
+            package_name = installer.install(source, args)
+        except errors.PluginInstallationError as e:
+            # preserve traceback
+            tpe, value, tb = sys.exc_info()
+            raise NonRecoverableError, NonRecoverableError(str(e)), tb
+
         daemon = _load_daemon(logger=ctx.logger)
         daemon.register(package_name)
         _save_daemon(daemon)
@@ -68,16 +72,15 @@ def install_plugins(plugins, **_):
 def restart(new_name=None, delay_period=5, **_):
 
     if new_name is None:
-        new_name = utils.generate_agent_name()
+        new_name = utils.internal.generate_agent_name()
 
     # update agent name in runtime properties so that the workflow will
     # what the name of the worker handling tasks to this instance.
     # the update cannot be done by setting a nested property directly
     # because they are not recognized as 'dirty'
-    cloudify_agent = copy.deepcopy(
-        ctx.instance.runtime_properties['cloudify_agent'])
+    cloudify_agent = ctx.instance.runtime_properties['cloudify_agent']
     cloudify_agent['name'] = new_name
-    ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
+    ctx.instance.runtime_properties['cloudify_agent']['name'] = cloudify_agent
 
     # must update instance here because the process is shutdown before
     # the decorator has a chance to do it.
@@ -94,7 +97,7 @@ def restart(new_name=None, delay_period=5, **_):
     )
 
     # clone the current daemon to preserve all the attributes
-    attributes = utils.daemon_to_dict(daemon)
+    attributes = utils.internal.daemon_to_dict(daemon)
 
     # give the new daemon the new name
     attributes['name'] = new_name
@@ -177,13 +180,13 @@ def get_plugin_source(plugin, blueprint_id=None):
 
 def _load_daemon(logger):
     factory = DaemonFactory(
-        username=get_daemon_user(),
-        storage=get_daemon_storage_dir())
-    return factory.load(get_daemon_name(), logger=logger)
+        username=utils.internal.get_daemon_user(),
+        storage=utils.internal.get_daemon_storage_dir())
+    return factory.load(utils.internal.get_daemon_name(), logger=logger)
 
 
 def _save_daemon(daemon):
     factory = DaemonFactory(
-        username=get_daemon_user(),
-        storage=get_daemon_storage_dir())
+        username=utils.internal.get_daemon_user(),
+        storage=utils.internal.get_daemon_storage_dir())
     factory.save(daemon)

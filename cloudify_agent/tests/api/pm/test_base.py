@@ -23,14 +23,16 @@ from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests import get_storage_directory
 
 
-@patch('cloudify_agent.api.utils.get_storage_directory',
+@patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
 class TestDaemonDefaults(BaseTest):
 
     def setUp(self):
         super(TestDaemonDefaults, self).setUp()
         self.daemon = Daemon(
-            manager_ip='manager_ip'
+            manager_ip='manager_ip',
+            queue='queue',
+            name='name'
         )
 
     def test_default_workdir(self):
@@ -49,19 +51,11 @@ class TestDaemonDefaults(BaseTest):
         self.assertEqual('amqp://guest:guest@manager_ip:5672//',
                          self.daemon.broker_url)
 
-    def test_default_name(self):
-        self.assertTrue('cfy-agent-' in self.daemon.name)
-
     def test_default_user(self):
         self.assertEqual(getpass.getuser(), self.daemon.user)
 
-    def test_default_queue(self):
-        self.assertEqual('{0}-queue'.format(
-            self.daemon.name),
-            self.daemon.queue)
 
-
-@patch('cloudify_agent.api.utils.get_storage_directory',
+@patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
 class TestDaemonValidations(BaseTest):
 
@@ -121,23 +115,25 @@ class TestDaemonValidations(BaseTest):
                             in e.message)
 
 
-@patch('cloudify_agent.api.utils.get_storage_directory',
+@patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
 class TestNotImplemented(BaseTest):
 
     @classmethod
     def setUpClass(cls):
         cls.daemon = Daemon(
-            manager_ip='manager_ip'
+            manager_ip='manager_ip',
+            name='name',
+            queue='queue'
         )
 
-    def test_set_includes(self):
+    def test_apply_includes(self):
         self.assertRaises(NotImplementedError, self.daemon.apply_includes)
 
-    def start_command(self):
+    def test_start_command(self):
         self.assertRaises(NotImplementedError, self.daemon.start_command)
 
-    def stop_command(self):
+    def test_stop_command(self):
         self.assertRaises(NotImplementedError, self.daemon.stop_command)
 
     def test_configure(self):

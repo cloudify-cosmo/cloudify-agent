@@ -15,14 +15,17 @@
 
 import tempfile
 import logging
+import os
 
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
 from cloudify.exceptions import CommandExecutionException
 
-from cloudify_agent.api.plugins.installer import PluginInstaller
+from cloudify_agent.api.plugins import installer
 from cloudify_agent.api import utils
+from cloudify_agent.api import errors
 
+from cloudify_agent.tests import resources
 from cloudify_agent.tests import utils as test_utils
 from cloudify_agent.tests import BaseTest
 
@@ -55,7 +58,7 @@ class PluginInstallerTest(BaseTest):
                 target_directory=cls.file_server_resource_base)
 
     def setUp(self):
-        self.installer = PluginInstaller(logger=self.logger)
+        self.installer = installer.PluginInstaller(logger=self.logger)
 
     def tearDown(self):
         self.installer.uninstall('mock-plugin')
@@ -110,3 +113,96 @@ class PluginInstallerTest(BaseTest):
     def test_uninstall_ignore_missing_false(self):
         self.assertRaises(CommandExecutionException,
                           self.installer.uninstall, 'missing-plugin', False)
+
+    def test_extract_package_to_dir(self):
+
+        # create a plugin tar file and put it in the file server
+        plugin_dir_name = 'mock-plugin-with-requirements'
+        plugin_tar_name = test_utils.create_plugin_tar(
+            plugin_dir_name,
+            self.file_server_resource_base)
+
+        plugin_source_path = resources.get_resource(os.path.join(
+            'plugins', plugin_dir_name))
+        plugin_tar_url = '{0}/{1}'.format(self.file_server_url,
+                                          plugin_tar_name)
+
+        extracted_plugin_path = installer.extract_package_to_dir(
+            plugin_tar_url)
+        self.assertTrue(test_utils.are_dir_trees_equal(
+            plugin_source_path,
+            extracted_plugin_path))
+
+    def test_extract_package_name(self):
+        package_dir = os.path.join(resources.get_resource('plugins'),
+                                   'mock-plugin')
+        self.assertEqual(
+            'mock-plugin',
+            installer.extract_package_name(package_dir))
+
+
+class PipVersionParserTestCase(BaseTest):
+
+    def test_parse_long_format_version(self):
+        version_tupple = installer.parse_pip_version('1.5.4')
+        self.assertEqual(('1', '5', '4'), version_tupple)
+
+    def test_parse_short_format_version(self):
+        version_tupple = installer.parse_pip_version('6.0')
+        self.assertEqual(('6', '0', ''), version_tupple)
+
+    def test_pip6_not_higher(self):
+        result = installer.is_pip6_or_higher('1.5.4')
+        self.assertEqual(result, False)
+
+    def test_pip6_exactly(self):
+        result = installer.is_pip6_or_higher('6.0')
+        self.assertEqual(result, True)
+
+    def test_pip6_is_higher(self):
+        result = installer.is_pip6_or_higher('6.0.6')
+        self.assertEqual(result, True)
+
+    def test_parse_invalid_major_version(self):
+        expected_err_msg = 'Invalid pip version: "a.5.4", major version is ' \
+                           '"a" while expected to be a number'
+        self.assertRaisesRegex(
+            errors.PluginInstallationError, expected_err_msg,
+            installer.parse_pip_version, 'a.5.4')
+
+    def test_parse_invalid_minor_version(self):
+        expected_err_msg = 'Invalid pip version: "1.a.4", minor version is ' \
+                           '"a" while expected to be a number'
+        self.assertRaisesRegex(
+            errors.PluginInstallationError, expected_err_msg,
+            installer.parse_pip_version, '1.a.4')
+
+    def test_parse_too_short_version(self):
+        expected_err_msg = 'Unknown formatting of pip version: ' \
+                           '"6", expected ' \
+                           'dot-delimited numbers ' \
+                           '\(e.g. "1.5.4", "6.0"\)'
+        self.assertRaisesRegex(
+            errors.PluginInstallationError, expected_err_msg,
+            installer.parse_pip_version, '6')
+
+    def test_parse_numeric_version(self):
+        expected_err_msg = 'Invalid pip version: 6 is not a string'
+        self.assertRaisesRegex(
+            errors.PluginInstallationError, expected_err_msg,
+            installer.parse_pip_version, 6)
+
+    def test_parse_alpha_version(self):
+        expected_err_msg = 'Unknown formatting of pip ' \
+                           'version: "a", expected ' \
+                           'dot-delimited ' \
+                           'numbers \(e.g. "1.5.4", "6.0"\)'
+        self.assertRaisesRegex(
+            errors.PluginInstallationError, expected_err_msg,
+            installer.parse_pip_version, 'a')
+
+    def test_parse_wrong_obj(self):
+        expected_err_msg = 'Invalid pip version: \[6\] is not a string'
+        self.assertRaisesRegex(
+            errors.PluginInstallationError, expected_err_msg,
+            installer.parse_pip_version, [6])

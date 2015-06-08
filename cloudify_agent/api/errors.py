@@ -114,3 +114,12 @@ class DaemonNotImplementedError(DaemonError):
     def __str__(self):
         return 'No implementation found for Daemon ' \
                'of type: {0}'.format(self.process_management)
+
+
+class PluginInstallationError(Exception):
+
+    """
+    Error indicating that an error occurred during a plugin
+    installation process
+
+    """

@@ -54,7 +54,8 @@ class DaemonFactory(object):
         #####################################################################
 
         self.username = username
-        self.storage = storage or utils.get_storage_directory(self.username)
+        self.storage = storage or utils.internal.get_storage_directory(
+            self.username)
         self.logger = logger or setup_logger('cloudify_agent.api.factory')
 
     @staticmethod
@@ -201,7 +202,7 @@ class DaemonFactory(object):
         self.logger.debug('Saving daemon configuration at: {0}'
                           .format(daemon_path))
         with open(daemon_path, 'w') as f:
-            props = utils.daemon_to_dict(daemon)
+            props = utils.internal.daemon_to_dict(daemon)
             json.dump(props, f, indent=2)
             f.write(os.linesep)
 

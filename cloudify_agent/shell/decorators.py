@@ -37,7 +37,8 @@ codes = {
     api_errors.DaemonMissingMandatoryPropertyError: 205,
     api_errors.DaemonNotImplementedError: 206,
     api_errors.DaemonPropertiesError: 207,
-    api_errors.DaemonNotConfiguredError: 208
+    api_errors.DaemonNotConfiguredError: 208,
+    api_errors.PluginInstallationError: 209
 }
 
 
