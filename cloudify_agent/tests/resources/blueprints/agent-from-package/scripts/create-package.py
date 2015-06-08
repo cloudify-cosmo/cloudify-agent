@@ -46,6 +46,8 @@ def create_windows_installer():
                     stdout=open(os.devnull, 'w'))
 
     iscc_cmd = 'iscc {}'.format(get_resource('winpackage\\create.iss'))
+    os.environ['VERSION'] = '0'
+    os.environ['iscc_output'] = os.getcwd()
     subprocess.call(iscc_cmd)
 
 
@@ -78,10 +80,10 @@ ctx.logger.info('Constructing package_url...')
 
 if platform.system() == 'Linux':
     distname, _, distid = platform.dist()
-    package_url = 'http://localhost:{0}/{1}-{2}-agent.tar.gz'\
+    package_url = 'http://localhost:{0}/{1}-{2}-agent.tar.gz' \
         .format(file_server_port, distname, distid)
 elif platform.system() == 'Windows':
-    package_url = 'http://localhost:{0}/windows-agent.exe' \
+    package_url = 'http://localhost:{0}/cloudify_agent_0.exe' \
         .format(file_server_port)
 else:
     raise Exception('Unsupported platform')

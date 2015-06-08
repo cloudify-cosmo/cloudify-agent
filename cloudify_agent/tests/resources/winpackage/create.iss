@@ -1,5 +1,6 @@
 #define AppName "Cloudify Windows Agent"
 #define AppVersion GetEnv('VERSION')
+#define Output GetEnv('iscc_output')
 #define AppPublisher "GigaSpaces Technologies"
 #define AppURL "http://getcloudify.org/"
 
@@ -24,7 +25,7 @@ LicenseFile=source\license.txt
 MinVersion=6.0
 SetupIconFile=source\icons\Cloudify.ico
 UninstallDisplayIcon={app}\Cloudify.ico
-OutputDir=output\
+OutputDir={#Output}
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
