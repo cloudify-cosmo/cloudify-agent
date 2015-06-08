@@ -15,11 +15,11 @@
 
 import os
 import platform
-import tempfile
 import subprocess
 
 from agent_packager import packager
 from cloudify import ctx
+from cloudify_agent.tests.resources import get_resource
 
 
 # This should be integrated into packager
@@ -27,24 +27,26 @@ from cloudify import ctx
 def create_windows_installer():
     pip_req = 'https://raw.githubusercontent.com/cloudify-cosmo/' \
               'cloudify-agent/CFY-2649-cloudify-agent/dev-requirements.txt'
-    wheelhouse = tempfile.mkdtemp()
+    wheelhouse = get_resource('winpackage/source/wheels')
 
     pip_cmd = 'pip wheel --wheel-dir {wheel_dir}' \
               ' --requirement {req_file}'.format(wheel_dir=wheelhouse,
                                                  req_file=pip_req)
     ctx.logger.info('Building wheels into: {}'.format(wheelhouse))
     subprocess.call(pip_cmd.split(),
-                    stderr=subprocess.PIPE,
-                    stdout=subprocess.PIPE)
+                    stderr=open(os.devnull, 'w'),
+                    stdout=open(os.devnull, 'w'))
 
     cfy_agent_url = 'https://github.com/cloudify-cosmo/' \
                     'cloudify-agent/archive/CFY-2649-cloudify-agent.zip'
     pip_cmd = 'pip wheel --find-links {wheel_dir} --wheel-dir {wheel_dir} ' \
               '{repo_url}'.format(wheel_dir=wheelhouse, repo_url=cfy_agent_url)
     subprocess.call(pip_cmd.split(),
-                    stderr=subprocess.PIPE,
-                    stdout=subprocess.PIPE)
+                    stderr=open(os.devnull, 'w'),
+                    stdout=open(os.devnull, 'w'))
 
+    iscc_cmd = 'iscc {}'.format(get_resource('winpackage\\create.iss'))
+    subprocess.call(iscc_cmd)
 
 
 config = {
