@@ -15,6 +15,8 @@
 
 import os
 import platform
+import tempfile
+import subprocess
 
 from agent_packager import packager
 from cloudify import ctx
@@ -23,7 +25,15 @@ from cloudify import ctx
 # This should be integrated into packager
 # For now, this is the best place
 def create_windows_installer():
-    pass
+    pip_req = 'https://raw.githubusercontent.com/cloudify-cosmo/' \
+              'cloudify-agent/CFY-2649-cloudify-agent/dev-requirements.txt'
+    wheelhouse = tempfile.mkdtemp()
+
+    pip_cmd = 'pip wheel --wheel-dir {wheel_dir}' \
+              ' --requirement {req_file}'.format(wheel_dir=wheelhouse,
+                                                 req_file=pip_req)
+    ctx.logger.info('Building wheels into: {}'.format(wheelhouse))
+    subprocess.call(pip_cmd.split())
 
 
 config = {
