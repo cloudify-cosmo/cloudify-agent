@@ -80,9 +80,9 @@ def restart(new_name=None, delay_period=5, **_):
     # because they are not recognized as 'dirty'
     cloudify_agent = ctx.instance.runtime_properties['cloudify_agent']
     cloudify_agent['name'] = new_name
-    ctx.instance.runtime_properties['cloudify_agent']['name'] = cloudify_agent
+    ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
 
-    # must update instance here because the process is shutdown before
+    # must update instance here because the process may shutdown before
     # the decorator has a chance to do it.
     ctx.instance.update()
 
