@@ -457,8 +457,8 @@ class Daemon(object):
             self._logger.debug('Deleting AMQP queues')
             self._delete_amqp_queues()
         start_command = self.start_command()
-        self._logger.debug('Starting daemon with command: {0}'
-                           .format(start_command))
+        self._logger.info('Starting daemon with command: {0}'
+                          .format(start_command))
         self._runner.run(start_command)
         end_time = time.time() + timeout
         while time.time() < end_time:
@@ -499,8 +499,8 @@ class Daemon(object):
         """
 
         stop_command = self.stop_command()
-        self._logger.debug('Stopping daemon with command: {0}'
-                           .format(stop_command))
+        self._logger.info('Stopping daemon with command: {0}'
+                          .format(stop_command))
         self._runner.run(stop_command)
         end_time = time.time() + timeout
         while time.time() < end_time:

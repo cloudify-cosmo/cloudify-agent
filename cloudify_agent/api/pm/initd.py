@@ -107,8 +107,7 @@ class GenericLinuxDaemon(CronRespawnMixin):
 
     def status(self):
         try:
-            response = self._runner.run(self.status_command())
-            self._logger.info(response.std_out)
+            self._runner.run(self.status_command())
             return True
         except CommandExecutionException as e:
             self._logger.debug(str(e))
