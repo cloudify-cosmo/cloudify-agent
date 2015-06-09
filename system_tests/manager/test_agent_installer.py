@@ -26,15 +26,26 @@ class AgentInstallerTest(testenv.TestCase):
         cls.logger = setup_logger(
             'cloudify_agent.system_tests.manager.test_agent_installer')
 
-    def test_agent_installer(self):
+    def test_ssh_agent(self):
 
         self.blueprint_yaml = resources.get_resource(
-            'agents-matrix-blueprint/'
-            'agents-matrix-blueprint.yaml')
+            'ssh-agent-blueprint/ssh-agent-blueprint.yaml')
         self.upload_deploy_and_execute_install(
             inputs={
                 'image': self.env.ubuntu_image_id,
                 'flavor': self.env.small_flavor_id
+            }
+        )
+        self.execute_uninstall()
+
+    def test_winrm_agent(self):
+
+        self.blueprint_yaml = resources.get_resource(
+            'winrm-agent-blueprint/winrm-agent-blueprint.yaml')
+        self.upload_deploy_and_execute_install(
+            inputs={
+                'image': self.env.windows_image_id,
+                'flavor': self.env.medium_flavor_id
             }
         )
         self.execute_uninstall()

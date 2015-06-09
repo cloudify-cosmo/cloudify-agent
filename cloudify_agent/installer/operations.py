@@ -59,7 +59,7 @@ def init_agent_installer(func):
                         password=cloudify_agent['password'],
                         port=cloudify_agent.get('port'),
                         protocol=cloudify_agent.get('protocol'),
-                        uri=cloudify_agent.get('user'),
+                        uri=cloudify_agent.get('uri'),
                         logger=ctx.logger)
                 else:
                     runner = FabricRunner(

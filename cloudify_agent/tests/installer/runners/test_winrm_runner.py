@@ -39,7 +39,7 @@ class TestValidations(BaseTest):
             winrm_runner.validate(session_config)
             self.fail('Expected ValueError for missing host')
         except ValueError as e:
-            self.assertEqual('Missing host in session_config', e.message)
+            self.assertIn('Invalid host', e.message)
 
     def test_validate_user(self):
 
@@ -53,7 +53,7 @@ class TestValidations(BaseTest):
             winrm_runner.validate(session_config)
             self.fail('Expected ValueError for missing user')
         except ValueError as e:
-            self.assertEqual('Missing user in session_config', e.message)
+            self.assertIn('Invalid user', e.message)
 
     def test_validate_password(self):
 
@@ -67,7 +67,7 @@ class TestValidations(BaseTest):
             winrm_runner.validate(session_config)
             self.fail('Expected ValueError for missing password')
         except ValueError as e:
-            self.assertEqual('Missing password in session_config', e.message)
+            self.assertIn('Invalid password', e.message)
 
 
 class TestDefaults(BaseTest):
