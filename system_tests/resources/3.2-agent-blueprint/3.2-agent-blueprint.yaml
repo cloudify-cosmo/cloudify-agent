@@ -1,8 +1,8 @@
 tosca_definitions_version: cloudify_dsl_1_1
 
 imports:
-    - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/CFY-2649-cloudify-agent/resources/rest-service/cloudify/types/types.yaml
-    - http://www.getcloudify.org/spec/openstack-plugin/1.2/plugin.yaml
+    - http://www.getcloudify.org/spec/cloudify/3.2/types.yaml
+    - http://www.getcloudify.org/spec/openstack-plugin/1.3m1/plugin.yaml
 
 
 plugins:
@@ -45,46 +45,19 @@ node_types:
 
 node_templates:
 
-#  linux_agent_from_source_host:
-#    type: nodes.Server
-#    properties:
-#      image: { get_input: image }
-#      flavor: { get_input: flavor }
-#      server:
-#        userdata: |
-#          #!/bin/bash
-#          sudo stop ssh
-#          sudo apt-get -y update
-#          sudo apt-get -y install python-dev
-#          sudo start ssh
-#      cloudify_agent:
-#        source_url: https://github.com/cloudify-cosmo/cloudify-agent/archive/CFY-2649-cloudify-agent.zip
-#        requirements: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/CFY-2649-cloudify-agent/dev-requirements.txt
-
   host:
     type: nodes.Server
     properties:
       image: { get_input: image }
       flavor: { get_input: flavor }
-      remote_execution: false
       server:
         userdata: |
           #!/bin/bash
           sudo apt-get -y update
           sudo apt-get -y install python-dev
-          wget https://bootstrap.pypa.io/get-pip.py
-          sudo python get-pip.py
-          sudo pip install virtualenv
-          su ubuntu -c "virtualenv /home/ubuntu/cloudify_agent/env"
-          su ubuntu- c "source /home/ubuntu/cloudify_agent/env/bin/activate"
-          su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/pip install -r https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/CFY-2649-cloudify-agent/dev-requirements.txt"
-          su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/pip install https://github.com/cloudify-cosmo/cloudify-agent/archive/CFY-2649-cloudify-agent.zip"
-          su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/cfy-agent daemons create --name=cloudify_agent_userdata --queue=cloudify_agent_userdata_queue --process-management=init.d --manager-ip=10.67.79.2 --user=ubuntu --workdir=/home/ubuntu/cloudify_agent/work"
-          su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/cfy-agent daemons configure --name=cloudify_agent_userdata"
-          su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/cfy-agent daemons start --name=cloudify_agent_userdata --delete-amqp-queue"
       cloudify_agent:
-        name: cloudify_agent_userdata
-        queue: cloudify_agent_userdata_queue
+        source_url: https://github.com/cloudify-cosmo/cloudify-agent/archive/CFY-2649-cloudify-agent.zip
+        requirements: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/CFY-2649-cloudify-agent/dev-requirements.txt
 
   application:
     type: nodes.Application

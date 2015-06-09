@@ -18,6 +18,9 @@ from cloudify.utils import setup_logger
 from system_tests import resources
 from cosmo_tester.framework import testenv
 
+import os
+os.environ['HANDLER_CONFIGURATION'] = '/home/elip/dev/system-tests-handlers/lab-openstack-eli-handler.yaml'
+
 
 class AgentInstallerTest(testenv.TestCase):
 
@@ -30,6 +33,18 @@ class AgentInstallerTest(testenv.TestCase):
 
         self.blueprint_yaml = resources.get_resource(
             'ssh-agent-blueprint/ssh-agent-blueprint.yaml')
+        self.upload_deploy_and_execute_install(
+            inputs={
+                'image': self.env.ubuntu_image_id,
+                'flavor': self.env.small_flavor_id
+            }
+        )
+        self.execute_uninstall()
+
+    def test_userdata_agent(self):
+
+        self.blueprint_yaml = resources.get_resource(
+            'userdata-agent-blueprint/userdata-agent-blueprint.yaml')
         self.upload_deploy_and_execute_install(
             inputs={
                 'image': self.env.ubuntu_image_id,
