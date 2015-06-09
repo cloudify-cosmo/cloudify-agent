@@ -114,7 +114,9 @@ class AgentInstaller(object):
         self.logger.info('Untaring Agent package...')
         self.extract(archive=package_path,
                      destination=self.cloudify_agent['agent_dir'])
-        configure = '--relocated-env'
+        configure = ''
+        if platform.system() == 'Linux':
+           configure = '--relocated-env'
         if self.cloudify_agent.get('disable_requiretty') is True:
             configure = '{0} --disable-requiretty'.format(configure)
         self.run_agent_command('configure {0}'.format(configure))
