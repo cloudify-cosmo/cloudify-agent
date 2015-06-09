@@ -234,9 +234,9 @@ class LocalInstallerMixin(AgentInstaller):
         return LocalCommandRunner(logger=self.logger)
 
     def download(self, url):
-        output_path = tempfile.mkstemp()[1]
-        urllib.urlretrieve(url, output_path)
-        return output_path
+        with tempfile.NamedTemporaryFile(suffix='.tmp', delete=False) as fo:
+            urllib.urlretrieve(url, fo.name)
+        return fo.name
 
     def delete_agent(self):
         self.run_daemon_command('delete')

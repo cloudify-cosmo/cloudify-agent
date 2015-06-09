@@ -48,7 +48,10 @@ def create_windows_installer():
     iscc_cmd = 'iscc {}'.format(get_resource('winpackage\\create.iss'))
     os.environ['VERSION'] = '0'
     os.environ['iscc_output'] = os.getcwd()
-    subprocess.call(iscc_cmd)
+    subprocess.call(iscc_cmd.split(),
+                    stderr=open(os.devnull, 'w'),
+                    stdout=open(os.devnull, 'w'))
+
 
 
 config = {

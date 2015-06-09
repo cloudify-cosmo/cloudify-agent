@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from setuptools import archive_util
 from subprocess import call
 
 from cloudify_agent.installer.runners.winrm_runner import WinRMRunner
@@ -54,6 +53,7 @@ class LocalWindowsAgentInstaller(WindowsInstallerMixin, LocalInstallerMixin):
     def extract(self, archive, destination):
         self.logger.debug('Extracting {0} to {1}'
                           .format(archive, destination))
-        cmd = '{} /SILENT /VERYSILENT /SUPPRESSMSGBOXES /DIR="c:\\cloudify"'.format(archive)
+        cmd = '{} /SILENT /VERYSILENT' \
+              ' /SUPPRESSMSGBOXES /DIR={}'.format(archive, destination)
         call(cmd.split())
-        return 'c:\\cloudify'
+        return destination

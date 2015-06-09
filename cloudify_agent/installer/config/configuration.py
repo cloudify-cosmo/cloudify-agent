@@ -191,7 +191,7 @@ def installation_attributes(cloudify_agent):
     if 'envdir' not in cloudify_agent:
         agent_dir = cloudify_agent['agent_dir']
         if cloudify_agent['windows']:
-            envdir = '{0}\\{1}'.format(agent_dir, 'env')
+            envdir = agent_dir
         else:
             envdir = os.path.join(agent_dir, 'env')
         cloudify_agent['envdir'] = envdir
