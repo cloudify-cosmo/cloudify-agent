@@ -1,0 +1,99 @@
+tosca_definitions_version: cloudify_dsl_1_1
+
+imports:
+    - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/CFY-2649-cloudify-agent/resources/rest-service/cloudify/types/types.yaml
+    - http://www.getcloudify.org/spec/openstack-plugin/1.2/plugin.yaml
+
+
+plugins:
+
+  plugins_common:
+    source: https://github.com/cloudify-cosmo/cloudify-plugins-common/archive/CFY-2649-cloudify-agent.zip
+    executor: central_deployment_agent
+    install_arguments: --upgrade
+  agent_new:
+    source: https://github.com/cloudify-cosmo/cloudify-agent/archive/CFY-2649-cloudify-agent.zip
+    executor: central_deployment_agent
+  mock:
+    source: mock-plugin
+    executor: host_agent
+
+inputs:
+
+  image:
+    description: >
+      Image to be used when launching agent VM's
+
+  flavor:
+    description: >
+      Flavor of the agent VM's
+
+node_types:
+
+  nodes.Server:
+    derived_from: cloudify.openstack.nodes.Server
+    interfaces:
+      dummy:
+        start: plugins_common.tasks.start
+        stop: agent_new.tasks.stop
+
+  nodes.Application:
+    derived_from: cloudify.nodes.Root
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: mock.mock_plugin.tasks.run
+
+node_templates:
+
+  host:
+    type: nodes.Server
+    properties:
+      image: { get_input: image }
+      flavor: { get_input: flavor }
+      use_password: true
+      server:
+        userdata: |
+          #ps1_sysnative
+          winrm quickconfig -q
+          winrm set winrm/config/winrs '@{MaxMemoryPerShellMB="300"}'
+          winrm set winrm/config '@{MaxTimeoutms="1800000"}'
+          winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+          winrm set winrm/config/service/auth '@{Basic="true"}'
+          msiexec /i https://www.python.org/ftp/python/2.7.6/python-2.7.6.msi TARGETDIR=C:\Python27 ALLUSERS=1 /qn
+      os:
+        type: Windows
+      cloudify_agent:
+        user: Administrator
+        password: { get_attribute: [ SELF, password] }
+        source_url: https://github.com/cloudify-cosmo/cloudify-agent/archive/CFY-2649-cloudify-agent.zip
+        requirements: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/CFY-2649-cloudify-agent/dev-requirements.txt
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          inputs:
+            private_key_path: ~/.ssh/agent_key.pem
+    relationships:
+      - target: winrm_sg
+        type: cloudify.openstack.server_connected_to_security_group
+
+  application:
+    type: nodes.Application
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: host
+
+  winrm_sg:
+    type: cloudify.openstack.nodes.SecurityGroup
+    properties:
+      resource_id: WinRM
+      rules:
+        - port: 5985
+          remote_ip_prefix: 0.0.0.0/0
+        - port: 5986
+          remote_ip_prefix: 0.0.0.0/0
+
+
+workflows:
+
+  dummy_install: plugins_common.cloudify.plugins.workflows.install
+  dummy_agent: agent_new.cloudify.plugins.workflows.install

@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import json
 import os
 import tempfile
 
@@ -59,9 +58,11 @@ class TestUtils(BaseTest):
 
     def test_daemon_to_dict(self):
 
-        daemon = Daemon(manager_ip='127.0.01', name='name', queue='queue')
+        daemon = Daemon(manager_ip='127.0.0.1', name='name', queue='queue')
         daemon_json = utils.internal.daemon_to_dict(daemon)
-        self.logger.info(json.dumps(daemon_json, indent=2))
+        self.assertEqual(daemon_json['manager_ip'], '127.0.0.1')
+        self.assertEqual(daemon_json['name'], 'name')
+        self.assertEqual(daemon_json['queue'], 'queue')
 
     def test_get_resource(self):
         resource = utils.get_resource(os.path.join(

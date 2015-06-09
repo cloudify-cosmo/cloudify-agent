@@ -57,52 +57,52 @@ class DetachedDaemon(CronRespawnMixin):
         super(DetachedDaemon, self).start(interval, timeout, delete_amqp_queue)
 
         # add cron job to re-spawn the process
-        self.logger.debug('Adding cron JOB')
-        self.runner.run(self.create_enable_cron_script())
+        self._logger.debug('Adding cron JOB')
+        self._runner.run(self.create_enable_cron_script())
 
     def stop(self, interval=defaults.STOP_INTERVAL,
              timeout=defaults.STOP_TIMEOUT):
         super(DetachedDaemon, self).stop(interval, timeout)
 
         # remove cron job
-        self.logger.debug('Removing cron JOB')
-        self.runner.run(self.create_disable_cron_script())
+        self._logger.debug('Removing cron JOB')
+        self._runner.run(self.create_disable_cron_script())
 
     def configure(self):
 
-        self.logger.debug('Creating includes file: {0}'
-                          .format(self.includes_path))
+        self._logger.debug('Creating includes file: {0}'
+                           .format(self.includes_path))
         self._create_includes()
-        self.logger.debug('Creating daemon script: {0}'
-                          .format(self.script_path))
+        self._logger.debug('Creating daemon script: {0}'
+                           .format(self.script_path))
         self._create_script()
-        self.logger.debug('Creating daemon conf file: {0}'
-                          .format(self.config_path))
+        self._logger.debug('Creating daemon conf file: {0}'
+                           .format(self.config_path))
         self._create_config()
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
 
-        self.logger.debug('Retrieving daemon stats')
-        stats = utils.get_agent_stats(self.name, self.celery)
+        self._logger.debug('Retrieving daemon stats')
+        stats = utils.get_agent_stats(self.name, self._celery)
         if stats:
             if not force:
                 raise exceptions.DaemonStillRunningException(self.name)
             self.stop()
 
         if os.path.exists(self.log_file):
-            self.logger.debug('Removing {0}'.format(self.log_file))
+            self._logger.debug('Removing {0}'.format(self.log_file))
             os.remove(self.log_file)
         if os.path.exists(self.pid_file):
-            self.logger.debug('Removing {0}'.format(self.pid_file))
+            self._logger.debug('Removing {0}'.format(self.pid_file))
             os.remove(self.pid_file)
         if os.path.exists(self.includes_path):
-            self.logger.debug('Removing {0}'.format(self.includes_path))
+            self._logger.debug('Removing {0}'.format(self.includes_path))
             os.remove(self.includes_path)
         if os.path.exists(self.config_path):
-            self.logger.debug('Removing {0}'.format(self.config_path))
+            self._logger.debug('Removing {0}'.format(self.config_path))
             os.remove(self.config_path)
         if os.path.exists(self.script_path):
-            self.logger.debug('Removing {0}'.format(self.script_path))
+            self._logger.debug('Removing {0}'.format(self.script_path))
             os.remove(self.script_path)
 
     def apply_includes(self):
@@ -128,11 +128,11 @@ class DetachedDaemon(CronRespawnMixin):
         try:
             if not os.path.exists(self.pid_file):
                 return False
-            response = self.runner.run(self.status_command())
-            self.logger.info(response.std_out)
+            response = self._runner.run(self.status_command())
+            self._logger.info(response.std_out)
             return True
         except CommandExecutionException as e:
-            self.logger.debug(str(e))
+            self._logger.debug(str(e))
             return False
 
     def _create_includes(self):
@@ -145,7 +145,7 @@ class DetachedDaemon(CronRespawnMixin):
             self.register(plugin)
 
     def _create_script(self):
-        self.logger.debug('Rendering detached script from template')
+        self._logger.debug('Rendering detached script from template')
         rendered = utils.render_template_to_file(
             template_path='pm/detach/detach.template',
             config_path=self.config_path,
@@ -162,12 +162,12 @@ class DetachedDaemon(CronRespawnMixin):
         )
 
         # no sudo needed, yey!
-        self.runner.run('cp {0} {1}'.format(rendered, self.script_path))
-        self.runner.run('rm {0}'.format(rendered))
-        self.runner.run('chmod +x {0}'.format(self.script_path))
+        self._runner.run('cp {0} {1}'.format(rendered, self.script_path))
+        self._runner.run('rm {0}'.format(rendered))
+        self._runner.run('chmod +x {0}'.format(self.script_path))
 
     def _create_config(self):
-        self.logger.debug('Rendering configuration script from template')
+        self._logger.debug('Rendering configuration script from template')
         utils.render_template_to_file(
             template_path='pm/detach/detach.conf.template',
             file_path=self.config_path,

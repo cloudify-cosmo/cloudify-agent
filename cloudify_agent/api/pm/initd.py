@@ -57,38 +57,38 @@ class GenericLinuxDaemon(CronRespawnMixin):
 
     def configure(self):
 
-        self.logger.debug('Creating includes file: {0}'
-                          .format(self.includes_path))
+        self._logger.debug('Creating includes file: {0}'
+                           .format(self.includes_path))
         self._create_includes()
-        self.logger.debug('Creating daemon script: {0}'
-                          .format(self.script_path))
+        self._logger.debug('Creating daemon script: {0}'
+                           .format(self.script_path))
         self._create_script()
-        self.logger.debug('Creating daemon conf file: {0}'
-                          .format(self.config_path))
+        self._logger.debug('Creating daemon conf file: {0}'
+                           .format(self.config_path))
         self._create_config()
 
         if self.start_on_boot:
-            self.logger.info('Creating start-on-boot entry')
+            self._logger.info('Creating start-on-boot entry')
             self._create_start_on_boot_entry()
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
 
-        self.logger.debug('Retrieving daemon stats')
-        stats = utils.get_agent_stats(self.name, self.celery)
+        self._logger.debug('Retrieving daemon stats')
+        stats = utils.get_agent_stats(self.name, self._celery)
         if stats:
             if not force:
                 raise exceptions.DaemonStillRunningException(self.name)
             self.stop()
 
         if os.path.exists(self.script_path):
-            self.logger.debug('Deleting {0}'.format(self.script_path))
-            self.runner.run('sudo rm {0}'.format(self.script_path))
+            self._logger.debug('Deleting {0}'.format(self.script_path))
+            self._runner.run('sudo rm {0}'.format(self.script_path))
         if os.path.exists(self.config_path):
-            self.logger.debug('Deleting {0}'.format(self.config_path))
-            self.runner.run('sudo rm {0}'.format(self.config_path))
+            self._logger.debug('Deleting {0}'.format(self.config_path))
+            self._runner.run('sudo rm {0}'.format(self.config_path))
         if os.path.exists(self.includes_path):
-            self.logger.debug('Deleting {0}'.format(self.includes_path))
-            self.runner.run('sudo rm {0}'.format(self.includes_path))
+            self._logger.debug('Deleting {0}'.format(self.includes_path))
+            self._runner.run('sudo rm {0}'.format(self.includes_path))
 
     def apply_includes(self):
         with open(self.includes_path, 'w') as f:
@@ -107,11 +107,10 @@ class GenericLinuxDaemon(CronRespawnMixin):
 
     def status(self):
         try:
-            response = self.runner.run(self.status_command())
-            self.logger.info(response.std_out)
+            self._runner.run(self.status_command())
             return True
         except CommandExecutionException as e:
-            self.logger.debug(str(e))
+            self._logger.debug(str(e))
             return False
 
     def _create_includes(self):
@@ -124,20 +123,20 @@ class GenericLinuxDaemon(CronRespawnMixin):
             self.register(plugin)
 
     def _create_script(self):
-        self.logger.debug('Rendering init.d script from template')
+        self._logger.debug('Rendering init.d script from template')
         rendered = utils.render_template_to_file(
             template_path='pm/initd/initd.template',
             daemon_name=self.name,
             config_path=self.config_path
         )
-        self.runner.run('sudo mkdir -p {0}'.format(
+        self._runner.run('sudo mkdir -p {0}'.format(
             os.path.dirname(self.script_path)))
-        self.runner.run('sudo cp {0} {1}'.format(rendered, self.script_path))
-        self.runner.run('sudo rm {0}'.format(rendered))
-        self.runner.run('sudo chmod +x {0}'.format(self.script_path))
+        self._runner.run('sudo cp {0} {1}'.format(rendered, self.script_path))
+        self._runner.run('sudo rm {0}'.format(rendered))
+        self._runner.run('sudo chmod +x {0}'.format(self.script_path))
 
     def _create_config(self):
-        self.logger.debug('Rendering configuration script from template')
+        self._logger.debug('Rendering configuration script from template')
         rendered = utils.render_template_to_file(
             template_path='pm/initd/initd.conf.template',
             queue=self.queue,
@@ -160,25 +159,26 @@ class GenericLinuxDaemon(CronRespawnMixin):
             enable_cron_script=self.create_enable_cron_script(),
             disable_cron_script=self.create_disable_cron_script()
         )
-        self.runner.run('sudo mkdir -p {0}'.format(
+        self._runner.run('sudo mkdir -p {0}'.format(
             os.path.dirname(self.config_path)))
-        self.runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))
-        self.runner.run('sudo rm {0}'.format(rendered))
+        self._runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))
+        self._runner.run('sudo rm {0}'.format(rendered))
 
     def _create_start_on_boot_entry(self):
 
         def _handle_debian():
-            self.runner.run('sudo update-rc.d {0} defaults'.format(self.name))
+            self._runner.run('sudo update-rc.d {0} defaults'.format(self.name))
 
         def _handle_rpm():
-            self.runner.run('sudo /sbin/chkconfig --add {0}'.format(self.name))
-            self.runner.run('sudo /sbin/chkconfig {0} on'.format(self.name))
+            self._runner.run('sudo /sbin/chkconfig --add {0}'.format(
+                self.name))
+            self._runner.run('sudo /sbin/chkconfig {0} on'.format(self.name))
 
-        if self.runner.run('which dpkg',
-                           exit_on_failure=False).return_code == 0:
+        if self._runner.run('which dpkg',
+                            exit_on_failure=False).return_code == 0:
             _handle_debian()
             return
-        if self.runner.run('which rpm').return_code == 0:
+        if self._runner.run('which rpm').return_code == 0:
             _handle_rpm()
             return
 

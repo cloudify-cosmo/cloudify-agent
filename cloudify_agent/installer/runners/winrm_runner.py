@@ -30,14 +30,15 @@ DEFAULT_WINRM_PROTOCOL = 'http'
 
 def validate(session_config):
 
-    if 'host' not in session_config:
-        raise ValueError('Missing host in session_config')
-    if session_config['host'] == '':
-        raise ValueError('host is empty in session_config')
-    if 'user' not in session_config:
-        raise ValueError('Missing user in session_config')
-    if 'password' not in session_config:
-        raise ValueError('Missing password in session_config')
+    def _validate(prop):
+        value = session_config.get(prop)
+        if not value:
+            raise ValueError('Invalid {0}: {1}'
+                             .format(prop, value))
+
+    _validate('host')
+    _validate('user')
+    _validate('password')
 
 
 class WinRMRunner(object):
@@ -69,6 +70,8 @@ class WinRMRunner(object):
         self.session = self._create_session()
         self.logger = logger
 
+        self.logger.info('Successfully created session_config: {0}'.format(
+            self.session_config))
         if validate_connection:
             self.validate_connection()
 

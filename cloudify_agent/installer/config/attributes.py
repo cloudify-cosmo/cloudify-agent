@@ -31,6 +31,12 @@ AGENT_ATTRIBUTES = {
     'user': {
         'group': 'connection'
     },
+    'uri': {
+        'group': 'connection'
+    },
+    'protocol': {
+        'group': 'connection'
+    },
     'ip': {
         'group': 'connection'
     },
