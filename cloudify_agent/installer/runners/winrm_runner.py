@@ -90,9 +90,6 @@ class WinRMRunner(object):
             auth=(self.session_config['user'],
                   self.session_config['password']))
 
-    def home_dir(self, _):
-        return self.run('echo $HOME').std_out
-
     def run(self, command, raise_on_failure=True, execution_env=None):
 
         """

@@ -184,7 +184,16 @@ def installation_attributes(cloudify_agent):
         if cloudify_agent['local']:
             basedir = utils.get_home_dir(cloudify_agent['user'])
         else:
-            basedir = ctx.runner.home_dir(cloudify_agent['user'])
+            if cloudify_agent['windows']:
+
+                # can't seem to figure out how to get the home_dir remotely
+                # on windows. same was as fabric wont work because the
+                # 'pwd' module does not exists in a windows python
+                # installation.
+                # TODO - maybe use some environment variables heuristics?
+                basedir = 'C:\\Users\\{0}'.format(cloudify_agent['user'])
+            else:
+                basedir = ctx.runner.home_dir(cloudify_agent['user'])
         cloudify_agent['basedir'] = basedir
 
     if 'agent_dir' not in cloudify_agent:
