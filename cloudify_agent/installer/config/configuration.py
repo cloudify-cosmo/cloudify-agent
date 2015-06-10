@@ -151,26 +151,34 @@ def installation_attributes(cloudify_agent):
     if 'source_url' not in cloudify_agent:
 
         if 'package_url' not in cloudify_agent:
-            # user did not specify package_url, automatically build one from
-            # distro and distro_codename
-            if cloudify_agent['local']:
-                cloudify_agent['distro'] = platform.dist()[0].lower()
-            else:
-                dist = ctx.runner.machine_distribution()
-                cloudify_agent['distro'] = dist[0].lower()
 
-            # distro was not specified, try to auto-detect
-            if cloudify_agent['local']:
-                cloudify_agent['distro_codename'] = platform.dist()[2].lower()
-            else:
-                dist = ctx.runner.machine_distribution()
-                cloudify_agent['distro_codename'] = dist[2].lower()
+            if cloudify_agent['windows']:
 
-            cloudify_agent['package_url'] = '{0}/packages/agents' \
-                                            '/{1}-{2}-agent.tar.gz' \
-                .format(get_manager_file_server_url(),
-                        cloudify_agent['distro'],
-                        cloudify_agent['distro_codename'])
+                # no distribution difference in windows installation
+                cloudify_agent['package_url'] = '{0}/packages/agents' \
+                                                '/cloudify-windows-agent.exe'\
+                    .format(get_manager_file_server_url())
+            else:
+                # build one from distro and distro_codename
+                if cloudify_agent['local']:
+                    cloudify_agent['distro'] = platform.dist()[0].lower()
+                else:
+                    dist = ctx.runner.machine_distribution()
+                    cloudify_agent['distro'] = dist[0].lower()
+
+                # distro was not specified, try to auto-detect
+                if cloudify_agent['local']:
+                    cloudify_agent['distro_codename'] = platform.dist()[
+                        2].lower()
+                else:
+                    dist = ctx.runner.machine_distribution()
+                    cloudify_agent['distro_codename'] = dist[2].lower()
+
+                cloudify_agent['package_url'] = '{0}/packages/agents' \
+                                                '/{1}-{2}-agent.tar.gz' \
+                    .format(get_manager_file_server_url(),
+                            cloudify_agent['distro'],
+                            cloudify_agent['distro_codename'])
 
     if 'basedir' not in cloudify_agent:
         if cloudify_agent['local']:

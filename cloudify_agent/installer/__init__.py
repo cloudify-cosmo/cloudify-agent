@@ -202,8 +202,10 @@ class WindowsInstallerMixin(AgentInstaller):
 
     def install_pip(self):
         get_pip_url = 'https://bootstrap.pypa.io/get-pip.py'
+        self.logger.info('Downloading get-pip from {0}'.format(get_pip_url))
         get_pip = self.download(get_pip_url)
-        self.runner.run('python {0}'.format(get_pip))
+        self.logger.info('Running pip installation script')
+        self.runner.run('C:\Python27\python.exe {0}'.format(get_pip))
         return '{0}\\Scripts\\pip'.format(self.cloudify_agent['envdir'])
 
     def install_virtualenv(self):
@@ -219,7 +221,9 @@ class LinuxInstallerMixin(AgentInstaller):
 
     def install_pip(self):
         get_pip_url = 'https://bootstrap.pypa.io/get-pip.py'
+        self.logger.info('Downloading get-pip from {0}'.format(get_pip_url))
         get_pip = self.download(get_pip_url)
+        self.logger.info('Running pip installation script')
         self.runner.run('sudo python {0}'.format(get_pip))
         return '{0}/bin/pip'.format(self.cloudify_agent['envdir'])
 

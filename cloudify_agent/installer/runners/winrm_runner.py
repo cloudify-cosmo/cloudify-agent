@@ -70,8 +70,6 @@ class WinRMRunner(object):
         self.session = self._create_session()
         self.logger = logger
 
-        self.logger.info('Session config created: {0}'
-                         .format(self.session_config))
         if validate_connection:
             self.validate_connection()
 
