@@ -53,7 +53,6 @@ def create_windows_installer():
                     stdout=open(os.devnull, 'w'))
 
 
-
 config = {
     'cloudify_agent_module': ctx.node.properties['cloudify_agent_module'],
     'requirements_file': ctx.node.properties.get('requirements_file')
