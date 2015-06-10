@@ -48,9 +48,12 @@ AGENT_ATTRIBUTES = {
         'group': 'connection'
     },
     'port': {
+
+        # no default value here because this is os dependent.
+        # defaults are set in the corresponding runners (winrm_runner,
+        # fabric_runner)
         'context_attribute': 'remote_execution_port',
-        'group': 'connection',
-        'default': 22
+        'group': 'connection'
     },
     'fabric_env': {
         'group': 'connection',
