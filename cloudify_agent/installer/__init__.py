@@ -17,6 +17,7 @@ import tempfile
 import shutil
 import urllib
 import copy
+import platform
 
 from cloudify import ctx
 from cloudify.utils import setup_logger
