@@ -7,6 +7,12 @@ imports:
 
 plugins:
 
+  ###################################################################
+  # This is just for the sake of getting the new code to run in the
+  # deployment worker. this means the deployment workers are still
+  # installed using the old worker installer code.
+  ###################################################################
+
   plugins_common:
     source: https://github.com/cloudify-cosmo/cloudify-plugins-common/archive/CFY-2649-cloudify-agent.zip
     executor: central_deployment_agent
