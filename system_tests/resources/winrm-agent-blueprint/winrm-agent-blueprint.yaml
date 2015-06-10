@@ -63,8 +63,9 @@ node_templates:
       os:
         type: Windows
       cloudify_agent:
-        user: Administrator
-        password: { get_attribute: [ SELF, password] }
+        port: 5985
+        user: Admin
+        system_python: C:\Python27\python.exe
         source_url: https://github.com/cloudify-cosmo/cloudify-agent/archive/CFY-2649-cloudify-agent.zip
         requirements: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/CFY-2649-cloudify-agent/dev-requirements.txt
     interfaces:

@@ -91,7 +91,7 @@ class WinRMRunner(object):
                   self.session_config['password']))
 
     def home_dir(self, _):
-        self.run('echo $HOME')
+        return self.run('echo $HOME').std_out
 
     def run(self, command, raise_on_failure=True, execution_env=None):
 

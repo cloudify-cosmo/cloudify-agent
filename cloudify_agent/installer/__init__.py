@@ -119,7 +119,7 @@ class AgentInstaller(object):
             configure = '{0} --disable-requiretty'.format(configure)
         self.run_agent_command('configure {0}'.format(configure))
 
-    def download(self, url):
+    def download(self, url, destination=None):
         raise NotImplementedError('Must be implemented by sub-class')
 
     def extract(self, archive, destination):
@@ -203,9 +203,11 @@ class WindowsInstallerMixin(AgentInstaller):
     def install_pip(self):
         get_pip_url = 'https://bootstrap.pypa.io/get-pip.py'
         self.logger.info('Downloading get-pip from {0}'.format(get_pip_url))
-        get_pip = self.download(get_pip_url)
+        destination = '{0}\\get-pip.py'.format(self.cloudify_agent['basedir'])
+        get_pip = self.download(get_pip_url, destination)
         self.logger.info('Running pip installation script')
-        self.runner.run('C:\Python27\python.exe {0}'.format(get_pip))
+        self.runner.run('{0} {1}'.format(self.cloudify_agent[
+            'system_python'], get_pip))
         return '{0}\\Scripts\\pip'.format(self.cloudify_agent['envdir'])
 
     def install_virtualenv(self):
@@ -237,10 +239,11 @@ class LocalInstallerMixin(AgentInstaller):
     def runner(self):
         return LocalCommandRunner(logger=self.logger)
 
-    def download(self, url):
-        output_path = tempfile.mkstemp()[1]
-        urllib.urlretrieve(url, output_path)
-        return output_path
+    def download(self, url, destination=None):
+        if destination is None:
+            destination = tempfile.mkstemp()[1]
+            urllib.urlretrieve(url, destination)
+        return destination
 
     def delete_agent(self):
         self.run_daemon_command('delete')
@@ -263,5 +266,5 @@ class RemoteInstallerMixin(AgentInstaller):
         else:
             return None
 
-    def download(self, url):
-        return self.runner.download(url)
+    def download(self, url, destination=None):
+        return self.runner.download(url, destination)

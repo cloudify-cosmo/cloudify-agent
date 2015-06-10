@@ -67,17 +67,6 @@ class TestValidations(BaseTest):
             host='host',
             password='password')
 
-    def test_key_and_password(self):
-        self.assertRaisesRegexp(
-            exceptions.AgentInstallerConfigurationError,
-            'Cannot specify both key and password',
-            FabricRunner,
-            validate_connection=False,
-            host='host',
-            user='user',
-            password='password',
-            key='key')
-
     def test_no_key_no_password(self):
         self.assertRaisesRegexp(
             exceptions.AgentInstallerConfigurationError,
