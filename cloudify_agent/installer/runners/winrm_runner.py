@@ -44,22 +44,22 @@ def validate(session_config):
 class WinRMRunner(object):
 
     def __init__(self,
-                 protocol=DEFAULT_WINRM_PROTOCOL,
+                 user,
+                 password,
+                 protocol=None,
                  host=None,
-                 port=DEFAULT_WINRM_PORT,
-                 uri=DEFAULT_WINRM_URI,
-                 user=None,
-                 password=None,
+                 port=None,
+                 uri=None,
                  validate_connection=True,
                  logger=None):
 
         logger = logger or setup_logger('WinRMRunner')
 
         self.session_config = {
-            'protocol': protocol,
+            'protocol': protocol or DEFAULT_WINRM_PROTOCOL,
             'host': host,
-            'port': port,
-            'uri': uri,
+            'port': port or DEFAULT_WINRM_PORT,
+            'uri': uri or DEFAULT_WINRM_URI,
             'user': user,
             'password': password
         }
@@ -70,8 +70,8 @@ class WinRMRunner(object):
         self.session = self._create_session()
         self.logger = logger
 
-        self.logger.info('Successfully created session_config: {0}'.format(
-            self.session_config))
+        self.logger.info('Session config created: {0}'
+                         .format(self.session_config))
         if validate_connection:
             self.validate_connection()
 

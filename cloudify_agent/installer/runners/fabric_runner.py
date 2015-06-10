@@ -49,7 +49,7 @@ class FabricRunner(object):
                  host=None,
                  user=None,
                  key=None,
-                 port=DEFAULT_REMOTE_EXECUTION_PORT,
+                 port=None,
                  password=None,
                  validate_connection=True,
                  fabric_env=None):
@@ -61,7 +61,7 @@ class FabricRunner(object):
         logging.getLogger('paramiko.transport').setLevel(logging.WARNING)
 
         # connection details
-        self.port = port
+        self.port = port or DEFAULT_REMOTE_EXECUTION_PORT
         self.password = password
         self.user = user
         self.host = host
@@ -80,9 +80,6 @@ class FabricRunner(object):
             raise exceptions.AgentInstallerConfigurationError('Missing host')
         if not self.user:
             raise exceptions.AgentInstallerConfigurationError('Missing user')
-        if self.password and self.key:
-            raise exceptions.AgentInstallerConfigurationError(
-                'Cannot specify both key and password')
         if not self.password and not self.key:
             raise exceptions.AgentInstallerConfigurationError(
                 'Must specify either key or password')
