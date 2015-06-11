@@ -23,6 +23,14 @@ from cloudify.utils import LocalCommandRunner
 from cloudify.exceptions import NonRecoverableError
 
 
+config = {
+    'cloudify_agent_module': ctx.node.properties['cloudify_agent_module'],
+    'requirements_file': ctx.node.properties.get('requirements_file')
+}
+
+resource_base = ctx.node.properties['resource_base']
+file_server_port = ctx.node.properties['file_server_port']
+
 # This should be integrated into packager
 # For now, this is the best place
 def create_windows_installer():
@@ -45,15 +53,6 @@ def create_windows_installer():
     os.environ['VERSION'] = '0'
     os.environ['iscc_output'] = os.getcwd()
     runner.run(iscc_cmd)
-
-
-config = {
-    'cloudify_agent_module': ctx.node.properties['cloudify_agent_module'],
-    'requirements_file': ctx.node.properties.get('requirements_file')
-}
-
-resource_base = ctx.node.properties['resource_base']
-file_server_port = ctx.node.properties['file_server_port']
 
 ctx.logger.info('Changing directory into {0}'.format(resource_base))
 original = os.getcwd()
