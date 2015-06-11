@@ -115,12 +115,14 @@ class AgentInstaller(object):
         self.logger.info('Untaring Agent package...')
         self.extract(archive=package_path,
                      destination=self.cloudify_agent['agent_dir'])
-        configure = ''
-        if platform.system() == 'Linux':
-            configure = '--relocated-env'
-        if self.cloudify_agent.get('disable_requiretty') is True:
-            configure = '{0} --disable-requiretty'.format(configure)
-        self.run_agent_command('configure {0}'.format(configure))
+
+        command = 'configure'
+        if not self.cloudify_agent['windows']:
+            command = '{0} --relocated-env'.format(command)
+            if self.cloudify_agent.get('disable_requiretty'):
+                command = '{0} --disable-requiretty'.format(command)
+
+        self.run_agent_command('{0}'.format(command))
 
     def download(self, url, destination=None):
         raise NotImplementedError('Must be implemented by sub-class')
