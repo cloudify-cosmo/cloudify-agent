@@ -87,6 +87,10 @@ AGENT_ATTRIBUTES = {
     'basedir': {
         'group': 'installation'
     },
+    'system_python': {
+        'group': 'installation',
+        'default': 'python'
+    },
     'agent_dir': {
         'group': 'installation'
     },

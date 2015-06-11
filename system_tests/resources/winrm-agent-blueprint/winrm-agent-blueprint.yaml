@@ -7,6 +7,12 @@ imports:
 
 plugins:
 
+  ###################################################################
+  # This is just for the sake of getting the new code to run in the
+  # deployment worker. this means the deployment workers are still
+  # installed using the old worker installer code.
+  ###################################################################
+
   plugins_common:
     source: https://github.com/cloudify-cosmo/cloudify-plugins-common/archive/CFY-2649-cloudify-agent.zip
     executor: central_deployment_agent
@@ -63,8 +69,9 @@ node_templates:
       os:
         type: Windows
       cloudify_agent:
-        user: Administrator
-        password: { get_attribute: [ SELF, password] }
+        port: 5985
+        user: Admin
+        system_python: C:\Python27\python.exe
         source_url: https://github.com/cloudify-cosmo/cloudify-agent/archive/CFY-2649-cloudify-agent.zip
         requirements: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/CFY-2649-cloudify-agent/dev-requirements.txt
     interfaces:
