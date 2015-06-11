@@ -19,12 +19,13 @@ import platform
 from agent_packager import packager
 from cloudify import ctx
 from cloudify_agent.tests.resources import get_resource
-from cloudify.utils import LocalCommandRunner as runner
+from cloudify.utils import LocalCommandRunner
 from cloudify.exceptions import NonRecoverableError
 
 # This should be integrated into packager
 # For now, this is the best place
 def create_windows_installer():
+    runner = LocalCommandRunner()
     wheelhouse = get_resource('winpackage/source/wheels')
 
     pip_cmd = 'pip wheel --wheel-dir {wheel_dir} --requirement {req_file}'.\
