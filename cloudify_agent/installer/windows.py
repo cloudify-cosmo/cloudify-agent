@@ -51,9 +51,10 @@ class LocalWindowsAgentInstaller(WindowsInstallerMixin, LocalInstallerMixin):
         )
 
     def extract(self, archive, destination):
+        destination = '{0}\\env'.format(destination.rstrip('\\ '))
         self.logger.debug('Extracting {0} to {1}'
                           .format(archive, destination))
-        cmd = '{} /SILENT /VERYSILENT' \
+        cmd = '{0} /SILENT /VERYSILENT' \
               ' /SUPPRESSMSGBOXES /DIR={}'.format(archive, destination)
         call(cmd.split())
         return destination
