@@ -10,6 +10,13 @@ environment:
 install:
 
   #################################
+  # Installing Inno Setup
+  #################################
+
+  - choco install -y InnoSetup
+  - set PATH="C:\\Program Files (x86)\\Inno Setup 5";%PATH%
+
+  #################################
   # Download and install Erlang
   #################################
 
