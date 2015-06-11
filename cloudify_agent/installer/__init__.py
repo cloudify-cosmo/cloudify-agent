@@ -13,6 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import os
 import tempfile
 import shutil
 import urllib
@@ -245,8 +246,8 @@ class LocalInstallerMixin(AgentInstaller):
 
     def download(self, url, destination=None):
         if destination is None:
-            fh, destination = tempfile.mkstemp()
-            fh.close()
+            fh_num, destination = tempfile.mkstemp()
+            os.close(fh_num)
         
         urllib.urlretrieve(url, destination)
         return destination
