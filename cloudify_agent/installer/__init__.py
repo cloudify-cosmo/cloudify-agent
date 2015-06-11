@@ -248,7 +248,7 @@ class LocalInstallerMixin(AgentInstaller):
         if destination is None:
             fh_num, destination = tempfile.mkstemp()
             os.close(fh_num)
-        
+
         urllib.urlretrieve(url, destination)
         return destination
 

@@ -22,6 +22,7 @@ from cloudify_agent.tests.resources import get_resource
 from cloudify.utils import LocalCommandRunner
 from cloudify.exceptions import NonRecoverableError
 
+
 # This should be integrated into packager
 # For now, this is the best place
 def create_windows_installer():
