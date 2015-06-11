@@ -32,18 +32,18 @@ def create_windows_installer():
         format(wheel_dir=wheelhouse, req_file=config['requirements_file'])
 
     ctx.logger.info('Building wheels into: {0}'.format(wheelhouse))
-    runner.run(pip_cmd.split())
+    runner.run(pip_cmd)
 
     pip_cmd = 'pip wheel --find-links {wheel_dir} --wheel-dir {wheel_dir} ' \
               '{repo_url}'.format(wheel_dir=wheelhouse,
                                   repo_url=config['cloudify_agent_module'])
-    runner.run(pip_cmd.split())
+    runner.run(pip_cmd)
 
     iscc_cmd = 'iscc {}'.format(get_resource(os.path.join('winpackage',
                                                           'create.iss')))
     os.environ['VERSION'] = '0'
     os.environ['iscc_output'] = os.getcwd()
-    runner.run(iscc_cmd.split())
+    runner.run(iscc_cmd)
 
 
 config = {
