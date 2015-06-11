@@ -72,7 +72,8 @@ try:
         package_url = 'http://localhost:{0}/cloudify_agent_0.exe' \
             .format(file_server_port)
     else:
-        raise NonRecoverableError('Platform not supported')
+        raise NonRecoverableError('Platform not supported: {0}'
+                                  .format(platform.system()))
 finally:
     os.chdir(original)
 
