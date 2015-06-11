@@ -31,6 +31,7 @@ config = {
 resource_base = ctx.node.properties['resource_base']
 file_server_port = ctx.node.properties['file_server_port']
 
+
 # This should be integrated into packager
 # For now, this is the best place
 def create_windows_installer():
@@ -49,7 +50,7 @@ def create_windows_installer():
     runner.run(pip_cmd)
 
     iscc_cmd = 'iscc {0}'.format(get_resource(os.path.join('winpackage',
-                                                          'create.iss')))
+                                                           'create.iss')))
     os.environ['VERSION'] = '0'
     os.environ['iscc_output'] = os.getcwd()
     runner.run(iscc_cmd)
