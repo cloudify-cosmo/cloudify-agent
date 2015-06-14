@@ -54,14 +54,10 @@ class TestConfiguration(BaseTest):
         agent_dir = os.path.join(basedir, 'test_deployment')
         envdir = os.path.join(agent_dir, 'env')
         workdir = os.path.join(agent_dir, 'work')
-        distro = platform.dist()[0].lower()
-        distro_codename = platform.dist()[2].lower()
         expected = {
             'agent_dir': agent_dir,
-            'distro': distro,
             'process_management':
                 {'name': 'init.d' if os.name == 'posix' else 'nssm'},
-            'distro_codename': distro_codename,
             'basedir': basedir,
             'name': 'test_deployment',
             'manager_ip': 'localhost',
@@ -77,9 +73,18 @@ class TestConfiguration(BaseTest):
             'min_workers': 0,
             'workdir': workdir,
             'windows': os.name == 'nt',
-            'package_url': 'localhost/packages/agents/'
-                           '{0}-{1}-agent.tar.gz'
-                .format(distro, distro_codename)
+            'system_python': 'python'
         }
+        if os.name == 'posix':
+            distro = platform.dist()[0].lower()
+            distro_codename = platform.dist()[2].lower()
+            expected['distro'] = platform.dist()[0].lower()
+            expected['distro_codename'] = platform.dist()[2].lower()
+            expected['package_url'] = 'localhost/packages/agents/'
+            '{0}-{1}-agent.tar.gz'.format(distro, distro_codename)
+        else:
+            expected['package_url'] = 'localhost/packages/agents/' \
+                                      'cloudify-windows-agent.exe'
+
         self.maxDiff = None
         self.assertDictEqual(expected, cloudify_agent)
