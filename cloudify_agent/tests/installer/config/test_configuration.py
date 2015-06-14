@@ -80,8 +80,9 @@ class TestConfiguration(BaseTest):
             distro_codename = platform.dist()[2].lower()
             expected['distro'] = platform.dist()[0].lower()
             expected['distro_codename'] = platform.dist()[2].lower()
-            expected['package_url'] = 'localhost/packages/agents/'
-            '{0}-{1}-agent.tar.gz'.format(distro, distro_codename)
+            expected['package_url'] = 'localhost/packages/agents/' \
+                                      '{0}-{1}-agent.tar.gz'\
+                .format(distro, distro_codename)
         else:
             expected['package_url'] = 'localhost/packages/agents/' \
                                       'cloudify-windows-agent.exe'
