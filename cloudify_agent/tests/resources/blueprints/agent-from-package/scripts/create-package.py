@@ -53,6 +53,7 @@ def create_windows_installer():
                                                            'create.iss')))
     os.environ['VERSION'] = '0'
     os.environ['iscc_output'] = os.getcwd()
+    raise('test - is this what happens?')
     runner.run(iscc_cmd)
 
 ctx.logger.info('Changing directory into {0}'.format(resource_base))
