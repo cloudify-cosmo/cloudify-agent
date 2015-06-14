@@ -49,11 +49,10 @@ def create_windows_installer():
                                   repo_url=config['cloudify_agent_module'])
     runner.run(pip_cmd)
 
-    iscc_cmd = 'iscc {0}'.format(get_resource(os.path.join('winpackage',
-                                                           'create.iss')))
+    iscc_cmd = 'C:\\Program Files (x86)\\Inno Setup 5\\iscc.exe {0}'\
+        .format(get_resource(os.path.join('winpackage', 'create.iss')))
     os.environ['VERSION'] = '0'
     os.environ['iscc_output'] = os.getcwd()
-    raise('test - is this what happens?')
     runner.run(iscc_cmd)
 
 ctx.logger.info('Changing directory into {0}'.format(resource_base))
