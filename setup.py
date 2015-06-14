@@ -17,7 +17,6 @@
 from setuptools import setup
 
 install_requires = [
-    'cloudify-dsl-parser==3.3a1',
     'cloudify-plugins-common==3.3a1',
     'cloudify-rest-client==3.3a1',
     'cloudify-script-plugin==1.3a1',
