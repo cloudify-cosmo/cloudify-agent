@@ -13,8 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from setuptools import archive_util
-
 from cloudify_agent.installer.runners.winrm_runner import WinRMRunner
 from cloudify_agent.installer import WindowsInstallerMixin
 from cloudify_agent.installer import LocalInstallerMixin
@@ -51,7 +49,10 @@ class LocalWindowsAgentInstaller(WindowsInstallerMixin, LocalInstallerMixin):
         )
 
     def extract(self, archive, destination):
+        destination = '{0}\\env'.format(destination.rstrip('\\ '))
         self.logger.debug('Extracting {0} to {1}'
                           .format(archive, destination))
-        archive_util.unpack_zipfile(archive, destination)
+        cmd = '{0} /SILENT /VERYSILENT' \
+              ' /SUPPRESSMSGBOXES /DIR={1}'.format(archive, destination)
+        self.runner.run(cmd)
         return destination

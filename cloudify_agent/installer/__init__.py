@@ -13,6 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import os
 import tempfile
 import shutil
 import urllib
@@ -114,10 +115,14 @@ class AgentInstaller(object):
         self.logger.info('Untaring Agent package...')
         self.extract(archive=package_path,
                      destination=self.cloudify_agent['agent_dir'])
-        configure = '--relocated-env'
-        if self.cloudify_agent.get('disable_requiretty') is True:
-            configure = '{0} --disable-requiretty'.format(configure)
-        self.run_agent_command('configure {0}'.format(configure))
+
+        command = 'configure'
+        if not self.cloudify_agent['windows']:
+            command = '{0} --relocated-env'.format(command)
+            if self.cloudify_agent.get('disable_requiretty'):
+                command = '{0} --disable-requiretty'.format(command)
+
+        self.run_agent_command('{0}'.format(command))
 
     def download(self, url, destination=None):
         raise NotImplementedError('Must be implemented by sub-class')
@@ -241,8 +246,10 @@ class LocalInstallerMixin(AgentInstaller):
 
     def download(self, url, destination=None):
         if destination is None:
-            destination = tempfile.mkstemp()[1]
-            urllib.urlretrieve(url, destination)
+            fh_num, destination = tempfile.mkstemp()
+            os.close(fh_num)
+
+        urllib.urlretrieve(url, destination)
         return destination
 
     def delete_agent(self):
