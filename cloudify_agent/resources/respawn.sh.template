@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# This script is a simple re-spawn daemon for those of us who dont want
+# to deal with the /etc/event.d, monit etc...
+#
+# Note that this is a very naive implementation in order for it to work
+# on all UNIX based systems. More advanced process managers usually have
+# re-spawning capabilities.
+#
+# when the program closes, logger will display a message in a terminal
+# and log the message including the programs PID to the syslog service
+# (see file /var/log/syslog)
+
+me=`basename "$0"`
+logger -i -s -t ${me} "starting daemon checkup"
+{{ status_command }}
+if [ $? -eq 0 ]; then
+    logger -i -s -t ${me} "daemon checkup succeeded"
+else
+    logger -i -s -t ${me} "daemon checkup failed. re-spawning..."
+    {{ start_command }}
+fi

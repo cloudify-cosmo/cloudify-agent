@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+cron_me="*/{{ cron_respawn_delay }} * * * * {{ cron_respawn_path }}"
+crontabf={{ workdir }}/{{ name }}.crontab
+
+set +e
+current_cron=$(crontab -u {{ user }} -l)
+if [ $? -eq 1 ]; then
+    echo "${cron_me}" > ${crontabf}
+else
+    echo "${current_cron}" > ${crontabf}
+    if [[ "${current_cron}" != *"${cron_me}"* ]]; then
+        echo "${cron_me}" >> ${crontabf}
+    fi
+fi
+
+set -e
+
+crontab -u {{ user }} ${crontabf}
+rm ${crontabf}

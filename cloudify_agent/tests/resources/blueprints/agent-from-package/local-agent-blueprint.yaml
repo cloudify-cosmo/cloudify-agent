@@ -1,0 +1,82 @@
+tosca_definitions_version: cloudify_dsl_1_1
+
+imports:
+    - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/CFY-2649-cloudify-agent/resources/rest-service/cloudify/types/types.yaml
+
+inputs:
+
+  resource_base:
+    description: |
+      Path to a file server resource base directory. The agent
+      package will be placed under this directory so that it is
+      rechable by http
+  source_url:
+    description: URL to the source code of the agent
+
+  requirements_file:
+    description: URL to the agent requirements file
+
+  name:
+    description: Desired name for the agent
+
+  queue:
+    description: Desired queue for the agent
+
+  file_server_port:
+    description: port of the file server
+
+node_types:
+
+  nodes.CloudifyAgentPackage:
+    derived_from: cloudify.nodes.Root
+    properties:
+      resource_base:
+        description: Path to a file server resource base directory
+      cloudify_agent_module:
+        description: URL the agent module source code.
+      requirements_file:
+        description: |
+          URL to a requirements file to be installed before
+          installing the cloudify agent module
+      file_server_port:
+        description: port of the file server hosting the package
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: scripts/create-package.py
+
+node_templates:
+
+  host:
+    type: cloudify.nodes.Compute
+    interfaces:
+      cloudify.interfaces.cloudify_agent:
+        create:
+          inputs:
+            cloudify_agent:
+              name: { get_input: name }
+              queue: { get_input: queue }
+              ip: 127.0.0.1
+              manager_ip: 127.0.0.1
+              local: true
+              package_url: { get_attribute: [ agent_package, package_url ] }
+
+
+    relationships:
+      - target: agent_package
+        type: cloudify.relationships.depends_on
+
+  agent_packager_host:
+    type: cloudify.nodes.Compute
+    properties:
+      install_agent: false
+
+  agent_package:
+    type: nodes.CloudifyAgentPackage
+    properties:
+      resource_base: { get_input: resource_base }
+      cloudify_agent_module: { get_input: source_url }
+      requirements_file: { get_input: requirements_file }
+      file_server_port: { get_input: file_server_port }
+    relationships:
+      - target: agent_packager_host
+        type: cloudify.relationships.contained_in

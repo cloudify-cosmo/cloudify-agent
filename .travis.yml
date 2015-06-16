@@ -1,0 +1,20 @@
+language: python
+sudo: required
+
+python:
+  - 2.7
+
+services:
+    - rabbitmq
+
+env:
+  - TOX_ENV=docs
+  - TOX_ENV=flake8
+  - TOX_ENV=py27
+  - TOX_ENV=py26
+
+install:
+  - pip install tox==2.0.0
+
+script:
+  - tox -e $TOX_ENV

@@ -1,0 +1,33 @@
+tosca_definitions_version: cloudify_dsl_1_0
+
+imports:
+    - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/CFY-2649-cloudify-agent/resources/rest-service/cloudify/types/types.yaml
+
+inputs:
+
+  source_url:
+    description: URL to the source code of the agent
+
+  requirements_file:
+    description: URL to the agent requirements file
+
+  name:
+    description: Desired name for the agent
+
+  queue:
+    description: Desired queue for the agent
+
+
+node_templates:
+
+  host:
+    type: cloudify.nodes.Compute
+    properties:
+      cloudify_agent:
+        name: { get_input: name }
+        queue: { get_input: queue }
+        ip: 127.0.0.1
+        manager_ip: 127.0.0.1
+        local: true
+        source_url: { get_input: source_url }
+        requirements: { get_input: requirements_file }
