@@ -20,7 +20,6 @@ from cloudify.decorators import operation
 from cloudify import ctx
 from cloudify.exceptions import CommandExecutionError
 from cloudify.utils import LocalCommandRunner
-from cloudify.state import current_ctx
 from cloudify import context
 
 from cloudify_agent.installer.linux import LocalLinuxAgentInstaller
@@ -74,10 +73,8 @@ def init_agent_installer(func):
                 return ctx.operation.retry(message=e.error,
                                            retry_after=5)
 
-        setattr(current_ctx.get_ctx(), 'runner', runner)
-
         # now we can create all other agent attributes
-        configuration.prepare_agent(cloudify_agent)
+        configuration.prepare_agent(cloudify_agent, runner)
 
         # create the correct installer according to os
         # and local/remote execution
@@ -95,9 +92,9 @@ def init_agent_installer(func):
             installer = RemoteLinuxAgentInstaller(
                 cloudify_agent, ctx.logger)
 
-        setattr(current_ctx.get_ctx(), 'installer', installer)
-
         kwargs['cloudify_agent'] = cloudify_agent
+        kwargs['runner'] = runner
+        kwargs['installer'] = installer
 
         try:
             return func(*args, **kwargs)
@@ -111,7 +108,7 @@ def init_agent_installer(func):
 
 @operation
 @init_agent_installer
-def create(cloudify_agent, **_):
+def create(cloudify_agent, installer, **_):
 
     if ctx.type == context.NODE_INSTANCE:
 
@@ -124,37 +121,37 @@ def create(cloudify_agent, **_):
         if remote_execution:
             ctx.logger.info('Creating Agent {0}'.format(
                 cloudify_agent['name']))
-            ctx.installer.create_agent()
+            installer.create_agent()
     else:
         ctx.logger.info('Creating Agent {0}'.format(cloudify_agent['name']))
-        ctx.installer.create_agent()
+        installer.create_agent()
 
 
 @operation
 @init_agent_installer
-def configure(cloudify_agent, **_):
+def configure(cloudify_agent, installer, **_):
 
     if ctx.type == context.NODE_INSTANCE:
         remote_execution = _get_remote_execution()
         if remote_execution:
             ctx.logger.info('Configuring Agent {0}'.format(
                 cloudify_agent['name']))
-            ctx.installer.configure_agent()
+            installer.configure_agent()
     else:
         ctx.logger.info('Configuring Agent {0}'.format(cloudify_agent['name']))
-        ctx.installer.configure_agent()
+        installer.configure_agent()
 
 
 @operation
 @init_agent_installer
-def start(cloudify_agent, **_):
+def start(cloudify_agent, installer, **_):
 
     if ctx.type == context.NODE_INSTANCE:
         remote_execution = _get_remote_execution()
         if remote_execution:
             ctx.logger.info('Starting Agent {0}'.format(
                 cloudify_agent['name']))
-            ctx.installer.start_agent()
+            installer.start_agent()
         else:
             # if remote_execution is False, and this operation was invoked
             # (install_agent is True), it means that some other process is
@@ -169,22 +166,22 @@ def start(cloudify_agent, **_):
                     retry_after=5)
     else:
         ctx.logger.info('Starting Agent {0}'.format(cloudify_agent['name']))
-        ctx.installer.start_agent()
+        installer.start_agent()
 
 
 @operation
 @init_agent_installer
-def stop(cloudify_agent, **_):
+def stop(cloudify_agent, installer, **_):
 
     # no need to handling remote_execution False because this operation is
     # not invoked in that case
     ctx.logger.info('Stopping Agent {0}'.format(cloudify_agent['name']))
-    ctx.installer.stop_agent()
+    installer.stop_agent()
 
 
 @operation
 @init_agent_installer
-def delete(cloudify_agent, **_):
+def delete(cloudify_agent, installer, **_):
 
     if ctx.type == context.NODE_INSTANCE:
 
@@ -194,20 +191,20 @@ def delete(cloudify_agent, **_):
         if remote_execution:
             ctx.logger.info('Deleting Agent {0}'.format(
                 cloudify_agent['name']))
-            ctx.installer.delete_agent()
+            installer.delete_agent()
     else:
         ctx.logger.info('Deleting Agent {0}'.format(cloudify_agent['name']))
-        ctx.installer.delete_agent()
+        installer.delete_agent()
 
 
 @operation
 @init_agent_installer
-def restart(cloudify_agent, **_):
+def restart(cloudify_agent, installer, **_):
 
     # no need to handling remote_execution False because this operation is
     # not invoked in that case
     ctx.logger.info('Restarting Agent {0}'.format(cloudify_agent['name']))
-    ctx.installer.restart_agent()
+    installer.restart_agent()
 
 
 def _get_remote_execution():

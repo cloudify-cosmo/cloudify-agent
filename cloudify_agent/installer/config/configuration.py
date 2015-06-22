@@ -32,9 +32,9 @@ def prepare_connection(cloudify_agent):
     connection_attributes(cloudify_agent)
 
 
-def prepare_agent(cloudify_agent):
+def prepare_agent(cloudify_agent, runner):
     cfy_agent_attributes(cloudify_agent)
-    installation_attributes(cloudify_agent)
+    installation_attributes(cloudify_agent, runner)
 
 
 @group('connection')
@@ -146,7 +146,7 @@ def cfy_agent_attributes(cloudify_agent):
 
 
 @group('installation')
-def installation_attributes(cloudify_agent):
+def installation_attributes(cloudify_agent, runner):
 
     if 'source_url' not in cloudify_agent:
 
@@ -163,7 +163,7 @@ def installation_attributes(cloudify_agent):
                 if cloudify_agent['local']:
                     cloudify_agent['distro'] = platform.dist()[0].lower()
                 else:
-                    dist = ctx.runner.machine_distribution()
+                    dist = runner.machine_distribution()
                     cloudify_agent['distro'] = dist[0].lower()
 
                 # distro was not specified, try to auto-detect
@@ -171,7 +171,7 @@ def installation_attributes(cloudify_agent):
                     cloudify_agent['distro_codename'] = platform.dist()[
                         2].lower()
                 else:
-                    dist = ctx.runner.machine_distribution()
+                    dist = runner.machine_distribution()
                     cloudify_agent['distro_codename'] = dist[2].lower()
 
                 cloudify_agent['package_url'] = '{0}/packages/agents' \
@@ -193,7 +193,7 @@ def installation_attributes(cloudify_agent):
                 # TODO - maybe use some environment variables heuristics?
                 basedir = 'C:\\Users\\{0}'.format(cloudify_agent['user'])
             else:
-                basedir = ctx.runner.home_dir(cloudify_agent['user'])
+                basedir = runner.home_dir(cloudify_agent['user'])
         cloudify_agent['basedir'] = basedir
 
     if 'agent_dir' not in cloudify_agent:
