@@ -22,10 +22,10 @@ from cloudify_agent.api import exceptions
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
 from cloudify_agent.included_plugins import included_plugins
-from cloudify_agent.api.pm.base import CronRespawnMixin
+from cloudify_agent.api.pm.base import CronRespawnDaemon
 
 
-class GenericLinuxDaemon(CronRespawnMixin):
+class GenericLinuxDaemon(CronRespawnDaemon):
 
     """
     Implementation for the init.d process management.

@@ -695,7 +695,7 @@ class Daemon(object):
         return module_paths
 
 
-class CronRespawnMixin(Daemon):
+class CronRespawnDaemon(Daemon):
 
     """
     This Mixin exposes capabilities for adding a cron job that re-spawns
@@ -720,7 +720,7 @@ class CronRespawnMixin(Daemon):
     """
 
     def __init__(self, logger=None, **params):
-        super(CronRespawnMixin, self).__init__(logger, **params)
+        super(CronRespawnDaemon, self).__init__(logger, **params)
         self.cron_respawn_delay = params.get('cron_respawn_delay', 1)
         self.cron_respawn = params.get('cron_respawn', False)
 
