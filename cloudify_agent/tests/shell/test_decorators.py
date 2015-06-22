@@ -15,8 +15,7 @@
 
 import click
 
-from cloudify_agent.api import exceptions as api_exceptions
-from cloudify_agent.api import errors as api_errors
+from cloudify_agent.api import exceptions
 from cloudify_agent.shell.decorators import handle_failures
 
 from cloudify_agent.tests.shell.commands import BaseCommandLineTestCase
@@ -29,7 +28,7 @@ class TestDecorators(BaseCommandLineTestCase):
         @click.command()
         @handle_failures
         def _raise_api_exception():
-            raise api_exceptions.DaemonException()
+            raise exceptions.DaemonException()
 
         from cloudify_agent.shell.main import main
         main.add_command(_raise_api_exception, 'raise-error')
@@ -44,7 +43,7 @@ class TestDecorators(BaseCommandLineTestCase):
         @click.command()
         @handle_failures
         def _raise_api_error():
-            raise api_errors.DaemonError()
+            raise exceptions.DaemonError()
 
         from cloudify_agent.shell.main import main
         main.add_command(_raise_api_error, 'raise-error')

@@ -25,7 +25,7 @@ from cloudify.utils import LocalCommandRunner
 from cloudify_agent.api import utils
 from cloudify_agent.api import plugins
 from cloudify_agent.api.utils import get_pip_path
-from cloudify_agent.api import errors
+from cloudify_agent.api import exceptions
 
 
 class PluginInstaller(object):
@@ -126,7 +126,7 @@ def extract_package_to_dir(package_url):
     except Exception as e:
         if plugin_dir and os.path.exists(plugin_dir):
             shutil.rmtree(plugin_dir)
-        raise errors.PluginInstallationError(
+        raise exceptions.PluginInstallationError(
             'Failed to download and unpack package from {0}: {1}'
             .format(package_url, str(e)))
 
@@ -165,16 +165,16 @@ def parse_pip_version(pip_version=''):
         try:
             pip_version = pip.__version__
         except AttributeError as e:
-            raise errors.PluginInstallationError(
+            raise exceptions.PluginInstallationError(
                 'Failed to get pip version: ', str(e))
 
     if not isinstance(pip_version, basestring):
-        raise errors.PluginInstallationError(
+        raise exceptions.PluginInstallationError(
             'Invalid pip version: {0} is not a string'
             .format(pip_version))
 
     if not pip_version.__contains__("."):
-        raise errors.PluginInstallationError(
+        raise exceptions.PluginInstallationError(
             'Unknown formatting of pip version: "{0}", expected '
             'dot-delimited numbers (e.g. "1.5.4", "6.0")'
             .format(pip_version))
@@ -187,13 +187,13 @@ def parse_pip_version(pip_version=''):
         micro = version_parts[2]
 
     if not str(major).isdigit():
-        raise errors.PluginInstallationError(
+        raise exceptions.PluginInstallationError(
             'Invalid pip version: "{0}", major version is "{1}" '
             'while expected to be a number'
             .format(pip_version, major))
 
     if not str(minor).isdigit():
-        raise errors.PluginInstallationError(
+        raise exceptions.PluginInstallationError(
             'Invalid pip version: "{0}", minor version is "{1}" while '
             'expected to be a number'
             .format(pip_version, minor))

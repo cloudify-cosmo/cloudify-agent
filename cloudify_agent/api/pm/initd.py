@@ -19,7 +19,6 @@ from cloudify.exceptions import CommandExecutionException
 
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
-from cloudify_agent.api import errors
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
 from cloudify_agent.included_plugins import included_plugins
@@ -99,7 +98,7 @@ class GenericLinuxDaemon(CronRespawnMixin):
 
     def start_command(self):
         if not os.path.isfile(self.script_path):
-            raise errors.DaemonNotConfiguredError(self.name)
+            raise exceptions.DaemonNotConfiguredError(self.name)
         return start_command(self)
 
     def status_command(self):
@@ -182,7 +181,7 @@ class GenericLinuxDaemon(CronRespawnMixin):
             _handle_rpm()
             return
 
-        raise errors.DaemonConfigurationError(
+        raise exceptions.DaemonConfigurationError(
             "Cannot create a start-on-boot entry. Unknown "
             "distribution base. Supported distributions bases are "
             "debian and RPM"

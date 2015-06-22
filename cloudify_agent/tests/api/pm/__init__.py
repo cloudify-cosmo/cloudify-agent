@@ -30,7 +30,6 @@ from cloudify.utils import LocalCommandRunner
 
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
-from cloudify_agent.api import errors
 from cloudify_agent.api.plugins.installer import PluginInstaller
 
 from cloudify_agent.tests import BaseTest
@@ -266,7 +265,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             daemon.start()
             self.fail('Expected start operation to fail '
                       'due to bad import')
-        except errors.DaemonError as e:
+        except exceptions.DaemonError as e:
             self.assertIn('cannot import name non_existent', str(e))
 
     def test_start_short_timeout(self):

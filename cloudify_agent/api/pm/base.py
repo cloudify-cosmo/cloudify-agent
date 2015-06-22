@@ -26,7 +26,6 @@ from cloudify_rest_client.client import CloudifyClient
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
-from cloudify_agent.api import errors
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import defaults
 from cloudify_agent import operations
@@ -285,7 +284,7 @@ class Daemon(object):
 
         for param in self.MANDATORY_PARAMS:
             if param not in self._params:
-                raise errors.DaemonMissingMandatoryPropertyError(param)
+                raise exceptions.DaemonMissingMandatoryPropertyError(param)
 
     def validate_optional(self):
 
@@ -570,7 +569,7 @@ class Daemon(object):
             with open(error_dump_path) as f:
                 error = f.read()
             os.remove(error_dump_path)
-            raise errors.DaemonError(error)
+            raise exceptions.DaemonError(error)
 
     def _delete_amqp_queues(self):
         client = amqp_client.create_client(self.broker_ip)
@@ -593,7 +592,7 @@ class Daemon(object):
         max_workers = self._params.get('max_workers')
         if min_workers:
             if not str(min_workers).isdigit():
-                raise errors.DaemonPropertiesError(
+                raise exceptions.DaemonPropertiesError(
                     'min_workers is supposed to be a number '
                     'but is: {0}'
                     .format(min_workers)
@@ -601,7 +600,7 @@ class Daemon(object):
             min_workers = int(min_workers)
         if max_workers:
             if not str(max_workers).isdigit():
-                raise errors.DaemonPropertiesError(
+                raise exceptions.DaemonPropertiesError(
                     'max_workers is supposed to be a number '
                     'but is: {0}'
                     .format(max_workers)
@@ -609,7 +608,7 @@ class Daemon(object):
             max_workers = int(max_workers)
         if min_workers and max_workers:
             if min_workers > max_workers:
-                raise errors.DaemonPropertiesError(
+                raise exceptions.DaemonPropertiesError(
                     'min_workers cannot be greater than max_workers '
                     '[min_workers={0}, max_workers={1}]'
                     .format(min_workers, max_workers))
@@ -618,7 +617,7 @@ class Daemon(object):
         queue = self._params.get('queue')
         host = self._params.get('host')
         if not queue and not host:
-            raise errors.DaemonPropertiesError(
+            raise exceptions.DaemonPropertiesError(
                 'host must be supplied when queue is omitted'
             )
 
@@ -626,7 +625,7 @@ class Daemon(object):
         queue = self._params.get('queue')
         host = self._params.get('deployment_id')
         if not queue and not host:
-            raise errors.DaemonPropertiesError(
+            raise exceptions.DaemonPropertiesError(
                 'deployment_id must be supplied when queue is omitted'
             )
 
@@ -655,13 +654,13 @@ class Daemon(object):
         matched = filter(match_ip, node_instances)
 
         if len(matched) > 1:
-            raise errors.DaemonConfigurationError(
+            raise exceptions.DaemonConfigurationError(
                 'Found multiple node instances with ip {0}: {1}'.format(
                     self.host, ','.join(matched))
             )
 
         if len(matched) == 0:
-            raise errors.DaemonConfigurationError(
+            raise exceptions.DaemonConfigurationError(
                 'No node instances with ip {0} were found'.format(self.host)
             )
         self._runtime_properties = matched[0].runtime_propreties
