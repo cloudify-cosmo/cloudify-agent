@@ -22,7 +22,6 @@ from cloudify_agent.api import defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.api.pm.base import Daemon
-from cloudify_agent.api import errors
 from cloudify_agent.included_plugins import included_plugins
 
 
@@ -160,7 +159,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
     def start_command(self):
         if not os.path.isfile(self.config_path):
-            raise errors.DaemonNotConfiguredError(self.name)
+            raise exceptions.DaemonNotConfiguredError(self.name)
         return 'sc start {0}'.format(self.name)
 
     def stop_command(self):

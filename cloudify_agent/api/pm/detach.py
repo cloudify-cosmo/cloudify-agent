@@ -21,12 +21,11 @@ from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
 from cloudify_agent.api import utils
 from cloudify_agent.included_plugins import included_plugins
-from cloudify_agent.api import errors
 from cloudify_agent.api import exceptions
-from cloudify_agent.api.pm.base import CronRespawnMixin
+from cloudify_agent.api.pm.base import CronRespawnDaemon
 
 
-class DetachedDaemon(CronRespawnMixin):
+class DetachedDaemon(CronRespawnDaemon):
 
     """
     This process management is not really a full process management. It
@@ -111,7 +110,7 @@ class DetachedDaemon(CronRespawnMixin):
 
     def start_command(self):
         if not os.path.isfile(self.script_path):
-            raise errors.DaemonNotConfiguredError(self.name)
+            raise exceptions.DaemonNotConfiguredError(self.name)
         return self.script_path
 
     def stop_command(self):

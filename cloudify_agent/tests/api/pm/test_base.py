@@ -17,7 +17,7 @@ import getpass
 from mock import patch
 
 from cloudify_agent.api.pm.base import Daemon
-from cloudify_agent.api import errors
+from cloudify_agent.api import exceptions
 
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests import get_storage_directory
@@ -68,7 +68,7 @@ class TestDaemonValidations(BaseTest):
                 user='user'
             )
             self.fail('Expected ValueError due to missing manager_ip')
-        except errors.DaemonMissingMandatoryPropertyError as e:
+        except exceptions.DaemonMissingMandatoryPropertyError as e:
             self.assertTrue('manager_ip is mandatory' in e.message)
 
     def test_bad_min_workers(self):
@@ -81,7 +81,7 @@ class TestDaemonValidations(BaseTest):
                 user='user',
                 min_workers='bad'
             )
-        except errors.DaemonPropertiesError as e:
+        except exceptions.DaemonPropertiesError as e:
             self.assertTrue('min_workers is supposed to be a number' in
                             e.message)
 
@@ -95,7 +95,7 @@ class TestDaemonValidations(BaseTest):
                 user='user',
                 max_workers='bad'
             )
-        except errors.DaemonPropertiesError as e:
+        except exceptions.DaemonPropertiesError as e:
             self.assertTrue('max_workers is supposed to be a number' in
                             e.message)
 
@@ -110,7 +110,7 @@ class TestDaemonValidations(BaseTest):
                 max_workers=4,
                 min_workers=5
             )
-        except errors.DaemonPropertiesError as e:
+        except exceptions.DaemonPropertiesError as e:
             self.assertTrue('min_workers cannot be greater than max_workers'
                             in e.message)
 

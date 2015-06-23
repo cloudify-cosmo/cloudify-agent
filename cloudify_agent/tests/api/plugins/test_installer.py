@@ -23,7 +23,7 @@ from cloudify.exceptions import CommandExecutionException
 
 from cloudify_agent.api.plugins import installer
 from cloudify_agent.api import utils
-from cloudify_agent.api import errors
+from cloudify_agent.api import exceptions
 
 from cloudify_agent.tests import resources
 from cloudify_agent.tests import utils as test_utils
@@ -167,14 +167,14 @@ class PipVersionParserTestCase(BaseTest):
         expected_err_msg = 'Invalid pip version: "a.5.4", major version is ' \
                            '"a" while expected to be a number'
         self.assertRaisesRegex(
-            errors.PluginInstallationError, expected_err_msg,
+            exceptions.PluginInstallationError, expected_err_msg,
             installer.parse_pip_version, 'a.5.4')
 
     def test_parse_invalid_minor_version(self):
         expected_err_msg = 'Invalid pip version: "1.a.4", minor version is ' \
                            '"a" while expected to be a number'
         self.assertRaisesRegex(
-            errors.PluginInstallationError, expected_err_msg,
+            exceptions.PluginInstallationError, expected_err_msg,
             installer.parse_pip_version, '1.a.4')
 
     def test_parse_too_short_version(self):
@@ -183,13 +183,13 @@ class PipVersionParserTestCase(BaseTest):
                            'dot-delimited numbers ' \
                            '\(e.g. "1.5.4", "6.0"\)'
         self.assertRaisesRegex(
-            errors.PluginInstallationError, expected_err_msg,
+            exceptions.PluginInstallationError, expected_err_msg,
             installer.parse_pip_version, '6')
 
     def test_parse_numeric_version(self):
         expected_err_msg = 'Invalid pip version: 6 is not a string'
         self.assertRaisesRegex(
-            errors.PluginInstallationError, expected_err_msg,
+            exceptions.PluginInstallationError, expected_err_msg,
             installer.parse_pip_version, 6)
 
     def test_parse_alpha_version(self):
@@ -198,11 +198,11 @@ class PipVersionParserTestCase(BaseTest):
                            'dot-delimited ' \
                            'numbers \(e.g. "1.5.4", "6.0"\)'
         self.assertRaisesRegex(
-            errors.PluginInstallationError, expected_err_msg,
+            exceptions.PluginInstallationError, expected_err_msg,
             installer.parse_pip_version, 'a')
 
     def test_parse_wrong_obj(self):
         expected_err_msg = 'Invalid pip version: \[6\] is not a string'
         self.assertRaisesRegex(
-            errors.PluginInstallationError, expected_err_msg,
+            exceptions.PluginInstallationError, expected_err_msg,
             installer.parse_pip_version, [6])

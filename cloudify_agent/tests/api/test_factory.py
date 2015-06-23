@@ -17,7 +17,7 @@ import uuid
 import os
 import shutil
 
-from cloudify_agent.api import errors as api_errors
+from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.tests.shell import BaseShellTest
@@ -54,7 +54,7 @@ class TestDaemonFactory(BaseShellTest):
                           includes=set(['plugin']))
 
     def test_new_no_implementation(self):
-        self.assertRaises(api_errors.DaemonNotImplementedError,
+        self.assertRaises(exceptions.DaemonNotImplementedError,
                           self.factory.new,
                           process_management='no-impl')
 
@@ -77,11 +77,11 @@ class TestDaemonFactory(BaseShellTest):
         self.assertEqual('user', loaded.user)
         self.assertEqual('127.0.0.1', daemon.broker_url)
         self.factory.delete(daemon.name)
-        self.assertRaises(api_errors.DaemonNotFoundError,
+        self.assertRaises(exceptions.DaemonNotFoundError,
                           self.factory.load, daemon.name)
 
     def test_load_non_existing(self):
-        self.assertRaises(api_errors.DaemonNotFoundError,
+        self.assertRaises(exceptions.DaemonNotFoundError,
                           self.factory.load,
                           'non_existing_name')
 
@@ -122,7 +122,7 @@ class TestDaemonFactory(BaseShellTest):
 
         self.factory.save(daemon)
 
-        self.assertRaises(api_errors.DaemonAlreadyExistsError,
+        self.assertRaises(exceptions.DaemonAlreadyExistsError,
                           self.factory.new,
                           process_management='init.d',
                           name=self.daemon_name,

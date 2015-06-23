@@ -96,7 +96,7 @@ def group(name):
     def decorator(group_function):
 
         @wraps(group_function)
-        def wrapper(cloudify_agent):
+        def wrapper(cloudify_agent, *args, **kwargs):
 
             # collect all attributes belonging to that group
             group_attributes = {}
@@ -115,7 +115,7 @@ def group(name):
 
             # when we are done, invoke the group function to
             # apply group logic
-            group_function(cloudify_agent)
+            group_function(cloudify_agent, *args, **kwargs)
 
         return wrapper
 

@@ -47,7 +47,7 @@ class TestConfiguration(BaseTest):
 
         cloudify_agent = {'local': True}
         configuration.prepare_connection(cloudify_agent)
-        configuration.prepare_agent(cloudify_agent)
+        configuration.prepare_agent(cloudify_agent, None)
 
         user = getpass.getuser()
         basedir = utils.get_home_dir(user)

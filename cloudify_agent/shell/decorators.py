@@ -17,28 +17,27 @@ import click
 import sys
 from functools import wraps
 
-from cloudify_agent.api import exceptions as api_exceptions
-from cloudify_agent.api import errors as api_errors
+from cloudify_agent.api import exceptions
 
 
 codes = {
 
     # exception start from 100
-    api_exceptions.DaemonException: 101,
-    api_exceptions.DaemonShutdownTimeout: 102,
-    api_exceptions.DaemonStartupTimeout: 103,
-    api_exceptions.DaemonStillRunningException: 104,
+    exceptions.DaemonException: 101,
+    exceptions.DaemonShutdownTimeout: 102,
+    exceptions.DaemonStartupTimeout: 103,
+    exceptions.DaemonStillRunningException: 104,
 
     # errors start from 200
-    api_errors.DaemonError: 201,
-    api_errors.DaemonAlreadyExistsError: 202,
-    api_errors.DaemonNotFoundError: 203,
-    api_errors.DaemonConfigurationError: 204,
-    api_errors.DaemonMissingMandatoryPropertyError: 205,
-    api_errors.DaemonNotImplementedError: 206,
-    api_errors.DaemonPropertiesError: 207,
-    api_errors.DaemonNotConfiguredError: 208,
-    api_errors.PluginInstallationError: 209
+    exceptions.DaemonError: 201,
+    exceptions.DaemonAlreadyExistsError: 202,
+    exceptions.DaemonNotFoundError: 203,
+    exceptions.DaemonConfigurationError: 204,
+    exceptions.DaemonMissingMandatoryPropertyError: 205,
+    exceptions.DaemonNotImplementedError: 206,
+    exceptions.DaemonPropertiesError: 207,
+    exceptions.DaemonNotConfiguredError: 208,
+    exceptions.PluginInstallationError: 209
 }
 
 
@@ -51,12 +50,12 @@ def handle_failures(func):
         except BaseException as e:
             tpe, value, tb = sys.exc_info()
 
-            if isinstance(e, api_exceptions.DaemonException):
+            if isinstance(e, exceptions.DaemonException):
 
                 # convert api exceptions to click exceptions.
                 value = click.ClickException(str(e))
 
-            if isinstance(e, api_errors.DaemonError):
+            if isinstance(e, exceptions.DaemonError):
 
                 # convert api errors to cli exceptions
                 value = click.ClickException(str(e))

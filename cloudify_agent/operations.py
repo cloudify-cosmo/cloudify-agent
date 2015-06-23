@@ -24,7 +24,7 @@ from cloudify.decorators import operation
 
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api.factory import DaemonFactory
-from cloudify_agent.api import errors
+from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.app import app
 
@@ -53,7 +53,7 @@ def _install_plugins(plugins):
         ctx.logger.info('Installing plugin: {0}'.format(plugin['name']))
         try:
             package_name = installer.install(source, args)
-        except errors.PluginInstallationError as e:
+        except exceptions.PluginInstallationError as e:
             # preserve traceback
             tpe, value, tb = sys.exc_info()
             raise NonRecoverableError, NonRecoverableError(str(e)), tb

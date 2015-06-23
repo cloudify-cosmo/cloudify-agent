@@ -18,7 +18,7 @@ import json
 
 from cloudify.utils import setup_logger
 
-from cloudify_agent.api import errors
+from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 
 
@@ -87,7 +87,7 @@ class DaemonFactory(object):
         for daemon in daemons:
             if daemon.PROCESS_MANAGEMENT == process_management:
                 return daemon
-        raise errors.DaemonNotImplementedError(process_management)
+        raise exceptions.DaemonNotImplementedError(process_management)
 
     def new(self, logger=None, **attributes):
 
@@ -110,8 +110,8 @@ class DaemonFactory(object):
             try:
                 self.load(name, logger=logger)
                 # this means we do have one, raise an error
-                raise errors.DaemonAlreadyExistsError(name)
-            except errors.DaemonNotFoundError:
+                raise exceptions.DaemonAlreadyExistsError(name)
+            except exceptions.DaemonNotFoundError:
                 pass
 
         process_management = attributes['process_management']
@@ -173,7 +173,7 @@ class DaemonFactory(object):
             '{0}.json'.format(name)
         )
         if not os.path.exists(daemon_path):
-            raise errors.DaemonNotFoundError(name)
+            raise exceptions.DaemonNotFoundError(name)
         daemon_as_json = utils.json_load(daemon_path)
         self.logger.debug('Daemon {0} loaded: {1}'.format(name, json.dumps(
             daemon_as_json, indent=2)))
