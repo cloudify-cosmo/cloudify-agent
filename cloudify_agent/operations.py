@@ -34,6 +34,7 @@ from cloudify_agent.app import app
 # it should contain tasks that are inside the cloudify-agent project.
 ##########################################################################
 CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES = [
+    'cloudify.plugins.workflows',
     'cloudify_agent.operations',
     'cloudify_agent.installer.operations',
 
