@@ -1,5 +1,5 @@
 testtools
-mock
+mock==1.0.1
 unittest2
 FileServer
 

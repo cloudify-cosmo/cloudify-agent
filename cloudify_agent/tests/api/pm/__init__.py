@@ -37,6 +37,11 @@ from cloudify_agent.tests import resources
 
 
 BUILT_IN_TASKS = [
+    'cloudify.plugins.workflows.scale',
+    'cloudify.plugins.workflows.auto_heal_reinstall_node_subgraph',
+    'cloudify.plugins.workflows.uninstall',
+    'cloudify.plugins.workflows.execute_operation',
+    'cloudify.plugins.workflows.install',
     'script_runner.tasks.execute_workflow',
     'script_runner.tasks.run',
     'diamond_agent.tasks.install',

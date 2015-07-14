@@ -205,7 +205,13 @@ _get_pids() {
     done
 }
 _chuid () {
-    su "$CELERYD_USER" -c "$CELERYD_MULTI $*"
+    # The original line (taken from celery extras)
+    # su "$CELERYD_USER" -c "$CELERYD_MULTI $*"
+    # is modified to include $PATH explicitly as
+    # it seems 'su' (on ubuntu trusy, at least) overrides
+    # the PATH variable with a hard coded value that is read
+    # from /etc/login.defs
+    su "$CELERYD_USER" -c "PATH=$PATH $CELERYD_MULTI $*"
 }
 start_workers () {
     if [ ! -z "$CELERYD_ULIMIT" ]; then
