@@ -13,6 +13,8 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
+import os
+
 from cloudify.utils import setup_logger
 
 from system_tests import resources
@@ -29,7 +31,7 @@ class AgentInstallerTest(testenv.TestCase):
     def test_3_2_agent(self):
 
         self.blueprint_yaml = resources.get_resource(
-            '3-2-agent-blueprint/3-2-agent-blueprint.yaml')
+            '3-2-agent-mispelled-blprint.yaml')
         self.upload_deploy_and_execute_install(
             inputs={
                 'image': self.env.ubuntu_image_id,
@@ -57,7 +59,8 @@ class AgentInstallerTest(testenv.TestCase):
         self.upload_deploy_and_execute_install(
             inputs={
                 'image': self.env.ubuntu_image_id,
-                'flavor': self.env.small_flavor_id
+                'flavor': self.env.small_flavor_id,
+                'branch': os.environ.get('BRANCH_NAME_CORE', 'master')
             }
         )
         self.execute_uninstall()
