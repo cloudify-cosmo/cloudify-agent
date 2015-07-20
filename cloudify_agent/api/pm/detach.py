@@ -151,7 +151,7 @@ class DetachedDaemon(CronRespawnDaemon):
             queue=self.queue,
             name=self.name,
             log_level=self.log_level,
-            log_file=self.log_file,
+            log_file=self.get_logfile(),
             pid_file=self.pid_file,
             broker_url=self.broker_url,
             min_workers=self.min_workers,
