@@ -88,9 +88,6 @@ class DetachedDaemon(CronRespawnDaemon):
                 raise exceptions.DaemonStillRunningException(self.name)
             self.stop()
 
-        if os.path.exists(self.log_file):
-            self._logger.debug('Removing {0}'.format(self.log_file))
-            os.remove(self.log_file)
         if os.path.exists(self.pid_file):
             self._logger.debug('Removing {0}'.format(self.pid_file))
             os.remove(self.pid_file)
