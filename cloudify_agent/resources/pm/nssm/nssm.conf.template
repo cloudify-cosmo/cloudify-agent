@@ -20,7 +20,7 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 echo Setting service environment
 
 {{ nssm_path }} set {{ name }} AppEnvironmentExtra ^
-PATH={{ virtualenv_path }}\Scripts;%PATH% ^
+PATH="{{ virtualenv_path }}\Scripts;%PATH%" ^
 MANAGEMENT_IP={{ manager_ip }} ^
 MANAGER_REST_PORT={{ manager_port }} ^
 MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229 ^
