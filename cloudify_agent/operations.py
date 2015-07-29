@@ -24,7 +24,7 @@ import celery
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import get_manager_file_server_blueprints_root_url
-from cloudify.decorators import operation
+from cloudify.decorators import operation, workflow
 
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api.factory import DaemonFactory
@@ -204,8 +204,8 @@ def create_new_agent_dict(old_agent, suffix=None):
         suffix = str(uuid.uuid4())
     new_agent = copy.deepcopy(old_agent)
     fields_to_delete = ['name', 'queue', 'workdir', 'agent_dir', 'envdir',
-                        'queue', 'manager_ip', 'package_url', 'source_url'
-                        'manager_port'. 'broker_url', 'broker_port',
+                        'manager_ip', 'package_url', 'source_url'
+                        'manager_port', 'broker_url', 'broker_port',
                         'broker_ip']
     for field in fields_to_delete:
         if field in new_agent:
@@ -270,3 +270,27 @@ def create_agent_from_old_agent():
 @operation
 def create_agent_amqp():
     create_agent_from_old_agent()
+
+
+def _get_all_host_instances(ctx):
+    node_instances = set()
+    for node in ctx.nodes:
+        if 'cloudify.nodes.Compute' in node.type_hierarchy:
+            for instance in node.instances:
+                node_instances.add(instance)
+    return node_instances
+
+
+@workflow
+def install_new_agents():
+    graph = ctx.graph_mode()
+    hosts = _get_all_host_instances(ctx)
+    for host in hosts:
+        seq = graph.sequence()
+        seq.add(
+            host.send_event('Installing new agent.'),
+            host.execute_operation(
+                'cloudify.interfaces.cloudify_agent.create_amqp'),
+            host.send_event('New agent installed.')
+        )
+    graph.execute()
