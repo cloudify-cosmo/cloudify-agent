@@ -13,9 +13,11 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import uuid
 import time
 import threading
 import sys
+import copy
 
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
@@ -28,6 +30,7 @@ from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.app import app
 
+from cloudify_agent.installer.config import configuration
 
 ##########################################################################
 # this array is used for creating the initial includes file of the agent
@@ -191,3 +194,23 @@ def _save_daemon(daemon):
         username=utils.internal.get_daemon_user(),
         storage=utils.internal.get_daemon_storage_dir())
     factory.save(daemon)
+
+
+def create_new_agent_dict(old_agent, suffix=None):
+    if suffix is None:
+        suffix = str(uuid.uuid4())
+    new_agent = copy.deepcopy(old_agent)
+    fields_to_delete = ['name', 'queue', 'workdir', 'agent_dir', 'envdir',
+                        'queue', 'manager_ip', 'package_url', 'source_url']
+    for field in fields_to_delete:
+        if field in new_agent:
+            del(new_agent[field])
+    new_agent['name'] = '{0}_{1}'.format(old_agent['name'], suffix)
+    configuration.cfy_agent_attributes(new_agent)
+    configuration.reinstallation_attributes(new_agent)
+    return new_agent
+
+
+@operation
+def create_agent_amqp():
+    pass

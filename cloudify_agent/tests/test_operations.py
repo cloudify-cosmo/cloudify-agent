@@ -12,14 +12,20 @@
 #  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
+import os
+
+from mock import patch
 
 from cloudify import constants
 
 from cloudify.exceptions import NonRecoverableError
 from cloudify_agent import operations
+from cloudify_agent.installer.config import configuration
 
 from cloudify_agent.tests import utils
 from cloudify_agent.tests import BaseTest
+
+from cloudify_agent.tests.installer.config import mock_context
 
 
 class TestOperations(BaseTest):
@@ -66,3 +72,42 @@ class TestOperations(BaseTest):
         self.assertEqual(
             'localhost/blueprint_id/plugins/plugin-dir-name.zip',
             source)
+
+
+class TestCreateAgentAmqp(BaseTest):
+
+    @patch('cloudify_agent.installer.config.configuration.ctx',
+           mock_context())
+    @patch('cloudify_agent.installer.config.decorators.ctx',
+           mock_context())
+    @patch('cloudify_agent.installer.config.attributes.ctx',
+           mock_context())
+    def test_create_agent_dict(self):
+        old_agent = {
+            'local': False,
+            'ip': '10.0.4.47',
+            'manager_ip': '10.0.4.46',
+            'distro': 'ubuntu',
+            'distro_codename': 'trusty',
+            'basedir': '/home/vagrant',
+            'user': 'vagrant',
+            'key': '~/.ssh/id_rsa',
+            'windows': False,
+            'package_url': 'http://10.0.4.46:53229/packages/agents/'
+                           'ubuntu-trusty-agent.tar.gz',
+        }
+        configuration.prepare_connection(old_agent)
+        configuration.prepare_agent(old_agent, None)
+        new_env = {
+            constants.MANAGER_IP_KEY: '10.0.4.48',
+            constants.MANAGER_FILE_SERVER_URL_KEY: 'http://10.0.4.48:53229'
+        }
+        with patch.dict(os.environ, new_env):
+            new_agent = operations.create_new_agent_dict(old_agent)
+        equal_keys = ['ip', 'distro', 'distro_codename', 'basedir', 'user']
+        for k in equal_keys:
+            self.assertEqual(old_agent[k], new_agent[k])
+        nonequal_keys = ['package_url', 'agent_dir', 'workdir',
+                         'envdir', 'name', 'manager_ip']
+        for k in nonequal_keys:
+            self.assertNotEqual(old_agent[k], new_agent[k])
