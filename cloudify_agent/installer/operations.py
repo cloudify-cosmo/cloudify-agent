@@ -40,6 +40,16 @@ def _app():
     return app
 
 
+def prepare_local_installer(cloudify_agent, logger=None):
+    if os.name == 'nt':
+        installer = LocalWindowsAgentInstaller(
+            cloudify_agent, logger)
+    else:
+        installer = LocalLinuxAgentInstaller(
+            cloudify_agent, logger)
+    return installer
+
+
 def init_agent_installer(func=None, validate_connection=True):
 
     if func is not None:
@@ -96,12 +106,7 @@ def init_agent_installer(func=None, validate_connection=True):
             # create the correct installer according to os
             # and local/remote execution
             if cloudify_agent['local']:
-                if os.name == 'nt':
-                    installer = LocalWindowsAgentInstaller(
-                        cloudify_agent, ctx.logger)
-                else:
-                    installer = LocalLinuxAgentInstaller(
-                        cloudify_agent, ctx.logger)
+                installer = prepare_local_installer(cloudify_agent, ctx.logger)
             elif cloudify_agent['windows']:
                 installer = RemoteWindowsAgentInstaller(
                     cloudify_agent, runner, ctx.logger)

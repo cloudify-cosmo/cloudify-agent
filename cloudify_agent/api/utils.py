@@ -22,7 +22,11 @@ import getpass
 import pkg_resources
 from jinja2 import Template
 
+from cloudify.context import BootstrapContext
 from cloudify.utils import setup_logger
+from cloudify.utils import internal as cfy_utils_internal
+
+from cloudify_rest_client import CloudifyClient
 
 import cloudify_agent
 from cloudify_agent import VIRTUALENV
@@ -75,13 +79,16 @@ class _Internal(object):
         """
         Retrieve path to the directory where all daemon
         registered under a specific username will be stored.
+        If no `username` is provided, username under which current daemon
+        was installed will be used.
 
         :param username: the user
 
         """
         if cls.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY in os.environ:
             return cls.get_daemon_storage_dir()
-
+        if username is None and cls.CLOUDIFY_DAEMON_USER_KEY in os.environ:
+            username = cls.get_daemon_user()
         return os.path.join(get_home_dir(username), '.cfy-agent')
 
     @staticmethod
@@ -95,6 +102,35 @@ class _Internal(object):
         return '{0}-{1}'.format(
             defaults.CLOUDIFY_AGENT_PREFIX,
             uuid.uuid4())
+
+    @staticmethod
+    def generate_new_agent_name(old_agent_name):
+
+        """
+        Generates a new agent name from old agent name.
+        It tries to detect if there is an uuid at the end of the
+        `old_agent_name`. If this is the case, this uid is removed.
+        Then new uuid is appended to old name.
+        :param old_agent_name: name of an old agent
+
+        """
+
+        suffix = str(uuid.uuid4())
+        agent_name = old_agent_name
+        if len(old_agent_name) > len(suffix):
+            old_suffix = old_agent_name[-len(suffix):]
+            try:
+                uuid.UUID(old_suffix)
+                agent_name = old_agent_name[0:-len(suffix)]
+                if agent_name.endswith('_'):
+                    agent_name = agent_name[:-1]
+            except ValueError:
+                agent_name = old_agent_name
+        new_agent_name = '{0}_{1}'.format(agent_name, suffix)
+        if new_agent_name != old_agent_name:
+            return new_agent_name
+        else:
+            return '{0}_{1}'.format(old_agent_name, suffix)
 
     @staticmethod
     def daemon_to_dict(daemon):
@@ -123,6 +159,42 @@ class _Internal(object):
                 result.pop(attr)
         return result
 
+    @staticmethod
+    def get_broker_configuration(agent):
+        client = CloudifyClient(
+            agent['manager_ip'],
+            agent['manager_port'],
+        )
+        bootstrap_context_dict = client.manager.get_context()
+        bootstrap_context_dict = bootstrap_context_dict['context']['cloudify']
+        bootstrap_context = BootstrapContext(bootstrap_context_dict)
+        bootstrap_agent = bootstrap_context.cloudify_agent
+
+        broker_user, broker_pass = cfy_utils_internal.get_broker_credentials(
+            bootstrap_agent
+        )
+        attributes = {}
+        attributes['broker_ip'] = agent.get('broker_ip', agent['manager_ip'])
+        attributes['broker_user'] = broker_user
+        attributes['broker_pass'] = broker_pass
+        attributes['broker_ssl_enabled'] = bootstrap_agent.broker_ssl_enabled
+        attributes['broker_ssl_cert'] = bootstrap_agent.broker_ssl_cert
+        return attributes
+
+    @staticmethod
+    def get_broker_url(agent):
+        broker_port = agent.get('broker_port', defaults.BROKER_PORT)
+        if agent.get('broker_ip'):
+            broker_ip = agent['broker_ip']
+        else:
+            broker_ip = agent['manager_ip']
+        broker_user = agent.get('broker_user', 'guest')
+        broker_pass = agent.get('broker_pass', 'guest')
+        return defaults.BROKER_URL.format(username=broker_user,
+                                          password=broker_pass,
+                                          host=broker_ip,
+                                          port=broker_port)
+
 
 internal = _Internal()
 
@@ -147,6 +219,10 @@ def get_agent_registered(name, celery):
     return registered
 
 
+def get_windows_home_dir(username):
+    return 'C:\\Users\\{0}'.format(username)
+
+
 def get_home_dir(username=None):
 
     """
@@ -160,7 +236,7 @@ def get_home_dir(username=None):
         if username is None:
             return os.path.expanduser('~')
         else:
-            return os.path.expanduser('~{0}'.format(username))
+            return get_windows_home_dir(username)
     else:
         import pwd
         if username is None:

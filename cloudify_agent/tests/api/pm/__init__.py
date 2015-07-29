@@ -50,6 +50,7 @@ BUILT_IN_TASKS = [
     'diamond_agent.tasks.stop',
     'diamond_agent.tasks.add_collectors',
     'diamond_agent.tasks.del_collectors',
+    'cloudify_agent.operations.create_agent_amqp',
     'cloudify_agent.operations.install_plugins',
     'cloudify_agent.operations.restart',
     'cloudify_agent.operations.stop',
