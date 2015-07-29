@@ -19,6 +19,8 @@ import threading
 import sys
 import copy
 
+import celery
+
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import get_manager_file_server_blueprints_root_url
@@ -26,6 +28,7 @@ from cloudify.decorators import operation
 
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api.factory import DaemonFactory
+from cloudify_agent.api import defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.app import app
@@ -201,7 +204,9 @@ def create_new_agent_dict(old_agent, suffix=None):
         suffix = str(uuid.uuid4())
     new_agent = copy.deepcopy(old_agent)
     fields_to_delete = ['name', 'queue', 'workdir', 'agent_dir', 'envdir',
-                        'queue', 'manager_ip', 'package_url', 'source_url']
+                        'queue', 'manager_ip', 'package_url', 'source_url'
+                        'manager_port'. 'broker_url', 'broker_port',
+                        'broker_ip']
     for field in fields_to_delete:
         if field in new_agent:
             del(new_agent[field])
@@ -211,6 +216,57 @@ def create_new_agent_dict(old_agent, suffix=None):
     return new_agent
 
 
+# It might be a good idea to set it during snapshot restore.
+def get_broker_url(agent):
+    if 'broker_url' in agent:
+        return agent['broker_url']
+    broker_port = agent.get('broker_port', defaults.BROKER_PORT)
+    broker_ip = agent.get('broker_ip', agent['manager_ip'])
+    return defaults.BROKER_URL.format(broker_ip,
+                                      broker_port)
+
+
+def create_agent_from_old_agent():
+    props = ctx.node_instance.runtime_properties
+    # We should not proceed when 'old_cloudify_agent' is in runtime
+    # properties. Old agent should be uninstalled first.
+    # We should add proper check later.
+    if 'cloudify_agent' not in props:
+        raise NonRecoverableError(
+            'cloudify_agent key not available in runtime_properties')
+    old_agent = props['cloudify_agent']
+    new_agent = create_new_agent_dict(old_agent)
+    ctx.node_instance.runtime_properties['new_cloudify_agent'] = new_agent
+    ctx.node_instance.update()
+    # This one is interesting.
+    # We want to support cases when old agent is not connected to
+    # current rabbit server.
+    # So we retrieve broker url from old agent.
+    broker_url = get_broker_url(old_agent)
+    celery_client = celery.Celery(broker=broker_url, backend=broker_url)
+    script_url = 'http://{0}/node-instances/{1}/install_agent.py'.format(
+        new_agent['manager_ip'],
+        ctx.node_instance.id
+    )
+    result = celery_client.send_task(
+        'script_runner.tasks.run',
+        args=[script_url],
+        queue=old_agent['queue']
+    )
+    timeout = 2 * 60
+    result.get(timeout=timeout)
+    # Make sure celery agent was started:
+    # This one should be connected to current rabbit server.
+    agent_status = app.control.inspect(destination=[new_agent['queue']])
+    if not agent_status.active():
+        raise NonRecoverableError('Could not start agent.')
+    # We are keeping track of old_agent in order to uninstall it later.
+    # Or revert our change.
+    props['old_cloudify_agent'] = old_agent
+    props['cloudify_agent'] = new_agent
+    del(props['new_cloudify_agent'])
+
+
 @operation
 def create_agent_amqp():
-    pass
+    create_agent_from_old_agent()

@@ -14,11 +14,16 @@
 #  * limitations under the License.
 import os
 
-from mock import patch
+from mock import patch, MagicMock
 
 from cloudify import constants
+from cloudify import ctx
+from cloudify import mocks
 
 from cloudify.exceptions import NonRecoverableError
+
+from cloudify.state import current_ctx
+
 from cloudify_agent import operations
 from cloudify_agent.installer.config import configuration
 
@@ -82,7 +87,7 @@ class TestCreateAgentAmqp(BaseTest):
            mock_context())
     @patch('cloudify_agent.installer.config.attributes.ctx',
            mock_context())
-    def test_create_agent_dict(self):
+    def _create_agent(self):
         old_agent = {
             'local': False,
             'ip': '10.0.4.47',
@@ -98,11 +103,32 @@ class TestCreateAgentAmqp(BaseTest):
         }
         configuration.prepare_connection(old_agent)
         configuration.prepare_agent(old_agent, None)
+        return old_agent
+
+    def _create_node_instance_context(self):
+        properties = {}
+        properties['cloudify_agent'] = self._create_agent()
+        mock = mock_context()
+        mock.node_instance = mocks.MockNodeInstanceContext(
+            runtime_properties=properties)
+        return mock
+
+    def _patch_manager_env(self):
         new_env = {
             constants.MANAGER_IP_KEY: '10.0.4.48',
             constants.MANAGER_FILE_SERVER_URL_KEY: 'http://10.0.4.48:53229'
         }
-        with patch.dict(os.environ, new_env):
+        return patch.dict(os.environ, new_env)
+
+    @patch('cloudify_agent.installer.config.configuration.ctx',
+           mock_context())
+    @patch('cloudify_agent.installer.config.decorators.ctx',
+           mock_context())
+    @patch('cloudify_agent.installer.config.attributes.ctx',
+           mock_context())
+    def test_create_agent_dict(self):
+        old_agent = self._create_agent()
+        with self._patch_manager_env():
             new_agent = operations.create_new_agent_dict(old_agent)
         equal_keys = ['ip', 'distro', 'distro_codename', 'basedir', 'user']
         for k in equal_keys:
@@ -111,3 +137,20 @@ class TestCreateAgentAmqp(BaseTest):
                          'envdir', 'name', 'manager_ip']
         for k in nonequal_keys:
             self.assertNotEqual(old_agent[k], new_agent[k])
+
+    @patch('cloudify_agent.operations.celery.Celery', MagicMock())
+    @patch('cloudify_agent.operations.app', MagicMock())
+    def test_create_agent_from_old_agent(self):
+        context = self._create_node_instance_context()
+        old_context = ctx
+        current_ctx.set(context)
+        try:
+            old_name = ctx.node_instance.runtime_properties[
+                'cloudify_agent']['name']
+            with self._patch_manager_env():
+                operations.create_agent_from_old_agent()
+            new_name = ctx.node_instance.runtime_properties[
+                'cloudify_agent']['name']
+            self.assertNotEquals(old_name, new_name)
+        finally:
+            current_ctx.set(old_context)
