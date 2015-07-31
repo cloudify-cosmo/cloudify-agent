@@ -108,9 +108,11 @@ class TestCreateAgentAmqp(BaseTest):
     def _create_node_instance_context(self):
         properties = {}
         properties['cloudify_agent'] = self._create_agent()
-        mock = mock_context()
-        mock.node_instance = mocks.MockNodeInstanceContext(
-            runtime_properties=properties)
+        mock = mocks.MockCloudifyContext(
+            node_id='host_af231',
+            runtime_properties=properties,
+            node_name='host',
+            properties={'cloudify_agent': {}})
         return mock
 
     def _patch_manager_env(self):
@@ -145,11 +147,11 @@ class TestCreateAgentAmqp(BaseTest):
         old_context = ctx
         current_ctx.set(context)
         try:
-            old_name = ctx.node_instance.runtime_properties[
+            old_name = ctx.instance.runtime_properties[
                 'cloudify_agent']['name']
             with self._patch_manager_env():
                 operations.create_agent_from_old_agent()
-            new_name = ctx.node_instance.runtime_properties[
+            new_name = ctx.instance.runtime_properties[
                 'cloudify_agent']['name']
             self.assertNotEquals(old_name, new_name)
         finally:
