@@ -226,14 +226,13 @@ def get_broker_url(agent):
 
 
 def create_agent_from_old_agent():
-    props = ctx.instance.runtime_properties
     # We should not proceed when 'old_cloudify_agent' is in runtime
     # properties. Old agent should be uninstalled first.
     # We should add proper check later.
-    if 'cloudify_agent' not in props:
+    if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
-    old_agent = props['cloudify_agent']
+    old_agent = ctx.instance.runtime_properties['cloudify_agent']
     new_agent = create_new_agent_dict(old_agent)
     ctx.instance.runtime_properties['new_cloudify_agent'] = new_agent
     ctx.instance.update()
@@ -261,9 +260,9 @@ def create_agent_from_old_agent():
         raise NonRecoverableError('Could not start agent.')
     # We are keeping track of old_agent in order to uninstall it later.
     # Or revert our change.
-    props['old_cloudify_agent'] = old_agent
-    props['cloudify_agent'] = new_agent
-    del(props['new_cloudify_agent'])
+    ctx.instance.runtime_properties['old_cloudify_agent'] = old_agent
+    ctx.instance.runtime_properties['cloudify_agent'] = new_agent
+    del(ctx.instance.runtime_properties['new_cloudify_agent'])
 
 
 @operation
