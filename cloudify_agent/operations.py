@@ -215,8 +215,7 @@ def create_new_agent_dict(old_agent, suffix=None):
     return new_agent
 
 
-# It might be a good idea to set it during snapshot restore.
-def get_broker_url(agent):
+def _get_broker_url(agent):
     if 'broker_url' in agent:
         return agent['broker_url']
     broker_port = agent.get('broker_port', defaults.BROKER_PORT)
@@ -226,9 +225,6 @@ def get_broker_url(agent):
 
 
 def create_agent_from_old_agent():
-    # We should not proceed when 'old_cloudify_agent' is in runtime
-    # properties. Old agent should be uninstalled first.
-    # We should add proper check later.
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
@@ -236,11 +232,9 @@ def create_agent_from_old_agent():
     new_agent = create_new_agent_dict(old_agent)
     ctx.instance.runtime_properties['new_cloudify_agent'] = new_agent
     ctx.instance.update()
-    # This one is interesting.
-    # We want to support cases when old agent is not connected to
-    # current rabbit server.
-    # So we retrieve broker url from old agent.
-    broker_url = get_broker_url(old_agent)
+    # We retrieve broker url from old agent in order to support
+    # cases when old agent is not connected to current rabbit server.
+    broker_url = _get_broker_url(old_agent)
     celery_client = celery.Celery(broker=broker_url, backend=broker_url)
     script_url = 'http://{0}/v2/node-instances/{1}/install_agent.py'.format(
         new_agent['manager_ip'],
@@ -253,14 +247,12 @@ def create_agent_from_old_agent():
     )
     timeout = 2 * 60
     result.get(timeout=timeout)
-    # Make sure celery agent was started:
-    # This one should be connected to current rabbit server.
+    # Make sure that new celery agent was started:
     agent_status = app.control.inspect(destination=[
         'celery@{0}'.format(new_agent['name'])])
     if not agent_status.active():
         raise NonRecoverableError('Could not start agent.')
-    # We are keeping track of old_agent in order to uninstall it later.
-    # Or revert our change.
+    # Setting old_cloudify_agent in order to uninstall it later.
     ctx.instance.runtime_properties['old_cloudify_agent'] = old_agent
     ctx.instance.runtime_properties['cloudify_agent'] = new_agent
     del(ctx.instance.runtime_properties['new_cloudify_agent'])

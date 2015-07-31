@@ -111,10 +111,10 @@ def connection_attributes(cloudify_agent):
 
 @group('cfy-agent')
 def cfy_agent_attributes(cloudify_agent):
-    cfy_agent_attributes_no_defaults(cloudify_agent)
+    _cfy_agent_attributes_no_defaults(cloudify_agent)
 
 
-def cfy_agent_attributes_no_defaults(cloudify_agent):
+def _cfy_agent_attributes_no_defaults(cloudify_agent):
 
     if 'process_management' not in cloudify_agent:
 
@@ -149,7 +149,7 @@ def cfy_agent_attributes_no_defaults(cloudify_agent):
         cloudify_agent['manager_ip'] = get_manager_ip()
 
 
-def get_package_url(cloudify_agent):
+def _get_package_url(cloudify_agent):
     if cloudify_agent['windows']:
         return '{0}/packages/agents/cloudify-windows-agent.exe'.format(
             get_manager_file_server_url())
@@ -160,7 +160,7 @@ def get_package_url(cloudify_agent):
             cloudify_agent['distro_codename'])
 
 
-def directory_attributes(cloudify_agent):
+def _directory_attributes(cloudify_agent):
     if 'agent_dir' not in cloudify_agent:
         name = cloudify_agent['name']
         basedir = cloudify_agent['basedir']
@@ -198,10 +198,10 @@ def _add_cfy_agent_defaults(cloudify_agent):
 
 
 def reinstallation_attributes(cloudify_agent):
-    cfy_agent_attributes_no_defaults(cloudify_agent)
+    _cfy_agent_attributes_no_defaults(cloudify_agent)
     _add_cfy_agent_defaults(cloudify_agent)
-    cloudify_agent['package_url'] = get_package_url(cloudify_agent)
-    directory_attributes(cloudify_agent)
+    cloudify_agent['package_url'] = _get_package_url(cloudify_agent)
+    _directory_attributes(cloudify_agent)
     _add_installation_defaults(cloudify_agent)
 
 
@@ -227,7 +227,7 @@ def installation_attributes(cloudify_agent, runner):
                     dist = runner.machine_distribution()
                     cloudify_agent['distro_codename'] = dist[2].lower()
 
-            cloudify_agent['package_url'] = get_package_url(cloudify_agent)
+            cloudify_agent['package_url'] = _get_package_url(cloudify_agent)
 
     if 'basedir' not in cloudify_agent:
         if cloudify_agent['local']:
@@ -245,4 +245,4 @@ def installation_attributes(cloudify_agent, runner):
                 basedir = runner.home_dir(cloudify_agent['user'])
         cloudify_agent['basedir'] = basedir
 
-    directory_attributes(cloudify_agent)
+    _directory_attributes(cloudify_agent)
