@@ -211,7 +211,6 @@ def create_new_agent_dict(old_agent, suffix=None):
         if field in new_agent:
             del(new_agent[field])
     new_agent['name'] = '{0}_{1}'.format(old_agent['name'], suffix)
-    configuration.cfy_agent_attributes(new_agent)
     configuration.reinstallation_attributes(new_agent)
     return new_agent
 

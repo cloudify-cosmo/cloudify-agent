@@ -151,13 +151,19 @@ class TestCreateAgentAmqp(BaseTest):
                 'cloudify_agent']['name']
             old_agent_dir = ctx.instance.runtime_properties[
                 'cloudify_agent']['agent_dir']
+            old_queue = ctx.instance.runtime_properties[
+                'cloudify_agent']['queue']
+
             with self._patch_manager_env():
                 operations.create_agent_from_old_agent()
             new_name = ctx.instance.runtime_properties[
                 'cloudify_agent']['name']
             new_agent_dir = ctx.instance.runtime_properties[
                 'cloudify_agent']['agent_dir']
+            new_queue = ctx.instance.runtime_properties[
+                'cloudify_agent']['queue']
             self.assertNotEquals(old_name, new_name)
             self.assertNotEquals(old_agent_dir, new_agent_dir)
+            self.assertNotEquals(old_queue, new_queue)
         finally:
             current_ctx.set(old_context)
