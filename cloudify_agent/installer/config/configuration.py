@@ -183,11 +183,15 @@ def directory_attributes(cloudify_agent):
         cloudify_agent['envdir'] = envdir
 
 
-# TODO: change name to sth more meaningful.
 @group('installation')
+def _add_installation_defaults(cloudify_agent):
+    pass
+
+
 def reinstallation_attributes(cloudify_agent):
     cloudify_agent['package_url'] = get_package_url(cloudify_agent)
     directory_attributes(cloudify_agent)
+    _add_installation_defaults(cloudify_agent)
 
 
 @group('installation')
