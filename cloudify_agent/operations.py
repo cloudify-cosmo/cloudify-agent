@@ -244,7 +244,7 @@ def create_agent_from_old_agent():
     # So we retrieve broker url from old agent.
     broker_url = get_broker_url(old_agent)
     celery_client = celery.Celery(broker=broker_url, backend=broker_url)
-    script_url = 'http://{0}/node-instances/{1}/install_agent.py'.format(
+    script_url = 'http://{0}/v2/node-instances/{1}/install_agent.py'.format(
         new_agent['manager_ip'],
         ctx.instance.id
     )
