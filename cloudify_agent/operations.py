@@ -227,7 +227,7 @@ def get_broker_url(agent):
 
 
 def create_agent_from_old_agent():
-    props = ctx.node_instance.runtime_properties
+    props = ctx.instance.runtime_properties
     # We should not proceed when 'old_cloudify_agent' is in runtime
     # properties. Old agent should be uninstalled first.
     # We should add proper check later.
@@ -236,8 +236,8 @@ def create_agent_from_old_agent():
             'cloudify_agent key not available in runtime_properties')
     old_agent = props['cloudify_agent']
     new_agent = create_new_agent_dict(old_agent)
-    ctx.node_instance.runtime_properties['new_cloudify_agent'] = new_agent
-    ctx.node_instance.update()
+    ctx.instance.runtime_properties['new_cloudify_agent'] = new_agent
+    ctx.instance.update()
     # This one is interesting.
     # We want to support cases when old agent is not connected to
     # current rabbit server.
@@ -246,7 +246,7 @@ def create_agent_from_old_agent():
     celery_client = celery.Celery(broker=broker_url, backend=broker_url)
     script_url = 'http://{0}/node-instances/{1}/install_agent.py'.format(
         new_agent['manager_ip'],
-        ctx.node_instance.id
+        ctx.instance.id
     )
     result = celery_client.send_task(
         'script_runner.tasks.run',
