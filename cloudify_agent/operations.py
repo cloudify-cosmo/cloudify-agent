@@ -255,7 +255,8 @@ def create_agent_from_old_agent():
     result.get(timeout=timeout)
     # Make sure celery agent was started:
     # This one should be connected to current rabbit server.
-    agent_status = app.control.inspect(destination=[new_agent['queue']])
+    agent_status = app.control.inspect(destination=[
+        'celery@{0}'.format(new_agent['name'])])
     if not agent_status.active():
         raise NonRecoverableError('Could not start agent.')
     # We are keeping track of old_agent in order to uninstall it later.
