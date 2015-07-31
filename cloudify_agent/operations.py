@@ -268,7 +268,7 @@ def create_agent_from_old_agent():
 
 
 @operation
-def create_agent_amqp():
+def create_agent_amqp(**_):
     create_agent_from_old_agent()
 
 
@@ -282,7 +282,7 @@ def _get_all_host_instances(ctx):
 
 
 @workflow
-def install_new_agents():
+def install_new_agents(ctx, **_):
     graph = ctx.graph_mode()
     hosts = _get_all_host_instances(ctx)
     for host in hosts:
