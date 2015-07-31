@@ -26,6 +26,8 @@ from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import get_manager_file_server_blueprints_root_url
 from cloudify.decorators import operation, workflow
 
+from cloudify_rest_client.client import DEFAULT_API_VERSION
+
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.api import defaults
@@ -236,8 +238,9 @@ def create_agent_from_old_agent():
     # cases when old agent is not connected to current rabbit server.
     broker_url = _get_broker_url(old_agent)
     celery_client = celery.Celery(broker=broker_url, backend=broker_url)
-    script_url = 'http://{0}/v2/node-instances/{1}/install_agent.py'.format(
+    script_url = 'http://{0}/{1}/node-instances/{2}/install_agent.py'.format(
         new_agent['manager_ip'],
+        DEFAULT_API_VERSION,
         ctx.instance.id
     )
     result = celery_client.send_task(
