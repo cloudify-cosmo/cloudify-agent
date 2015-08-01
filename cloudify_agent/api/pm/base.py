@@ -555,6 +555,29 @@ class Daemon(object):
         self.start(timeout=start_timeout,
                    interval=start_interval)
 
+    def get_logfile(self):
+
+        """
+        Injects worker_id placeholder into logfile. Celery library will replace
+        this placeholder with worker id. It is used to make sure that there is
+        at most one process writing to a specific log file.
+
+        """
+
+        path, extension = os.path.splitext(self.log_file)
+        return '{0}{1}{2}'.format(path,
+                                  self.get_worker_id_placeholder(),
+                                  extension)
+
+    def get_worker_id_placeholder(self):
+
+        """
+        Placeholder suitable for linux systems.
+
+        """
+
+        return '%I'
+
     def _verify_no_celery_error(self):
 
         error_dump_path = os.path.join(
