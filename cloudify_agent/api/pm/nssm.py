@@ -89,7 +89,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
             queue=self.queue,
             nssm_path=self.nssm_path,
             log_level=self.log_level,
-            log_file=self.log_file,
+            log_file=self.get_logfile(),
             pid_file=self.pid_file,
             workdir=self.workdir,
             user=self.user,
@@ -181,6 +181,16 @@ class NonSuckingServiceManagerDaemon(Daemon):
         except CommandExecutionException as e:
             self._logger.debug(str(e))
             return False
+
+    def get_worker_id_placeholder(self):
+
+        """
+        Returns placeholder suitable for windows systems.
+        Due to bug in Celery placeholder %I is not working
+        properly on nt systems.
+
+        """
+        return '{0}'
 
     def _create_env_string(self):
         env_string = ''

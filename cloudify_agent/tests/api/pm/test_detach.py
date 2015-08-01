@@ -54,7 +54,6 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest):
         self.assertFalse(os.path.exists(daemon.script_path))
         self.assertFalse(os.path.exists(daemon.config_path))
         self.assertFalse(os.path.exists(daemon.includes_path))
-        self.assertFalse(os.path.exists(daemon.log_file))
         self.assertFalse(os.path.exists(daemon.pid_file))
 
     def test_cron_respawn(self):
