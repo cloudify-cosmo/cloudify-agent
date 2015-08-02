@@ -61,7 +61,7 @@ node_templates:
           ''',
           '''su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/cfy-agent daemons create --name=cloudify_agent_userdata --queue=cloudify_agent_userdata_queue --process-management=init.d --manager-ip=10.67.79.2 --user=ubuntu --workdir=/home/ubuntu/cloudify_agent/work"
              su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/cfy-agent daemons configure --name=cloudify_agent_userdata"
-             su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/cfy-agent daemons start --name=cloudify_agent_userdata --delete-amqp-queue"'''
+             su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/cfy-agent daemons start --name=cloudify_agent_userdata"'''
         ] }
 
       cloudify_agent:
