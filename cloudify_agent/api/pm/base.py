@@ -272,6 +272,8 @@ class Daemon(object):
         # initialize an internal celery client
         self._celery = Celery(broker=self.broker_url,
                               backend=self.broker_url)
+        self._celery.conf.update(
+            CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES)
 
     def validate_mandatory(self):
 
@@ -513,6 +515,8 @@ class Daemon(object):
                 if not status:
                     self._logger.debug('Daemon {0} has shutdown'
                                        .format(self.name, interval))
+                    self._logger.debug('Deleting AMQP queues')
+                    self._delete_amqp_queues()
                     return
             self._logger.debug('Daemon {0} is still running. '
                                'Sleeping for {1} seconds...'

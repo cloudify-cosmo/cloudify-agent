@@ -28,7 +28,7 @@ from cloudify import constants
 from cloudify.utils import LocalCommandRunner
 
 
-from cloudify_agent.api import utils
+from cloudify_agent.api import utils, defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api.plugins.installer import PluginInstaller
 
@@ -130,6 +130,8 @@ class BaseDaemonLiveTestCase(BaseTest):
         super(BaseDaemonLiveTestCase, self).setUp()
         self.celery = Celery(broker='amqp://',
                              backend='amqp://')
+        self.celery.conf.update(
+            CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES)
         self.runner = LocalCommandRunner(logger=self.logger)
         self.daemons = []
 

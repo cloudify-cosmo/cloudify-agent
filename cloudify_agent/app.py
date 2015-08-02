@@ -27,7 +27,7 @@ from celery import Celery, signals
 
 from cloudify import constants
 
-from cloudify_agent.api import utils
+from cloudify_agent.api import utils, defaults
 
 
 LOGFILE_SIZE_BYTES = 5 * 1024 * 1024
@@ -73,8 +73,8 @@ app = Celery(broker=broker_url)
 # result backends running on windows hosts
 # see https://github.com/celery/celery/issues/897
 app.conf.update(
-    CELERY_RESULT_BACKEND=broker_url
-)
+    CELERY_RESULT_BACKEND=broker_url,
+    CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES)
 
 
 if daemon_name:
