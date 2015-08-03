@@ -374,7 +374,7 @@ class FabricRunner(object):
         """
 
         if output_path is None:
-            output_path = self.mktemp()
+            output_path = self.mkdtemp()
 
         try:
             self.logger.debug('Attempting to locate wget on the host '
