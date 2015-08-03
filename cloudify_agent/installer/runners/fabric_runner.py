@@ -21,6 +21,7 @@ from fabric import network
 from fabric import api as fabric_api
 from fabric.context_managers import settings
 from fabric.context_managers import hide
+from fabric.context_managers import cd
 from fabric.context_managers import shell_env
 from fabric.contrib.files import exists
 
@@ -379,19 +380,20 @@ class FabricRunner(object):
             self.logger.debug('Attempting to locate wget on the host '
                               'machine')
             self.run('which wget', **attributes)
-            command = 'wget -T 30 {0} -O {1}'.format(url, output_path)
+            command = 'wget -T 30 {0}'.format(url)
         except CommandExecutionException:
             try:
                 self.logger.debug(
                     'wget not found. Attempting to locate cURL on the host '
                     'machine')
                 self.run('which curl', **attributes)
-                command = 'curl {0} -O {1}'.format(url, output_path)
+                command = 'curl {0} -O'.format(url)
             except CommandExecutionException:
                 raise exceptions.AgentInstallerConfigurationError(
                     'Cannot find neither wget nor curl'
                     .format(url))
-        self.run(command, **attributes)
+        with cd(output_path):
+            self.run(command, **attributes)
         return output_path
 
     def home_dir(self, username):
