@@ -29,23 +29,36 @@ function install_pip
 	sudo pip install pip==6.0.8 --upgrade
 }
 
+function upload_to_s3() {
+	path=$1
+
+    sudo yum install -y s3cmd
+    s3cmd -d --access_key=${AWS_ACCESS_KEY_ID} --secret_key=${AWS_ACCESS_KEY} --progress -H -p --check-md5 --continue-put put $path s3://${AWS_S3_BUCKET}/${AWS_S3_BUCKET_PREFIX}
+}
+
+
 GITHUB_USERNAME=$1
 GITHUB_PASSWORD=$2
+AWS_ACCESS_KEY_ID=$3
+AWS_ACCESS_KEY=$4
+AWS_S3_BUCKET = 'gigaspaces-repository-eu'
+AWS_S3_BUCKET_PREFIX = 'org/cloudify3/'
 
 install_deps
 
 cd ~
 install_pip &&
 sudo pip install virtualenv==12.0.7 &&
-sudo pip install boto==2.36.0 &&
+sudo pip install cloudify-agent-packager==3.5.0 &&
 sudo rm -rf ~/.cache
 
 # clone commercial plugins. this should be a feature in the agent-packager
 git clone https://${GITHUB_USERNAME}:${GITHUB_PASSWORD}@github.com/cloudify-cosmo/cloudify-vsphere-plugin.git /tmp/cloudify-vsphere-plugin
 git clone https://${GITHUB_USERNAME}:${GITHUB_PASSWORD}@github.com/cloudify-cosmo/cloudify-softlayer-plugin.git /tmp/cloudify-softlayer-plugin
 
-
-# REPLACE branch before production
-sudo pip install cloudify-agent-packager==3.5.0 &&
 cd /tmp &&
 cfy-ap -c /vagrant/packager.yaml -f -v
+
+if [ ! -z ${AWS_ACCESS_KEY} ]; then
+    upload_to_s3 ~/*.tar.gz
+fi
