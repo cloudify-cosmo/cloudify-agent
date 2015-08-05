@@ -1,5 +1,5 @@
 export CORE_TAG_NAME="master"
-export PLUGINS_TAG_NAME="master"
+
 
 pip install wheel
 
