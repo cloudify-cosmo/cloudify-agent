@@ -238,6 +238,11 @@ def create_agent_from_old_agent():
     # cases when old agent is not connected to current rabbit server.
     broker_url = _get_broker_url(old_agent)
     celery_client = celery.Celery(broker=broker_url, backend=broker_url)
+    # This one will have to be modified for 3.2
+    app_conf = {
+        'CELERY_TASK_RESULT_EXPIRES': defaults.CELERY_TASK_RESULT_EXPIRES
+    }
+    celery_client.conf.update(**app_conf)
     script_url = 'http://{0}/api/{1}/node-instances/{2}/install_agent.py'.format(
         new_agent['manager_ip'],
         DEFAULT_API_VERSION,
