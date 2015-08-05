@@ -269,27 +269,3 @@ def create_agent_from_old_agent():
 @operation
 def create_agent_amqp(**_):
     create_agent_from_old_agent()
-
-
-def _get_all_host_instances(ctx):
-    node_instances = set()
-    for node in ctx.nodes:
-        if 'cloudify.nodes.Compute' in node.type_hierarchy:
-            for instance in node.instances:
-                node_instances.add(instance)
-    return node_instances
-
-
-@workflow
-def install_new_agents(ctx, **_):
-    graph = ctx.graph_mode()
-    hosts = _get_all_host_instances(ctx)
-    for host in hosts:
-        seq = graph.sequence()
-        seq.add(
-            host.send_event('Installing new agent.'),
-            host.execute_operation(
-                'cloudify.interfaces.cloudify_agent.create_amqp'),
-            host.send_event('New agent installed.')
-        )
-    graph.execute()
