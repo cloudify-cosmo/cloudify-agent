@@ -57,7 +57,7 @@ git clone https://${GITHUB_USERNAME}:${GITHUB_PASSWORD}@github.com/cloudify-cosm
 git clone https://${GITHUB_USERNAME}:${GITHUB_PASSWORD}@github.com/cloudify-cosmo/cloudify-softlayer-plugin.git /tmp/cloudify-softlayer-plugin
 
 cd /tmp &&
-cfy-ap -c /vagrant/packager.yaml -f -v
+cfy-ap -c /vagrant/linux/packager.yaml -f -v
 
 if [ ! -z ${AWS_ACCESS_KEY} ]; then
     upload_to_s3 ~/*.tar.gz
