@@ -57,7 +57,7 @@ git clone https://${GITHUB_USERNAME}:${GITHUB_PASSWORD}@github.com/cloudify-cosm
 git clone https://${GITHUB_USERNAME}:${GITHUB_PASSWORD}@github.com/cloudify-cosmo/cloudify-softlayer-plugin.git /tmp/cloudify-softlayer-plugin
 
 cd /tmp &&
-cfy-ap -c /vagrant/packager.yaml -f -v
+cfy-ap -c /vagrant/linux/packager.yaml -f -v
 # generate md5 file.
 md5sum=$(md5sum /tmp/*.tar.gz)
 echo $md5sum | sudo tee ${md5##* }.md5
