@@ -41,8 +41,8 @@ GITHUB_USERNAME=$1
 GITHUB_PASSWORD=$2
 AWS_ACCESS_KEY_ID=$3
 AWS_ACCESS_KEY=$4
-AWS_S3_BUCKET = 'gigaspaces-repository-eu'
-AWS_S3_BUCKET_PREFIX = 'org/cloudify3/'
+AWS_S3_BUCKET='gigaspaces-repository-eu'
+AWS_S3_BUCKET_PREFIX='org/cloudify3/'
 
 install_deps
 
@@ -58,7 +58,11 @@ git clone https://${GITHUB_USERNAME}:${GITHUB_PASSWORD}@github.com/cloudify-cosm
 
 cd /tmp &&
 cfy-ap -c /vagrant/packager.yaml -f -v
+# generate md5 file.
+md5sum=$(md5sum /tmp/*.tar.gz)
+echo $md5sum | sudo tee ${md5##* }.md5
 
 if [ ! -z ${AWS_ACCESS_KEY} ]; then
-    upload_to_s3 ~/*.tar.gz
+    upload_to_s3 /tmp/*.tar.gz
+    upload_to_s3 /tmp/*.md5
 fi
