@@ -17,6 +17,7 @@ import uuid
 import time
 import threading
 import sys
+import os
 import copy
 
 import celery
@@ -237,27 +238,35 @@ def create_agent_from_old_agent():
     # We retrieve broker url from old agent in order to support
     # cases when old agent is not connected to current rabbit server.
     broker_url = _get_broker_url(old_agent)
-    celery_client = celery.Celery(broker=broker_url, backend=broker_url)
-    # This one will have to be modified for 3.2
-    app_conf = {
-        'CELERY_TASK_RESULT_EXPIRES': defaults.CELERY_TASK_RESULT_EXPIRES
-    }
-    celery_client.conf.update(**app_conf)
-    script_format = 'http://{0}/api/{1}/node-instances/{2}/install_agent.py'
-    script_url = script_format.format(
-        new_agent['manager_ip'],
-        DEFAULT_API_VERSION,
-        ctx.instance.id
-    )
-    connection = celery_client.connection(hostname=broker_url)
-    result = celery_client.send_task(
-        'script_runner.tasks.run',
-        args=[script_url],
-        queue=old_agent['queue'],
-        connection=connection
-    )
-    timeout = 2 * 60
-    result.get(timeout=timeout)
+    env_broker_url = os.environ.get('CELERY_BROKER_URL')
+    os.environ['CELERY_BROKER_URL'] = broker_url
+    try:
+        celery_client = celery.Celery(broker=broker_url, backend=broker_url)
+        # This one will have to be modified for 3.2
+        app_conf = {
+            'CELERY_TASK_RESULT_EXPIRES': defaults.CELERY_TASK_RESULT_EXPIRES
+        }
+        celery_client.conf.update(**app_conf)
+        script_format = 'http://{0}/api/{1}/node-instances/{2}/install_agent.py'
+        script_url = script_format.format(
+            new_agent['manager_ip'],
+            DEFAULT_API_VERSION,
+            ctx.instance.id
+        )
+        connection = celery_client.connection(hostname=broker_url)
+        result = celery_client.send_task(
+            'script_runner.tasks.run',
+            args=[script_url],
+            queue=old_agent['queue'],
+            connection=connection
+        )
+        timeout = 2 * 60
+        result.get(timeout=timeout)
+    finally:
+        if env_broker_url is None:
+            del(os.environ['CELERY_BROKER_URL'])
+        else:
+            os.environ['CELERY_BROKER_URL'] = env_broker_url
     # Make sure that new celery agent was started:
     agent_status = app.control.inspect(destination=[
         'celery@{0}'.format(new_agent['name'])])
