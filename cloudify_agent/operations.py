@@ -218,7 +218,7 @@ def create_new_agent_dict(old_agent, suffix=None):
     fields_to_delete = ['name', 'queue', 'workdir', 'agent_dir', 'envdir',
                         'manager_ip', 'package_url', 'source_url'
                         'manager_port', 'broker_url', 'broker_port',
-                        'broker_ip']
+                        'broker_ip', 'key']
     for field in fields_to_delete:
         if field in new_agent:
             del(new_agent[field])
