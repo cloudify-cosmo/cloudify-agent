@@ -243,15 +243,18 @@ def create_agent_from_old_agent():
         'CELERY_TASK_RESULT_EXPIRES': defaults.CELERY_TASK_RESULT_EXPIRES
     }
     celery_client.conf.update(**app_conf)
-    script_url = 'http://{0}/api/{1}/node-instances/{2}/install_agent.py'.format(
+    script_format = 'http://{0}/api/{1}/node-instances/{2}/install_agent.py'
+    script_url = script_format.format(
         new_agent['manager_ip'],
         DEFAULT_API_VERSION,
         ctx.instance.id
     )
+    connection = celery_client.connection(hostname=broker_url)
     result = celery_client.send_task(
         'script_runner.tasks.run',
         args=[script_url],
-        queue=old_agent['queue']
+        queue=old_agent['queue'],
+        connection=connection
     )
     timeout = 2 * 60
     result.get(timeout=timeout)
