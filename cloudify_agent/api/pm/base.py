@@ -272,6 +272,8 @@ class Daemon(object):
         # initialize an internal celery client
         self._celery = Celery(broker=self.broker_url,
                               backend=self.broker_url)
+        self._celery.conf.update(
+            CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES)
 
     def validate_mandatory(self):
 
@@ -513,6 +515,8 @@ class Daemon(object):
                 if not status:
                     self._logger.debug('Daemon {0} has shutdown'
                                        .format(self.name, interval))
+                    self._logger.debug('Deleting AMQP queues')
+                    self._delete_amqp_queues()
                     return
             self._logger.debug('Daemon {0} is still running. '
                                'Sleeping for {1} seconds...'
@@ -554,6 +558,29 @@ class Daemon(object):
                   interval=stop_interval)
         self.start(timeout=start_timeout,
                    interval=start_interval)
+
+    def get_logfile(self):
+
+        """
+        Injects worker_id placeholder into logfile. Celery library will replace
+        this placeholder with worker id. It is used to make sure that there is
+        at most one process writing to a specific log file.
+
+        """
+
+        path, extension = os.path.splitext(self.log_file)
+        return '{0}{1}{2}'.format(path,
+                                  self.get_worker_id_placeholder(),
+                                  extension)
+
+    def get_worker_id_placeholder(self):
+
+        """
+        Placeholder suitable for linux systems.
+
+        """
+
+        return '%I'
 
     def _verify_no_celery_error(self):
 

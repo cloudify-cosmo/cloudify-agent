@@ -17,15 +17,22 @@
 This module is loaded on celery startup. It is not intended to be
 used outside the scope of an @operation.
 """
-
 import os
 import sys
 import traceback
-from celery import Celery
+import logging
+import logging.handlers
+
+from celery import Celery, signals
 
 from cloudify import constants
 
-from cloudify_agent.api import utils
+from cloudify_agent.api import utils, defaults
+
+
+LOGFILE_SIZE_BYTES = 5 * 1024 * 1024
+LOGFILE_BACKUP_COUNT = 5
+
 
 broker_url = os.environ.get(constants.CELERY_BROKER_URL_KEY, 'amqp://')
 
@@ -35,6 +42,24 @@ try:
 except KeyError:
     # running outside an agent
     daemon_name = None
+
+
+if daemon_name:
+    @signals.setup_logging.connect
+    def setup_logging_handler(loglevel, logfile, format, **kwargs):
+        logger = logging.getLogger()
+        if os.name == 'nt':
+            logfile = logfile.format(os.getpid())
+        handler = logging.handlers.RotatingFileHandler(
+            logfile,
+            maxBytes=LOGFILE_SIZE_BYTES,
+            backupCount=LOGFILE_BACKUP_COUNT)
+        handler.setFormatter(logging.Formatter(fmt=format))
+        handler.setLevel(loglevel)
+        logger.handlers = []
+        logger.addHandler(handler)
+        logger.setLevel(loglevel)
+
 
 # This attribute is used as the celery App instance.
 # it is referenced in two ways:
@@ -48,8 +73,8 @@ app = Celery(broker=broker_url)
 # result backends running on windows hosts
 # see https://github.com/celery/celery/issues/897
 app.conf.update(
-    CELERY_RESULT_BACKEND=broker_url
-)
+    CELERY_RESULT_BACKEND=broker_url,
+    CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES)
 
 
 if daemon_name:

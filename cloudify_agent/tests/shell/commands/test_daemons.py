@@ -111,7 +111,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
 
     def test_start(self, *factory_methods):
         self._run('cfy-agent daemons start --name=name '
-                  '--interval 5 --timeout 20 --delete-amqp-queue')
+                  '--interval 5 --timeout 20 --no-delete-amqp-queue')
 
         factory_load = factory_methods[2]
         factory_load.assert_called_once_with('name',
@@ -121,7 +121,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
         daemon.start.assert_called_once_with(
             interval=5,
             timeout=20,
-            delete_amqp_queue=True,
+            delete_amqp_queue=False,
         )
 
     def test_stop(self, *factory_methods):

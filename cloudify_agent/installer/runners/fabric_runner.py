@@ -380,14 +380,14 @@ class FabricRunner(object):
                               'machine')
             self.run('which wget', **attributes)
             command = 'wget -T 30 {0} -O {1}'.format(url, output_path)
-        except CommandExecutionResponse:
+        except CommandExecutionException:
             try:
                 self.logger.debug(
                     'wget not found. Attempting to locate cURL on the host '
                     'machine')
                 self.run('which curl', **attributes)
-                command = 'curl {0} -O {1}'.format(url, output_path)
-            except CommandExecutionResponse:
+                command = 'curl {0} -o {1}'.format(url, output_path)
+            except CommandExecutionException:
                 raise exceptions.AgentInstallerConfigurationError(
                     'Cannot find neither wget nor curl'
                     .format(url))

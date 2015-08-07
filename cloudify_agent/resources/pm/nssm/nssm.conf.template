@@ -20,7 +20,6 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 echo Setting service environment
 
 {{ nssm_path }} set {{ name }} AppEnvironmentExtra ^
-PATH={{ virtualenv_path }}\Scripts;%PATH% ^
 MANAGEMENT_IP={{ manager_ip }} ^
 MANAGER_REST_PORT={{ manager_port }} ^
 MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229 ^
@@ -48,4 +47,3 @@ sc failure {{ name }} reset= {{ failure_reset_timeout }} actions= restart/{{ fai
 if %errorlevel% neq 0 exit /b %errorlevel%
 
 echo Cloudify Agent configured successfully as a Windows Service ({{ name }})
-

@@ -152,7 +152,7 @@ class GenericLinuxDaemon(CronRespawnDaemon):
             name=self.name,
             storage_dir=utils.internal.get_storage_directory(self.user),
             log_level=self.log_level,
-            log_file=self.log_file,
+            log_file=self.get_logfile(),
             pid_file=self.pid_file,
             cron_respawn=str(self.cron_respawn).lower(),
             enable_cron_script=self.create_enable_cron_script(),

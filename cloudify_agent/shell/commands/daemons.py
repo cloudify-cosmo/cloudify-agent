@@ -241,13 +241,13 @@ def unregister(name, plugin):
               help='The timeout in seconds to wait '
                    'for the daemon to be ready.',
               default=defaults.START_TIMEOUT)
-@click.option('--delete-amqp-queue',
-              help='Option to delete a pre-existing queue that this daemon '
-                   'is listening to.',
+@click.option('--no-delete-amqp-queue',
+              help='Option to prevent deletion of a pre-existing '
+                   'queue that this daemon is listening to before the agent.',
               is_flag=True,
-              default=defaults.DELETE_AMQP_QUEUE_BEFORE_START)
+              default=not defaults.DELETE_AMQP_QUEUE_BEFORE_START)
 @handle_failures
-def start(name, interval, timeout, delete_amqp_queue):
+def start(name, interval, timeout, no_delete_amqp_queue):
 
     """
     Starts the daemon.
@@ -259,7 +259,7 @@ def start(name, interval, timeout, delete_amqp_queue):
     daemon.start(
         interval=interval,
         timeout=timeout,
-        delete_amqp_queue=delete_amqp_queue
+        delete_amqp_queue=not no_delete_amqp_queue
     )
     click.echo('Successfully started daemon: {0}'.format(name))
 
