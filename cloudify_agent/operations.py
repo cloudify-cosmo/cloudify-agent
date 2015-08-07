@@ -253,12 +253,10 @@ def create_agent_from_old_agent():
             DEFAULT_API_VERSION,
             ctx.instance.id
         )
-        connection = celery_client.connection(hostname=broker_url)
         result = celery_client.send_task(
             'script_runner.tasks.run',
             args=[script_url],
-            queue=old_agent['queue'],
-            connection=connection
+            queue=old_agent['queue']
         )
         timeout = 2 * 60
         result.get(timeout=timeout)
