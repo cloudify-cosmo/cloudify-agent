@@ -202,6 +202,15 @@ def _save_daemon(daemon):
     factory.save(daemon)
 
 
+def _get_broker_url(agent):
+    if 'broker_url' in agent:
+        return agent['broker_url']
+    broker_port = agent.get('broker_port', defaults.BROKER_PORT)
+    broker_ip = agent.get('broker_ip', agent['manager_ip'])
+    return defaults.BROKER_URL.format(broker_ip,
+                                      broker_port)
+
+
 def create_new_agent_dict(old_agent, suffix=None):
     if suffix is None:
         suffix = str(uuid.uuid4())
@@ -215,16 +224,8 @@ def create_new_agent_dict(old_agent, suffix=None):
             del(new_agent[field])
     new_agent['name'] = '{0}_{1}'.format(old_agent['name'], suffix)
     configuration.reinstallation_attributes(new_agent)
+    new_agent['broker_url'] = _get_broker_url(new_agent)
     return new_agent
-
-
-def _get_broker_url(agent):
-    if 'broker_url' in agent:
-        return agent['broker_url']
-    broker_port = agent.get('broker_port', defaults.BROKER_PORT)
-    broker_ip = agent.get('broker_ip', agent['manager_ip'])
-    return defaults.BROKER_URL.format(broker_ip,
-                                      broker_port)
 
 
 def create_agent_from_old_agent():
