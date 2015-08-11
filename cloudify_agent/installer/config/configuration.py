@@ -67,7 +67,7 @@ def connection_attributes(cloudify_agent):
             if ctx.plugin == 'agent':
                 # 3.3 Compute node, determine by new property 'os'
                 cloudify_agent['windows'] = ctx.node.properties[
-                    'os']['type'].lower() == 'windows'
+                    'os_family'].lower() == 'windows'
 
         if 'ip' not in cloudify_agent:
 
