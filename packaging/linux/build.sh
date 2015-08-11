@@ -59,8 +59,8 @@ git clone https://${GITHUB_USERNAME}:${GITHUB_PASSWORD}@github.com/cloudify-cosm
 cd /tmp &&
 cfy-ap -c /vagrant/linux/packager.yaml -f -v
 # generate md5 file.
-md5sum=$(md5sum /tmp/*.tar.gz)
-echo $md5sum | sudo tee ${md5##* }.md5
+# md5sum=$(md5sum /tmp/*.tar.gz)
+# echo $md5sum | sudo tee ${md5##* }.md5
 
 if [ ! -z ${AWS_ACCESS_KEY} ]; then
     upload_to_s3 /tmp/*.tar.gz
