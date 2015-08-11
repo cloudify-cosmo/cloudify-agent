@@ -33,77 +33,85 @@ from cloudify_agent.api import utils
 from cloudify_agent.app import app
 
 
-def init_agent_installer(func):
+def init_agent_installer(func=None, validate_connection=True):
 
-    @wraps(func)
-    def wrapper(*args, **kwargs):
+    if func is not None:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
 
-        cloudify_agent = kwargs.get('cloudify_agent', {})
+            cloudify_agent = kwargs.get('cloudify_agent', {})
 
-        # first prepare all connection details
-        configuration.prepare_connection(cloudify_agent)
+            # first prepare all connection details
+            configuration.prepare_connection(cloudify_agent)
 
-        # create the correct runner according to os
-        # and local/remote execution. we need this runner now because it
-        # will be used to determine the agent basedir in case it wasn't
-        # explicitly set
-        if cloudify_agent['local']:
-            runner = LocalCommandRunner(logger=ctx.logger)
-        else:
-            try:
-                if cloudify_agent['windows']:
-                    runner = WinRMRunner(
-                        host=cloudify_agent['ip'],
-                        user=cloudify_agent['user'],
-                        password=cloudify_agent['password'],
-                        port=cloudify_agent.get('port'),
-                        protocol=cloudify_agent.get('protocol'),
-                        uri=cloudify_agent.get('uri'),
-                        logger=ctx.logger)
+            # create the correct runner according to os
+            # and local/remote execution. we need this runner now because it
+            # will be used to determine the agent basedir in case it wasn't
+            # explicitly set
+            if cloudify_agent['local']:
+                runner = LocalCommandRunner(logger=ctx.logger)
+            else:
+                try:
+                    if cloudify_agent['windows']:
+                        runner = WinRMRunner(
+                            host=cloudify_agent['ip'],
+                            user=cloudify_agent['user'],
+                            password=cloudify_agent['password'],
+                            port=cloudify_agent.get('port'),
+                            protocol=cloudify_agent.get('protocol'),
+                            uri=cloudify_agent.get('uri'),
+                            logger=ctx.logger,
+                            validate_connection=validate_connection)
+                    else:
+                        runner = FabricRunner(
+                            logger=ctx.logger,
+                            host=cloudify_agent['ip'],
+                            user=cloudify_agent['user'],
+                            port=cloudify_agent.get('port'),
+                            key=cloudify_agent.get('key'),
+                            password=cloudify_agent.get('password'),
+                            fabric_env=cloudify_agent.get('fabric_env'),
+                            validate_connection=validate_connection)
+                except CommandExecutionError as e:
+                    return ctx.operation.retry(message=e.error,
+                                               retry_after=5)
+
+            # now we can create all other agent attributes
+            configuration.prepare_agent(cloudify_agent, runner)
+
+            # create the correct installer according to os
+            # and local/remote execution
+            if cloudify_agent['local']:
+                if os.name == 'nt':
+                    installer = LocalWindowsAgentInstaller(
+                        cloudify_agent, ctx.logger)
                 else:
-                    runner = FabricRunner(
-                        logger=ctx.logger,
-                        host=cloudify_agent['ip'],
-                        user=cloudify_agent['user'],
-                        port=cloudify_agent.get('port'),
-                        key=cloudify_agent.get('key'),
-                        password=cloudify_agent.get('password'),
-                        fabric_env=cloudify_agent.get('fabric_env'))
-            except CommandExecutionError as e:
-                return ctx.operation.retry(message=e.error,
-                                           retry_after=5)
-
-        # now we can create all other agent attributes
-        configuration.prepare_agent(cloudify_agent, runner)
-
-        # create the correct installer according to os
-        # and local/remote execution
-        if cloudify_agent['local']:
-            if os.name == 'nt':
-                installer = LocalWindowsAgentInstaller(
+                    installer = LocalLinuxAgentInstaller(
+                        cloudify_agent, ctx.logger)
+            elif cloudify_agent['windows']:
+                installer = RemoteWindowsAgentInstaller(
                     cloudify_agent, ctx.logger)
             else:
-                installer = LocalLinuxAgentInstaller(
+                installer = RemoteLinuxAgentInstaller(
                     cloudify_agent, ctx.logger)
-        elif cloudify_agent['windows']:
-            installer = RemoteWindowsAgentInstaller(
-                cloudify_agent, ctx.logger)
-        else:
-            installer = RemoteLinuxAgentInstaller(
-                cloudify_agent, ctx.logger)
 
-        kwargs['cloudify_agent'] = cloudify_agent
-        kwargs['runner'] = runner
-        kwargs['installer'] = installer
+            kwargs['cloudify_agent'] = cloudify_agent
+            kwargs['runner'] = runner
+            kwargs['installer'] = installer
 
-        try:
-            return func(*args, **kwargs)
-        finally:
-            # we need to close fabric connection
-            if isinstance(installer, RemoteLinuxAgentInstaller):
-                installer.runner.close()
+            try:
+                return func(*args, **kwargs)
+            finally:
+                # we need to close fabric connection
+                if isinstance(installer, RemoteLinuxAgentInstaller):
+                    installer.runner.close()
 
-    return wrapper
+        return wrapper
+    else:
+        def partial_wrapper(fn):
+            return init_agent_installer(
+                fn, validate_connection=validate_connection)
+        return partial_wrapper
 
 
 @operation
@@ -170,7 +178,7 @@ def start(cloudify_agent, installer, **_):
 
 
 @operation
-@init_agent_installer
+@init_agent_installer(validate_connection=False)
 def stop(cloudify_agent, installer, **_):
 
     # no need to handling remote_execution False because this operation is
@@ -180,7 +188,7 @@ def stop(cloudify_agent, installer, **_):
 
 
 @operation
-@init_agent_installer
+@init_agent_installer(validate_connection=False)
 def delete(cloudify_agent, installer, **_):
 
     if ctx.type == context.NODE_INSTANCE:
