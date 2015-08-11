@@ -53,12 +53,10 @@ Vagrant.configure('2') do |config|
     end
 
     # need to sync folders
-    debian_jessie.vm.synced_folder "../", "/cloudify-agent", create: true, type: "rsync",
-    rsync__exclude: ".git/",
-    rsync__args: ["--verbose", "--rsync-path='sudo rsync'"]
+    # debian_jessie.vm.synced_folder "../", "/cloudify-agent", create: true, type: "rsync", rsync__exclude: ".git/", rsync__args: ["--verbose", "--rsync-path='sudo rsync'"]
     debian_jessie.vm.provision "shell" do |s|
       s.path = "linux/build.sh"
-      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD}"
+      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID} #{AWS_ACCESS_KEY}"
       s.privileged = false
     end
   end
@@ -88,10 +86,10 @@ Vagrant.configure('2') do |config|
     end
 
     # need to sync folders
-    ubuntu_trusty.vm.synced_folder "../", "/cloudify-agent", create: true
+    # ubuntu_trusty.vm.synced_folder "../", "/cloudify-agent", create: true
     ubuntu_trusty.vm.provision "shell" do |s|
       s.path = "linux/build.sh"
-      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD}"
+      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID} #{AWS_ACCESS_KEY}"
       s.privileged = false
     end
   end
@@ -121,10 +119,10 @@ Vagrant.configure('2') do |config|
     end
 
     # need to sync folders
-    ubuntu_precise.vm.synced_folder "../", "/cloudify-agent", create: true
+    # ubuntu_precise.vm.synced_folder "../", "/cloudify-agent", create: true
     ubuntu_precise.vm.provision "shell" do |s|
       s.path = "linux/build.sh"
-      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD}"
+      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID} #{AWS_ACCESS_KEY}"
       s.privileged = false
     end
   end
@@ -154,10 +152,10 @@ Vagrant.configure('2') do |config|
     end
 
     #need to sync folders
-    centos_final.vm.synced_folder "../", "/cloudify-agent", create: true, type: "rsync", rsync__exclude: ".git/"
+    # centos_final.vm.synced_folder "../", "/cloudify-agent", create: true, type: "rsync", rsync__exclude: ".git/"
     centos_final.vm.provision "shell" do |s|
       s.path = "linux/build.sh"
-      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD}"
+      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID} #{AWS_ACCESS_KEY}"
       s.privileged = false
     end
   end
@@ -187,16 +185,15 @@ Vagrant.configure('2') do |config|
     end
 
     #need to sync folders
-    centos_core.vm.synced_folder "../", "/cloudify-agent", create: true,
-    type: "rsync", rsync__exclude: ".git/"
+    # centos_core.vm.synced_folder "../", "/cloudify-agent", create: true, type: "rsync", rsync__exclude: ".git/"
     centos_core.vm.provision "shell" do |s|
       s.path = "linux/build.sh"
-      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD}"
+      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID} #{AWS_ACCESS_KEY}"
       s.privileged = false
     end
   end
 
-  config.vm.define "windows_agent_aws" do |windows|
+  config.vm.define "windows_aws" do |windows|
     windows.vm.box = "dummy"
     windows.vm.box_url = "https://github.com/mitchellh/vagrant-aws/raw/master/dummy.box"
     windows.vm.guest = :windows
@@ -227,6 +224,7 @@ Vagrant.configure('2') do |config|
     # shell provisioning uses bash, so use cmd to run batch script
     windows.vm.provision "shell" do |shell|
       shell.path = 'windows/provision.sh'
+      shell.args = "#{AWS_ACCESS_KEY_ID} #{AWS_ACCESS_KEY}"
       shell.privileged = false
     end
   end
