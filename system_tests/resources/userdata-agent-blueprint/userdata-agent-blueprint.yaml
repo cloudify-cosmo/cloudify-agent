@@ -55,7 +55,7 @@ node_templates:
           ''',
           '''su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/pip install -r https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/''',
              { get_input: branch }, '''/dev-requirements.txt
-          '''
+          ''',
           '''su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/pip install https://github.com/cloudify-cosmo/cloudify-agent/archive/''',
              { get_input: branch }, '''.zip
           ''',
