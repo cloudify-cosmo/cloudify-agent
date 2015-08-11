@@ -1,8 +1,8 @@
 export CORE_TAG_NAME="master"
 
 
-pip install wheel
-pip install boto==2.36.0
+pip install wheel==0.24.0
+pip install s3cmd==1.5.2
 
 pip wheel --wheel-dir packaging/source/wheels --requirement "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/$CORE_TAG_NAME/dev-requirements.txt"
 pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels "https://github.com/cloudify-cosmo/cloudify-agent/archive/$CORE_TAG_NAME.zip"
