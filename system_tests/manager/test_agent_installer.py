@@ -31,7 +31,7 @@ class AgentInstallerTest(testenv.TestCase):
     def test_3_2_agent(self):
 
         self.blueprint_yaml = resources.get_resource(
-            '3-2-agent-mispelled-blprint.yaml')
+            '3-2-agent-blueprint/3-2-agent-mispelled-blprint.yaml')
         self.upload_deploy_and_execute_install(
             inputs={
                 'image': self.env.ubuntu_image_id,
