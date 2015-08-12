@@ -62,11 +62,11 @@ sudo rm -rf ~/.cache
 # clone commercial plugins. this should be a feature in the agent-packager
 git clone https://${GITHUB_USERNAME}:${GITHUB_PASSWORD}@github.com/cloudify-cosmo/cloudify-vsphere-plugin.git /tmp/cloudify-vsphere-plugin
 cd /tmp/cloudify-vsphere-plugin
-git checkout -b build_branch 3.3m4
+git checkout -b build_branch 1.3m4
 
 git clone https://${GITHUB_USERNAME}:${GITHUB_PASSWORD}@github.com/cloudify-cosmo/cloudify-softlayer-plugin.git /tmp/cloudify-softlayer-plugin
 cd /tmp/cloudify-softlayer-plugin
-git checkout -b build_branch 3.3m4
+git checkout -b build_branch 1.3m4
 
 cd /tmp &&
 cfy-ap -c /vagrant/linux/packager.yaml -f -v
