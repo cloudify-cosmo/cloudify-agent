@@ -48,8 +48,7 @@ node_templates:
           winrm set winrm/config/service '@{AllowUnencrypted="true"}'
           winrm set winrm/config/service/auth '@{Basic="true"}'
           msiexec /i https://www.python.org/ftp/python/2.7.6/python-2.7.6.msi TARGETDIR=C:\Python27 ALLUSERS=1 /qn
-      os:
-        type: Windows
+      os_family: Windows
       cloudify_agent:
         port: 5985
         user: Admin

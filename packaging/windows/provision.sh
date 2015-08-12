@@ -1,3 +1,11 @@
+#!/bin/bash -e
+
+AWS_ACCESS_KEY_ID=$1
+AWS_ACCESS_KEY=$2
+AWS_S3_BUCKET='gigaspaces-repository-eu/org/cloudify3'
+
+export VERSION="3.3.0-m4"
+
 export CORE_TAG_NAME="master"
 
 
@@ -30,3 +38,13 @@ popd
 
 
 iscc packaging/create_install_wizard.iss
+
+cd /home/Administrator/packaging/output/
+md5sum=$(md5sum -t *.exe)
+echo $md5sum > ${md5sum##* }.md5
+
+if [ ! -z ${AWS_ACCESS_KEY} ]; then
+    # no preserve is set to false only because preserving file attributes is not yet supported on Windows.
+    python c:/Python27/Scripts/s3cmd put --force --acl-public --access_key=${AWS_ACCESS_KEY_ID} --secret_key=${AWS_ACCESS_KEY} \
+        --no-preserve --progress --human-readable-sizes --check-md5 *.exe* s3://${AWS_S3_BUCKET}/2.2.0/
+fi
