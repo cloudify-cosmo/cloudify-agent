@@ -32,9 +32,9 @@ pushd packaging/source/virtualenv
 curl -O https://dl.dropboxusercontent.com/u/407576/cfy-win-cli-package-resources/virtualenv/virtualenv-12.1.1-py2.py3-none-any.whl
 popd
 
-
 iscc packaging/create_install_wizard.iss
 
+source /home/Administrator/packaging/env_var
 if [ ! -z ${AWS_ACCESS_KEY} ]; then
     cd /home/Administrator/packaging/output/
     # no preserve is set to false only because preserving file attributes is not yet supported on Windows.
