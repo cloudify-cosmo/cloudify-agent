@@ -2,10 +2,9 @@
 
 AWS_ACCESS_KEY_ID=$1
 AWS_ACCESS_KEY=$2
-AWS_S3_BUCKET='gigaspaces-repository-eu/org/cloudify3'
-
-export VERSION="3.3.0/m4-TEST/"
-export CORE_TAG_NAME="master"
+VERSION="3.3.0/m4-TEST/"
+CORE_TAG_NAME="master"
+AWS_S3_BUCKET='gigaspaces-repository-eu/org/cloudify3/$VERSION'
 
 
 pip install wheel==0.24.0
@@ -13,9 +12,6 @@ pip install s3cmd==1.5.2
 
 pip wheel --wheel-dir packaging/source/wheels --requirement "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/$CORE_TAG_NAME/dev-requirements.txt"
 pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels "https://github.com/cloudify-cosmo/cloudify-agent/archive/$CORE_TAG_NAME.zip"
-
-
-
 
 
 mkdir -p packaging/source/{pip,python,virtualenv}
