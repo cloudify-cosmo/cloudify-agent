@@ -34,7 +34,6 @@ popd
 
 iscc packaging/create_install_wizard.iss
 
-source /home/Administrator/packaging/env_var
 if [ ! -z ${AWS_ACCESS_KEY} ]; then
     cd /home/Administrator/packaging/output/
     # no preserve is set to false only because preserving file attributes is not yet supported on Windows.
