@@ -71,8 +71,7 @@ cd /tmp &&
 cfy-ap -c /vagrant/linux/packager.yaml -f -v
 
 if [ ! -z ${AWS_ACCESS_KEY} ]; then
-    cd /tmp
-    # no preserve is set to false only because preserving file attributes is not yet supported on Windows.
-    s3cmd put --force --acl-public --access_key=${AWS_ACCESS_KEY_ID} --secret_key=${AWS_ACCESS_KEY} \
-    --no-preserve --progress --human-readable-sizes --check-md5 *.tar.gz s3://${AWS_S3_BUCKET}
+    #cd /tmp
+    #s3cmd put --force --acl-public --access_key=${AWS_ACCESS_KEY_ID} --secret_key=${AWS_ACCESS_KEY} \
+    #  --preserve --progress --human-readable-sizes --check-md5 *.tar.gz s3://${AWS_S3_BUCKET}
 fi
