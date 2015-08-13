@@ -4,8 +4,7 @@ AWS_ACCESS_KEY_ID=$1
 AWS_ACCESS_KEY=$2
 AWS_S3_BUCKET='gigaspaces-repository-eu/org/cloudify3'
 
-export VERSION="3.3.0-m4"
-
+export VERSION="3.3.0/m4-TEST/"
 export CORE_TAG_NAME="master"
 
 
