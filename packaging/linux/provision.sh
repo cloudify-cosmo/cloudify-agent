@@ -26,7 +26,7 @@ function install_requirements() {
 	curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python
 	sudo pip install pip==6.0.8 --upgrade
 	sudo pip install virtualenv==12.0.7 &&
-	sudo pip install cloudify-agent-packager==3.5.0 &&
+	sudo pip install cloudify-agent-packager==3.5.2 &&
 	sudo pip install s3cmd==1.5.2
 }
 
@@ -56,8 +56,10 @@ function upload_to_s3() {
 }
 
 
-VERSION="3.3.0"
-PRERELEASE="m4"
+# VERSION/PRERELEASE/BUILD must be exported as they is being read as an env var by the cloudify-agent-packager
+export VERSION="3.3.0"
+export PRERELEASE="m4"
+export BUILD="274"
 CORE_TAG_NAME="master"
 PLUGINS_TAG_NAME="master"
 
@@ -70,6 +72,7 @@ AWS_S3_BUCKET_PATH="gigaspaces-repository-eu/org/cloudify3/${VERSION}/${PRERELEA
 
 echo "VERSION: ${VERSION}"
 echo "PRERELEASE: ${PRERELEASE}"
+echo "BUILD: ${BUILD}"
 echo "CORE_TAG_NAME: ${CORE_TAG_NAME}"
 echo "PLUGINS_TAG_NAME: ${PLUGINS_TAG_NAME}"
 echo "AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}"
@@ -88,5 +91,5 @@ cd /tmp && cfy-ap -c /vagrant/linux/packager.yaml -f -v &&
 
 # this should be used AFTER renaming the agent tar to contain versions. adding a version to the name of the tar should also be implemented
 # within the agent-packager.
-cd /tmp && md5sum=$(md5sum *.tar.gz) && echo $md5sum > ${md5sum##* }.md5 &&
+cd /tmp && md5sum=$(md5sum *.tar.gz) && echo $md5sum | sudo tee ${md5sum##* }.md5 &&
 [ -z ${AWS_ACCESS_KEY} ] || upload_to_s3
