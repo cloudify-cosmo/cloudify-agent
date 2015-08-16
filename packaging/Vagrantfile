@@ -50,7 +50,7 @@ Vagrant.configure('2') do |config|
       aws.security_groups = "vagrant_cfy_build"
     end
     debian_jessie.vm.provision "shell" do |s|
-      s.path = "linux/build.sh"
+      s.path = "linux/provision.sh"
       s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP}"
       s.privileged = false
     end
@@ -75,7 +75,7 @@ Vagrant.configure('2') do |config|
       aws.security_groups = "vagrant_cfy_build"
     end
     ubuntu_trusty.vm.provision "shell" do |s|
-      s.path = "linux/build.sh"
+      s.path = "linux/provision.sh"
       s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP}"
       s.privileged = false
     end
@@ -100,7 +100,7 @@ Vagrant.configure('2') do |config|
       aws.security_groups = "vagrant_cfy_build"
     end
     ubuntu_precise.vm.provision "shell" do |s|
-      s.path = "linux/build.sh"
+      s.path = "linux/provision.sh"
       s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP}"
       s.privileged = false
     end
@@ -126,7 +126,7 @@ Vagrant.configure('2') do |config|
     end
     #need to sync folders
     centos_final.vm.provision "shell" do |s|
-      s.path = "linux/build.sh"
+      s.path = "linux/provision.sh"
       s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP}"
       s.privileged = false
     end
@@ -151,7 +151,7 @@ Vagrant.configure('2') do |config|
       aws.security_groups = "vagrant_linux_build"
     end
     centos_core.vm.provision "shell" do |s|
-      s.path = "linux/build.sh"
+      s.path = "linux/provision.sh"
       s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP}"
       s.privileged = false
     end
@@ -194,7 +194,7 @@ Vagrant.configure('2') do |config|
     local.vm.hostname = 'local'
     local.vm.synced_folder "../", "/cloudify-agent", create: true
     local.vm.provision "shell" do |s|
-      s.path = "linux/build.sh"
+      s.path = "linux/provision.sh"
       s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD}"
       s.privileged = false
     end
@@ -207,7 +207,7 @@ Vagrant.configure('2') do |config|
     local.vm.hostname = 'local'
     local.vm.synced_folder "../", "/cloudify-agent", create: true
     local.vm.provision "shell" do |s|
-      s.path = "linux/build.sh"
+      s.path = "linux/provision.sh"
       s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD}"
       s.privileged = false
     end
@@ -220,7 +220,7 @@ Vagrant.configure('2') do |config|
     local.vm.hostname = 'local'
     local.vm.synced_folder "../", "/cloudify-agent", create: true
     local.vm.provision "shell" do |s|
-      s.path = "linux/build.sh"
+      s.path = "linux/provision.sh"
       s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD}"
       s.privileged = false
     end
@@ -233,7 +233,7 @@ Vagrant.configure('2') do |config|
     local.vm.hostname = 'local'
     local.vm.synced_folder "../", "/cloudify-agent", create: true
     local.vm.provision "shell" do |s|
-      s.path = "linux/build.sh"
+      s.path = "linux/provision.sh"
       s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD}"
       s.privileged = false
     end
