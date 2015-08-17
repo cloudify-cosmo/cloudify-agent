@@ -52,8 +52,7 @@ def connection_attributes(cloudify_agent):
         # if installing locally, we install the agent with the same user the
         # current agent is running under. we don't care about any other
         # connection details
-        if 'user' not in cloudify_agent:
-            cloudify_agent['user'] = getpass.getuser()
+        cloudify_agent['user'] = getpass.getuser()
     else:
 
         if 'windows' not in cloudify_agent:
@@ -113,17 +112,16 @@ def connection_attributes(cloudify_agent):
 def cfy_agent_attributes(cloudify_agent):
 
     if 'process_management' not in cloudify_agent:
+        cloudify_agent['process_management'] = {}
 
+    if 'name' not in cloudify_agent['process_management']:
         # user did not specify process management configuration, choose the
         # default one according to os type.
         if cloudify_agent['windows']:
-            cloudify_agent['process_management'] = {
-                'name': 'nssm'
-            }
+            name = 'nssm'
         else:
-            cloudify_agent['process_management'] = {
-                'name': 'init.d'
-            }
+            name = 'init.d'
+        cloudify_agent['process_management']['name'] = name
 
     if 'name' not in cloudify_agent:
         if cloudify_agent['local']:
