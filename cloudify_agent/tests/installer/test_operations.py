@@ -66,6 +66,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
     def tearDownClass(cls):
         cls.fs.stop()
 
+    @patch.dict('agent_packager.logger.LOGGER',
+                disable_existing_loggers=False)
     @patch('cloudify.workflows.local._validate_node')
     @only_ci
     def test_local_agent_from_package(self, _):
@@ -98,6 +100,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
     @only_ci
     @patch('cloudify.workflows.local._validate_node')
+    @patch.dict('agent_packager.logger.LOGGER',
+                disable_existing_loggers=False)
     def test_local_agent_from_source(self, _):
 
         agent_name = utils.internal.generate_agent_name()
@@ -125,6 +129,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
     @only_ci
     @patch('cloudify.workflows.local._validate_node')
+    @patch.dict('agent_packager.logger.LOGGER',
+                disable_existing_loggers=False)
     def test_3_2_backwards(self, _):
 
         agent_name = utils.internal.generate_agent_name()
