@@ -200,7 +200,8 @@ def _add_cfy_agent_defaults(cloudify_agent):
 def reinstallation_attributes(cloudify_agent):
     _cfy_agent_attributes_no_defaults(cloudify_agent)
     _add_cfy_agent_defaults(cloudify_agent)
-    cloudify_agent['package_url'] = _get_package_url(cloudify_agent)
+    if 'package_url' not in cloudify_agent:
+        cloudify_agent['package_url'] = _get_package_url(cloudify_agent)
     _directory_attributes(cloudify_agent)
     _add_installation_defaults(cloudify_agent)
 

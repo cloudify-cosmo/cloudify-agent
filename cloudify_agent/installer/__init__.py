@@ -19,7 +19,6 @@ import shutil
 import urllib
 import copy
 
-from cloudify import ctx
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
 
@@ -179,8 +178,8 @@ class AgentInstaller(object):
         execution_env = utils.purge_none_values(execution_env)
         execution_env = utils.stringify_values(execution_env)
 
-        ctx.logger.debug('Cloudify Agent will be created using the following '
-                         'environment: {0}'.format(execution_env))
+        self.logger.debug('Cloudify Agent will be created using the following '
+                          'environment: {0}'.format(execution_env))
 
         return execution_env
 
