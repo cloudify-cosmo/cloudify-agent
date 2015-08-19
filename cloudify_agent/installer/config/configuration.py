@@ -53,6 +53,12 @@ def connection_attributes(cloudify_agent):
         # current agent is running under. we don't care about any other
         # connection details
         cloudify_agent['user'] = getpass.getuser()
+
+        if cloudify_agent.get('remote_execution') is False:
+            ctx.logger.warn('remote_execution parameter set to false for'
+                            ' local agent installation, ignoring and setting'
+                            ' value to true')
+        cloudify_agent['remote_execution'] = True
     else:
 
         if 'windows' not in cloudify_agent:
@@ -107,6 +113,12 @@ def connection_attributes(cloudify_agent):
                 cloudify_agent and 'key' not in cloudify_agent:
             raise_missing_attributes('key', 'password')
 
+        if 'remote_execution' not in cloudify_agent:
+            # pre 3.3 Compute node type do not have this property
+            remote_execution = ctx.node.properties.get('remote_execution',
+                                                       True)
+            cloudify_agent['remote_execution'] = remote_execution
+
 
 @group('cfy-agent')
 def cfy_agent_attributes(cloudify_agent):
@@ -145,6 +157,11 @@ def cfy_agent_attributes(cloudify_agent):
 
 @group('installation')
 def installation_attributes(cloudify_agent, runner):
+
+    # This means that the agent will install itself
+    # (a.k.a ssh-less installation)
+    if not cloudify_agent['remote_execution']:
+        return
 
     if 'source_url' not in cloudify_agent:
 

@@ -38,11 +38,12 @@ def init_agent_installer(func=None, validate_connection=True):
     if func is not None:
         @wraps(func)
         def wrapper(*args, **kwargs):
-
             cloudify_agent = kwargs.get('cloudify_agent', {})
 
             # first prepare all connection details
             configuration.prepare_connection(cloudify_agent)
+            _validate_connection = (validate_connection and
+                                    cloudify_agent['remote_execution'])
 
             # create the correct runner according to os
             # and local/remote execution. we need this runner now because it
@@ -61,7 +62,7 @@ def init_agent_installer(func=None, validate_connection=True):
                             protocol=cloudify_agent.get('protocol'),
                             uri=cloudify_agent.get('uri'),
                             logger=ctx.logger,
-                            validate_connection=validate_connection)
+                            validate_connection=_validate_connection)
                     else:
                         runner = FabricRunner(
                             logger=ctx.logger,
@@ -71,10 +72,9 @@ def init_agent_installer(func=None, validate_connection=True):
                             key=cloudify_agent.get('key'),
                             password=cloudify_agent.get('password'),
                             fabric_env=cloudify_agent.get('fabric_env'),
-                            validate_connection=validate_connection)
+                            validate_connection=_validate_connection)
                 except CommandExecutionError as e:
-                    return ctx.operation.retry(message=e.error,
-                                               retry_after=5)
+                    return ctx.operation.retry(message=e.error)
 
             # now we can create all other agent attributes
             configuration.prepare_agent(cloudify_agent, runner)
@@ -125,8 +125,7 @@ def create(cloudify_agent, installer, **_):
         ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
         ctx.instance.update()
 
-        remote_execution = _get_remote_execution()
-        if remote_execution:
+        if cloudify_agent['remote_execution']:
             ctx.logger.info('Creating Agent {0}'.format(
                 cloudify_agent['name']))
             installer.create_agent()
@@ -140,8 +139,7 @@ def create(cloudify_agent, installer, **_):
 def configure(cloudify_agent, installer, **_):
 
     if ctx.type == context.NODE_INSTANCE:
-        remote_execution = _get_remote_execution()
-        if remote_execution:
+        if cloudify_agent['remote_execution']:
             ctx.logger.info('Configuring Agent {0}'.format(
                 cloudify_agent['name']))
             installer.configure_agent()
@@ -155,8 +153,7 @@ def configure(cloudify_agent, installer, **_):
 def start(cloudify_agent, installer, **_):
 
     if ctx.type == context.NODE_INSTANCE:
-        remote_execution = _get_remote_execution()
-        if remote_execution:
+        if cloudify_agent['remote_execution']:
             ctx.logger.info('Starting Agent {0}'.format(
                 cloudify_agent['name']))
             installer.start_agent()
@@ -170,8 +167,7 @@ def start(cloudify_agent, installer, **_):
                 ctx.logger.info('Agent has started')
             else:
                 return ctx.operation.retry(
-                    message='Waiting for Agent to start...',
-                    retry_after=5)
+                    message='Waiting for Agent to start...')
     else:
         ctx.logger.info('Starting Agent {0}'.format(cloudify_agent['name']))
         installer.start_agent()
@@ -195,8 +191,7 @@ def delete(cloudify_agent, installer, **_):
 
         # delete the runtime properties set on create
         del ctx.instance.runtime_properties['cloudify_agent']
-        remote_execution = _get_remote_execution()
-        if remote_execution:
+        if cloudify_agent['remote_execution']:
             ctx.logger.info('Deleting Agent {0}'.format(
                 cloudify_agent['name']))
             installer.delete_agent()
@@ -213,9 +208,3 @@ def restart(cloudify_agent, installer, **_):
     # not invoked in that case
     ctx.logger.info('Restarting Agent {0}'.format(cloudify_agent['name']))
     installer.restart_agent()
-
-
-def _get_remote_execution():
-    # use 'get' here and not '[]' to not break pre 3.3 Compute node type
-    # which do not have this property.
-    return ctx.node.properties.get('remote_execution', True)
