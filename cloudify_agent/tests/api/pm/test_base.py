@@ -39,7 +39,7 @@ class TestDaemonDefaults(BaseTest):
         self.assertEqual(self.temp_folder, self.daemon.workdir)
 
     def test_default_manager_port(self):
-        self.assertEqual(80, self.daemon.manager_port)
+        self.assertEqual(8101, self.daemon.manager_port)
 
     def test_default_min_workers(self):
         self.assertEqual(0, self.daemon.min_workers)
