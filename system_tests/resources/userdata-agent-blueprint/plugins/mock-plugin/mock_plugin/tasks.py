@@ -15,12 +15,13 @@
 
 import os
 
+from cloudify import ctx
 from cloudify.decorators import operation
 
 
 @operation
 def run(**_):
-    pass
+    ctx.instance.runtime_properties['test'] = 'value'
 
 
 @operation

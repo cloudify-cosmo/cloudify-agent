@@ -13,15 +13,22 @@ plugins:
 inputs:
 
   image:
-    description: >
-      Image to be used when launching agent VM's
+    description: Image to be used when launching agent VM's
 
   flavor:
-    description: >
-      Flavor of the agent VM's
+    description: Flavor of the agent VM's
+
+  agent_user:
+    description: The agent user
+
+  home_dir:
+    description: The home dir
 
   branch:
     description: branch
+
+  manager_ip:
+    description: management ip (used by the agent to connect to RabbitMQ)
 
 node_types:
 
@@ -44,24 +51,18 @@ node_templates:
       remote_execution: false
       server:
         userdata: { concat: [
-          '''#!/bin/bash
-             sudo apt-get -y update
-             sudo apt-get -y install python-dev
-             wget https://bootstrap.pypa.io/get-pip.py
-             sudo python get-pip.py
-             sudo pip install virtualenv
-             su ubuntu -c "virtualenv /home/ubuntu/cloudify_agent/env"
-             su ubuntu -c "source /home/ubuntu/cloudify_agent/env/bin/activate"
-          ''',
-          '''su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/pip install -r https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/''',
-             { get_input: branch }, '''/dev-requirements.txt
-          ''',
-          '''su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/pip install https://github.com/cloudify-cosmo/cloudify-agent/archive/''',
-             { get_input: branch }, '''.zip
-          ''',
-          '''su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/cfy-agent daemons create --name=cloudify_agent_userdata --queue=cloudify_agent_userdata_queue --process-management=init.d --manager-ip=10.67.79.2 --user=ubuntu --workdir=/home/ubuntu/cloudify_agent/work"
-             su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/cfy-agent daemons configure --name=cloudify_agent_userdata"
-             su ubuntu -c "/home/ubuntu/cloudify_agent/env/bin/cfy-agent daemons start --name=cloudify_agent_userdata"'''
+          '#!/bin/bash -e', "\n",
+          'sudo apt-get -y update', "\n",
+          'sudo apt-get -y install python-dev', "\n",
+          'wget https://bootstrap.pypa.io/get-pip.py', "\n",
+          'sudo python get-pip.py', "\n",
+          'sudo pip install virtualenv', "\n",
+          'su ', { get_input: agent_user }, ' -c "virtualenv ', { get_input: home_dir }, '/cloudify_agent/env"', "\n",
+          'su ', { get_input: agent_user }, ' -c "', { get_input: home_dir }, '/cloudify_agent/env/bin/pip install -r https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/', { get_input: branch }, '/dev-requirements.txt"', "\n",
+          'su ', { get_input: agent_user }, ' -c "', { get_input: home_dir }, '/cloudify_agent/env/bin/pip install https://github.com/cloudify-cosmo/cloudify-agent/archive/', { get_input: branch }, '.zip"', "\n",
+          'su ', { get_input: agent_user }, ' -c "', { get_input: home_dir }, '/cloudify_agent/env/bin/cfy-agent daemons create    --name=cloudify_agent_userdata --queue=cloudify_agent_userdata_queue --process-management=init.d --manager-ip=', { get_input: manager_ip } ,' --user=', { get_input: agent_user }, ' --workdir=', { get_input: home_dir }, '/cloudify_agent/work"', "\n",
+          'su ', { get_input: agent_user }, ' -c "', { get_input: home_dir }, '/cloudify_agent/env/bin/cfy-agent daemons configure --name=cloudify_agent_userdata"', "\n",
+          'su ', { get_input: agent_user }, ' -c "', { get_input: home_dir }, '/cloudify_agent/env/bin/cfy-agent daemons start     --name=cloudify_agent_userdata"', "\n"
         ] }
 
       cloudify_agent:
@@ -73,3 +74,7 @@ node_templates:
     relationships:
       - type: cloudify.relationships.contained_in
         target: host
+
+outputs:
+  test:
+    value: { get_attribute: [application, test] }

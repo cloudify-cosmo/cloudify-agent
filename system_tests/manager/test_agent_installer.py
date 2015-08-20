@@ -53,16 +53,19 @@ class AgentInstallerTest(testenv.TestCase):
         self.execute_uninstall()
 
     def test_userdata_agent(self):
-
         self.blueprint_yaml = resources.get_resource(
             'userdata-agent-blueprint/userdata-agent-blueprint.yaml')
         self.upload_deploy_and_execute_install(
             inputs={
                 'image': self.env.ubuntu_image_id,
                 'flavor': self.env.small_flavor_id,
-                'branch': os.environ.get('BRANCH_NAME_CORE', 'master')
+                'branch': os.environ.get('BRANCH_NAME_CORE', 'master'),
+                'agent_user': 'ubuntu',
+                'home_dir': '/home/ubuntu',
+                'manager_ip': self._extract_manager_private_ip()
             }
         )
+        self.assert_outputs({'test': 'value'})
         self.execute_uninstall()
 
     def test_winrm_agent(self):
@@ -76,3 +79,16 @@ class AgentInstallerTest(testenv.TestCase):
             }
         )
         self.execute_uninstall()
+
+    def _extract_manager_private_ip(self):
+        nova, _, _ = self.env.handler.openstack_clients()
+        servers = nova.servers.list()
+        # at this point, due to test being only one in tenant, we expect
+        # only one server to exists which is the management server.
+        # if this proves to be wrong in the future, it will be fixed.
+        self.assertEqual(len(servers), 1)
+        server = servers[0]
+        for network, network_ips in server.networks.items():
+            if network == self.env.management_network_name:
+                return network_ips[0]
+        self.fail('Failed extracting manager private IP')
