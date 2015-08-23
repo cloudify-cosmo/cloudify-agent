@@ -74,29 +74,29 @@ def connection_attributes(cloudify_agent):
                 cloudify_agent['windows'] = ctx.node.properties[
                     'os_family'].lower() == 'windows'
 
-        if 'ip' not in cloudify_agent:
+        # support 'ip' attribute as direct node property or runtime
+        # property (as opposed to nested inside the cloudify_agent dict)
+        ip = ctx.instance.runtime_properties.get('ip')
+        if not ip:
+            ip = ctx.node.properties.get('ip')
+        if not ip:
+            ip = cloudify_agent.get('ip')
+        if not ip:
+            raise_missing_attribute('ip')
+        cloudify_agent['ip'] = ip
 
-            # support 'ip' attribute as direct node property or runtime
-            # property (as opposed to nested inside the cloudify_agent dict)
-            ip = ctx.instance.runtime_properties.get('ip')
-            if not ip:
-                ip = ctx.node.properties.get('ip')
-            if not ip:
-                raise_missing_attribute('ip')
-            cloudify_agent['ip'] = ip
-
-        if 'password' not in cloudify_agent:
-
-            # support password as direct node property or runtime
-            # property (as opposed to nested inside the cloudify_agent dict)
-            password = ctx.instance.runtime_properties.get('password')
-            if not password:
-                password = ctx.node.properties.get('password')
-            if not password and cloudify_agent['windows']:
-                # a remote windows installation requires a
-                # password to connect to the machine
-                raise_missing_attribute('password')
-            cloudify_agent['password'] = password
+        # support password as direct node property or runtime
+        # property (as opposed to nested inside the cloudify_agent dict)
+        password = ctx.instance.runtime_properties.get('password')
+        if not password:
+            password = ctx.node.properties.get('password')
+        if not password:
+            password = cloudify_agent.get('password')
+        if not password and cloudify_agent['windows']:
+            # a remote windows installation requires a
+            # password to connect to the machine
+            raise_missing_attribute('password')
+        cloudify_agent['password'] = password
 
         # a remote installation requires the username
         # that the agent will run under.
