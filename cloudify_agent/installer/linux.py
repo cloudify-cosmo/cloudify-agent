@@ -22,24 +22,9 @@ from cloudify_agent.installer import RemoteInstallerMixin
 
 class RemoteLinuxAgentInstaller(LinuxInstallerMixin, RemoteInstallerMixin):
 
-    def __init__(self, cloudify_agent, logger=None):
-        super(RemoteLinuxAgentInstaller, self).__init__(
-            cloudify_agent, logger)
-
-        # importing fabric stuff is a bit expensive and kind of shaky
-        # because the import may fail on windows boxes that don't have the
-        # pywin32 extensions installed. so lets import only when we really
-        # have to.
-        from cloudify_agent.installer.runners.fabric_runner \
-            import FabricRunner
-        self._runner = FabricRunner(
-            logger=self.logger,
-            host=cloudify_agent['ip'],
-            user=cloudify_agent['user'],
-            port=cloudify_agent.get('port'),
-            key=cloudify_agent.get('key'),
-            password=cloudify_agent.get('password'),
-            fabric_env=cloudify_agent.get('fabric_env'))
+    def __init__(self, cloudify_agent, runner, logger=None):
+        super(RemoteLinuxAgentInstaller, self).__init__(cloudify_agent, logger)
+        self._runner = runner
 
     def extract(self, archive, destination):
         return self.runner.untar(archive, destination)

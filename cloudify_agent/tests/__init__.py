@@ -17,10 +17,17 @@ import os
 import logging
 import tempfile
 import getpass
+import shutil
+
 import unittest2 as unittest
 
-
 from cloudify.utils import setup_logger
+
+
+try:
+    win_error = WindowsError
+except NameError:
+    win_error = None
 
 
 def get_storage_directory(_=None):
@@ -40,10 +47,16 @@ class BaseTest(unittest.TestCase):
 
         self.curr_dir = os.getcwd()
         self.temp_folder = tempfile.mkdtemp(prefix='cfy-agent-tests-')
+
+        def clean_temp_folder():
+            try:
+                shutil.rmtree(self.temp_folder)
+            except win_error:
+                # no hard feeling if file is locked.
+                pass
+        self.addCleanup(clean_temp_folder)
+        os.chdir(self.temp_folder)
+        self.addCleanup(lambda: os.chdir(self.curr_dir))
+
         self.username = getpass.getuser()
         self.logger.info('Working directory: {0}'.format(self.temp_folder))
-        os.chdir(self.temp_folder)
-
-    def tearDown(self):
-        super(BaseTest, self).tearDown()
-        os.chdir(self.curr_dir)

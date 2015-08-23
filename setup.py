@@ -59,6 +59,8 @@ setup(
             'resources/pm/detach/detach.template',
             'resources/pm/nssm/nssm.exe',
             'resources/pm/nssm/nssm.conf.template',
+            'resources/script/linux.sh.template',
+            'resources/script/windows.ps1.template'
         ]
     },
     description='Cloudify Agent Implementation (Celery based)',

@@ -20,10 +20,8 @@ from cloudify.decorators import operation
 
 
 @operation
-def run(**_):
-    ctx.instance.runtime_properties['test'] = 'value'
-
-
-@operation
-def get_env_variable(env_variable, **_):
-    return os.environ[env_variable]
+def run(file_path, **_):
+    ctx.instance.runtime_properties['MY_ENV_VAR'] = os.environ.get(
+        'MY_ENV_VAR')
+    with open(file_path) as f:
+        ctx.instance.runtime_properties['file_content'] = f.read().strip()

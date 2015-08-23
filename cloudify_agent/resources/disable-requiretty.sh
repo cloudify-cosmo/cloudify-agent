@@ -1,21 +1,22 @@
 #!/bin/bash
-# now modify sudoers configuration to allow execution without tty
+MAYBE_SUDO=$1
 grep -i ubuntu /proc/version > /dev/null
 if [ "$?" -eq "0" ]; then
     # ubuntu
     echo Running on Ubuntu
-    if sudo grep -q -E '[^!]requiretty' /etc/sudoers; then
+    if ${MAYBE_SUDO} grep -q -E '[^!]requiretty' /etc/sudoers; then
         echo creating sudoers user file
-        echo "Defaults:`whoami` !requiretty" | sudo tee /etc/sudoers.d/`whoami` >/dev/null
-        sudo chmod 0440 /etc/sudoers.d/`whoami`
+        echo "Defaults:`whoami` !requiretty" | ${MAYBE_SUDO} tee /etc/sudoers.d/`whoami` >/dev/null
+        ${MAYBE_SUDO} chmod 0440 /etc/sudoers.d/`whoami`
     else
         echo No requiretty directive found, nothing to do
     fi
 else
     # other - modify sudoers file
     if [ ! -f "/etc/sudoers" ]; then
-        error_exit 116 "Could not find sudoers file at expected location (/etc/sudoers)"
+        echo "sudoers file not found in /etc/sudoers"
+        exit 1
     fi
     echo Setting privileged mode
-    sudo sed -i 's/^Defaults.*requiretty/#&/g' /etc/sudoers || error_exit_on_level $? 117 "Failed to edit sudoers file to disable requiretty directive" 1
+    ${MAYBE_SUDO} sed -i 's/^Defaults.*requiretty/#&/g' /etc/sudoers
 fi

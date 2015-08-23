@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from cloudify_agent.installer.runners.winrm_runner import WinRMRunner
 from cloudify_agent.installer import WindowsInstallerMixin
 from cloudify_agent.installer import LocalInstallerMixin
 from cloudify_agent.installer import RemoteInstallerMixin
@@ -21,17 +20,10 @@ from cloudify_agent.installer import RemoteInstallerMixin
 
 class RemoteWindowsAgentInstaller(WindowsInstallerMixin, RemoteInstallerMixin):
 
-    def __init__(self, cloudify_agent, logger=None):
-        super(RemoteWindowsAgentInstaller, self).__init__(
-            cloudify_agent, logger)
-        self._runner = WinRMRunner(
-            host=cloudify_agent['ip'],
-            user=cloudify_agent['user'],
-            password=cloudify_agent['password'],
-            port=cloudify_agent.get('port'),
-            protocol=cloudify_agent.get('protocol'),
-            uri=cloudify_agent.get('uri'),
-            logger=self.logger)
+    def __init__(self, cloudify_agent, runner, logger=None):
+        super(RemoteWindowsAgentInstaller, self).__init__(cloudify_agent,
+                                                          logger)
+        self._runner = runner
 
     @property
     def runner(self):

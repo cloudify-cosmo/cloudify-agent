@@ -150,8 +150,13 @@ def create(**params):
               .format(env.CLOUDIFY_DAEMON_NAME),
               required=True,
               envvar=env.CLOUDIFY_DAEMON_NAME)
+@click.option('--user',
+              help='The user to load the configuration from. Defaults to '
+                   'current user. [env {0}]'
+              .format(env.CLOUDIFY_DAEMON_USER),
+              envvar=env.CLOUDIFY_DAEMON_USER)
 @handle_failures
-def configure(name):
+def configure(name, user=None):
 
     """
     Configures the daemon scripts and configuration files.
@@ -159,7 +164,7 @@ def configure(name):
     """
 
     click.echo('Configuring...')
-    daemon = _load_daemon(name)
+    daemon = _load_daemon(name, user=user)
     daemon.configure()
     _save_daemon(daemon)
     click.echo('Successfully configured daemon: {0}'
@@ -233,6 +238,11 @@ def unregister(name, plugin):
               .format(env.CLOUDIFY_DAEMON_NAME),
               required=True,
               envvar=env.CLOUDIFY_DAEMON_NAME)
+@click.option('--user',
+              help='The user to load the configuration from. Defaults to '
+                   'current user. [env {0}]'
+              .format(env.CLOUDIFY_DAEMON_USER),
+              envvar=env.CLOUDIFY_DAEMON_USER)
 @click.option('--interval',
               help='The interval in seconds to sleep when waiting '
                    'for the daemon to be ready.',
@@ -247,7 +257,7 @@ def unregister(name, plugin):
               is_flag=True,
               default=not defaults.DELETE_AMQP_QUEUE_BEFORE_START)
 @handle_failures
-def start(name, interval, timeout, no_delete_amqp_queue):
+def start(name, interval, timeout, no_delete_amqp_queue, user=None):
 
     """
     Starts the daemon.
@@ -255,7 +265,7 @@ def start(name, interval, timeout, no_delete_amqp_queue):
     """
 
     click.echo('Starting...')
-    daemon = _load_daemon(name)
+    daemon = _load_daemon(name, user=user)
     daemon.start(
         interval=interval,
         timeout=timeout,
@@ -380,9 +390,9 @@ def status(name):
     _load_daemon(name).status()
 
 
-def _load_daemon(name):
+def _load_daemon(name, user=None):
     from cloudify_agent.shell.main import get_logger
-    return DaemonFactory().load(name, logger=get_logger())
+    return DaemonFactory(username=user).load(name, logger=get_logger())
 
 
 def _save_daemon(daemon):

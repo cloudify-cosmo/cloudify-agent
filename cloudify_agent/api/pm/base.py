@@ -463,9 +463,10 @@ class Daemon(object):
         self._runner.run(start_command)
         end_time = time.time() + timeout
         while time.time() < end_time:
-            self._logger.debug('Querying daemon {0} stats'.format(self.name))
-            stats = utils.get_agent_stats(self.name, self._celery)
-            if stats:
+            self._logger.debug('Querying daemon {0} registered tasks'.format(
+                self.name))
+            registered = utils.get_agent_registered(self.name, self._celery)
+            if registered:
                 # make sure the status command recognizes the daemon is up
                 status = self.status()
                 if status:
@@ -505,10 +506,11 @@ class Daemon(object):
         self._runner.run(stop_command)
         end_time = time.time() + timeout
         while time.time() < end_time:
-            self._logger.debug('Querying daemon {0} stats'.format(self.name))
+            self._logger.debug('Querying daemon {0} registered tasks'.format(
+                self.name))
             # check the process has shutdown
-            stats = utils.get_agent_stats(self.name, self._celery)
-            if not stats:
+            registered = utils.get_agent_registered(self.name, self._celery)
+            if not registered:
                 # make sure the status command also recognizes the
                 # daemon is down
                 status = self.status()
@@ -604,7 +606,7 @@ class Daemon(object):
             channel = client.connection.channel()
             self._logger.debug('Deleting queue: {0}'.format(self.queue))
             channel.queue_delete(self.queue)
-            pid_box_queue = 'celery@{0}.celery.pidbox'.format(self.queue)
+            pid_box_queue = 'celery@{0}.celery.pidbox'.format(self.name)
             self._logger.debug('Deleting queue: {0}'.format(pid_box_queue))
             channel.queue_delete(pid_box_queue)
         finally:

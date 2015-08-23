@@ -13,13 +13,8 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import os
-import sys
 
-if os.name == 'nt':
-    if 'scripts' not in sys.executable.lower():
-        VIRTUALENV = os.path.dirname(sys.executable)
-    else:
-        VIRTUALENV = os.path.dirname(os.path.dirname(sys.executable))
-else:
-    VIRTUALENV = os.path.dirname(os.path.dirname(sys.executable))
+class StubRunner(object):
+
+    def __getattr__(self, item):
+        raise AttributeError('StubRunner should not be called.')
