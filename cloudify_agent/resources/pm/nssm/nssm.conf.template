@@ -19,7 +19,16 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 
 echo Setting service environment
 
+set find="C:\\Program Files (x86)\\Inno Setup 5"
+set "replace="C:\\Program Files (x86)\\Inno Setup 5""
+set NEW_PATH=%NEW_PATH:;"C:\\Program Files (x86)\\Inno Setup 5"=%
+set NEW_PATH1=%NEW_PATH%;%replace%
+
+echo %NEW_PATH1%
+
+
 {{ nssm_path }} set {{ name }} AppEnvironmentExtra ^
+PATH="%NEW_PATH1%" ^
 MANAGEMENT_IP={{ manager_ip }} ^
 MANAGER_REST_PORT={{ manager_port }} ^
 MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229 ^
