@@ -410,17 +410,18 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         for key, value in expected.iteritems():
             _check_env_var(key, value)
 
-	def _check_env_path():
-		_path = self.celery.send_task(
-		        name='mock_plugin.tasks.get_env_variable',
-		        queue=daemon.queue,
-		        args=['PATH']).get(timeout=5)		
-		if os.name == 'nt':
-			self.assert_in(str(deamon.virtualenv_path)+'\scripts', _path)  
-
-		if os.name == 'posix':
-			self.assert_in(str(deamon.virtualenv_path)+'/bin', _path)
-	_check_env_path()	
+        def _check_env_path():
+            _path = self.celery.send_task(
+                name='mock_plugin.tasks.get_env_variable',
+                queue=daemon.queue,
+                args=['PATH']).get(timeout=5)
+            if os.name == 'nt':
+                self.nose.tools.assert_in(
+                    str(daemon.virtualenv_path) + '\scripts', _path)
+            if os.name == 'posix':
+                self.nose.tools.assert_in(
+                    str(daemon.virtualenv_path) + '/bin', _path)
+            _check_env_path()
 
     def test_extra_env_path(self):
         daemon = self.create_daemon()
