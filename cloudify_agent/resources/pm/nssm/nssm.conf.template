@@ -25,7 +25,7 @@ set NEW_PATH=%AGENT_PATH%;%PATH%
 set NEW_PATH=%NEW_PATH:"=%
 set "NEW_PATH1="%NEW_PATH""
 
-echo %NEW_PATH1%
+echo New environment path will be %NEW_PATH1%
 
 
 {{ nssm_path }} set {{ name }} AppEnvironmentExtra ^
