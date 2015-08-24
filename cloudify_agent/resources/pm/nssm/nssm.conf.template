@@ -29,7 +29,7 @@ echo %NEW_PATH1%
 
 
 {{ nssm_path }} set {{ name }} AppEnvironmentExtra ^
-PATH="%NEW_PATH1%" ^
+PATH=%NEW_PATH1% ^
 MANAGEMENT_IP={{ manager_ip }} ^
 MANAGER_REST_PORT={{ manager_port }} ^
 MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229 ^
