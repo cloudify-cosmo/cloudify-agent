@@ -416,10 +416,10 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
 		        queue=daemon.queue,
 		        args=['PATH']).get(timeout=5)		
 		if os.name == 'nt':
-			self.assert_in(_path, str(deamon.virtualenv_path)+'\scripts')  
+			self.assert_in(str(deamon.virtualenv_path)+'\scripts', _path)  
 
 		if os.name == 'posix':
-			self.assert_in(_path, str(deamon.virtualenv_path)+'/bin')
+			self.assert_in(str(deamon.virtualenv_path)+'/bin', _path)
 	_check_env_path()	
 
     def test_extra_env_path(self):
