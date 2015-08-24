@@ -400,15 +400,27 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             utils.internal.CLOUDIFY_DAEMON_USER_KEY: daemon.user
         }
 
-        def _check_env_var(var, expected_value):
-            _value = self.celery.send_task(
+        def _get_env_var(var):
+            return self.celery.send_task(
                 name='mock_plugin.tasks.get_env_variable',
                 queue=daemon.queue,
                 args=[var]).get(timeout=5)
+
+        def _check_env_var(var, expected_value):
+            _value = _get_env_var(var)
             self.assertEqual(_value, expected_value)
 
         for key, value in expected.iteritems():
             _check_env_var(key, value)
+
+        def _check_env_path():
+            _path = _get_env_var('PATH')
+            if os.name == 'nt':
+                self.assertIn('{0}\Scripts'.format(daemon.virtualenv_path),
+                              _path)
+            else:
+                self.assertIn('{0}/bin'.format(daemon.virtualenv_path), _path)
+            _check_env_path()
 
     def test_extra_env_path(self):
         daemon = self.create_daemon()
