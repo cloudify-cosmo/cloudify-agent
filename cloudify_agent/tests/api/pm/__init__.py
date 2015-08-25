@@ -27,7 +27,7 @@ from celery import Celery
 from cloudify import constants
 from cloudify.utils import LocalCommandRunner
 
-
+from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils, defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api.plugins.installer import PluginInstaller
@@ -416,10 +416,9 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         def _check_env_path():
             _path = _get_env_var('PATH')
             if os.name == 'nt':
-                self.assertIn('{0}\Scripts'.format(daemon.virtualenv),
-                              _path)
+                self.assertIn(VIRTUALENV, _path)
             else:
-                self.assertIn('{0}/bin'.format(daemon.virtualenv), _path)
+                self.assertIn(VIRTUALENV, _path)
         _check_env_path()
 
     def test_extra_env_path(self):
