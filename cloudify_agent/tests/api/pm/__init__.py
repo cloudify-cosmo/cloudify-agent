@@ -420,7 +420,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
                               _path)
             else:
                 self.assertIn('{0}/bin'.format(daemon.virtualenv_path), _path)
-            _check_env_path()
+        _check_env_path()
 
     def test_extra_env_path(self):
         daemon = self.create_daemon()
