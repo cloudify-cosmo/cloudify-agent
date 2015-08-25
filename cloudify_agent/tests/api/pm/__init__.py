@@ -416,10 +416,10 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         def _check_env_path():
             _path = _get_env_var('PATH')
             if os.name == 'nt':
-                self.assertIn('{0}\Scripts'.format(daemon.virtualenv_path),
+                self.assertIn('{0}\Scripts'.format(daemon.virtualenv),
                               _path)
             else:
-                self.assertIn('{0}/bin'.format(daemon.virtualenv_path), _path)
+                self.assertIn('{0}/bin'.format(daemon.virtualenv), _path)
         _check_env_path()
 
     def test_extra_env_path(self):
