@@ -22,14 +22,12 @@ echo Setting service environment
 set "AGENT_PATH={{ virtualenv_path }}\Scripts"
 set NEW_PATH=%AGENT_PATH%;%PATH%
 
-set NEW_PATH=%NEW_PATH:"=%
-set "NEW_PATH1="%NEW_PATH""
 
 echo New environment path will be %NEW_PATH1%
 
 
 {{ nssm_path }} set {{ name }} AppEnvironmentExtra ^
-PATH=%NEW_PATH1% ^
+PATH="""%NEW_PATH1%""" ^
 MANAGEMENT_IP={{ manager_ip }} ^
 MANAGER_REST_PORT={{ manager_port }} ^
 MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229 ^
