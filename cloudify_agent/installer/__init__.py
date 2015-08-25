@@ -127,6 +127,9 @@ class AgentInstaller(object):
     def download(self, url, destination=None):
         raise NotImplementedError('Must be implemented by sub-class')
 
+    def move(self, source, target):
+        raise NotImplementedError('Must be implemented by sub-class')
+
     def extract(self, archive, destination):
         raise NotImplementedError('Must be implemented by sub-class')
 
@@ -218,6 +221,19 @@ class WindowsInstallerMixin(AgentInstaller):
     def install_virtualenv(self):
         self.runner.run('pip install virtualenv')
 
+    def extract(self, archive, destination):
+        destination = '{0}\\env'.format(destination.rstrip('\\ '))
+        if not archive.endswith('.exe'):
+            new_archive = '{0}.exe'.format(archive)
+            self.move(archive, new_archive)
+            archive = new_archive
+        self.logger.debug('Extracting {0} to {1}'
+                          .format(archive, destination))
+        cmd = '{0} /SILENT /VERYSILENT' \
+              ' /SUPPRESSMSGBOXES /DIR={1}'.format(archive, destination)
+        self.runner.run(cmd)
+        return destination
+
 
 class LinuxInstallerMixin(AgentInstaller):
 
@@ -262,6 +278,9 @@ class LocalInstallerMixin(AgentInstaller):
                           .format(environment))
         return utils.env_to_file(env_variables=environment, posix=posix)
 
+    def move(self, source, target):
+        shutil.move(source, target)
+
 
 class RemoteInstallerMixin(AgentInstaller):
 
@@ -275,3 +294,6 @@ class RemoteInstallerMixin(AgentInstaller):
 
     def download(self, url, destination=None):
         return self.runner.download(url, destination)
+
+    def move(self, source, target):
+        self.runner.move(source, target)

@@ -464,6 +464,9 @@ class FabricRunner(object):
     def delete(self, path):
         self.run('rm -rf {0}'.format(path))
 
+    def move(self, source, target):
+        self.run('mv "{0}" "{1}"'.format(source, target))
+
     @staticmethod
     def close():
 
