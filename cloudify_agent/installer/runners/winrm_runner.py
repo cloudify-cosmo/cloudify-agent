@@ -138,7 +138,7 @@ class WinRMRunner(object):
                 command))
 
         if remote_env_file:
-            command = 'call {0} & {1}'.format(command)
+            command = 'call {0} & {1}'.format(remote_env_file, command)
         try:
             response = self.session.run_cmd(command)
         except BaseException as e:
@@ -173,8 +173,8 @@ class WinRMRunner(object):
 
         self.logger.info('Downloading {0}'.format(url))
         self.run(
-            '''@powershell -Command "(new-object System.Net.WebClient)
-            .Downloadfile('{0}','{1}')"'''
+            '''@powershell -Command "(new-object System.Net.WebClient)\
+.Downloadfile('{0}','{1}')"'''
             .format(url, output_path))
         return output_path
 
@@ -253,11 +253,9 @@ class WinRMRunner(object):
         :return: the temporary path
         """
 
-        temp = self.run(
+        return self.run(
             '''@powershell -Command "[System.IO.Path]::GetTempFileName()"'''
-        ).std_out
-        self.new_file(temp)
-        return temp
+        ).std_out.strip()
 
     def new_dir(self, path):
 
@@ -374,9 +372,15 @@ class WinRMRunner(object):
         :return a response object with information about the execution
         :rtype WinRMCommandExecutionResponse.
         """
-
+        contents = contents.replace(
+            '\r', '`r').replace(
+            '\n', '`n').replace(
+            ' ',  '` ').replace(
+            "'",  "`'").replace(
+            '"',  '`"').replace(
+            '\t', '`t')
         return self.run(
-            '''@powershell -Command "Add-Content {0} '{1}'"'''
+            '@powershell -Command "Set-Content {0} "{1}""'
             .format(path, contents))
 
     def get(self, path):
@@ -407,12 +411,12 @@ class WinRMRunner(object):
         """
 
         self.run(
-            '''@powershell -Command "Add-Type -assembly
-            "system.io.compression.filesystem""'''
+            '''@powershell -Command "Add-Type -assembly \
+"system.io.compression.filesystem""'''
         )
         return self.run(
-            '''@powershell -Command
-            "[io.compression.zipfile]::ExtractToDirectory({0}, {1})"'''
+            '''@powershell -Command \
+"[io.compression.zipfile]::ExtractToDirectory({0}, {1})"'''
             .format(archive, destination))
 
     def put_file(self, src, dst=None):
