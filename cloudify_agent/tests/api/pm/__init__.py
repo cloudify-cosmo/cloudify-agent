@@ -31,6 +31,7 @@ from cloudify.utils import LocalCommandRunner
 from cloudify_agent.api import utils, defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api.plugins.installer import PluginInstaller
+# from cloudify_agent import VIRTUALENV
 
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests import resources
@@ -413,14 +414,9 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         for key, value in expected.iteritems():
             _check_env_var(key, value)
 
-        def _check_env_path():
-            _path = _get_env_var('PATH')
-            if os.name == 'nt':
-                self.assertIn('{0}\Scripts'.format(daemon.virtualenv),
-                              _path)
-            else:
-                self.assertIn('{0}/bin'.format(daemon.virtualenv), _path)
-        _check_env_path()
+        # def _check_env_path():
+        #     _path = _get_env_var('PATH')
+        #     self.assertIn(VIRTUALENV, _path)
 
     def test_extra_env_path(self):
         daemon = self.create_daemon()
