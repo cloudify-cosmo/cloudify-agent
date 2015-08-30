@@ -57,10 +57,11 @@ def attribute(name):
             if attr is None:
                 raise RuntimeError('{0} is not an agent attribute'
                                    .format(name))
-            agent_context = ctx.bootstrap_context.cloudify_agent
+            agent_context = ctx.bootstrap_context.cloudify_agent.\
+                _cloudify_agent or {}
             context_attribute = attr.get('context_attribute', name)
-            if hasattr(agent_context, context_attribute):
-                value = getattr(agent_context, context_attribute)
+            if context_attribute in agent_context:
+                value = agent_context.get(context_attribute)
                 if value is not None:
                     cloudify_agent[name] = value
                     return
