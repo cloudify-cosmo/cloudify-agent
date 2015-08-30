@@ -19,15 +19,7 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 
 echo Setting service environment
 
-set "AGENT_PATH={{ virtualenv_path }}\Scripts"
-set NEW_PATH=%AGENT_PATH%;%PATH%
-set NEW_PATH_FIXED=%NEW_PATH:"=% 
-
-echo New environment path will be %NEW_PATH_FIXED%
-
-
 {{ nssm_path }} set {{ name }} AppEnvironmentExtra ^
-PATH="""%NEW_PATH_FIXED%""" ^
 MANAGEMENT_IP={{ manager_ip }} ^
 MANAGER_REST_PORT={{ manager_port }} ^
 MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229 ^
