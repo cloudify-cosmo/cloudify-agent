@@ -74,7 +74,7 @@ class AgentInstallerTest(testenv.TestCase):
             'winrm-agent-blueprint/winrm-agent-blueprint.yaml')
         self.upload_deploy_and_execute_install(
             inputs={
-                'image': self.env.windows_image_id,
+                'image': self.env.windows_image_name,
                 'flavor': self.env.medium_flavor_id
             }
         )
