@@ -12,6 +12,7 @@ echo Installing the agent as a windows service...
 --pidfile={{ pid_file }} ^
 --logfile={{ log_file }} ^
 --include={{ includes }} ^
+--config=cloudify.broker_config ^
 -Ofair
 
 if %errorlevel% neq 0 exit /b %errorlevel%

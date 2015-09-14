@@ -46,7 +46,6 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             process_management='init.d',
             broker_ip=None,
             workdir=None,
-            broker_url=None,
             includes=None,
             log_level=None,
             pid_file=None,
@@ -59,6 +58,11 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             deployment_id=None,
             extra_env_path=None,
             logger=get_logger(),
+            broker_user='guest',
+            broker_pass='guest',
+            broker_ssl_cert=None,
+            broker_ssl_enabled=False,
+            broker_get_settings_from_manager=False,
         )
 
         daemon = factory_new.return_value
@@ -79,7 +83,6 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             process_management='init.d',
             broker_ip=None,
             workdir=None,
-            broker_url=None,
             max_workers=None,
             min_workers=None,
             broker_port=None,
@@ -93,7 +96,12 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             extra_env_path=None,
             logger=get_logger(),
             key='value',
-            complex_key='complex-value'
+            complex_key='complex-value',
+            broker_user='guest',
+            broker_pass='guest',
+            broker_ssl_cert=None,
+            broker_ssl_enabled=False,
+            broker_get_settings_from_manager=False,
         )
 
     def test_configure(self, *factory_methods):

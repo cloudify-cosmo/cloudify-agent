@@ -18,6 +18,8 @@ export CELERY_APP=cloudify_agent.app.app
 export CELERY_TASK_SERIALIZER=json
 export CELERY_RESULT_SERIALIZER=json
 export CELERY_RESULT_BACKEND=${CELERY_BROKER_URL}
+# Needed in case agent user is root
+export C_FORCE_ROOT=true
 
 # extra environment variables provided by users
 EXTRA_ENV_PATH={{ extra_env_path }}

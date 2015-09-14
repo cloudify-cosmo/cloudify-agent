@@ -42,7 +42,8 @@ class TestDaemonFactory(BaseShellTest):
         self.assertEqual(self.daemon_name, daemon.name)
         self.assertEqual('queue', daemon.queue)
         self.assertEqual('127.0.0.1', daemon.manager_ip)
-        self.assertEqual('127.0.0.1', daemon.broker_url)
+        self.assertEqual('amqp://guest:guest@127.0.0.1:5672//',
+                         daemon.broker_url)
         self.assertEqual('user', daemon.user)
 
     def test_new_wrong_includes_attribute(self):
@@ -75,7 +76,8 @@ class TestDaemonFactory(BaseShellTest):
         self.assertEqual('queue', loaded.queue)
         self.assertEqual('127.0.0.1', loaded.manager_ip)
         self.assertEqual('user', loaded.user)
-        self.assertEqual('127.0.0.1', daemon.broker_url)
+        self.assertEqual('amqp://guest:guest@127.0.0.1:5672//',
+                         daemon.broker_url)
         self.factory.delete(daemon.name)
         self.assertRaises(exceptions.DaemonNotFoundError,
                           self.factory.load, daemon.name)

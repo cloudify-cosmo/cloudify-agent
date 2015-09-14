@@ -32,7 +32,9 @@ class TestDaemonDefaults(BaseTest):
         self.daemon = Daemon(
             manager_ip='manager_ip',
             queue='queue',
-            name='name'
+            name='name',
+            broker_user='guest',
+            broker_pass='guest',
         )
 
     def test_default_workdir(self):
@@ -65,7 +67,9 @@ class TestDaemonValidations(BaseTest):
                 name='name',
                 queue='queue',
                 host='queue',
-                user='user'
+                user='user',
+                broker_user='guest',
+                broker_pass='guest',
             )
             self.fail('Expected ValueError due to missing manager_ip')
         except exceptions.DaemonMissingMandatoryPropertyError as e:
@@ -79,7 +83,9 @@ class TestDaemonValidations(BaseTest):
                 host='queue',
                 manager_ip='manager_ip',
                 user='user',
-                min_workers='bad'
+                min_workers='bad',
+                broker_user='guest',
+                broker_pass='guest',
             )
         except exceptions.DaemonPropertiesError as e:
             self.assertTrue('min_workers is supposed to be a number' in
@@ -93,7 +99,9 @@ class TestDaemonValidations(BaseTest):
                 host='queue',
                 manager_ip='manager_ip',
                 user='user',
-                max_workers='bad'
+                max_workers='bad',
+                broker_user='guest',
+                broker_pass='guest',
             )
         except exceptions.DaemonPropertiesError as e:
             self.assertTrue('max_workers is supposed to be a number' in
@@ -108,7 +116,9 @@ class TestDaemonValidations(BaseTest):
                 manager_ip='manager_ip',
                 user='user',
                 max_workers=4,
-                min_workers=5
+                min_workers=5,
+                broker_user='guest',
+                broker_pass='guest',
             )
         except exceptions.DaemonPropertiesError as e:
             self.assertTrue('min_workers cannot be greater than max_workers'
@@ -124,7 +134,9 @@ class TestNotImplemented(BaseTest):
         cls.daemon = Daemon(
             manager_ip='manager_ip',
             name='name',
-            queue='queue'
+            queue='queue',
+            broker_user='guest',
+            broker_pass='guest',
         )
 
     def test_apply_includes(self):
