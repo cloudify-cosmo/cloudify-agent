@@ -33,9 +33,6 @@ class RemoteWindowsAgentInstaller(WindowsInstallerMixin, RemoteInstallerMixin):
             uri=cloudify_agent.get('uri'),
             logger=self.logger)
 
-    def extract(self, archive, destination):
-        return self.runner.unzip(archive, destination)
-
     @property
     def runner(self):
         return self._runner
@@ -47,12 +44,3 @@ class LocalWindowsAgentInstaller(WindowsInstallerMixin, LocalInstallerMixin):
         super(LocalWindowsAgentInstaller, self).__init__(
             cloudify_agent, logger
         )
-
-    def extract(self, archive, destination):
-        destination = '{0}\\env'.format(destination.rstrip('\\ '))
-        self.logger.debug('Extracting {0} to {1}'
-                          .format(archive, destination))
-        cmd = '{0} /SILENT /VERYSILENT' \
-              ' /SUPPRESSMSGBOXES /DIR={1}'.format(archive, destination)
-        self.runner.run(cmd)
-        return destination

@@ -25,49 +25,46 @@ def attribute(name):
 
     def decorator(function):
 
-        if ctx.type == context.DEPLOYMENT:
-
-            # if its a deployment context than all the code below is
-            # completely irrelevant
-            return function
-
         @wraps(function)
         def wrapper(cloudify_agent):
 
+            # if the property was given in the invocation, use it.
+            # inputs are first in precedence order
+            if name in cloudify_agent:
+                return
+
+            if ctx.type == context.NODE_INSTANCE:
+
+                # if the property is inside a runtime property, use it.
+                # runtime properties are second in precedence order
+                runtime_properties = ctx.instance.runtime_properties.get(
+                    'cloudify_agent', {})
+                if name in runtime_properties:
+                    cloudify_agent[name] = runtime_properties[name]
+                    return
+
+                # if the property is declared on the node, use it
+                # node properties are third in precedence order
+                node_properties = ctx.node.properties['cloudify_agent']
+                if name in node_properties:
+                    cloudify_agent[name] = node_properties[name]
+                    return
+
+            # if the property is inside the bootstrap context,
+            # and its value is not None, use it
+            # bootstrap_context is forth in precedence order
             attr = AGENT_ATTRIBUTES.get(name)
             if attr is None:
                 raise RuntimeError('{0} is not an agent attribute'
                                    .format(name))
-
+            agent_context = ctx.bootstrap_context.cloudify_agent.\
+                _cloudify_agent or {}
             context_attribute = attr.get('context_attribute', name)
-
-            node_properties = ctx.node.properties['cloudify_agent']
-            agent_context = ctx.bootstrap_context.cloudify_agent
-            runtime_properties = ctx.instance.runtime_properties.get(
-                'cloudify_agent', {})
-
-            # if the property was given in the invocation, use it.
-            if name in cloudify_agent:
-                return
-
-            # if the property is inside a runtime property, use it.
-            if name in runtime_properties:
-                cloudify_agent[name] = runtime_properties[
-                    name]
-                return
-
-            # if the property is declared on the node, use it
-            if name in node_properties:
-                cloudify_agent[name] = node_properties[name]
-                return
-
-            # if the property is inside the bootstrap context,
-            # and its value is not None, use it
-            if hasattr(agent_context, context_attribute):
-                value = getattr(agent_context, context_attribute)
+            if context_attribute in agent_context:
+                value = agent_context.get(context_attribute)
                 if value is not None:
                     cloudify_agent[name] = value
-                return
+                    return
 
             # apply the function itself
             ctx.logger.debug('Applying function:{0} on Attribute '
@@ -80,11 +77,12 @@ def attribute(name):
                 return
 
             # set default value
-            default = AGENT_ATTRIBUTES[name].get('default')
+            default = attr.get('default')
             if default is not None:
                 ctx.logger.debug('{0} set by default value'
                                  .format(name, value))
                 cloudify_agent[name] = default
+                return
 
         return wrapper
 

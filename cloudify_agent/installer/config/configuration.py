@@ -52,8 +52,13 @@ def connection_attributes(cloudify_agent):
         # if installing locally, we install the agent with the same user the
         # current agent is running under. we don't care about any other
         # connection details
-        if 'user' not in cloudify_agent:
-            cloudify_agent['user'] = getpass.getuser()
+        cloudify_agent['user'] = getpass.getuser()
+
+        if cloudify_agent.get('remote_execution') is False:
+            ctx.logger.warn('remote_execution parameter set to false for'
+                            ' local agent installation, ignoring and setting'
+                            ' value to true')
+        cloudify_agent['remote_execution'] = True
     else:
 
         if 'windows' not in cloudify_agent:
@@ -69,29 +74,29 @@ def connection_attributes(cloudify_agent):
                 cloudify_agent['windows'] = ctx.node.properties[
                     'os_family'].lower() == 'windows'
 
-        if 'ip' not in cloudify_agent:
+        # support 'ip' attribute as direct node property or runtime
+        # property (as opposed to nested inside the cloudify_agent dict)
+        ip = ctx.instance.runtime_properties.get('ip')
+        if not ip:
+            ip = ctx.node.properties.get('ip')
+        if not ip:
+            ip = cloudify_agent.get('ip')
+        if not ip:
+            raise_missing_attribute('ip')
+        cloudify_agent['ip'] = ip
 
-            # support 'ip' attribute as direct node property or runtime
-            # property (as opposed to nested inside the cloudify_agent dict)
-            ip = ctx.instance.runtime_properties.get('ip')
-            if not ip:
-                ip = ctx.node.properties.get('ip')
-            if not ip:
-                raise_missing_attribute('ip')
-            cloudify_agent['ip'] = ip
-
-        if 'password' not in cloudify_agent:
-
-            # support password as direct node property or runtime
-            # property (as opposed to nested inside the cloudify_agent dict)
-            password = ctx.instance.runtime_properties.get('password')
-            if not password:
-                password = ctx.node.properties.get('password')
-            if not password and cloudify_agent['windows']:
-                # a remote windows installation requires a
-                # password to connect to the machine
-                raise_missing_attribute('password')
-            cloudify_agent['password'] = password
+        # support password as direct node property or runtime
+        # property (as opposed to nested inside the cloudify_agent dict)
+        password = ctx.instance.runtime_properties.get('password')
+        if not password:
+            password = ctx.node.properties.get('password')
+        if not password:
+            password = cloudify_agent.get('password')
+        if not password and cloudify_agent['windows']:
+            # a remote windows installation requires a
+            # password to connect to the machine
+            raise_missing_attribute('password')
+        cloudify_agent['password'] = password
 
         # a remote installation requires the username
         # that the agent will run under.
@@ -108,22 +113,27 @@ def connection_attributes(cloudify_agent):
                 cloudify_agent and 'key' not in cloudify_agent:
             raise_missing_attributes('key', 'password')
 
+        if 'remote_execution' not in cloudify_agent:
+            # pre 3.3 Compute node type do not have this property
+            remote_execution = ctx.node.properties.get('remote_execution',
+                                                       True)
+            cloudify_agent['remote_execution'] = remote_execution
+
 
 @group('cfy-agent')
 def cfy_agent_attributes(cloudify_agent):
 
     if 'process_management' not in cloudify_agent:
+        cloudify_agent['process_management'] = {}
 
+    if 'name' not in cloudify_agent['process_management']:
         # user did not specify process management configuration, choose the
         # default one according to os type.
         if cloudify_agent['windows']:
-            cloudify_agent['process_management'] = {
-                'name': 'nssm'
-            }
+            name = 'nssm'
         else:
-            cloudify_agent['process_management'] = {
-                'name': 'init.d'
-            }
+            name = 'init.d'
+        cloudify_agent['process_management']['name'] = name
 
     if 'name' not in cloudify_agent:
         if cloudify_agent['local']:
@@ -147,6 +157,11 @@ def cfy_agent_attributes(cloudify_agent):
 
 @group('installation')
 def installation_attributes(cloudify_agent, runner):
+
+    # This means that the agent will install itself
+    # (a.k.a ssh-less installation)
+    if not cloudify_agent['remote_execution']:
+        return
 
     if 'source_url' not in cloudify_agent:
 

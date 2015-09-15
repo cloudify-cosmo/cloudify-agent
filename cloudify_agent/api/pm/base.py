@@ -104,7 +104,7 @@ class Daemon(object):
 
     ``manager_port``:
 
-        the manager REST gateway port to connect to. defaults to 80.
+        the manager REST gateway port to connect to. defaults to 8101.
 
     ``min_workers``:
 

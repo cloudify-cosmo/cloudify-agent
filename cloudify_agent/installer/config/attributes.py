@@ -56,6 +56,9 @@ AGENT_ATTRIBUTES = {
         'group': 'connection',
         'default': {}
     },
+    'remote_execution': {
+        'group': 'connection',
+    },
     'manager_ip': {
         'group': 'cfy-agent'
     },

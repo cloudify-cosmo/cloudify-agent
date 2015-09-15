@@ -27,7 +27,7 @@ from celery import Celery
 from cloudify import constants
 from cloudify.utils import LocalCommandRunner
 
-
+# from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils, defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api.plugins.installer import PluginInstaller
@@ -400,15 +400,23 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             utils.internal.CLOUDIFY_DAEMON_USER_KEY: daemon.user
         }
 
-        def _check_env_var(var, expected_value):
-            _value = self.celery.send_task(
+        def _get_env_var(var):
+            return self.celery.send_task(
                 name='mock_plugin.tasks.get_env_variable',
                 queue=daemon.queue,
                 args=[var]).get(timeout=5)
+
+        def _check_env_var(var, expected_value):
+            _value = _get_env_var(var)
             self.assertEqual(_value, expected_value)
 
         for key, value in expected.iteritems():
             _check_env_var(key, value)
+
+        # def _check_env_path():
+        #     _path = _get_env_var('PATH')
+        #     self.assertIn(VIRTUALENV, _path)
+        # _check_env_path()
 
     def test_extra_env_path(self):
         daemon = self.create_daemon()

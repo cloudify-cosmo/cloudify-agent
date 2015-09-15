@@ -1,66 +1,44 @@
 tosca_definitions_version: cloudify_dsl_1_1
 
 imports:
-    - http://www.getcloudify.org/spec/cloudify/3.3m4/types.yaml
-    - http://www.getcloudify.org/spec/openstack-plugin/1.3m4/plugin.yaml
+  - http://www.getcloudify.org/spec/cloudify/3.3m5/types.yaml
+  - http://www.getcloudify.org/spec/openstack-plugin/1.3m5/plugin.yaml
 
 plugins:
-
   mock:
     source: mock-plugin
     executor: host_agent
 
 inputs:
-
-  image:
-    description: >
-      Image to be used when launching agent VM's
-
-  flavor:
-    description: >
-      Flavor of the agent VM's
-
-node_types:
-
-  nodes.Server:
-    derived_from: cloudify.openstack.nodes.Server
-
-  nodes.Application:
-    derived_from: cloudify.nodes.Root
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create: mock.mock_plugin.tasks.run
+  image: {}
+  flavor: {}
 
 node_templates:
 
   host:
-    type: nodes.Server
+    type: cloudify.openstack.nodes.WindowsServer
     properties:
       image: { get_input: image }
       flavor: { get_input: flavor }
-      use_password: true
+      cloudify_agent:
+        user: Admin
+        port: 5985
       server:
         userdata: |
           #ps1_sysnative
           winrm quickconfig -q
-          winrm set winrm/config/winrs '@{MaxMemoryPerShellMB="300"}'
-          winrm set winrm/config '@{MaxTimeoutms="1800000"}'
-          winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+          winrm set winrm/config              '@{MaxTimeoutms="1800000"}'
+          winrm set winrm/config/winrs        '@{MaxMemoryPerShellMB="300"}'
+          winrm set winrm/config/service      '@{AllowUnencrypted="true"}'
           winrm set winrm/config/service/auth '@{Basic="true"}'
-          msiexec /i https://www.python.org/ftp/python/2.7.6/python-2.7.6.msi TARGETDIR=C:\Python27 ALLUSERS=1 /qn
-      os_family: Windows
-      cloudify_agent:
-        port: 5985
-        user: Admin
-        system_python: C:\Python27\python.exe
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          inputs:
-            private_key_path: ~/.ssh/agent_key.pem
+          &netsh advfirewall firewall add rule name="WinRM 5985" protocol=TCP dir=in localport=5985 action=allow
+          &netsh advfirewall firewall add rule name="WinRM 5986" protocol=TCP dir=in localport=5986 action=allow
 
   application:
-    type: nodes.Application
+    type: cloudify.nodes.Root
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: mock.mock_plugin.tasks.run
     relationships:
       - type: cloudify.relationships.contained_in
         target: host

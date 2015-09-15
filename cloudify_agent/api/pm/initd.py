@@ -46,8 +46,9 @@ class GenericLinuxDaemon(CronRespawnDaemon):
     def __init__(self, logger=None, **params):
         super(GenericLinuxDaemon, self).__init__(logger=logger, **params)
 
-        self.script_path = os.path.join(self.SCRIPT_DIR, self.name)
-        self.config_path = os.path.join(self.CONFIG_DIR, self.name)
+        self.service_name = 'celeryd-{0}'.format(self.name)
+        self.script_path = os.path.join(self.SCRIPT_DIR, self.service_name)
+        self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
         self.includes_path = os.path.join(
             self.workdir, '{0}-includes'.format(self.name))
 
@@ -166,12 +167,14 @@ class GenericLinuxDaemon(CronRespawnDaemon):
     def _create_start_on_boot_entry(self):
 
         def _handle_debian():
-            self._runner.run('sudo update-rc.d {0} defaults'.format(self.name))
+            self._runner.run('sudo update-rc.d {0} defaults'.format(
+                self.service_name))
 
         def _handle_rpm():
             self._runner.run('sudo /sbin/chkconfig --add {0}'.format(
-                self.name))
-            self._runner.run('sudo /sbin/chkconfig {0} on'.format(self.name))
+                self.service_name))
+            self._runner.run('sudo /sbin/chkconfig {0} on'.format(
+                self.service_name))
 
         if self._runner.run('which dpkg',
                             exit_on_failure=False).return_code == 0:
@@ -189,12 +192,12 @@ class GenericLinuxDaemon(CronRespawnDaemon):
 
 
 def start_command(daemon):
-    return 'sudo service {0} start'.format(daemon.name)
+    return 'sudo service {0} start'.format(daemon.service_name)
 
 
 def stop_command(daemon):
-    return 'sudo service {0} stop'.format(daemon.name)
+    return 'sudo service {0} stop'.format(daemon.service_name)
 
 
 def status_command(daemon):
-    return 'sudo service {0} status'.format(daemon.name)
+    return 'sudo service {0} status'.format(daemon.service_name)

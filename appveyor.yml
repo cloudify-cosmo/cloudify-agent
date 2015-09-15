@@ -10,6 +10,13 @@ environment:
 install:
 
   #################################
+  # Change Python Registry
+  #################################
+
+  - reg ADD HKCU\Software\Python\PythonCore\2.7\InstallPath /ve /d "C:\Python27" /t REG_SZ /f
+  - reg ADD HKLM\Software\Python\PythonCore\2.7\InstallPath /ve /d "C:\Python27" /t REG_SZ /f
+
+  #################################
   # Installing Inno Setup
   #################################
 
