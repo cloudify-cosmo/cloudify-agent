@@ -26,7 +26,7 @@ function install_requirements() {
 	curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python
 	sudo pip install pip==6.0.8 --upgrade
 	sudo pip install virtualenv==12.0.7 &&
-	sudo pip install cloudify-agent-packager==3.5.2 &&
+	sudo pip install cloudify-agent-packager==3.5.3 &&
 	sudo pip install s3cmd==1.5.2
 }
 
