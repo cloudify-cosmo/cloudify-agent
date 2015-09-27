@@ -19,7 +19,7 @@ from setuptools import setup
 
 setup(
     name='mock-plugin-sudo',
-    version='3.3a5',
+    version='3.3a6',
     author='Gigaspaces',
     author_email='cloudify@gigaspaces.com',
     packages=[
