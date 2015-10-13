@@ -1,0 +1,107 @@
+#! /bin/bash -e
+
+download()
+{
+    if command -v wget > /dev/null 2>&1; then
+        wget $1 -O $2
+    elif command -v curl > /dev/null 2>&1; then
+        curl -L -o $2 $1
+    else
+        echo >&2 "error: wget/curl not found. cannot download agent package"; return 1
+    fi
+}
+export -f download
+
+package_url()
+{
+    if [[ ! -z "{{ conf.package_url }}" ]]; then
+        echo "{{ conf.package_url }}"
+    else
+        local distro="$(python -c 'import sys, platform; sys.stdout.write(platform.dist()[0].lower())')"
+        local distro_codename="$(python -c 'import sys, platform; sys.stdout.write(platform.dist()[2].lower())')"
+        echo "{{ file_server_url }}/packages/agents/${distro}-${distro_codename}-agent.tar.gz"
+    fi
+}
+export -f package_url
+
+download_and_extract_agent_package()
+{
+    download $(package_url) {{ conf.basedir }}/agent.tar.gz
+    mkdir -p {{ conf.agent_dir }}
+    tar xzf {{ conf.basedir }}/agent.tar.gz --strip=1 -C {{ conf.agent_dir }}
+}
+export -f download_and_extract_agent_package
+
+export_daemon_env()
+{
+    local agent_env_bin={{ conf.envdir }}/bin
+    export AGENT_PYTHON_INTERPRETER=${agent_env_bin}/python
+    export AGENT_CLI=${agent_env_bin}/cfy-agent
+    export PATH=${agent_env_bin}:$PATH
+    {% for env_key, env_value in daemon_env.iteritems() %}
+        export {{ env_key }}={{ env_value }}
+    {% endfor %}
+}
+export -f export_daemon_env
+
+create_custom_env_file()
+{
+    {% if custom_env is not none %}
+        echo "#! /bin/bash" >> {{ custom_env_path }}
+        {% for env_key, env_value in custom_env.iteritems() %}
+            echo "export {{ env_key }}={{ env_value }}" >> {{ custom_env_path }}
+        {% endfor %}
+    {% else %}
+        echo "No custom env configured"
+    {% endif %}
+}
+export -f create_custom_env_file
+
+configure_virtualenv()
+{
+    export_daemon_env
+    # configure command is run explicily as the virtualenv has not been "fixed"
+    # yet
+    ${AGENT_PYTHON_INTERPRETER} ${AGENT_CLI} configure --relocated-env
+}
+export -f configure_virtualenv
+
+disable_requiretty()
+{
+    {% if conf.disable_requiretty %}
+        export_daemon_env
+        cfy-agent configure --disable-requiretty --no-sudo
+    {% else %}
+        echo "Skipping disable_requiretty part"
+    {% endif %}
+}
+export -f disable_requiretty
+
+start_daemon()
+{
+    export_daemon_env
+    cfy-agent daemons create {{ pm_options }}
+    cfy-agent daemons configure
+    cfy-agent daemons start
+}
+export -f start_daemon
+
+install_agent()
+{
+    su {{ conf.user }} --shell /bin/bash -c "set -e; download_and_extract_agent_package"
+    su {{ conf.user }} --shell /bin/bash -c "set -e; configure_virtualenv"
+    disable_requiretty
+}
+export -f install_agent
+
+install_and_start_agent()
+{
+    {% if conf.install_method == 'init_script' %}
+        install_agent
+    {% endif %}
+    su {{ conf.user }} --shell /bin/bash -c "set -e; create_custom_env_file"
+    su {{ conf.user }} --shell /bin/bash -c "set -e; start_daemon"
+}
+export -f install_and_start_agent
+
+install_and_start_agent

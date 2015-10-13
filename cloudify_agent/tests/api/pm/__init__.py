@@ -166,19 +166,19 @@ class BaseDaemonLiveTestCase(BaseTest):
         self.assertEqual(expected_tasks, daemon_tasks)
 
     def assert_daemon_alive(self, name):
-        stats = utils.get_agent_stats(name, self.celery)
-        self.assertTrue(stats is not None)
+        registered = utils.get_agent_registered(name, self.celery)
+        self.assertTrue(registered is not None)
 
     def assert_daemon_dead(self, name):
-        stats = utils.get_agent_stats(name, self.celery)
-        self.assertTrue(stats is None)
+        registered = utils.get_agent_registered(name, self.celery)
+        self.assertTrue(registered is None)
 
     def wait_for_daemon_alive(self, name, timeout=10):
         deadline = time.time() + timeout
 
         while time.time() < deadline:
-            stats = utils.get_agent_stats(name, self.celery)
-            if stats:
+            registered = utils.get_agent_registered(name, self.celery)
+            if registered:
                 return
             self.logger.info('Waiting for daemon {0} to start...'
                              .format(name))
@@ -190,8 +190,8 @@ class BaseDaemonLiveTestCase(BaseTest):
         deadline = time.time() + timeout
 
         while time.time() < deadline:
-            stats = utils.get_agent_stats(name, self.celery)
-            if not stats:
+            registered = utils.get_agent_registered(name, self.celery)
+            if not registered:
                 return
             self.logger.info('Waiting for daemon {0} to stop...'
                              .format(name))

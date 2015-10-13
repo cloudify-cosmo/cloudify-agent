@@ -15,13 +15,21 @@
 
 import os
 
+from cloudify.state import current_ctx
+from cloudify.mocks import MockCloudifyContext
 from cloudify.utils import setup_logger
+
+from nova_plugin.userdata import create_multi_mimetype_userdata
 
 from system_tests import resources
 from cosmo_tester.framework import testenv
 
+from cloudify_agent.installer import script
+
 
 class AgentInstallerTest(testenv.TestCase):
+
+    expected_file_content = 'CONTENT'
 
     @classmethod
     def setUpClass(cls):
@@ -52,22 +60,6 @@ class AgentInstallerTest(testenv.TestCase):
         )
         self.execute_uninstall()
 
-    def test_userdata_agent(self):
-        self.blueprint_yaml = resources.get_resource(
-            'userdata-agent-blueprint/userdata-agent-blueprint.yaml')
-        self.upload_deploy_and_execute_install(
-            inputs={
-                'image': self.env.ubuntu_image_id,
-                'flavor': self.env.small_flavor_id,
-                'branch': os.environ.get('BRANCH_NAME_CORE', 'master'),
-                'agent_user': 'ubuntu',
-                'home_dir': '/home/ubuntu',
-                'manager_ip': self._extract_manager_private_ip()
-            }
-        )
-        self.assert_outputs({'test': 'value'})
-        self.execute_uninstall()
-
     def test_winrm_agent(self):
 
         self.blueprint_yaml = resources.get_resource(
@@ -80,15 +72,136 @@ class AgentInstallerTest(testenv.TestCase):
         )
         self.execute_uninstall()
 
-    def _extract_manager_private_ip(self):
-        nova, _, _ = self.env.handler.openstack_clients()
-        servers = nova.servers.list()
-        # at this point, due to test being only one in tenant, we expect
-        # only one server to exists which is the management server.
-        # if this proves to be wrong in the future, it will be fixed.
-        self.assertEqual(len(servers), 1)
-        server = servers[0]
-        for network, network_ips in server.networks.items():
-            if network == self.env.management_network_name:
-                return network_ips[0]
-        self.fail('Failed extracting manager private IP')
+    # Two different tests for ubuntu/centos
+    # because of different disable requiretty logic
+    def test_centos_core_userdata_agent(self):
+        self._test_linux_userdata_agent(image=self.env.centos_7_image_name,
+                                        flavor=self.env.small_flavor_id,
+                                        user=self.env.centos_7_image_user,
+                                        install_method='init_script')
+
+    def test_ubuntu_trusty_userdata_agent(self):
+        self._test_linux_userdata_agent(image=self.env.ubuntu_trusty_image_id,
+                                        flavor=self.env.small_flavor_id,
+                                        user='ubuntu',
+                                        install_method='init_script')
+
+    def test_ubuntu_trusty_provided_userdata_agent(self):
+        name = 'cloudify_agent'
+        user = 'ubuntu'
+        install_userdata = install_script(name=name,
+                                          windows=False,
+                                          user=user,
+                                          manager_ip=self._manager_ip())
+        self._test_linux_userdata_agent(image=self.env.ubuntu_trusty_image_id,
+                                        flavor=self.env.small_flavor_id,
+                                        user=user,
+                                        install_method='provided',
+                                        name=name,
+                                        install_userdata=install_userdata)
+
+    def _test_linux_userdata_agent(self, image, flavor, user, install_method,
+                                   install_userdata=None, name=None):
+        file_path = '/tmp/test_file'
+        userdata = '#! /bin/bash\necho {0} > {1}\nchmod 777 {1}'.format(
+            self.expected_file_content, file_path)
+        if install_userdata:
+            userdata = create_multi_mimetype_userdata([userdata,
+                                                       install_userdata])
+        self._test_userdata_agent(image=image,
+                                  flavor=flavor,
+                                  user=user,
+                                  os_family='linux',
+                                  userdata=userdata,
+                                  file_path=file_path,
+                                  install_method=install_method,
+                                  name=name)
+
+    def test_windows_userdata_agent(self,
+                                    install_method='init_script',
+                                    name=None,
+                                    install_userdata=None):
+        user = 'Admin'
+        file_path = 'C:\\Users\\{0}\\test_file'.format(user)
+        userdata = '#ps1_sysnative \nSet-Content {1} "{0}"'.format(
+            self.expected_file_content, file_path)
+        if install_userdata:
+            userdata = create_multi_mimetype_userdata([userdata,
+                                                       install_userdata])
+        self._test_userdata_agent(image=self.env.windows_image_name,
+                                  flavor=self.env.medium_flavor_id,
+                                  user=user,
+                                  os_family='windows',
+                                  userdata=userdata,
+                                  file_path=file_path,
+                                  install_method=install_method,
+                                  name=name)
+
+    def test_windows_provided_userdata_agent(self):
+        name = 'cloudify_agent'
+        install_userdata = install_script(name=name,
+                                          windows=True,
+                                          user='Admin',
+                                          manager_ip=self._manager_ip())
+        self.test_windows_userdata_agent(install_method='provided',
+                                         name=name,
+                                         install_userdata=install_userdata)
+
+    def _test_userdata_agent(self, image, flavor, user, os_family,
+                             userdata, file_path, install_method,
+                             name=None):
+        self.blueprint_yaml = resources.get_resource(
+            'userdata-agent-blueprint/userdata-agent-blueprint.yaml')
+        self.upload_deploy_and_execute_install(
+            inputs={
+                'image': image,
+                'flavor': flavor,
+                'agent_user': user,
+                'os_family': os_family,
+                'userdata': userdata,
+                'file_path': file_path,
+                'install_method': install_method,
+                'name': name
+            }
+        )
+        self.assert_outputs({'MY_ENV_VAR': 'MY_ENV_VAR_VALUE',
+                             'file_content': self.expected_file_content})
+        self.execute_uninstall()
+
+    def _manager_ip(self):
+        nova_client, _, _ = self.env.handler.openstack_clients()
+        for server in nova_client.servers.list():
+            if server.name == self.env.management_server_name:
+                for network, network_ips in server.networks.items():
+                    if network == self.env.management_network_name:
+                        return network_ips[0]
+        self.fail('Failed finding manager ip')
+
+
+def install_script(name, windows, user, manager_ip):
+    ctx = MockCloudifyContext(
+        node_id='node',
+        properties={'agent_config': {
+            'user': user,
+            'windows': windows,
+            'install_method': 'provided',
+            'manager_ip': manager_ip,
+            'name': name
+        }})
+    try:
+        current_ctx.set(ctx)
+        os.environ['MANAGER_FILE_SERVER_URL'] = 'http://{0}:53229'.format(
+            manager_ip)
+        init_script = script.init_script(cloudify_agent={})
+    finally:
+        os.environ.pop('MANAGER_FILE_SERVER_URL')
+        current_ctx.clear()
+    result = '\n'.join(init_script.split('\n')[:-1])
+    if windows:
+        return '{0}\n' \
+               'DownloadAndExtractAgentPackage\n' \
+               'ExportDaemonEnv\n' \
+               'ConfigureAgent'.format(result)
+    else:
+        return '{0}\n' \
+               'install_agent'.format(result)

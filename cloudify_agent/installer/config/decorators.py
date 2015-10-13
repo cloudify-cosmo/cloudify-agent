@@ -30,7 +30,9 @@ def attribute(name):
 
             # if the property was given in the invocation, use it.
             # inputs are first in precedence order
-            if name in cloudify_agent:
+            if _update_agent_property(name,
+                                      props=cloudify_agent,
+                                      final_props=cloudify_agent):
                 return
 
             if ctx.type == context.NODE_INSTANCE:
@@ -39,15 +41,21 @@ def attribute(name):
                 # runtime properties are second in precedence order
                 runtime_properties = ctx.instance.runtime_properties.get(
                     'cloudify_agent', {})
-                if name in runtime_properties:
-                    cloudify_agent[name] = runtime_properties[name]
+                if _update_agent_property(name,
+                                          props=runtime_properties,
+                                          final_props=cloudify_agent):
                     return
 
                 # if the property is declared on the node, use it
                 # node properties are third in precedence order
-                node_properties = ctx.node.properties['cloudify_agent']
-                if name in node_properties:
-                    cloudify_agent[name] = node_properties[name]
+                node_properties = ctx.node.properties.get(
+                    'cloudify_agent', {})
+                node_properties.update(ctx.node.properties.get(
+                    'agent_config', {}))
+
+                if _update_agent_property(name,
+                                          props=node_properties,
+                                          final_props=cloudify_agent):
                     return
 
             # if the property is inside the bootstrap context,
@@ -60,11 +68,14 @@ def attribute(name):
             agent_context = ctx.bootstrap_context.cloudify_agent.\
                 _cloudify_agent or {}
             context_attribute = attr.get('context_attribute', name)
-            if context_attribute in agent_context:
-                value = agent_context.get(context_attribute)
-                if value is not None:
-                    cloudify_agent[name] = value
-                    return
+            if _update_agent_property(context_attribute,
+                                      props=agent_context,
+                                      final_props=cloudify_agent):
+                return
+            if _update_agent_property(name,
+                                      props=agent_context,
+                                      final_props=cloudify_agent):
+                return
 
             # apply the function itself
             ctx.logger.debug('Applying function:{0} on Attribute '
@@ -118,3 +129,14 @@ def group(name):
         return wrapper
 
     return decorator
+
+
+def _update_agent_property(name, props, final_props):
+    extra_props = props.get('extra', {})
+    if name in extra_props:
+        final_props[name] = extra_props[name]
+        return True
+    if name in props:
+        final_props[name] = props[name]
+        return True
+    return False

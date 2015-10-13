@@ -1,0 +1,90 @@
+#ps1_sysnative
+
+$ErrorActionPreference = "Stop"
+
+function Download($Url, $OutputPath)
+{
+    (New-Object System.Net.WebClient).DownloadFile("$Url", "$OutputPath")
+}
+
+function PatchCloudifyAgent($Branch)
+{
+    $DownloadUrl = "https://github.com/cloudify-cosmo/cloudify-agent/archive/$Branch.zip"
+    $DownloadOutputPath = "{{ conf.basedir }}\cloudify-agent.zip"
+    $ExtractedTo = "{{ conf.basedir }}\cloudify-agent-git"
+    Download $DownloadUrl $DownloadOutputPath
+    New-Item -ItemType directory -Path $ExtractedTo
+    Add-Type -Assembly "System.IO.Compression.FileSystem"
+    [IO.Compression.ZipFile]::ExtractToDirectory($DownloadOutputPath, $ExtractedTo)
+    Copy-Item "$ExtractedTo\cloudify-agent-$Branch\cloudify_agent" "{{ conf.agent_dir }}\Lib\site-packages" -Recurse -Force
+}
+
+function DownloadAndExtractAgentPackage()
+{
+    Download {{ conf.package_url }} {{ conf.basedir }}\cloudify-windows-agent.exe
+    {{ conf.basedir }}\cloudify-windows-agent.exe /SILENT /VERYSILENT /SUPPRESSMSGBOXES /DIR={{ conf.agent_dir }}
+
+    $CheckInstalledPath = "{{ conf.agent_dir }}\Scripts\cfy-agent.exe"
+    # Timeout: 5 minutes
+    for ($i = 0; $i -lt 20; $i++)
+    {
+        if (Test-Path $CheckInstalledPath)
+        {
+            Write-Host "Agent package installation took $($i * 15) seconds"
+            break
+        }
+        Start-Sleep -s 15
+    }
+
+    if (-not (Test-Path $CheckInstalledPath))
+    {
+        throw "Cloudify Agent installation failed"
+    }
+}
+
+function ExportDaemonEnv()
+{
+    $env:Path = "{{ conf.agent_dir }}\Scripts" + ";" + $env:Path
+    {% for env_key, env_value in daemon_env.iteritems() %}
+        $env:{{ env_key }} = "{{ env_value }}"
+    {% endfor %}
+}
+
+function CreateCustomEnvFile()
+{
+    {% if custom_env is not none %}
+        Set-Content {{ custom_env_path }} ""
+        {% for env_key, env_value in custom_env.iteritems() %}
+             Add-Content {{ custom_env_path }} "set {{ env_key }}={{ env_value }}"
+        {% endfor %}
+    {% else %}
+        Write-Host "No custom env configured"
+    {% endif %}
+}
+
+function ConfigureAgent()
+{
+    cfy-agent configure {{ configure_flags }}
+}
+
+function StartDaemon()
+{
+    cfy-agent daemons create {{ pm_options }}
+    cfy-agent daemons configure
+    cfy-agent daemons start
+}
+
+function InstallAgent()
+{
+    {% if conf.install_method == 'init_script' %}
+        DownloadAndExtractAgentPackage
+    {% endif %}
+    ExportDaemonEnv
+    CreateCustomEnvFile
+    {% if conf.install_method == 'init_script' %}
+        ConfigureAgent
+    {% endif %}
+    StartDaemon
+}
+
+InstallAgent

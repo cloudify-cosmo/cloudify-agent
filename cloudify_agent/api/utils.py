@@ -69,8 +69,8 @@ class _Internal(object):
 
         return os.environ[cls.CLOUDIFY_DAEMON_USER_KEY]
 
-    @staticmethod
-    def get_storage_directory(username=None):
+    @classmethod
+    def get_storage_directory(cls, username=None):
 
         """
         Retrieve path to the directory where all daemon
@@ -79,6 +79,8 @@ class _Internal(object):
         :param username: the user
 
         """
+        if cls.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY in os.environ:
+            return cls.get_daemon_storage_dir()
 
         return os.path.join(get_home_dir(username), '.cfy-agent')
 
@@ -125,15 +127,15 @@ class _Internal(object):
 internal = _Internal()
 
 
-def get_agent_stats(name, celery):
+def get_agent_registered(name, celery):
 
     """
-    Query for agent stats based on agent name.
+    Query for agent registered tasks based on agent name.
 
     :param name: the agent name
     :param celery: the celery client to use
 
-    :return: agents stats
+    :return: agents registered tasks
     :rtype: dict
 
     """
@@ -141,8 +143,8 @@ def get_agent_stats(name, celery):
     destination = 'celery@{0}'.format(name)
     inspect = celery.control.inspect(
         destination=[destination])
-    stats = (inspect.stats() or {}).get(destination)
-    return stats
+    registered = (inspect.registered() or {}).get(destination)
+    return registered
 
 
 def get_home_dir(username=None):

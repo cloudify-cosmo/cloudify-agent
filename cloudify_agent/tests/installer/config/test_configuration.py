@@ -68,7 +68,6 @@ class TestConfiguration(BaseTest):
             'disable_requiretty': True,
             'env': {},
             'fabric_env': {},
-            'port': 22,
             'max_workers': 5,
             'min_workers': 0,
             'workdir': workdir,

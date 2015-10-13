@@ -13,14 +13,12 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-START_TIMEOUT = 15
+START_TIMEOUT = 30
 START_INTERVAL = 1
-STOP_TIMEOUT = 15
+STOP_TIMEOUT = 30
 STOP_INTERVAL = 1
 MANAGER_PORT = 8101
 BROKER_PORT = 5672
-DISABLE_REQUIRETTY = False
-RELOCATED = False
 MIN_WORKERS = 0
 MAX_WORKERS = 5
 BROKER_URL = 'amqp://guest:guest@{0}:{1}//'

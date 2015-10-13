@@ -50,7 +50,6 @@ AGENT_ATTRIBUTES = {
     'port': {
         'context_attribute': 'remote_execution_port',
         'group': 'connection',
-        'default': 22
     },
     'fabric_env': {
         'group': 'connection',
@@ -58,6 +57,9 @@ AGENT_ATTRIBUTES = {
     },
     'remote_execution': {
         'group': 'connection',
+    },
+    'windows': {
+        'group': 'connection'
     },
     'manager_ip': {
         'group': 'cfy-agent'
@@ -137,9 +139,9 @@ def raise_missing_attributes(*attributes):
 
 def _create_configuration_options():
     inputs_path = '{0}.interfaces.[{1}].inputs.' \
-                  'cloudify_agent' \
+                  'agent_config' \
         .format(ctx.node.name, ctx.task_name)
-    properties_path = '{0}.properties.cloudify_agent'.format(
+    properties_path = '{0}.properties.agent_config'.format(
         ctx.node.name
     )
     runtime_properties_path = \
