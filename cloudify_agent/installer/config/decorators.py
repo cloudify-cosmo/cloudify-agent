@@ -70,7 +70,8 @@ def attribute(name):
             context_attribute = attr.get('context_attribute', name)
             if _update_agent_property(context_attribute,
                                       props=agent_context,
-                                      final_props=cloudify_agent):
+                                      final_props=cloudify_agent,
+                                      final_key=name):
                 return
             if _update_agent_property(name,
                                       props=agent_context,
@@ -131,12 +132,13 @@ def group(name):
     return decorator
 
 
-def _update_agent_property(name, props, final_props):
+def _update_agent_property(name, props, final_props, final_key=None):
+    final_key = final_key or name
     extra_props = props.get('extra', {})
     if name in extra_props:
-        final_props[name] = extra_props[name]
+        final_props[final_key] = extra_props[name]
         return True
     if name in props:
-        final_props[name] = props[name]
+        final_props[final_key] = props[name]
         return True
     return False
