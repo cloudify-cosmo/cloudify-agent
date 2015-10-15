@@ -31,7 +31,13 @@ from cloudify_agent.installer.runners.winrm_runner import WinRMRunner
 from cloudify_agent.installer.runners.stub_runner import StubRunner
 from cloudify_agent.installer.config import configuration
 from cloudify_agent.api import utils
-from cloudify_agent.app import app
+
+
+# This is not imported here because it imports celery which may not be
+# available, and celery is only required in one operation in this module
+def _app():
+    from cloudify_agent import app
+    return app
 
 
 def init_agent_installer(func=None, validate_connection=True):
@@ -169,7 +175,7 @@ def start(cloudify_agent, installer, **_):
             # installing the agent (e.g userdata). All that is left for us
             # to do is wait for the agent to start.
             registered = utils.get_agent_registered(cloudify_agent['name'],
-                                                    app)
+                                                    _app())
             if registered:
                 ctx.logger.info('Agent has started')
             else:
