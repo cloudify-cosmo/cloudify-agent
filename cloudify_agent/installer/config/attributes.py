@@ -119,6 +119,9 @@ AGENT_ATTRIBUTES = {
     },
     'source_url': {
         'group': 'installation'
+    },
+    'broker_ip': {
+        'group': 'installation'
     }
 }
 
