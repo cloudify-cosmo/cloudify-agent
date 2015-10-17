@@ -5,4 +5,3 @@ FileServer
 
 # for creating the agent package in tests
 https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip
-
