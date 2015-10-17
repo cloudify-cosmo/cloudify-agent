@@ -87,21 +87,18 @@ class AgentInstallerTest(testenv.TestCase):
                                         install_method='init_script')
 
     def test_ubuntu_trusty_provided_userdata_agent(self):
-        name = 'cloudify_agent'
         user = 'ubuntu'
-        install_userdata = install_script(name=name,
-                                          windows=False,
+        install_userdata = install_script(windows=False,
                                           user=user,
                                           manager_ip=self._manager_ip())
         self._test_linux_userdata_agent(image=self.env.ubuntu_trusty_image_id,
                                         flavor=self.env.small_flavor_id,
                                         user=user,
                                         install_method='provided',
-                                        name=name,
                                         install_userdata=install_userdata)
 
     def _test_linux_userdata_agent(self, image, flavor, user, install_method,
-                                   install_userdata=None, name=None):
+                                   install_userdata=None):
         file_path = '/tmp/test_file'
         userdata = '#! /bin/bash\necho {0} > {1}\nchmod 777 {1}'.format(
             self.expected_file_content, file_path)
@@ -114,12 +111,10 @@ class AgentInstallerTest(testenv.TestCase):
                                   os_family='linux',
                                   userdata=userdata,
                                   file_path=file_path,
-                                  install_method=install_method,
-                                  name=name)
+                                  install_method=install_method)
 
     def test_windows_userdata_agent(self,
                                     install_method='init_script',
-                                    name=None,
                                     install_userdata=None):
         user = 'Admin'
         file_path = 'C:\\Users\\{0}\\test_file'.format(user)
@@ -134,22 +129,17 @@ class AgentInstallerTest(testenv.TestCase):
                                   os_family='windows',
                                   userdata=userdata,
                                   file_path=file_path,
-                                  install_method=install_method,
-                                  name=name)
+                                  install_method=install_method)
 
     def test_windows_provided_userdata_agent(self):
-        name = 'cloudify_agent'
-        install_userdata = install_script(name=name,
-                                          windows=True,
+        install_userdata = install_script(windows=True,
                                           user='Admin',
                                           manager_ip=self._manager_ip())
         self.test_windows_userdata_agent(install_method='provided',
-                                         name=name,
                                          install_userdata=install_userdata)
 
     def _test_userdata_agent(self, image, flavor, user, os_family,
-                             userdata, file_path, install_method,
-                             name=None):
+                             userdata, file_path, install_method):
         self.blueprint_yaml = resources.get_resource(
             'userdata-agent-blueprint/userdata-agent-blueprint.yaml')
         self.upload_deploy_and_execute_install(
@@ -160,8 +150,7 @@ class AgentInstallerTest(testenv.TestCase):
                 'os_family': os_family,
                 'userdata': userdata,
                 'file_path': file_path,
-                'install_method': install_method,
-                'name': name
+                'install_method': install_method
             }
         )
         self.assert_outputs({'MY_ENV_VAR': 'MY_ENV_VAR_VALUE',
@@ -178,15 +167,14 @@ class AgentInstallerTest(testenv.TestCase):
         self.fail('Failed finding manager ip')
 
 
-def install_script(name, windows, user, manager_ip):
+def install_script(windows, user, manager_ip):
     ctx = MockCloudifyContext(
         node_id='node',
         properties={'agent_config': {
             'user': user,
             'windows': windows,
             'install_method': 'provided',
-            'manager_ip': manager_ip,
-            'name': name
+            'manager_ip': manager_ip
         }})
     try:
         current_ctx.set(ctx)
