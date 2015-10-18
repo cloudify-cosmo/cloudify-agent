@@ -211,8 +211,12 @@ class Daemon(object):
             'broker_port') or defaults.BROKER_PORT
         self.host = params.get('host')
         self.deployment_id = params.get('deployment_id')
+        print '***** in cloudify_agent/api/pm/base, params: {0}'. \
+            format(params)
         self.manager_port = params.get(
             'manager_port') or defaults.MANAGER_PORT
+        print '***** in cloudify_agent/api/pm/base, manager_port set to: {0}'. \
+            format(self.manager_port)
         self.name = params.get(
             'name') or self._get_name_from_manager()
         self.queue = params.get(

@@ -154,6 +154,11 @@ def cfy_agent_attributes(cloudify_agent):
         # by default, the manager ip will be set by an environment variable
         cloudify_agent['manager_ip'] = get_manager_ip()
 
+    if 'manager_port' not in cloudify_agent:
+
+        # by default, the manager ip will be set by an environment variable
+        cloudify_agent['manager_port'] = ctx.SecurityContext.cloudify_username
+
 
 @group('installation')
 def installation_attributes(cloudify_agent, runner):
