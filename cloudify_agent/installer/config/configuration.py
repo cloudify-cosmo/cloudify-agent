@@ -157,16 +157,16 @@ def cfy_agent_attributes(cloudify_agent):
     if 'manager_port' not in cloudify_agent:
         print '***** in agent configuration.py, setting manager_port...'
         # by default, the manager ip will be set by an environment variable
-        security_enabled = ctx.SecurityContext.security_enabled
+        security_enabled = ctx.security_ctx.security_enabled
         print '***** in agent configuration.py, security_enabled: {0}'.\
             format(security_enabled)
-        ssl_enabled = ctx.SecurityContext.ssl_enabled
+        ssl_enabled = ctx.security_ctx.ssl_enabled
         print '***** in agent configuration.py, ssl_enabled: {0}'. \
             format(ssl_enabled)
         if security_enabled and ssl_enabled:
-            manager_port = 80
-        else:
             manager_port = 443
+        else:
+            manager_port = 80
         print '***** in agent configuration.py, manager_port: {0}'. \
             format(manager_port)
         cloudify_agent['manager_port'] = manager_port
