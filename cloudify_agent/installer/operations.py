@@ -36,7 +36,7 @@ from cloudify_agent.api import utils
 # This is not imported here because it imports celery which may not be
 # available, and celery is only required in one operation in this module
 def _app():
-    from cloudify_agent import app
+    from cloudify_agent.app import app
     return app
 
 
