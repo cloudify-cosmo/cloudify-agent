@@ -667,6 +667,7 @@ class Daemon(object):
         return self._runtime_properties['cloudify_agent']['queue']
 
     def _get_runtime_properties(self):
+        # TODO need to create a client using protocol, credentials etc.
         client = CloudifyClient(host=self.manager_ip, port=self.manager_port)
         node_instances = client.node_instances.list(
             deployment_id=self.deployment_id)

@@ -39,6 +39,8 @@ def init_agent_installer(func=None, validate_connection=True):
         @wraps(func)
         def wrapper(*args, **kwargs):
             cloudify_agent = kwargs.get('cloudify_agent', {})
+            print '***** in init_agent_installer, cloudify_agent: {0}'.\
+                format(cloudify_agent)
 
             # first prepare all connection details
             configuration.prepare_connection(cloudify_agent)
@@ -117,7 +119,8 @@ def init_agent_installer(func=None, validate_connection=True):
 @operation
 @init_agent_installer
 def create(cloudify_agent, installer, **_):
-
+    print '***** in cloudify_agent/installer/operations.py.create(),' \
+          ' cloudify_agent: {0}'.format(cloudify_agent)
     if ctx.type == context.NODE_INSTANCE:
 
         # save runtime properties immediately so that they will be available
