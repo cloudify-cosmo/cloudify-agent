@@ -210,6 +210,8 @@ class Daemon(object):
 
         # Optional parameters
         self.validate_optional()
+        self.name = params.get(
+            'name') or self._get_name_from_manager()
         self.user = params.get('user') or getpass.getuser()
         self.broker_ip = params.get(
             'broker_ip') or self.manager_ip

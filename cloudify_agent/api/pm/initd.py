@@ -137,6 +137,7 @@ class GenericLinuxDaemon(CronRespawnDaemon):
 
     def _create_config(self):
         self._logger.debug('Rendering configuration script from template')
+        print '***** rendering initd configuration script from template'
         rendered = utils.render_template_to_file(
             template_path='pm/initd/initd.conf.template',
             queue=self.queue,
