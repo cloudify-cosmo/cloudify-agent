@@ -19,6 +19,9 @@ inputs:
   userdata: {}
   file_path: {}
   install_method: {}
+  name:
+    default: ''
+
 
 node_types:
 
@@ -45,6 +48,8 @@ node_templates:
         user: { get_input: agent_user }
         env:
           MY_ENV_VAR: MY_ENV_VAR_VALUE
+        extra:
+          name: { get_input: name }
       server:
         userdata: { get_input: userdata }
 
