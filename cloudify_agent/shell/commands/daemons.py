@@ -40,6 +40,10 @@ from cloudify_agent.shell.decorators import handle_failures
               help='The manager REST gateway port to connect to. [env {0}]'
               .format(env.CLOUDIFY_MANAGER_PORT),
               envvar=env.CLOUDIFY_MANAGER_PORT)
+@click.option('--manager-protocol',
+              help='The protocol to use when sending REST calls to the '
+                   'manager. [env {0}]'.format(env.CLOUDIFY_MANAGER_PROTOCOL),
+              envvar=env.CLOUDIFY_MANAGER_PROTOCOL)
 @click.option('--includes',
               help='A comma separated list of module names '
                    'to be included in the daemon. [env {0}]'

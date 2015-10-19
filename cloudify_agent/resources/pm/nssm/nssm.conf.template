@@ -22,6 +22,7 @@ echo Setting service environment
 {{ nssm_path }} set {{ name }} AppEnvironmentExtra ^
 MANAGEMENT_IP={{ manager_ip }} ^
 MANAGER_REST_PORT={{ manager_port }} ^
+MANAGER_REST_PROTOCOL={{ manager_protocol }} ^
 MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229 ^
 MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL=http://{{ manager_ip }}:53229/blueprints ^
 CLOUDIFY_DAEMON_NAME={{ name }} ^

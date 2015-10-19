@@ -19,6 +19,8 @@ import time
 
 from celery import Celery
 
+from itsdangerous import base64_encode
+
 from cloudify.utils import LocalCommandRunner
 from cloudify.utils import setup_logger
 from cloudify import amqp_client
@@ -104,7 +106,11 @@ class Daemon(object):
 
     ``manager_port``:
 
-        the manager REST gateway port to connect to. defaults to 8101.
+        the manager REST gateway port to connect to. defaults to 80.
+
+    ``manager_protocol``:
+
+        the protocol to use in REST call. defaults to HTTP.
 
     ``min_workers``:
 
@@ -217,8 +223,18 @@ class Daemon(object):
             'manager_port') or defaults.MANAGER_PORT
         print '***** in cloudify_agent/api/pm/base, manager_port set to: {0}'. \
             format(self.manager_port)
-        self.name = params.get(
-            'name') or self._get_name_from_manager()
+        self.manager_protocol = params.get(
+            'manager_protocol') or defaults.MANAGER_PROTOCOL
+        print '***** in cloudify_agent/api/pm/base, manager_protocol set to: {0}'. \
+            format(self.manager_protocol)
+        self.verify_ssl_certificate = params.get(
+            'verify_ssl_certificate') or defaults.VERIFY_SSL_CERTIFICATE
+        print '***** in cloudify_agent/api/pm/base, verify_ssl_certificate set to: {0}'. \
+            format(self.verify_ssl_certificate)
+        self.ssl_cert_path = params.get(
+            'ssl_cert_path') or defaults.SSL_CERT_PATH
+        print '***** in cloudify_agent/api/pm/base, ssl_cert_path set to: {0}'. \
+            format(self.ssl_cert_path)
         self.queue = params.get(
             'queue') or self._get_queue_from_manager()
         self.broker_url = params.get(
@@ -670,9 +686,40 @@ class Daemon(object):
             self._get_runtime_properties()
         return self._runtime_properties['cloudify_agent']['queue']
 
+    @staticmethod
+    def _get_auth_header(username, password):
+        """
+        Creates a standard HTTP header for basic authentication
+        """
+        header = None
+
+        if username and password:
+            credentials = '{0}:{1}'.format(username, password)
+            header = {
+                'Authorization': 'Basic ' + base64_encode(credentials)}
+
+        return header
+
     def _get_runtime_properties(self):
-        # TODO need to create a client using protocol, credentials etc.
-        client = CloudifyClient(host=self.manager_ip, port=self.manager_port)
+        # TODO need to create a client using credentials, cert etc.
+        headers = self._get_auth_header(self.cloudify_username,
+                                        self.cloudify_password)
+        print '***** in cloudify_agent/api/pm/base.py, ' \
+              'verify_ssl_certificate is: {0}'.\
+            format(self.verify_ssl_certificate)
+        if self.verify_ssl_certificate:
+            print '***** in cloudify_agent/api/pm/base.py, setting trust_all' \
+                  ' to FALSE'
+            trust_all = False
+            cert_path = self.ssl_cert_path
+        else:
+            print '***** in cloudify_agent/api/pm/base.py, setting trust_all' \
+                  ' to TRUE'
+            trust_all = True
+        client = CloudifyClient(host=self.manager_ip, port=self.manager_port,
+                                protocol=self.manager_protocol,
+                                headers=headers, cert=cert_path,
+                                trust_all=trust_all)
         node_instances = client.node_instances.list(
             deployment_id=self.deployment_id)
 

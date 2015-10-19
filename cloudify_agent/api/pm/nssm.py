@@ -95,6 +95,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
             user=self.user,
             manager_ip=self.manager_ip,
             manager_port=self.manager_port,
+            manager_protocol=self.manager_protocol,
             broker_url=self.broker_url,
             min_workers=self.min_workers,
             max_workers=self.max_workers,

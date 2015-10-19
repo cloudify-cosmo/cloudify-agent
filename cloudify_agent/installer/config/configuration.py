@@ -28,6 +28,12 @@ from cloudify_agent.installer.config.attributes import raise_missing_attribute
 from cloudify_agent.installer.config.attributes import raise_missing_attributes
 
 
+DEFAULT_REST_PORT = 80
+SECURED_REST_PORT = 443
+DEFAULT_REST_PROTOCOL = 'http'
+SECURED_REST_PROTOCOL = 'https'
+
+
 def prepare_connection(cloudify_agent):
     connection_attributes(cloudify_agent)
 
@@ -154,22 +160,33 @@ def cfy_agent_attributes(cloudify_agent):
         # by default, the manager ip will be set by an environment variable
         cloudify_agent['manager_ip'] = get_manager_ip()
 
-    if 'manager_port' not in cloudify_agent:
-        print '***** in agent configuration.py, setting manager_port...'
-        # by default, the manager ip will be set by an environment variable
-        security_enabled = ctx.security_ctx.security_enabled
-        print '***** in agent configuration.py, security_enabled: {0}'.\
-            format(security_enabled)
-        ssl_enabled = ctx.security_ctx.ssl_enabled
-        print '***** in agent configuration.py, ssl_enabled: {0}'. \
-            format(ssl_enabled)
-        if security_enabled and ssl_enabled:
-            manager_port = 443
-        else:
-            manager_port = 80
-        print '***** in agent configuration.py, manager_port: {0}'. \
-            format(manager_port)
-        cloudify_agent['manager_port'] = manager_port
+    print '***** in agent configuration.py, setting manager_port...'
+    security_enabled = ctx.security_ctx.security_enabled
+    print '***** in agent configuration.py, security_enabled: {0}'.\
+        format(security_enabled)
+    ssl_enabled = ctx.security_ctx.ssl_enabled
+    print '***** in agent configuration.py, ssl_enabled: {0}'. \
+        format(ssl_enabled)
+    manager_port = DEFAULT_REST_PORT
+    manager_protocol = DEFAULT_REST_PROTOCOL
+    verify_ssl_certificate = True
+    if security_enabled and ssl_enabled:
+        manager_port = SECURED_REST_PORT
+        manager_protocol = SECURED_REST_PROTOCOL
+        if not ctx.security_ctx.verify_ssl_certificate:
+            verify_ssl_certificate = False
+
+    cloudify_agent['manager_port'] = manager_port
+    print '***** in agent configuration.py, manager_port: {0}'. \
+        format(manager_port)
+
+    cloudify_agent['manager_protocol'] = manager_protocol
+    print '***** in agent configuration.py, manager_protocol: {0}'. \
+        format(manager_protocol)
+
+    cloudify_agent['verify_ssl_certificate'] = manager_protocol
+    print '***** in agent configuration.py, verify_ssl_certificate: {0}'. \
+        format(verify_ssl_certificate)
 
 
 @group('installation')

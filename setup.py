@@ -24,7 +24,8 @@ install_requires = [
     'celery==3.1.17',
     'jinja2==2.7.2',
     'pywinrm==0.0.3',
-    'fabric==1.8.3'
+    'fabric==1.8.3',
+    'itsdangerous==0.24'
 ]
 
 setup(
