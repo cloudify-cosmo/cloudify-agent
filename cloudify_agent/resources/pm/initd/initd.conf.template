@@ -13,7 +13,6 @@ export PATH="${VIRTUALENV}/bin:${PATH}"
 
 # Celery worker environment variables
 export CELERY_WORK_DIR={{ workdir }}
-export CELERY_BROKER_URL={{ broker_url }}
 export CELERY_APP=cloudify_agent.app.app
 export CELERY_TASK_SERIALIZER=json
 export CELERY_RESULT_SERIALIZER=json
@@ -30,7 +29,7 @@ CELERYD_LOG_LEVEL={{ log_level }}
 CELERYD_PID_FILE="{{ pid_file }}"
 CELERYD_LOG_FILE="{{ log_file }}"
 CELERYD_ENV_DIR={{ virtualenv_path }}
-CELERYD_OPTS="--events -Q {{ queue }} --hostname={{ name }} --autoscale={{ max_workers }},{{ min_workers }} --maxtasksperchild=10 -Ofair --without-gossip --without-mingle"
+CELERYD_OPTS="--events -Q {{ queue }} --hostname={{ name }} --autoscale={{ max_workers }},{{ min_workers }} --maxtasksperchild=10 -Ofair --without-gossip --without-mingle --config=cloudify.broker_config"
 # check if there some plugins that need to be included
 CELERY_INCLUDES=$(cat {{ includes_path }})
 if [ -n "${CELERY_INCLUDES}" ]; then

@@ -73,7 +73,8 @@ class TestConfiguration(BaseTest):
             'workdir': workdir,
             'windows': os.name == 'nt',
             'system_python': 'python',
-            'remote_execution': True
+            'remote_execution': True,
+            'broker_get_settings_from_manager': True,
         }
         if os.name == 'posix':
             distro = platform.dist()[0].lower()

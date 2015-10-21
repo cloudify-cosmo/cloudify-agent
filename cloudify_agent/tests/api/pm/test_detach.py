@@ -62,6 +62,10 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest):
         daemon.configure()
         daemon.start()
 
+        # check it started
+        timeout = daemon.cron_respawn_delay * 60 + 10
+        self.wait_for_daemon_alive(daemon.name, timeout=timeout)
+
         # lets kill the process
         self.runner.run("pkill -9 -f 'celery'")
         self.wait_for_daemon_dead(daemon.name)

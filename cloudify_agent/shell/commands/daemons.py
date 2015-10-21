@@ -16,6 +16,10 @@
 import json
 import click
 
+from cloudify.context import BootstrapContext
+from cloudify import utils
+from cloudify_rest_client import CloudifyClient
+
 from cloudify_agent.api import defaults
 from cloudify_agent.api import utils as api_utils
 from cloudify_agent.api.factory import DaemonFactory
@@ -77,15 +81,45 @@ from cloudify_agent.shell.decorators import handle_failures
                    .format(env.CLOUDIFY_BROKER_IP),
               envvar=env.CLOUDIFY_BROKER_IP)
 @click.option('--broker-port',
-              help='The broker port to connect to. [env {0}]'
+              help='The broker port to connect to. If not set, this will be '
+                   'determined based on whether SSL is enabled. It will be '
+                   'set to 5671 with SSL, or 5672 without. [env {0}]'
                    .format(env.CLOUDIFY_BROKER_PORT),
               envvar=env.CLOUDIFY_BROKER_PORT)
-@click.option('--broker-url',
-              help='The broker url to connect to. If this '
-                   'option is specified, the broker-ip and '
-                   'broker-port options are ignored. [env {0}]'
-              .format(env.CLOUDIFY_BROKER_URL),
-              envvar=env.CLOUDIFY_BROKER_URL)
+@click.option('--broker-user',
+              help='The broker username to use. [env {0}]'
+                   .format(env.CLOUDIFY_BROKER_USER),
+              default='guest',
+              envvar=env.CLOUDIFY_BROKER_USER)
+@click.option('--broker-pass',
+              help='The broker password to use. [env {0}]'
+                   .format(env.CLOUDIFY_BROKER_PASS),
+              default='guest',
+              envvar=env.CLOUDIFY_BROKER_PASS)
+@click.option('--broker-ssl-enabled/--broker-ssl-disabled',
+              help='Set to "true" to enabled SSL for the broker, or "false" '
+                   'to disable SSL for the broker. If this is set, '
+                   'broker-ssl-cert-path must also be set. [env {0}]'
+                   .format(env.CLOUDIFY_BROKER_SSL_ENABLED),
+              default=False,
+              envvar=env.CLOUDIFY_BROKER_SSL_ENABLED)
+@click.option('--broker-ssl-cert',
+              help='The path to the SSL cert for the broker to use.'
+                   'Only used when broker-ssl-enable is "true" [env {0}]'
+                   .format(env.CLOUDIFY_BROKER_SSL_CERT),
+              default=None,
+              type=click.Path(exists=True, readable=True, file_okay=True),
+              envvar=env.CLOUDIFY_BROKER_SSL_CERT)
+@click.option('--broker-get-settings-from-manager/'
+              '--broker-do-not-get-settings-from-manager',
+              default=False,
+              help='Whether to retrieve the broker settings from the '
+                   'manager. If this is true, broker_user, broker_pass, '
+                   'broker_ssl_enabled, and broker_ssl_cert arguments will '
+                   'be ignored as these will be obtained from the manager. '
+                   '[env {0}]'
+                   .format(env.CLOUDIFY_BROKER_GET_SETTINGS_FROM_MANAGER),
+              envvar=env.CLOUDIFY_BROKER_GET_SETTINGS_FROM_MANAGER)
 @click.option('--min-workers',
               help='Minimum number of workers for '
                    'the autoscale configuration. [env {0}]'
@@ -133,6 +167,31 @@ def create(**params):
     attributes.update(_parse_custom_options(custom_arg))
     click.echo('Creating...')
     from cloudify_agent.shell.main import get_logger
+
+    if attributes['broker_get_settings_from_manager']:
+        # We have to build the client manually as the rest client
+        # expects us to have the env variable set for the cloudify
+        # manager IP, and it is not always set
+        client = CloudifyClient(
+            attributes['manager_ip'],
+            attributes['manager_port'],
+        )
+        # Get the broker user and password from the manager
+        bootstrap_context_dict = client.manager.get_context()
+        bootstrap_context_dict = bootstrap_context_dict['context']['cloudify']
+        bootstrap_context = BootstrapContext(bootstrap_context_dict)
+        bootstrap_agent = bootstrap_context.cloudify_agent
+
+        broker_user, broker_pass = utils.internal.get_broker_credentials(
+            bootstrap_agent
+        )
+
+        attributes['broker_user'] = broker_user
+        attributes['broker_pass'] = broker_pass
+        attributes['broker_ssl_enabled'] = \
+            bootstrap_agent.broker_ssl_enabled
+        attributes['broker_ssl_cert'] = bootstrap_agent.broker_ssl_cert
+
     daemon = DaemonFactory().new(
         logger=get_logger(),
         **attributes
