@@ -19,7 +19,7 @@ import sys
 
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
-from cloudify.utils import get_manager_file_server_blueprints_root_url
+
 from cloudify.decorators import operation
 
 from cloudify_agent.api.plugins.installer import PluginInstaller
@@ -49,16 +49,14 @@ CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES = [
 def _install_plugins(plugins):
     installer = PluginInstaller(logger=ctx.logger)
     for plugin in plugins:
-        source = get_plugin_source(plugin, ctx.blueprint.id)
-        args = get_plugin_args(plugin)
         ctx.logger.info('Installing plugin: {0}'.format(plugin['name']))
         try:
-            package_name = installer.install(source, args)
+            package_name = installer.install(plugin,
+                                             blueprint_id=ctx.blueprint_id)
         except exceptions.PluginInstallationError as e:
             # preserve traceback
             tpe, value, tb = sys.exc_info()
             raise NonRecoverableError, NonRecoverableError(str(e)), tb
-
         daemon = _load_daemon(logger=ctx.logger)
         daemon.register(package_name)
         _save_daemon(daemon)
@@ -152,43 +150,6 @@ def shutdown_current_master(delay_period, logger):
         time.sleep(delay_period)
     daemon = _load_daemon(logger=logger)
     daemon.stop()
-
-
-def get_plugin_args(plugin):
-    args = plugin.get('install_arguments') or ''
-    return args.strip()
-
-
-def get_plugin_source(plugin, blueprint_id=None):
-
-    source = plugin.get('source') or ''
-    if source:
-        source = source.strip()
-    else:
-        raise NonRecoverableError('Plugin source is not defined')
-
-    # validate source url
-    if '://' in source:
-        split = source.split('://')
-        schema = split[0]
-        if schema not in ['http', 'https']:
-            # invalid schema
-            raise NonRecoverableError('Invalid schema: {0}'.format(schema))
-    else:
-        # Else, assume its a relative path from <blueprint_home>/plugins
-        # to a directory containing the plugin archive.
-        # in this case, the archived plugin is expected to reside on the
-        # manager file server as a zip file.
-        if blueprint_id is None:
-            raise ValueError('blueprint_id must be specified when plugin '
-                             'source does not contain a schema')
-        blueprints_root = get_manager_file_server_blueprints_root_url()
-        blueprint_plugins_url = '{0}/{1}/plugins'.format(
-            blueprints_root, blueprint_id)
-
-        source = '{0}/{1}.zip'.format(blueprint_plugins_url, source)
-
-    return source
 
 
 def _load_daemon(logger):
