@@ -19,6 +19,7 @@ import os
 import platform
 from contextlib import contextmanager
 
+from wagon import utils as wagon_utils
 from mock import patch
 
 from cloudify import constants
@@ -292,7 +293,8 @@ class TestGetPluginID(BaseTest):
         plugins = [
             {'id': '1'},
             {'id': '2'},
-            {'id': '3', 'supported_platform': os.name},
+            {'id': '3',
+             'supported_platform': wagon_utils.get_platform()},
             {'id': '4'},
             {'id': '5'},
         ]

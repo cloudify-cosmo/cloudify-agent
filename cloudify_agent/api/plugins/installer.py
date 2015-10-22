@@ -22,6 +22,7 @@ import platform
 import pip
 from distutils.version import LooseVersion
 from wagon import wagon
+from wagon import utils as wagon_utils
 
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import setup_logger
@@ -292,8 +293,9 @@ def get_plugin_id(plugin):
     plugins = client.plugins.list(**query_parameters)
 
     if not supported_platform:
+        current_platform = wagon_utils.get_platform()
         plugins = [p for p in plugins
-                   if p.supported_platform in ['any', os.name]]
+                   if p.supported_platform in ['any', current_platform]]
     if os.name != 'nt':
         a_dist, _, a_dist_release = platform.linux_distribution(
             full_distribution_name=False)
