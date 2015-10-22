@@ -21,6 +21,7 @@ from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 
 from cloudify.decorators import operation
+from cloudify import utils as cloudify_utils
 
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api.factory import DaemonFactory
@@ -109,7 +110,7 @@ def restart(new_name=None, delay_period=5, **_):
     # Get the broker credentials for the daemon
     bootstrap_agent = ctx.bootstrap_context.cloudify_agent
 
-    broker_user, broker_pass = utils.internal.get_broker_credentials(
+    broker_user, broker_pass = cloudify_utils.internal.get_broker_credentials(
         bootstrap_agent
     )
 
