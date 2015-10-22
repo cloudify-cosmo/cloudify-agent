@@ -52,7 +52,7 @@ def _install_plugins(plugins):
         ctx.logger.info('Installing plugin: {0}'.format(plugin['name']))
         try:
             package_name = installer.install(plugin,
-                                             blueprint_id=ctx.blueprint_id)
+                                             blueprint_id=ctx.blueprint.id)
         except exceptions.PluginInstallationError as e:
             # preserve traceback
             tpe, value, tb = sys.exc_info()
