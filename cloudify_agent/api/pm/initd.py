@@ -67,12 +67,6 @@ class GenericLinuxDaemon(CronRespawnDaemon):
                            .format(self.config_path))
         self._create_config()
 
-        # Add the celery config
-        self._logger.info('Deploying SSL cert (if defined).')
-        self._create_ssl_cert()
-        self._logger.info('Deploying celery configuration.')
-        self._create_celery_conf()
-
         if self.start_on_boot:
             self._logger.info('Creating start-on-boot entry')
             self._create_start_on_boot_entry()

@@ -17,5 +17,4 @@
 --logfile={{ log_file }} \
 --include=$(cat {{ includes_path }}) \
 --detach \
---config=cloudify.broker_config \
 -Ofair
