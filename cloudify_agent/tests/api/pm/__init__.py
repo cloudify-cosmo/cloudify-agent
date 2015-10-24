@@ -394,7 +394,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
                 'http://{0}:53229'.format(daemon.manager_ip),
             constants.MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL_KEY:
                 'http://{0}:53229/blueprints'.format(daemon.manager_ip),
-            constants.CELERY_BROKER_URL_KEY: daemon.broker_url,
             utils.internal.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY:
                 utils.internal.get_storage_directory(),
             utils.internal.CLOUDIFY_DAEMON_NAME_KEY: daemon.name,

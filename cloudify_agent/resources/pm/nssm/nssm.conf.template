@@ -5,14 +5,14 @@ echo Installing the agent as a windows service...
 {{ nssm_path }} install {{ name }} {{ virtualenv_path }}\Scripts\celeryd.exe ^
 --events -Q {{ queue }} ^
 --hostname={{ name }} ^
---autoscale={{ max_workers }},{{ min_workers }} ^
---maxtasksperchild=10 ^
+--concurrency={{ max_workers }} ^
 --without-gossip ^
 --without-mingle ^
 --loglevel={{ log_level }} ^
 --pidfile={{ pid_file }} ^
 --logfile={{ log_file }} ^
 --include={{ includes }} ^
+--config=cloudify.broker_config ^
 -Ofair
 
 if %errorlevel% neq 0 exit /b %errorlevel%
@@ -39,6 +39,8 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 echo Configuring startup policy...
 
 sc config {{ name }} start= {{ startup_policy }}
+
+if %errorlevel% neq 0 exit /b %errorlevel%
 
 echo Configuring failure policy...
 

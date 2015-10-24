@@ -14,7 +14,9 @@
 #  * limitations under the License.
 
 import getpass
+import json
 import os
+import ssl
 import time
 
 from celery import Celery
@@ -23,6 +25,10 @@ from cloudify.utils import LocalCommandRunner
 from cloudify.utils import setup_logger
 from cloudify import amqp_client
 from cloudify_rest_client.client import CloudifyClient
+from cloudify.constants import (
+    BROKER_PORT_NO_SSL,
+    BROKER_PORT_SSL,
+)
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
@@ -207,21 +213,22 @@ class Daemon(object):
 
         # Optional parameters
         self.validate_optional()
-        self.name = params.get(
-            'name') or self._get_name_from_manager()
         self.user = params.get('user') or getpass.getuser()
         self.broker_ip = params.get(
             'broker_ip') or self.manager_ip
-        self.broker_port = params.get(
-            'broker_port') or defaults.BROKER_PORT
+        self.broker_ssl_enabled = params.get('broker_ssl_enabled', False)
+        self.broker_ssl_cert = params.get('broker_ssl_cert', '')
+        # Port must be determined after SSL enabled has been set in order for
+        # intelligent port selection to work properly
+        self.broker_port = self._get_broker_port()
+        self.broker_user = params.get('broker_user', 'guest')
+        self.broker_pass = params.get('broker_pass', 'guest')
         self.host = params.get('host')
         self.deployment_id = params.get('deployment_id')
-        print '***** in cloudify_agent/api/pm/base, params: {0}'. \
-            format(params)
         self.manager_port = params.get(
             'manager_port') or defaults.MANAGER_PORT
-        print '***** in cloudify_agent/api/pm/base, manager_port set to: {0}'. \
-            format(self.manager_port)
+        self.name = params.get(
+            'name') or self._get_name_from_manager()
         self.queue = params.get(
             'queue') or self._get_queue_from_manager()
         # This is not retrieved by param as an option any more as it then
@@ -229,10 +236,12 @@ class Daemon(object):
         # components of this differ from the passed in broker_user, pass, etc
         # These components need to be known for the _delete_amqp_queues
         # function.
-        self.broker_url = params.get(
-            'broker_url') or defaults.BROKER_URL.format(
-            self.broker_ip,
-            self.broker_port)
+        self.broker_url = defaults.BROKER_URL.format(
+            host=self.broker_ip,
+            port=self.broker_port,
+            username=self.broker_user,
+            password=self.broker_pass,
+        )
         self.min_workers = params.get(
             'min_workers') or defaults.MIN_WORKERS
         self.max_workers = params.get(
@@ -286,6 +295,25 @@ class Daemon(object):
                               backend=self.broker_url)
         self._celery.conf.update(
             CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES)
+        if self.broker_ssl_enabled:
+            self._celery.conf.BROKER_USE_SSL = {
+                'ca_certs': self._get_ssl_cert_path(),
+                'cert_reqs': ssl.CERT_REQUIRED,
+            }
+
+    def _get_celery_conf_path(self):
+        return os.path.join(self.workdir, 'broker_config.json')
+
+    def _create_celery_conf(self):
+        config = {
+            'broker_ssl_enabled': self.broker_ssl_enabled,
+            'broker_cert_path': self._get_ssl_cert_path() or '',
+            'broker_username': self.broker_user,
+            'broker_password': self.broker_pass,
+            'broker_hostname': self.broker_ip,
+        }
+        with open(self._get_celery_conf_path(), 'w') as conf_handle:
+            json.dump(config, conf_handle)
 
     def validate_mandatory(self):
 
@@ -311,6 +339,41 @@ class Daemon(object):
 
         self._validate_autoscale()
         self._validate_host()
+
+    def _get_broker_port(self):
+        """
+        Determines the broker port if it has not been provided. Only intended
+        to be called before self.broker_port has been set and after
+        self.broker_ssl_cert has been set.
+        """
+        if self.broker_ssl_enabled:
+            return BROKER_PORT_SSL
+        else:
+            return BROKER_PORT_NO_SSL
+
+    def _create_ssl_cert(self):
+        """
+        Put the broker SSL cert into a file for AMQP clients to use.
+        """
+        # Cert will be deployed even if SSL is disabled, but configuration
+        # will cause it not to be used
+        if self.broker_ssl_cert:
+            # TODO: Cert validation
+            with open(self._get_ssl_cert_path(), 'w') as cert_handle:
+                cert_handle.write(self.broker_ssl_cert)
+
+    def _get_ssl_cert_path(self):
+        """
+        Determine what path the broker SSL cert should reside in.
+        This is used both when determining where to create the cert, and in
+        determining where to read it from.
+        """
+        # Cert will be deployed even if SSL is disabled, but configuration
+        # will cause it not to be used
+        if self.broker_ssl_cert:
+            return os.path.join(self.workdir, 'broker.crt')
+        else:
+            return ''
 
     ########################################################################
     # the following methods must be implemented by the sub-classes as they
@@ -613,12 +676,18 @@ class Daemon(object):
             raise exceptions.DaemonError(error)
 
     def _delete_amqp_queues(self):
-        client = amqp_client.create_client(self.broker_ip)
+        client = amqp_client.create_client(
+            amqp_host=self.broker_ip,
+            amqp_user=self.broker_user,
+            amqp_pass=self.broker_pass,
+            ssl_enabled=self.broker_ssl_enabled,
+            ssl_cert_path=self._get_ssl_cert_path(),
+        )
         try:
             channel = client.connection.channel()
             self._logger.debug('Deleting queue: {0}'.format(self.queue))
             channel.queue_delete(self.queue)
-            pid_box_queue = 'celery@{0}.celery.pidbox'.format(self.queue)
+            pid_box_queue = 'celery@{0}.celery.pidbox'.format(self.name)
             self._logger.debug('Deleting queue: {0}'.format(pid_box_queue))
             channel.queue_delete(pid_box_queue)
         finally:

@@ -33,6 +33,10 @@ class AgentInstaller(object):
                  logger=None):
         self.cloudify_agent = cloudify_agent
         self.logger = logger or setup_logger(self.__class__.__name__)
+        self.broker_get_settings_from_manager = cloudify_agent.get(
+            'broker_get_settings_from_manager',
+            True,
+        )
 
     def run_agent_command(self, command, execution_env=None):
         if execution_env is None:
@@ -168,7 +172,6 @@ class AgentInstaller(object):
             env.CLOUDIFY_DAEMON_USER: self.cloudify_agent.get('user'),
             env.CLOUDIFY_BROKER_IP: self.cloudify_agent.get('broker_ip'),
             env.CLOUDIFY_BROKER_PORT: self.cloudify_agent.get('broker_port'),
-            env.CLOUDIFY_BROKER_URL: self.cloudify_agent.get('broker_url'),
             env.CLOUDIFY_MANAGER_PORT: self.cloudify_agent.get('manager_port'),
             env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(
                 'max_workers'),
@@ -201,6 +204,11 @@ class AgentInstaller(object):
         process_management.pop('name')
         for key, value in process_management.iteritems():
             options.append('--{0}={1}'.format(key, value))
+
+        if self.broker_get_settings_from_manager:
+            # Use broker settings from the manager
+            options.append('--broker-get-settings-from-manager')
+
         return ' '.join(options)
 
 

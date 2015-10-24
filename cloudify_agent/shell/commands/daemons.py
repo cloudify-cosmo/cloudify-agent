@@ -77,15 +77,45 @@ from cloudify_agent.shell.decorators import handle_failures
                    .format(env.CLOUDIFY_BROKER_IP),
               envvar=env.CLOUDIFY_BROKER_IP)
 @click.option('--broker-port',
-              help='The broker port to connect to. [env {0}]'
+              help='The broker port to connect to. If not set, this will be '
+                   'determined based on whether SSL is enabled. It will be '
+                   'set to 5671 with SSL, or 5672 without. [env {0}]'
                    .format(env.CLOUDIFY_BROKER_PORT),
               envvar=env.CLOUDIFY_BROKER_PORT)
-@click.option('--broker-url',
-              help='The broker url to connect to. If this '
-                   'option is specified, the broker-ip and '
-                   'broker-port options are ignored. [env {0}]'
-              .format(env.CLOUDIFY_BROKER_URL),
-              envvar=env.CLOUDIFY_BROKER_URL)
+@click.option('--broker-user',
+              help='The broker username to use. [env {0}]'
+                   .format(env.CLOUDIFY_BROKER_USER),
+              default='guest',
+              envvar=env.CLOUDIFY_BROKER_USER)
+@click.option('--broker-pass',
+              help='The broker password to use. [env {0}]'
+                   .format(env.CLOUDIFY_BROKER_PASS),
+              default='guest',
+              envvar=env.CLOUDIFY_BROKER_PASS)
+@click.option('--broker-ssl-enabled/--broker-ssl-disabled',
+              help='Set to "true" to enabled SSL for the broker, or "false" '
+                   'to disable SSL for the broker. If this is set, '
+                   'broker-ssl-cert-path must also be set. [env {0}]'
+                   .format(env.CLOUDIFY_BROKER_SSL_ENABLED),
+              default=False,
+              envvar=env.CLOUDIFY_BROKER_SSL_ENABLED)
+@click.option('--broker-ssl-cert',
+              help='The path to the SSL cert for the broker to use.'
+                   'Only used when broker-ssl-enable is "true" [env {0}]'
+                   .format(env.CLOUDIFY_BROKER_SSL_CERT),
+              default=None,
+              type=click.Path(exists=True, readable=True, file_okay=True),
+              envvar=env.CLOUDIFY_BROKER_SSL_CERT)
+@click.option('--broker-get-settings-from-manager/'
+              '--broker-do-not-get-settings-from-manager',
+              default=False,
+              help='Whether to retrieve the broker settings from the '
+                   'manager. If this is true, broker_user, broker_pass, '
+                   'broker_ssl_enabled, and broker_ssl_cert arguments will '
+                   'be ignored as these will be obtained from the manager. '
+                   '[env {0}]'
+                   .format(env.CLOUDIFY_BROKER_GET_SETTINGS_FROM_MANAGER),
+              envvar=env.CLOUDIFY_BROKER_GET_SETTINGS_FROM_MANAGER)
 @click.option('--min-workers',
               help='Minimum number of workers for '
                    'the autoscale configuration. [env {0}]'
@@ -155,8 +185,13 @@ def create(**params):
               .format(env.CLOUDIFY_DAEMON_NAME),
               required=True,
               envvar=env.CLOUDIFY_DAEMON_NAME)
+@click.option('--user',
+              help='The user to load the configuration from. Defaults to '
+                   'current user. [env {0}]'
+              .format(env.CLOUDIFY_DAEMON_USER),
+              envvar=env.CLOUDIFY_DAEMON_USER)
 @handle_failures
-def configure(name):
+def configure(name, user=None):
 
     """
     Configures the daemon scripts and configuration files.
@@ -164,7 +199,7 @@ def configure(name):
     """
 
     click.echo('Configuring...')
-    daemon = _load_daemon(name)
+    daemon = _load_daemon(name, user=user)
     daemon.configure()
     _save_daemon(daemon)
     click.echo('Successfully configured daemon: {0}'
@@ -238,6 +273,11 @@ def unregister(name, plugin):
               .format(env.CLOUDIFY_DAEMON_NAME),
               required=True,
               envvar=env.CLOUDIFY_DAEMON_NAME)
+@click.option('--user',
+              help='The user to load the configuration from. Defaults to '
+                   'current user. [env {0}]'
+              .format(env.CLOUDIFY_DAEMON_USER),
+              envvar=env.CLOUDIFY_DAEMON_USER)
 @click.option('--interval',
               help='The interval in seconds to sleep when waiting '
                    'for the daemon to be ready.',
@@ -252,7 +292,7 @@ def unregister(name, plugin):
               is_flag=True,
               default=not defaults.DELETE_AMQP_QUEUE_BEFORE_START)
 @handle_failures
-def start(name, interval, timeout, no_delete_amqp_queue):
+def start(name, interval, timeout, no_delete_amqp_queue, user=None):
 
     """
     Starts the daemon.
@@ -260,7 +300,7 @@ def start(name, interval, timeout, no_delete_amqp_queue):
     """
 
     click.echo('Starting...')
-    daemon = _load_daemon(name)
+    daemon = _load_daemon(name, user=user)
     daemon.start(
         interval=interval,
         timeout=timeout,
@@ -385,9 +425,9 @@ def status(name):
     _load_daemon(name).status()
 
 
-def _load_daemon(name):
+def _load_daemon(name, user=None):
     from cloudify_agent.shell.main import get_logger
-    return DaemonFactory().load(name, logger=get_logger())
+    return DaemonFactory(username=user).load(name, logger=get_logger())
 
 
 def _save_daemon(daemon):
