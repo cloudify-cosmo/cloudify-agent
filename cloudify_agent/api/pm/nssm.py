@@ -116,12 +116,6 @@ class NonSuckingServiceManagerDaemon(Daemon):
         self._runner.run(self.config_path)
         self._logger.debug('Successfully executed configuration script')
 
-        # Add the celery config
-        self._logger.info('Deploying SSL cert (if defined).')
-        self._create_ssl_cert()
-        self._logger.info('Deploying celery configuration.')
-        self._create_celery_conf()
-
         # register plugins
         for plugin in included_plugins:
             self.register(plugin)

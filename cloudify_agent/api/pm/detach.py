@@ -79,12 +79,6 @@ class DetachedDaemon(CronRespawnDaemon):
                            .format(self.config_path))
         self._create_config()
 
-        # Add the celery config
-        self._logger.info('Deploying SSL cert (if defined).')
-        self._create_ssl_cert()
-        self._logger.info('Deploying celery configuration.')
-        self._create_celery_conf()
-
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
 
         self._logger.debug('Retrieving daemon registered tasks')
@@ -180,5 +174,4 @@ class DetachedDaemon(CronRespawnDaemon):
             manager_port=self.manager_port,
             extra_env_path=self.extra_env_path,
             storage_dir=utils.internal.get_storage_directory(self.user),
-            workdir=self.workdir,
         )

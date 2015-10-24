@@ -50,6 +50,7 @@ AGENT_ATTRIBUTES = {
     'port': {
         'context_attribute': 'remote_execution_port',
         'group': 'connection',
+        'default': 22
     },
     'fabric_env': {
         'group': 'connection',
@@ -80,10 +81,6 @@ AGENT_ATTRIBUTES = {
     'max_workers': {
         'group': 'cfy-agent',
         'default': 5
-    },
-    'broker_get_settings_from_manager': {
-        'group': 'cfy-agent',
-        'default': True,
     },
     'disable_requiretty': {
         'group': 'cfy-agent',
