@@ -69,8 +69,8 @@ class _Internal(object):
 
         return os.environ[cls.CLOUDIFY_DAEMON_USER_KEY]
 
-    @classmethod
-    def get_storage_directory(cls, username=None):
+    @staticmethod
+    def get_storage_directory(username=None):
 
         """
         Retrieve path to the directory where all daemon
@@ -79,8 +79,6 @@ class _Internal(object):
         :param username: the user
 
         """
-        if cls.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY in os.environ:
-            return cls.get_daemon_storage_dir()
 
         return os.path.join(get_home_dir(username), '.cfy-agent')
 
