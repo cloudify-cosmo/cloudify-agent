@@ -65,8 +65,9 @@ def attribute(name):
             if attr is None:
                 raise RuntimeError('{0} is not an agent attribute'
                                    .format(name))
-            agent_context = ctx.bootstrap_context.cloudify_agent.\
-                _cloudify_agent or {}
+            bootstrap_ctx = ctx.bootstrap_context('agent_install_admin',
+                                                  'agent_install_admin')
+            agent_context = bootstrap_ctx.cloudify_agent._cloudify_agent or {}
             context_attribute = attr.get('context_attribute', name)
             if _update_agent_property(context_attribute,
                                       props=agent_context,
