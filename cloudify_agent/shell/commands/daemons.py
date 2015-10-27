@@ -16,10 +16,6 @@
 import json
 import click
 
-from cloudify.context import BootstrapContext
-from cloudify import utils
-from cloudify_rest_client import CloudifyClient
-
 from cloudify_agent.api import defaults
 from cloudify_agent.api import utils as api_utils
 from cloudify_agent.api.factory import DaemonFactory
@@ -169,28 +165,8 @@ def create(**params):
     from cloudify_agent.shell.main import get_logger
 
     if attributes['broker_get_settings_from_manager']:
-        # We have to build the client manually as the rest client
-        # expects us to have the env variable set for the cloudify
-        # manager IP, and it is not always set
-        client = CloudifyClient(
-            attributes['manager_ip'],
-            attributes['manager_port'],
-        )
-        # Get the broker user and password from the manager
-        bootstrap_context_dict = client.manager.get_context()
-        bootstrap_context_dict = bootstrap_context_dict['context']['cloudify']
-        bootstrap_context = BootstrapContext(bootstrap_context_dict)
-        bootstrap_agent = bootstrap_context.cloudify_agent
-
-        broker_user, broker_pass = utils.internal.get_broker_credentials(
-            bootstrap_agent
-        )
-
-        attributes['broker_user'] = broker_user
-        attributes['broker_pass'] = broker_pass
-        attributes['broker_ssl_enabled'] = \
-            bootstrap_agent.broker_ssl_enabled
-        attributes['broker_ssl_cert'] = bootstrap_agent.broker_ssl_cert
+        broker = api_utils.internal.get_broker_configuration(attributes)
+        attributes.update(broker)
 
     daemon = DaemonFactory().new(
         logger=get_logger(),

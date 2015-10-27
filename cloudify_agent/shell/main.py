@@ -61,6 +61,7 @@ def plugins_sub_command():
 from cloudify_agent.shell.commands import daemons
 from cloudify_agent.shell.commands import plugins
 from cloudify_agent.shell.commands import configure
+from cloudify_agent.shell.commands import installer
 
 main.add_command(configure.configure)
 
@@ -81,3 +82,5 @@ plugins_sub_command.add_command(plugins.uninstall)
 
 main.add_command(daemon_sub_command)
 main.add_command(plugins_sub_command)
+
+main.add_command(installer.install_local)

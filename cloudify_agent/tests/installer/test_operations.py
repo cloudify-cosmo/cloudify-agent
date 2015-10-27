@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import os
 import tempfile
 
 from mock import patch
@@ -21,10 +20,11 @@ from mock import patch
 from cloudify.workflows import local
 from cloudify.utils import setup_logger
 
-import cloudify_agent
-
 from cloudify_agent.tests import resources
-from cloudify_agent.tests.utils import FileServer
+from cloudify_agent.tests.utils import (
+    FileServer,
+    get_source_uri,
+    get_requirements_uri)
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.api import utils
@@ -55,12 +55,9 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
         cls.fs = FileServer(
             root_path=cls.resource_base)
         cls.fs.start()
-        project_dir = os.path.dirname(
-            os.path.dirname(cloudify_agent.__file__))
 
-        cls.source_url = project_dir
-        cls.requirements_file = os.path.join(
-            project_dir, 'dev-requirements.txt')
+        cls.source_url = get_source_uri()
+        cls.requirements_file = get_requirements_uri()
 
     @classmethod
     def tearDownClass(cls):
