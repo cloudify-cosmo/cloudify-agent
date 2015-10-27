@@ -92,7 +92,7 @@ class TestCreateAgentAmqp(BaseTest):
         with self._patch_manager_env():
             new_agent = operations.create_new_agent_dict(old_agent)
             third_agent = operations.create_new_agent_dict(new_agent)
-        equal_keys = ['ip', 'distro', 'distro_codename', 'basedir', 'user']
+        equal_keys = ['ip', 'basedir', 'user']
         for k in equal_keys:
             self.assertEqual(old_agent[k], new_agent[k])
             self.assertEqual(old_agent[k], third_agent[k])
