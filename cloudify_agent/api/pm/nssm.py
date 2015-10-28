@@ -145,6 +145,11 @@ class NonSuckingServiceManagerDaemon(Daemon):
                          .format(self.nssm_path, self.name,
                                  new_app_parameters))
 
+    def before_self_stop(self):
+        if self.startup_policy in ['boot', 'system', 'auto']:
+            self._logger.debug('Disabling service: {0}'.format(self.name))
+            self._runner.run('sc config {0} start= disabled'.format(self.name))
+
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
         self._logger.debug('Retrieving daemon registered tasks')
         registered = utils.get_agent_registered(self.name, self._celery)

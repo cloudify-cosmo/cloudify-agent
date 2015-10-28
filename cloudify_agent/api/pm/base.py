@@ -636,6 +636,15 @@ class Daemon(object):
         self.start(timeout=start_timeout,
                    interval=start_interval)
 
+    def before_self_stop(self):
+
+        """
+        Optional method that can be implemented by subclasses. This method
+        will be called before operations that involve the daemon stopping
+        itself and therefore, can be used for cleanup purposes.
+        """
+        pass
+
     def get_logfile(self):
 
         """

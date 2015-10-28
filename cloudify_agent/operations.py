@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import uuid
 import time
 import threading
 import sys
@@ -168,6 +167,7 @@ def shutdown_current_master(delay_period, logger):
     if delay_period > 0:
         time.sleep(delay_period)
     daemon = _load_daemon(logger=logger)
+    daemon.before_self_stop()
     daemon.stop()
 
 
@@ -194,9 +194,7 @@ def _get_broker_url(ctx, agent):
     return utils.internal.get_broker_url(agent)
 
 
-def create_new_agent_dict(old_agent, suffix=None):
-    if not suffix:
-        suffix = str(uuid.uuid4())
+def create_new_agent_dict(old_agent):
     new_agent = copy.deepcopy(old_agent)
     fields_to_delete = ['name', 'queue', 'workdir', 'agent_dir', 'envdir',
                         'manager_ip', 'package_url', 'source_url'

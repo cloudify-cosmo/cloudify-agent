@@ -54,7 +54,7 @@ class AgentInstallerTest(testenv.TestCase):
             'ssh-agent-blueprint/ssh-agent-blueprint.yaml')
         self.upload_deploy_and_execute_install(
             inputs={
-                'image': self.env.ubuntu_image_id,
+                'image': self.env.ubuntu_trusty_image_id,
                 'flavor': self.env.small_flavor_id
             }
         )
