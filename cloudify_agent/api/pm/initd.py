@@ -53,7 +53,8 @@ class GenericLinuxDaemon(CronRespawnDaemon):
             self.workdir, '{0}-includes'.format(self.name))
 
         # initd specific configuration
-        self.start_on_boot = params.get('start_on_boot', True)
+        self.start_on_boot = str(params.get(
+            'start_on_boot', 'true')).lower() == 'true'
         self._start_on_boot_handler = _StartOnBootHandler(self.service_name,
                                                           self._runner)
 
