@@ -804,14 +804,24 @@ class Daemon(object):
             .format(utils.get_pip_path(), plugin_name)
         ).std_out.splitlines()
         for module in files:
-            if module.endswith('.py') and '__init__' not in module:
-                # the files paths are relative to the
+            if self._is_valid_module(module):
+                # the file paths are relative to the
                 # package __init__.py file.
                 prefix = '../' if os.name == 'posix' else '..\\'
                 module_paths.append(
                     module.replace(prefix, '')
                     .replace(os.sep, '.').replace('.py', '').strip())
         return module_paths
+
+    @staticmethod
+    def _is_valid_module(module):
+        if not module.endswith('py'):
+            return False
+        if '__init__' in module:
+            return False
+        if '-' in os.path.basename(module):
+            return False
+        return True
 
 
 class CronRespawnDaemon(Daemon):
