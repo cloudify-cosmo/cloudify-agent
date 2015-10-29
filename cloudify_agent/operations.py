@@ -195,17 +195,14 @@ def _get_broker_url(ctx, agent):
 
 
 def create_new_agent_dict(old_agent):
-    new_agent = copy.deepcopy(old_agent)
-    fields_to_delete = ['name', 'queue', 'workdir', 'agent_dir', 'envdir',
-                        'manager_ip', 'package_url', 'source_url'
-                        'manager_port', 'broker_url', 'broker_port',
-                        'broker_ip', 'key', 'version']
-    for field in fields_to_delete:
-        if field in new_agent:
-            del(new_agent[field])
+    new_agent = {}
     new_agent['name'] = utils.internal.generate_new_agent_name(
         old_agent['name'])
     new_agent['remote_execution'] = True
+    fields_to_copy = ['windows', 'ip', 'basedir', 'user']
+    for field in fields_to_copy:
+        if field in old_agent:
+            new_agent[field] = old_agent[field]
     configuration.reinstallation_attributes(new_agent)
     new_agent['manager_file_server_url'] = get_manager_file_server_url()
     # Assuming that if there is no version info in the agent then
