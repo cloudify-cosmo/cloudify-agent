@@ -42,6 +42,7 @@ BUILT_IN_TASKS = [
     'cloudify.plugins.workflows.uninstall',
     'cloudify.plugins.workflows.execute_operation',
     'cloudify.plugins.workflows.install',
+    'cloudify.plugins.workflows.install_new_agents',
     'script_runner.tasks.execute_workflow',
     'script_runner.tasks.run',
     'diamond_agent.tasks.install',
