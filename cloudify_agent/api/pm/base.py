@@ -24,7 +24,6 @@ from celery import Celery
 from cloudify.utils import LocalCommandRunner
 from cloudify.utils import setup_logger
 from cloudify import amqp_client
-from cloudify_rest_client.client import CloudifyClient
 from cloudify.constants import (
     BROKER_PORT_NO_SSL,
     BROKER_PORT_SSL,
@@ -111,9 +110,38 @@ class Daemon(object):
         the password for the broker connection
         defaults to 'guest'
 
+    ``manager_protocol``:
+
+        the protocol to use in REST call. defaults to HTTP.
+
     ``manager_port``:
 
-        the manager REST gateway port to connect to. defaults to 8101.
+        the manager REST gateway port to connect to. defaults to 80.
+
+    ``security_enabled``:
+
+        True if REST security is enabled, False otherwise
+
+    ``ssl_enabled``:
+
+        True if SSL communication with the server is enabled, False otherwise
+
+    ``manager_username``:
+
+        the username to use in REST call. No default.
+
+    ``manager_password``:
+
+        the password to use in REST call. No default.
+
+    ``verify_certificate``:
+
+        indicates if the verify the server's SSL certificate or not
+
+    ``local_manager_cert_path``:
+
+        The local (client) path to the manager's public SSL cert, if need for
+        verification
 
     ``min_workers``:
 
@@ -213,6 +241,8 @@ class Daemon(object):
 
         # Optional parameters
         self.validate_optional()
+        self.name = params.get(
+            'name') or self._get_name_from_manager()
         self.user = params.get('user') or getpass.getuser()
         self.broker_ip = params.get(
             'broker_ip') or self.manager_ip
@@ -227,10 +257,19 @@ class Daemon(object):
         self.deployment_id = params.get('deployment_id')
         self.manager_port = params.get(
             'manager_port') or defaults.MANAGER_PORT
-        self.name = params.get(
-            'name') or self._get_name_from_manager()
+        self.manager_protocol = params.get(
+            'manager_protocol') or defaults.MANAGER_PROTOCOL
+        self.security_enabled = params.get('security_enabled', False)
+        self.manager_username = params.get('manager_username')
+        self.manager_password = params.get('manager_password')
+        self.verify_manager_certificate = params.get(
+            'verify_manager_certificate') or \
+            defaults.VERIFY_MANAGER_CERTIFICATE
+        self.local_manager_cert_path = params.get(
+            'local_manager_cert_path') or defaults.LOCAL_MANAGER_CERT_PATH
         self.queue = params.get(
             'queue') or self._get_queue_from_manager()
+
         # This is not retrieved by param as an option any more as it then
         # introduces ambiguity over which values should be used if the
         # components of this differ from the passed in broker_user, pass, etc
@@ -759,7 +798,16 @@ class Daemon(object):
         return self._runtime_properties['cloudify_agent']['queue']
 
     def _get_runtime_properties(self):
-        client = CloudifyClient(host=self.manager_ip, port=self.manager_port)
+        client = utils.get_rest_client(
+            security_enabled=self.security_enabled,
+            manager_ip=self.manager_ip,
+            manager_protocol=self.manager_protocol,
+            manager_port=self.manager_port,
+            cloudify_username=self.manager_username,
+            cloudify_password=self.manager_password,
+            verify_ssl_certificate=self.verify_manager_certificate or None,
+            ssl_cert_path=self.local_manager_cert_path or None
+        )
         node_instances = client.node_instances.list(
             deployment_id=self.deployment_id)
 

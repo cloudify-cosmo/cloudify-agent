@@ -1,8 +1,8 @@
 python_path: /usr/bin/python
-cloudify_agent_module: https://github.com/cloudify-cosmo/cloudify-agent/archive/3.3m7.zip
-requirements_file: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/3.3m7/dev-requirements.txt
+cloudify_agent_module: https://github.com/cloudify-cosmo/cloudify-agent/archive/CFY-3691-Make-all-internal-REST-calls-secure.zip
+requirements_file: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/CFY-3691-Make-all-internal-REST-calls-secure/dev-requirements.txt
 additional_plugins:
     # These are cloned during the machine provisioning process as they are private repositories
-    cloudify_vsphere_plugin: /tmp/cloudify-vsphere-plugin
-    cloudify_softlayer_plugin: /tmp/cloudify-softlayer-plugin
+    # cloudify_vsphere_plugin: /tmp/cloudify-vsphere-plugin
+    # cloudify_softlayer_plugin: /tmp/cloudify-softlayer-plugin
 keep_virtualenv: true

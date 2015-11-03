@@ -17,7 +17,7 @@ import click
 import json
 import os
 
-from cloudify_agent.api import utils, defaults
+from cloudify_agent.api import utils
 from cloudify_agent.shell.decorators import handle_failures
 from cloudify_agent.installer.config import configuration
 from cloudify_agent.installer.operations import prepare_local_installer
@@ -34,7 +34,9 @@ def install_local(agent_file, output_agent_file):
     if agent_file is None:
         raise click.ClickException('--agent-file should be specified.')
     cloudify_agent = json.load(agent_file)
-    cloudify_agent['manager_port'] = defaults.MANAGER_PORT
+    # TODO should not always take the default,
+    # only if manager_port is missing in agent
+    # cloudify_agent['manager_port'] = defaults.MANAGER_PORT
     if cloudify_agent.get('broker_get_settings_from_manager', True):
         broker_config = utils.internal.get_broker_configuration(cloudify_agent)
     else:

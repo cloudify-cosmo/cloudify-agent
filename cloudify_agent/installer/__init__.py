@@ -173,6 +173,18 @@ class AgentInstaller(object):
             env.CLOUDIFY_BROKER_IP: self.cloudify_agent.get('broker_ip'),
             env.CLOUDIFY_BROKER_PORT: self.cloudify_agent.get('broker_port'),
             env.CLOUDIFY_MANAGER_PORT: self.cloudify_agent.get('manager_port'),
+            env.CLOUDIFY_MANAGER_PROTOCOL: self.cloudify_agent.get(
+                'manager_protocol'),
+            env.CLOUDIFY_SECURITY_ENABLED:
+                self.cloudify_agent.get('security_enabled'),
+            env.CLOUDIFY_MANAGER_USERNAME:
+                self.cloudify_agent.get('manager_username'),
+            env.CLOUDIFY_MANAGER_PASSWORD:
+                self.cloudify_agent.get('manager_password'),
+            env.CLOUDIFY_VERIFY_MANAGER_CERTIFICATE:
+                self.cloudify_agent.get('verify_manager_certificate'),
+            env.CLOUDIFY_LOCAL_MANAGER_CERT_PATH:
+                self.cloudify_agent.get('local_manager_cert_path'),
             env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(
                 'max_workers'),
             env.CLOUDIFY_DAEMON_MIN_WORKERS: self.cloudify_agent.get(

@@ -40,6 +40,32 @@ from cloudify_agent.shell.decorators import handle_failures
               help='The manager REST gateway port to connect to. [env {0}]'
               .format(env.CLOUDIFY_MANAGER_PORT),
               envvar=env.CLOUDIFY_MANAGER_PORT)
+@click.option('--manager-protocol',
+              help='The protocol to use when sending REST calls to the '
+                   'manager. [env {0}]'.format(env.CLOUDIFY_MANAGER_PROTOCOL),
+              envvar=env.CLOUDIFY_MANAGER_PROTOCOL)
+@click.option('--security-enabled',
+              help='True if REST service security is enabled, False otherwise.'
+                   ' [env {0}]'.format(env.CLOUDIFY_SECURITY_ENABLED),
+              envvar=env.CLOUDIFY_SECURITY_ENABLED)
+@click.option('--manager-username',
+              help='The username to use when sending REST calls to the '
+                   'manager. [env {0}]'.format(env.CLOUDIFY_MANAGER_USERNAME),
+              envvar=env.CLOUDIFY_MANAGER_USERNAME)
+@click.option('--manager-password',
+              help='The password to use when sending REST calls to the '
+                   'manager. [env {0}]'.format(env.CLOUDIFY_MANAGER_PASSWORD),
+              envvar=env.CLOUDIFY_MANAGER_PASSWORD)
+@click.option('--verify-manager-certificate',
+              help='True to verify the manager\' SSl certificate, False '
+                   'otherwise. [env {0}]'.
+              format(env.CLOUDIFY_VERIFY_MANAGER_CERTIFICATE),
+              envvar=env.CLOUDIFY_VERIFY_MANAGER_CERTIFICATE)
+@click.option('--local-manager-cert-path',
+              help='The path to a local copy of the manager\'s public '
+                   'certificate. [env {0}]'.
+              format(env.CLOUDIFY_LOCAL_MANAGER_CERT_PATH),
+              envvar=env.CLOUDIFY_LOCAL_MANAGER_CERT_PATH)
 @click.option('--includes',
               help='A comma separated list of module names '
                    'to be included in the daemon. [env {0}]'
