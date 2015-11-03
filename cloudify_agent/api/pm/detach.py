@@ -63,21 +63,6 @@ class DetachedDaemon(CronRespawnDaemon):
         self._runner.run(self.create_disable_cron_script())
         super(DetachedDaemon, self).stop(interval, timeout)
 
-    def configure(self):
-
-        self._logger.debug('Creating daemon script: {0}'
-                           .format(self.script_path))
-        self._create_script()
-        self._logger.debug('Creating daemon conf file: {0}'
-                           .format(self.config_path))
-        self._create_config()
-
-        # Add the celery config
-        self._logger.info('Deploying SSL cert (if defined).')
-        self._create_ssl_cert()
-        self._logger.info('Deploying celery configuration.')
-        self._create_celery_conf()
-
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
         if self._is_agent_registered():
             if not force:
@@ -120,7 +105,7 @@ class DetachedDaemon(CronRespawnDaemon):
             self._logger.debug(str(e))
             return False
 
-    def _create_script(self):
+    def create_script(self):
         self._logger.debug('Rendering detached script from template')
         rendered = utils.render_template_to_file(
             template_path='pm/detach/detach.template',
@@ -142,16 +127,24 @@ class DetachedDaemon(CronRespawnDaemon):
         self._runner.run('rm {0}'.format(rendered))
         self._runner.run('chmod +x {0}'.format(self.script_path))
 
-    def _create_config(self):
-        self._logger.debug('Rendering configuration script from template')
+    def create_config(self):
+        self._logger.debug('Rendering configuration script "{0}" from template'
+                           .format(self.config_path))
         utils.render_template_to_file(
             template_path='pm/detach/detach.conf.template',
             file_path=self.config_path,
             user=self.user,
             name=self.name,
             broker_url=self.broker_url,
-            manager_ip=self.manager_ip,
-            manager_port=self.manager_port,
+            rest_host=self.rest_host,
+            rest_port=self.rest_port,
+            rest_protocol=self.rest_protocol,
+            file_server_host=self.file_server_host,
+            security_enabled=self.security_enabled,
+            rest_username=self.rest_username,
+            rest_password=self.rest_password,
+            verify_rest_certificate=self.verify_rest_certificate,
+            local_rest_cert_file=self.local_rest_cert_file,
             extra_env_path=self.extra_env_path,
             storage_dir=utils.internal.get_storage_directory(self.user),
             workdir=self.workdir,

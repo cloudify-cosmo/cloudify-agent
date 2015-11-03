@@ -167,7 +167,8 @@ def create_new_agent_dict(old_agent):
     new_agent['name'] = utils.internal.generate_new_agent_name(
         old_agent['name'])
     new_agent['remote_execution'] = True
-    fields_to_copy = ['windows', 'ip', 'basedir', 'user']
+    # TODO: broker_ip should be handled as part of fixing agent migration
+    fields_to_copy = ['windows', 'ip', 'basedir', 'user', 'broker_ip']
     for field in fields_to_copy:
         if field in old_agent:
             new_agent[field] = old_agent[field]

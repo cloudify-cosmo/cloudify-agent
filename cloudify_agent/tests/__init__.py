@@ -22,6 +22,7 @@ import shutil
 
 import unittest2 as unittest
 
+from cloudify import constants
 from cloudify.utils import setup_logger
 
 
@@ -37,6 +38,19 @@ def get_storage_directory(_=None):
 
 class BaseTest(unittest.TestCase):
 
+    agent_env_vars = {
+        constants.MANAGER_FILE_SERVER_URL_KEY: 'localhost',
+        constants.REST_HOST_KEY: 'localhost',
+        constants.FILE_SERVER_HOST_KEY: 'localhost',
+        constants.SECURITY_ENABLED_KEY: 'False',
+        constants.REST_PROTOCOL_KEY: 'http',
+        constants.REST_PORT_KEY: '80',
+        constants.REST_CERT_CONTENT_KEY: '',
+        constants.REST_USERNAME_KEY: '',
+        constants.REST_PASSWORD_KEY: '',
+        constants.VERIFY_REST_CERTIFICATE_KEY: ''
+    }
+
     def setUp(self):
 
         # change levels to 'DEBUG' to troubleshoot.
@@ -48,6 +62,8 @@ class BaseTest(unittest.TestCase):
 
         self.curr_dir = os.getcwd()
         self.temp_folder = tempfile.mkdtemp(prefix='cfy-agent-tests-')
+        for key, value in self.agent_env_vars.iteritems():
+            os.environ[key] = value
 
         def clean_temp_folder():
             try:
@@ -55,7 +71,13 @@ class BaseTest(unittest.TestCase):
             except win_error:
                 # no hard feeling if file is locked.
                 pass
+
+        def clean_env():
+            for var in self.agent_env_vars.iterkeys():
+                del os.environ[var]
+
         self.addCleanup(clean_temp_folder)
+        self.addCleanup(clean_env)
         os.chdir(self.temp_folder)
         self.addCleanup(lambda: os.chdir(self.curr_dir))
 

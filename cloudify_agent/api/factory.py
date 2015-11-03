@@ -102,7 +102,6 @@ class DaemonFactory(object):
         :return: A daemon instance.
         :rtype: cloudify_agent.api.pm.base.Daemon
         """
-
         name = attributes.get('name')
         if name:
             # an explicit name was passed, make sure we don't already
@@ -130,7 +129,6 @@ class DaemonFactory(object):
         :rtype: list
 
         """
-
         if not os.path.exists(self.storage):
             return []
 
@@ -147,6 +145,7 @@ class DaemonFactory(object):
                 process_management = daemon_as_json.pop('process_management')
                 daemon = DaemonFactory._find_implementation(process_management)
                 daemons.append(daemon(logger=logger, **daemon_as_json))
+
         return daemons
 
     def load(self, name, logger=None):
@@ -164,7 +163,6 @@ class DaemonFactory(object):
         :raise CloudifyAgentNotFoundException: in case the daemon
         file does not exist.
         """
-
         self.logger.debug('Loading daemon {0} from storage: {1}'
                           .format(name, self.storage))
 
@@ -191,7 +189,6 @@ class DaemonFactory(object):
         :type daemon: cloudify_agent.api.daemon.base.Daemon
 
         """
-
         if not os.path.exists(self.storage):
             os.makedirs(self.storage)
 
@@ -214,7 +211,6 @@ class DaemonFactory(object):
         :param name: The name of the daemon to delete.
 
         """
-
         daemon_path = os.path.join(
             self.storage, '{0}.json'.format(name))
         if os.path.exists(daemon_path):

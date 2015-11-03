@@ -86,7 +86,9 @@ class TestInstaller(BaseTest):
         agent = {
             'ip': 'localhost',
             'package_url': self._package_url,
-            'manager_ip': 'localhost',
+            'rest_host': 'localhost',
+            'file_server_host': 'localhost',
+            'broker_ip': 'localhost',
             'basedir': base_dir,
             'windows': os.name == 'nt',
             'local': False,
@@ -103,7 +105,9 @@ class TestInstaller(BaseTest):
         agent = {
             'ip': 'localhost',
             'package_url': self._package_url,
-            'manager_ip': 'localhost',
+            'rest_host': 'localhost',
+            'file_server_host': 'localhost',
+            'broker_ip': 'localhost',
             'windows': os.name == 'nt',
             'local': False,
             'broker_get_settings_from_manager': False
