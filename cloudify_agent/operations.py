@@ -13,11 +13,14 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import tempfile
 import time
 import threading
+import ssl
 import sys
 import os
-import copy
+
+from contextlib import contextmanager
 
 import celery
 
@@ -26,7 +29,6 @@ from cloudify.exceptions import NonRecoverableError
 
 from cloudify.utils import get_manager_file_server_url
 from cloudify.decorators import operation
-from cloudify import utils as cloudify_utils
 
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api.factory import DaemonFactory
@@ -77,23 +79,6 @@ def install_plugins(plugins, **_):
     _install_plugins(plugins)
 
 
-def _get_broker_config(ctx):
-    attributes = {}
-    # Get the broker credentials for the daemon
-    bootstrap_agent = ctx.bootstrap_context.cloudify_agent
-
-    broker_user, broker_pass = cloudify_utils.internal.get_broker_credentials(
-        bootstrap_agent
-    )
-
-    attributes['broker_user'] = broker_user
-    attributes['broker_pass'] = broker_pass
-    attributes['broker_ip'] = bootstrap_agent.broker_ip
-    attributes['broker_ssl_enabled'] = bootstrap_agent.broker_ssl_enabled
-    attributes['broker_ssl_cert'] = bootstrap_agent.broker_ssl_cert
-    return attributes
-
-
 @operation
 def restart(new_name=None, delay_period=5, **_):
 
@@ -135,7 +120,7 @@ def restart(new_name=None, delay_period=5, **_):
     del attributes['pid_file']
 
     # Get the broker credentials for the daemon
-    attributes.update(_get_broker_config(ctx))
+    attributes.update(ctx.bootstrap_context.broker_config())
 
     new_daemon = DaemonFactory().new(logger=ctx.logger, **attributes)
 
@@ -186,15 +171,6 @@ def _save_daemon(daemon):
     factory.save(daemon)
 
 
-def _get_broker_url(ctx, agent):
-    agent = copy.deepcopy(agent)
-    broker = _get_broker_config(ctx)
-    for k, v in broker.iteritems():
-        if not agent.get(k):
-            agent[k] = v
-    return utils.internal.get_broker_url(agent)
-
-
 def create_new_agent_dict(old_agent):
     new_agent = {}
     new_agent['name'] = utils.internal.generate_new_agent_name(
@@ -208,8 +184,47 @@ def create_new_agent_dict(old_agent):
     new_agent['manager_file_server_url'] = get_manager_file_server_url()
     # Assuming that if there is no version info in the agent then
     # this agent was installed by current manager.
-    new_agent['old_agent_version'] = old_agent.get('version', _VERSION)
+    new_agent['old_agent_version'] = old_agent['version']
     return new_agent
+
+
+@contextmanager
+def _celery_client(ctx, agent):
+    # We retrieve broker url from old agent in order to support
+    # cases when old agent is not connected to current rabbit server.
+    if 'broker_config' in agent:
+        broker_config = agent['broker_config']
+    else:
+        broker_config = ctx.bootstrap_context.broker_config()
+    broker_url = utils.internal.get_broker_url(broker_config)
+    ctx.logger.info('Connecting to {0}'.format(broker_url))
+    celery_client = celery.Celery()
+    # We can't pass broker_url to Celery constructor because it would
+    # be overriden by the value from broker_config.py.
+    config = {
+        'BROKER_URL': broker_url,
+        'CELERY_RESULT_BACKEND': broker_url
+    }
+    if agent['version'] != '3.2':
+        config['CELERY_TASK_RESULT_EXPIRES'] = \
+            defaults.CELERY_TASK_RESULT_EXPIRES
+    fd, cert_path = tempfile.mkstemp()
+    os.close(fd)
+    try:
+        if broker_config.get('broker_ssl_enabled'):
+            with open(cert_path, 'w') as cert_file:
+                cert_file.write(broker_config.get('broker_ssl_cert', ''))
+            broker_ssl = {
+                'ca_certs': cert_path,
+                'cert_reqs': ssl.CERT_REQUIRED
+            }
+        else:
+            broker_ssl = False
+        config['BROKER_USE_SSL'] = broker_ssl
+        celery_client.conf.update(**config)
+        yield celery_client
+    finally:
+        os.remove(cert_path)
 
 
 def create_agent_from_old_agent(install_agent_timeout=300):
@@ -217,18 +232,9 @@ def create_agent_from_old_agent(install_agent_timeout=300):
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
     old_agent = ctx.instance.runtime_properties['cloudify_agent']
+    old_agent['version'] = old_agent.get('version', _VERSION)
     new_agent = create_new_agent_dict(old_agent)
-    # We retrieve broker url from old agent in order to support
-    # cases when old agent is not connected to current rabbit server.
-    broker_url = _get_broker_url(ctx, old_agent)
-    env_broker_url = os.environ.get('CELERY_BROKER_URL')
-    os.environ['CELERY_BROKER_URL'] = broker_url
-    try:
-        celery_client = celery.Celery(broker=broker_url, backend=broker_url)
-        if new_agent['old_agent_version'] != '3.2':
-            celery_client.conf.update(
-                CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES
-            )
+    with _celery_client(ctx, old_agent) as celery_client:
         script_format = '{0}/cloudify/install_agent.py'
         script_url = script_format.format(get_manager_file_server_url())
         result = celery_client.send_task(
@@ -238,11 +244,6 @@ def create_agent_from_old_agent(install_agent_timeout=300):
             queue=old_agent['queue']
         )
         returned_agent = result.get(timeout=install_agent_timeout)
-    finally:
-        if env_broker_url is None:
-            del(os.environ['CELERY_BROKER_URL'])
-        else:
-            os.environ['CELERY_BROKER_URL'] = env_broker_url
     # Make sure that new celery agent was started:
     agent_status = app.control.inspect(destination=[
         'celery@{0}'.format(returned_agent['name'])])

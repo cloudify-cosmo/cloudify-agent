@@ -24,7 +24,6 @@ from jinja2 import Template
 
 from cloudify.context import BootstrapContext
 from cloudify.utils import setup_logger
-from cloudify.utils import internal as cfy_utils_internal
 
 from cloudify_rest_client import CloudifyClient
 
@@ -168,24 +167,10 @@ class _Internal(object):
         bootstrap_context_dict = client.manager.get_context()
         bootstrap_context_dict = bootstrap_context_dict['context']['cloudify']
         bootstrap_context = BootstrapContext(bootstrap_context_dict)
-        bootstrap_agent = bootstrap_context.cloudify_agent
-
-        broker_user, broker_pass = cfy_utils_internal.get_broker_credentials(
-            bootstrap_agent
-        )
-
-        # Get the broker IP from the bootstrap agent, or use the CLI supplied
-        # broker IP or manager IP if it is empty
-        broker_ip = bootstrap_agent.broker_ip
-        if broker_ip == '':
-            broker_ip = agent.get('broker_ip', agent['manager_ip'])
-
-        attributes = {}
-        attributes['broker_ip'] = broker_ip
-        attributes['broker_user'] = broker_user
-        attributes['broker_pass'] = broker_pass
-        attributes['broker_ssl_enabled'] = bootstrap_agent.broker_ssl_enabled
-        attributes['broker_ssl_cert'] = bootstrap_agent.broker_ssl_cert
+        attributes = bootstrap_context.broker_config(
+            fallback_to_manager_ip=False)
+        if not attributes.get('broker_ip'):
+            attributes['broker_ip'] = agent['manager_ip']
         return attributes
 
     @staticmethod
