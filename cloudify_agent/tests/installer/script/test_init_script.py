@@ -43,16 +43,14 @@ class BaseInitScriptTest(BaseTest):
             properties={'agent_config': {
                 'user': self.username,
                 'install_method': 'init_script',
-                'manager_ip': 'localhost',
+                'rest_host': 'localhost',
                 'windows': self.windows,
                 'basedir': self.temp_folder
             }})
         current_ctx.set(ctx)
+
         self.addCleanup(lambda: current_ctx.clear())
-        os.environ['MANAGER_FILE_SERVER_URL'] = ''
-        self.addCleanup(lambda: os.environ.pop('MANAGER_FILE_SERVER_URL',
-                                               None))
-        self.input_cloudify_agent = {}
+        self.input_cloudify_agent = {'broker_ip': 'localhost'}
 
     def _run(self, *commands):
         init_script = script.init_script(
@@ -114,12 +112,14 @@ class TestLinuxInitScript(BaseInitScriptTest):
 
     def test_package_url_explicit(self):
         self.input_cloudify_agent = {'distro': 'one',
-                                     'distro_codename': 'two'}
+                                     'distro_codename': 'two',
+                                     'broker_ip': 'localhost'}
         output = self._run('package_url')
         self.assertIn('one-two-agent.tar.gz', output)
 
     def test_create_custom_env_file(self):
-        self.input_cloudify_agent = {'env': {'one': 'one'}}
+        self.input_cloudify_agent = {'env': {'one': 'one'},
+                                     'broker_ip': 'localhost'}
         self._run('create_custom_env_file')
         with open('custom_agent_env.sh') as f:
             self.assertIn('export one=one', f.read())
@@ -137,7 +137,8 @@ class TestWindowsInitScript(BaseInitScriptTest):
         super(TestWindowsInitScript, self).setUp()
 
     def test_create_custom_env_file(self):
-        self.input_cloudify_agent = {'env': {'one': 'one'}}
+        self.input_cloudify_agent = {'env': {'one': 'one'},
+                                     'broker_ip': 'localhost'}
         self._run('CreateCustomEnvFile')
         with open('custom_agent_env.bat') as f:
             self.assertIn('set one=one', f.read())

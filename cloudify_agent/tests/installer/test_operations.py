@@ -55,6 +55,7 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
     def setUp(self):
         super(AgentInstallerLocalTest, self).setUp()
+
         self.resource_base = tempfile.mkdtemp(
             prefix='file-server-resource-base')
         self.fs = FileServer(

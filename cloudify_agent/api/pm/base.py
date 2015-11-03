@@ -22,8 +22,6 @@ from cloudify.utils import (LocalCommandRunner,
                             setup_logger)
 from cloudify import amqp_client
 from cloudify import constants
-from cloudify_rest_client.client import CloudifyClient
-
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
@@ -41,10 +39,6 @@ class Daemon(object):
     Following is all the available common daemon keyword arguments. These
     will be available to any daemon without any configuration as instance
     attributes.
-
-    ``manager_ip``:
-
-        the ip address of the manager host. (Required)
 
     ``user``:
 
@@ -85,8 +79,7 @@ class Daemon(object):
 
     ``broker_ip``:
 
-        the ip address of the broker to connect to.
-        defaults to the manager_ip value.
+        the host name or ip address of the broker to connect to.
 
     ``broker_ssl_enabled``:
 
@@ -108,9 +101,48 @@ class Daemon(object):
         the password for the broker connection
         defaults to 'guest'
 
-    ``manager_port``:
+    ``file_server_host``:
 
-        the manager REST gateway port to connect to. defaults to 8101.
+        the IP or hostname of the file server (Required)
+
+    ``rest_host``:
+
+        the ip address/host name of the manager, running the
+        REST service. (Required)
+
+    ``rest_protocol``:
+
+        the protocol to use in REST call. defaults to HTTP.
+
+    ``rest_port``:
+
+        the manager REST gateway port to connect to. defaults to 80.
+
+    ``security_enabled``:
+
+        True if REST security is enabled, False otherwise
+
+    ``rest_username``:
+
+        the username to use in REST calls. No default.
+
+    ``rest_password``:
+
+        the password to use in REST calls. No default.
+
+    ``verify_rest_certificate``:
+
+        indicates whether agents should verify the REST server's SSL
+        certificate or not
+
+    ``local_rest_cert_file``:
+
+        A path to a local copy of the manager's SSL certificate, to be used
+        for certificate verification if SSL is enabled.
+
+    ``rest_ssl_cert_content``:
+        The content of the REST SSL certificate, to be written to
+        local_rest_cert_file
 
     ``min_workers``:
 
@@ -153,7 +185,9 @@ class Daemon(object):
     # add specific mandatory parameters for different implementations.
     # they will be validated upon daemon creation
     MANDATORY_PARAMS = [
-        'manager_ip'
+        'rest_host',
+        'broker_ip',
+        'file_server_host'
     ]
 
     def __init__(self, logger=None, **params):
@@ -197,15 +231,18 @@ class Daemon(object):
 
         # Mandatory parameters
         self.validate_mandatory()
-        self.manager_ip = params['manager_ip']
+        self.rest_host = params['rest_host']
+        self.broker_ip = params['broker_ip']
+        self.file_server_host = params['file_server_host']
 
         # Optional parameters
         self.validate_optional()
+        self.name = params.get(
+            'name') or self._get_name_from_manager()
         self.user = params.get('user') or getpass.getuser()
-        self.broker_ip = params.get(
-            'broker_ip') or self.manager_ip
         self.broker_ssl_enabled = params.get('broker_ssl_enabled', False)
-        self.broker_ssl_cert = params.get('broker_ssl_cert', '')
+        self.broker_ssl_cert_content = params.get('broker_ssl_cert', '')
+        self.broker_ssl_cert_path = params.get('broker_ssl_cert_path', '')
         # Port must be determined after SSL enabled has been set in order for
         # intelligent port selection to work properly
         self.broker_port = self._get_broker_port()
@@ -213,12 +250,19 @@ class Daemon(object):
         self.broker_pass = params.get('broker_pass', 'guest')
         self.host = params.get('host')
         self.deployment_id = params.get('deployment_id')
-        self.manager_port = params.get(
-            'manager_port') or defaults.MANAGER_PORT
-        self.name = params.get(
-            'name') or self._get_name_from_manager()
+        self.rest_port = params.get(
+            'rest_port') or defaults.REST_PORT
+        self.rest_protocol = params.get(
+            'rest_protocol') or defaults.REST_PROTOCOL
+        self.security_enabled = params.get('security_enabled')
+        self.rest_username = params.get('rest_username')
+        self.rest_password = params.get('rest_password')
+        self.verify_rest_certificate = params.get('verify_rest_certificate')
+        self.local_rest_cert_file = params.get('local_rest_cert_file', '')
+        self.rest_cert_content = params.get('rest_ssl_cert_content', '')
         self.queue = params.get(
             'queue') or self._get_queue_from_manager()
+
         # This is not retrieved by param as an option any more as it then
         # introduces ambiguity over which values should be used if the
         # components of this differ from the passed in broker_user, pass, etc
@@ -258,10 +302,11 @@ class Daemon(object):
     def _get_celery_conf_path(self):
         return os.path.join(self.workdir, 'broker_config.json')
 
-    def _create_celery_conf(self):
+    def create_celery_conf(self):
+        self._logger.info('Deploying celery configuration.')
         config = {
             'broker_ssl_enabled': self.broker_ssl_enabled,
-            'broker_cert_path': self._get_ssl_cert_path() or '',
+            'broker_cert_path': self.broker_ssl_cert_path,
             'broker_username': self.broker_user,
             'broker_password': self.broker_pass,
             'broker_hostname': self.broker_ip,
@@ -305,35 +350,11 @@ class Daemon(object):
         else:
             return constants.BROKER_PORT_NO_SSL
 
-    def _create_ssl_cert(self):
-        """
-        Put the broker SSL cert into a file for AMQP clients to use.
-        """
-        # Cert will be deployed even if SSL is disabled, but configuration
-        # will cause it not to be used
-        if self.broker_ssl_cert:
-            # TODO: Cert validation
-            with open(self._get_ssl_cert_path(), 'w') as cert_handle:
-                cert_handle.write(self.broker_ssl_cert)
-
-    def _get_ssl_cert_path(self):
-        """
-        Determine what path the broker SSL cert should reside in.
-        This is used both when determining where to create the cert, and in
-        determining where to read it from.
-        """
-        # Cert will be deployed even if SSL is disabled, but configuration
-        # will cause it not to be used
-        if self.broker_ssl_cert:
-            return os.path.join(self.workdir, 'broker.crt')
-        else:
-            return ''
-
     def _is_agent_registered(self):
         celery_client = utils.get_celery_client(
             broker_url=self.broker_url,
-            ssl_enabled=self.broker_ssl_enabled,
-            ssl_cert_path=self._get_ssl_cert_path())
+            broker_ssl_enabled=self.broker_ssl_enabled,
+            broker_ssl_cert_path=self.broker_ssl_cert_path)
         try:
             self._logger.debug('Retrieving daemon registered tasks')
             return utils.get_agent_registered(
@@ -349,16 +370,6 @@ class Daemon(object):
     # may exhibit custom logic. usually this would be related to process
     # management specific configuration files.
     ########################################################################
-
-    def configure(self):
-
-        """
-        Creates any necessary resources for the daemon. After this method
-        was completed successfully, it should be possible to start the daemon
-        by running the command returned by the `start_command` method.
-
-        """
-        raise NotImplementedError('Must be implemented by a subclass')
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
 
@@ -402,6 +413,12 @@ class Daemon(object):
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
+    def create_script(self):
+        raise NotImplementedError('Must be implemented by a subclass')
+
+    def create_config(self):
+        raise NotImplementedError('Must be implemented by a subclass')
+
     ########################################################################
     # the following methods is the common logic that would apply to any
     # process management implementation.
@@ -416,6 +433,18 @@ class Daemon(object):
 
         """
         self._logger.debug('Daemon created')
+
+    def configure(self):
+
+        """
+        Creates any necessary resources for the daemon. After this method
+        was completed successfully, it should be possible to start the daemon
+        by running the command returned by the `start_command` method.
+
+        """
+        self.create_script()
+        self.create_config()
+        self.create_celery_conf()
 
     def start(self,
               interval=defaults.START_INTERVAL,
@@ -598,7 +627,7 @@ class Daemon(object):
             amqp_user=self.broker_user,
             amqp_pass=self.broker_pass,
             ssl_enabled=self.broker_ssl_enabled,
-            ssl_cert_path=self._get_ssl_cert_path(),
+            ssl_cert_path=self.broker_ssl_cert_path,
         )
 
         try:
@@ -669,7 +698,16 @@ class Daemon(object):
         return self._runtime_properties['cloudify_agent']['queue']
 
     def _get_runtime_properties(self):
-        client = CloudifyClient(host=self.manager_ip, port=self.manager_port)
+        client = utils.get_rest_client(
+            security_enabled=self.security_enabled,
+            rest_host=self.rest_host,
+            rest_protocol=self.rest_protocol,
+            rest_port=self.rest_port,
+            rest_username=self.rest_username,
+            rest_password=self.rest_password,
+            verify_rest_certificate=self.verify_rest_certificate,
+            ssl_cert_path=self.local_rest_cert_file
+        )
         node_instances = client.node_instances.list(
             deployment_id=self.deployment_id)
 

@@ -15,7 +15,6 @@
 
 from cloudify import ctx
 
-from cloudify_agent.api import defaults
 from cloudify_agent.installer import exceptions
 
 #######################################################################
@@ -41,6 +40,9 @@ AGENT_ATTRIBUTES = {
     'ip': {
         'group': 'connection'
     },
+    'file_server_host': {
+        'group': 'connection'
+    },
     'key': {
         'context_attribute': 'agent_key_path',
         'group': 'connection'
@@ -62,12 +64,32 @@ AGENT_ATTRIBUTES = {
     'windows': {
         'group': 'connection'
     },
-    'manager_ip': {
+    'rest_host': {
         'group': 'cfy-agent'
     },
-    'manager_port': {
-        'group': 'cfy-agent',
-        'default': defaults.MANAGER_PORT
+    'rest_port': {
+        'group': 'cfy-agent'
+    },
+    'rest_protocol': {
+        'group': 'cfy-agent'
+    },
+    'security_enabled': {
+        'group': 'cfy-agent'
+    },
+    'rest_username': {
+        'group': 'cfy-agent'
+    },
+    'rest_password': {
+        'group': 'cfy-agent'
+    },
+    'verify_rest_certificate': {
+        'group': 'cfy-agent'
+    },
+    'local_rest_cert_file': {
+        'group': 'cfy-agent'
+    },
+    'rest_cert_content': {
+        'group': 'cfy-agent'
     },
     'queue': {
         'group': 'cfy-agent'
@@ -85,6 +107,9 @@ AGENT_ATTRIBUTES = {
     'max_workers': {
         'group': 'cfy-agent',
         'default': 5
+    },
+    'broker_ip': {
+        'group': 'cfy-agent'
     },
     'broker_get_settings_from_manager': {
         'group': 'cfy-agent',

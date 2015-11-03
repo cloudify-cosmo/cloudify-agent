@@ -20,11 +20,9 @@ import platform
 from cloudify import ctx
 from cloudify import context
 from cloudify import constants
-from cloudify.utils import get_manager_ip
-from cloudify.utils import get_manager_file_server_url
 
 from cloudify import utils as cloudify_utils
-from cloudify_agent.api import utils
+from cloudify_agent.api import utils as agent_utils
 from cloudify_agent.installer import exceptions
 from cloudify_agent.installer.config.decorators import group
 from cloudify_agent.installer.config.attributes import raise_missing_attribute
@@ -161,9 +159,41 @@ def _cfy_agent_attributes_no_defaults(cloudify_agent):
         # by default, the queue of the agent is the same as the name
         cloudify_agent['queue'] = cloudify_agent['name']
 
-    if not cloudify_agent.get('manager_ip'):
-        # by default, the manager ip will be set by an environment variable
-        cloudify_agent['manager_ip'] = get_manager_ip()
+    if not cloudify_agent.get('file_server_host'):
+        cloudify_agent['file_server_host'] = \
+            cloudify_utils.get_manager_file_server_host()
+
+    if not cloudify_agent.get('rest_host'):
+        cloudify_agent['rest_host'] = \
+            cloudify_utils.get_manager_rest_service_host()
+
+    if not cloudify_agent.get('security_enabled'):
+        cloudify_agent['security_enabled'] = \
+            cloudify_utils.is_security_enabled()
+
+    if not cloudify_agent.get('rest_protocol'):
+        cloudify_agent['rest_protocol'] = \
+            cloudify_utils.get_manager_rest_service_protocol()
+
+    if not cloudify_agent.get('rest_port'):
+        cloudify_agent['rest_port'] = \
+            cloudify_utils.get_manager_rest_service_port()
+
+    if not cloudify_agent.get('rest_cert_content'):
+        cloudify_agent['rest_cert_content'] = \
+            cloudify_utils.get_rest_cert_content()
+
+    if not cloudify_agent.get('rest_username'):
+        cloudify_agent['rest_username'] = \
+            cloudify_utils.get_rest_username()
+
+    if not cloudify_agent.get('rest_password'):
+        cloudify_agent['rest_password'] = \
+            cloudify_utils.get_rest_password()
+
+    if not cloudify_agent.get('verify_rest_certificate'):
+        cloudify_agent['verify_rest_certificate'] = \
+            cloudify_utils.is_verify_rest_certificate()
 
 
 def directory_attributes(cloudify_agent):
@@ -222,7 +252,7 @@ def installation_attributes(cloudify_agent, runner):
             # no distribution difference in windows installation
             cloudify_agent['package_url'] = '{0}/packages/agents' \
                                             '/cloudify-windows-agent.exe'\
-                .format(get_manager_file_server_url())
+                .format(cloudify_utils.get_manager_file_server_url())
         else:
             if not cloudify_agent.get('distro'):
                 if cloudify_agent['local']:
@@ -243,13 +273,13 @@ def installation_attributes(cloudify_agent, runner):
                     'distro_codename' in cloudify_agent):
                 cloudify_agent['package_url'] = '{0}/packages/agents' \
                                                 '/{1}-{2}-agent.tar.gz' \
-                    .format(get_manager_file_server_url(),
+                    .format(cloudify_utils.get_manager_file_server_url(),
                             cloudify_agent['distro'],
                             cloudify_agent['distro_codename'])
 
     if not cloudify_agent.get('basedir'):
         if cloudify_agent['local']:
-            basedir = utils.get_home_dir(cloudify_agent['user'])
+            basedir = agent_utils.get_home_dir(cloudify_agent['user'])
         else:
             if cloudify_agent['windows']:
 
@@ -258,7 +288,8 @@ def installation_attributes(cloudify_agent, runner):
                 # 'pwd' module does not exists in a windows python
                 # installation.
                 # TODO - maybe use some environment variables heuristics?
-                basedir = utils.get_windows_home_dir(cloudify_agent['user'])
+                basedir = \
+                    agent_utils.get_windows_home_dir(cloudify_agent['user'])
             elif cloudify_agent['remote_execution']:
                 basedir = runner.home_dir(cloudify_agent['user'])
             else:

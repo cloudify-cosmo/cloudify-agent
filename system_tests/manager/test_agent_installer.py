@@ -142,7 +142,7 @@ class AgentInstallerTest(testenv.TestCase):
         install_userdata = install_script(name=name,
                                           windows=False,
                                           user=user,
-                                          manager_ip=self._manager_ip())
+                                          manager_host=self._manager_host())
         self._test_linux_userdata_agent(image=self.env.ubuntu_trusty_image_id,
                                         flavor=self.env.small_flavor_id,
                                         user=user,
@@ -192,7 +192,7 @@ class AgentInstallerTest(testenv.TestCase):
         install_userdata = install_script(name=name,
                                           windows=True,
                                           user='Administrator',
-                                          manager_ip=self._manager_ip())
+                                          manager_host=self._manager_host())
         self.test_windows_userdata_agent(install_method='provided',
                                          name=name,
                                          install_userdata=install_userdata)
@@ -221,30 +221,30 @@ class AgentInstallerTest(testenv.TestCase):
                             deployment_id=deployment_id)
         self.execute_uninstall(deployment_id=deployment_id)
 
-    def _manager_ip(self):
+    def _manager_host(self):
         nova_client, _, _ = self.env.handler.openstack_clients()
         for server in nova_client.servers.list():
             if server.name == self.env.management_server_name:
                 for network, network_ips in server.networks.items():
                     if network == self.env.management_network_name:
                         return network_ips[0]
-        self.fail('Failed finding manager ip')
+        self.fail('Failed finding manager rest host')
 
 
-def install_script(name, windows, user, manager_ip):
+def install_script(name, windows, user, manager_host):
     ctx = MockCloudifyContext(
         node_id='node',
         properties={'agent_config': {
             'user': user,
             'windows': windows,
             'install_method': 'provided',
-            'manager_ip': manager_ip,
+            'rest_host': manager_host,
             'name': name
         }})
     try:
         current_ctx.set(ctx)
         os.environ['MANAGER_FILE_SERVER_URL'] = 'http://{0}:53229'.format(
-            manager_ip)
+            manager_host)
         init_script = script.init_script(cloudify_agent={})
     finally:
         os.environ.pop('MANAGER_FILE_SERVER_URL')

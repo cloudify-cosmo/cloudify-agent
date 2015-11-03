@@ -13,8 +13,9 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import json
 import click
+import json
+import os
 
 from cloudify_agent.api import defaults
 from cloudify_agent.api import utils as api_utils
@@ -24,11 +25,6 @@ from cloudify_agent.shell.decorators import handle_failures
 
 
 @click.command(context_settings=dict(ignore_unknown_options=True))
-@click.option('--manager-ip',
-              help='The manager IP to connect to. [env {0}]'
-              .format(env.CLOUDIFY_MANAGER_IP),
-              required=True,
-              envvar=env.CLOUDIFY_MANAGER_IP)
 @click.option('--process-management',
               help='The process management system to use '
                    'when creating the daemon. [env {0}]'
@@ -36,10 +32,51 @@ from cloudify_agent.shell.decorators import handle_failures
               type=click.Choice(['init.d', 'nssm', 'detach']),
               required=True,
               envvar=env.CLOUDIFY_DAEMON_PROCESS_MANAGEMENT)
-@click.option('--manager-port',
-              help='The manager REST gateway port to connect to. [env {0}]'
-              .format(env.CLOUDIFY_MANAGER_PORT),
-              envvar=env.CLOUDIFY_MANAGER_PORT)
+@click.option('--file-server-host',
+              help='The IP or host name of the file server [env {0}]'
+              .format(env.CLOUDIFY_FILE_SERVER_HOST),
+              required=True,
+              envvar=env.CLOUDIFY_FILE_SERVER_HOST)
+@click.option('--rest-host',
+              help='The IP or host name of the REST service [env {0}]'
+              .format(env.CLOUDIFY_REST_HOST),
+              required=True,
+              envvar=env.CLOUDIFY_REST_HOST)
+@click.option('--rest-port',
+              help='The manager REST port to connect to. [env {0}]'
+              .format(env.CLOUDIFY_REST_PORT),
+              envvar=env.CLOUDIFY_REST_PORT)
+@click.option('--rest-protocol',
+              help='The protocol to use when sending REST calls to the '
+                   'manager. [env {0}]'.format(env.CLOUDIFY_REST_PROTOCOL),
+              envvar=env.CLOUDIFY_REST_PROTOCOL)
+@click.option('--security-enabled',
+              help='True if REST service security is enabled, False otherwise.'
+                   ' [env {0}]'.format(env.CLOUDIFY_SECURITY_ENABLED),
+              envvar=env.CLOUDIFY_SECURITY_ENABLED)
+@click.option('--rest-username',
+              help='The username to use when sending REST calls. [env {0}]'
+              .format(env.CLOUDIFY_REST_USERNAME),
+              envvar=env.CLOUDIFY_REST_USERNAME)
+@click.option('--rest-password',
+              help='The password to use when sending REST calls. [env {0}]'
+              .format(env.CLOUDIFY_REST_PASSWORD),
+              envvar=env.CLOUDIFY_REST_PASSWORD)
+@click.option('--verify-rest-certificate',
+              help='True to verify the REST server\' SSl certificate, False '
+                   'otherwise. [env {0}]'
+              .format(env.CLOUDIFY_VERIFY_REST_CERTIFICATE),
+              envvar=env.CLOUDIFY_VERIFY_REST_CERTIFICATE)
+@click.option('--local-rest-cert-file',
+              help='The path to a local copy of the REST public cert, used for'
+                   ' cert verification, if required [env {0}]'
+              .format(env.CLOUDIFY_LOCAL_REST_CERT_FILE),
+              type=click.Path(exists=False, readable=False, file_okay=True),
+              envvar=env.CLOUDIFY_LOCAL_REST_CERT_FILE)
+@click.option('--rest-cert-content',
+              help='The string content of the REST SSL certificate [env {0}]'
+              .format(env.CLOUDIFY_REST_CERT_CONTENT),
+              envvar=env.CLOUDIFY_REST_CERT_CONTENT)
 @click.option('--name',
               help='The name of the daemon. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_NAME),
@@ -66,9 +103,7 @@ from cloudify_agent.shell.decorators import handle_failures
                    .format(env.CLOUDIFY_DAEMON_WORKDIR),
               envvar=env.CLOUDIFY_DAEMON_WORKDIR)
 @click.option('--broker-ip',
-              help='The broker ip to connect to. '
-                   'If not specified, the --manager_ip '
-                   'option will be used. [{0}]'
+              help='The broker host name or ip to connect to. [env {0}]'
                    .format(env.CLOUDIFY_BROKER_IP),
               envvar=env.CLOUDIFY_BROKER_IP)
 @click.option('--broker-port',
@@ -156,17 +191,20 @@ def create(**params):
     Creates and stores the daemon parameters.
 
     """
-
     attributes = dict(**params)
+    attributes.update(_parse_security_settings(attributes))
     custom_arg = attributes.pop('custom_options', ())
     attributes.update(_parse_custom_options(custom_arg))
-    click.echo('Creating...')
-    from cloudify_agent.shell.main import get_logger
 
+    click.echo('Creating...')
+
+    _create_rest_ssl_cert(attributes)
     if attributes['broker_get_settings_from_manager']:
         broker = api_utils.internal.get_broker_configuration(attributes)
         attributes.update(broker)
+    _create_broker_ssl_cert(attributes)
 
+    from cloudify_agent.shell.main import get_logger
     daemon = DaemonFactory().new(
         logger=get_logger(),
         **attributes
@@ -386,3 +424,51 @@ def _parse_custom_options(options):
         parsed[key] = value
 
     return parsed
+
+
+def _parse_security_settings(attributes):
+    updated_values = {}
+
+    attributes['security_enabled'] = api_utils.get_bool_or_default(
+        attributes.get('security_enabled'), defaults.SECURITY_ENABLED)
+
+    attributes['verify_rest_certificate'] = api_utils.get_bool_or_default(
+        attributes.get('verify_rest_certificate'),
+        defaults.VERIFY_REST_CERTIFICATE
+    )
+
+    raw_rest_cert_content = attributes.get('rest_cert_content') or ''
+    updated_values['rest_cert_content'] = \
+        raw_rest_cert_content.replace("\\n", "\n")
+
+    return updated_values
+
+
+def _create_rest_ssl_cert(agent):
+    """
+    put the REST SSL cert into a file for clients to use,
+    if rest_cert_content is set.
+    """
+    click.echo('Deploying REST SSL certificate (if defined).')
+    rest_cert_content = agent['rest_cert_content']
+    if rest_cert_content and agent['verify_rest_certificate']:
+        local_rest_cert_file = os.path.join(agent['workdir'], 'rest.crt')
+        agent['local_rest_cert_file'] = local_rest_cert_file
+        api_utils.safe_create_dir(os.path.dirname(local_rest_cert_file))
+        with open(local_rest_cert_file, 'w') as rest_cert_file:
+            rest_cert_file.write(rest_cert_content)
+
+
+def _create_broker_ssl_cert(agent):
+    """
+    Put the broker SSL cert into a file for AMQP clients to use,
+    if broker_ssl_cert is set.
+    """
+    click.echo('Deploying broker SSL certificate (if defined).')
+    broker_ssl_cert_content = agent['broker_ssl_cert']
+    if broker_ssl_cert_content:
+        broker_ssl_cert_path = os.path.join(agent['workdir'], 'broker.crt')
+        agent['broker_ssl_cert_path'] = broker_ssl_cert_path
+        api_utils.safe_create_dir(os.path.dirname(broker_ssl_cert_path))
+        with open(broker_ssl_cert_path, 'w') as broker_cert_file:
+            broker_cert_file.write(broker_ssl_cert_content)
