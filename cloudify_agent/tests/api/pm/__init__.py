@@ -55,6 +55,7 @@ BUILT_IN_TASKS = [
     'cloudify_agent.operations.install_plugins',
     'cloudify_agent.operations.restart',
     'cloudify_agent.operations.stop',
+    'cloudify_agent.operations.validate_agent_amqp',
     'cloudify_agent.installer.operations.create',
     'cloudify_agent.installer.operations.configure',
     'cloudify_agent.installer.operations.start',
