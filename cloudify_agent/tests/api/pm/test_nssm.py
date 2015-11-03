@@ -15,12 +15,12 @@
 
 import os
 import nose.tools
-from mock import patch
+from mock import patch, Mock
 
 from cloudify.exceptions import CommandExecutionException
 
+from cloudify_agent.tests import BaseTest
 from cloudify_agent.api.pm.nssm import NonSuckingServiceManagerDaemon
-
 from cloudify_agent.tests.api.pm import BaseDaemonProcessManagementTest
 from cloudify_agent.tests.api.pm import only_os
 from cloudify_agent.tests import get_storage_directory
@@ -55,3 +55,68 @@ class TestNonSuckingServiceManagerDaemon(BaseDaemonProcessManagementTest):
             CommandExecutionException,
             self.runner.run,
             'sc getdisplayname {0}'.format(daemon.name))
+
+
+class TestNonSuckingServiceManagerDaemonComponents(BaseTest):
+    default_daemon_args = {
+        'manager_ip': 'manager_ip',
+        'name': 'name',
+        'queue': 'queue',
+        'workdir': '/not/a/real/path'
+    }
+
+    @patch('cloudify_agent.api.pm.nssm.utils')
+    @patch('cloudify_agent.api.pm.base.os.makedirs')
+    def test_configure_creates_ssl_cert(self, mock_os, mock_utils):
+        daemon = NonSuckingServiceManagerDaemon(**self.default_daemon_args)
+
+        daemon._create_env_string = Mock()
+        daemon._runner = Mock()
+        daemon.register = Mock()
+        daemon._create_ssl_cert = Mock()
+        daemon._create_celery_conf = Mock()
+
+        daemon.configure()
+
+        daemon._create_ssl_cert.assert_called_once_with()
+
+    @patch('cloudify_agent.api.pm.nssm.utils')
+    @patch('cloudify_agent.api.pm.base.os.makedirs')
+    def test_configure_creates_celery_config(self, mock_os, mock_utils):
+        daemon = NonSuckingServiceManagerDaemon(**self.default_daemon_args)
+
+        daemon._create_env_string = Mock()
+        daemon._runner = Mock()
+        daemon.register = Mock()
+        daemon._create_ssl_cert = Mock()
+        daemon._create_celery_conf = Mock()
+
+        daemon.configure()
+
+        daemon._create_celery_conf.assert_called_once_with()
+
+    @patch('cloudify_agent.api.pm.nssm.utils.content_to_file')
+    @patch('cloudify_agent.api.pm.base.os.makedirs')
+    def test_rendered_template_refers_to_config(self, mock_os, mock_writer):
+        daemon = NonSuckingServiceManagerDaemon(**self.default_daemon_args)
+
+        daemon._create_env_string = Mock()
+        daemon._runner = Mock()
+        daemon.register = Mock()
+        daemon._create_ssl_cert = Mock()
+        daemon._create_celery_conf = Mock()
+
+        daemon.configure()
+
+        # We don't care about most of the args but there should only have been
+        # one call, with ssl configured
+        self.assertEqual(1, mock_writer.call_count)
+
+        # Get the rendered content
+        writer_args, _ = mock_writer.call_args
+        rendered_file = writer_args[0]
+
+        self.assertIn(
+            '--config=cloudify.broker_config',
+            rendered_file,
+        )

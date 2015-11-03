@@ -14,12 +14,13 @@
 #  * limitations under the License.
 
 import os
-import nose.tools
 import time
-from mock import patch
 
+from mock import patch, Mock
+import nose.tools
+
+from cloudify_agent.tests.api.pm import BaseTest
 from cloudify_agent.api.pm.initd import GenericLinuxDaemon
-
 from cloudify_agent.tests.api.pm import BaseDaemonProcessManagementTest
 from cloudify_agent.tests.api.pm import patch_unless_ci
 from cloudify_agent.tests.api.pm import only_ci
@@ -115,3 +116,71 @@ class TestGenericLinuxDaemon(BaseDaemonProcessManagementTest):
         # sleep the cron delay time and make sure the daemon is still dead
         time.sleep(daemon.cron_respawn_delay * 60 + 5)
         self.assert_daemon_dead(daemon.name)
+
+
+class TestGenericLinuxDaemonComponents(BaseTest):
+    default_daemon_args = {
+        'manager_ip': 'manager_ip',
+        'name': 'name',
+        'queue': 'queue',
+        'workdir': '/not/a/real/path'
+    }
+
+    @patch('cloudify_agent.api.pm.base.os.makedirs')
+    def test_configure_creates_ssl_cert(self, mock_os):
+        daemon = GenericLinuxDaemon(**self.default_daemon_args)
+
+        daemon._create_includes = Mock()
+        daemon._create_script = Mock()
+        daemon._create_config = Mock()
+        daemon._create_ssl_cert = Mock()
+        daemon._start_on_boot_handler = Mock()
+        daemon._create_celery_conf = Mock()
+
+        daemon.configure()
+
+        daemon._create_ssl_cert.assert_called_once_with()
+
+    @patch('cloudify_agent.api.pm.base.os.makedirs')
+    def test_configure_creates_celery_config(self, mock_os):
+        daemon = GenericLinuxDaemon(**self.default_daemon_args)
+
+        daemon._create_includes = Mock()
+        daemon._create_script = Mock()
+        daemon._create_config = Mock()
+        daemon._start_on_boot_handler = Mock()
+        daemon._create_ssl_cert = Mock()
+        daemon._create_celery_conf = Mock()
+
+        daemon.configure()
+
+        daemon._create_celery_conf.assert_called_once_with()
+
+    @patch('cloudify_agent.api.pm.initd.utils.content_to_file')
+    @patch('cloudify_agent.api.pm.base.os.makedirs')
+    def test_rendered_script_uses_celery_conf(self, mock_os, mock_writer):
+        daemon = GenericLinuxDaemon(**self.default_daemon_args)
+
+        daemon._create_includes = Mock()
+        daemon._create_script = Mock()
+        daemon._start_on_boot_handler = Mock()
+        daemon._runner = Mock()
+        daemon._create_ssl_cert = Mock()
+        daemon._create_celery_conf = Mock()
+        daemon.create_enable_cron_script = Mock()
+        daemon.create_disable_cron_script = Mock()
+
+        daemon.configure()
+
+        # We don't care about most of the args but there should only have been
+        # one call, with ssl configured
+        self.assertEqual(1, mock_writer.call_count)
+
+        # Get the rendered content
+        writer_args, _ = mock_writer.call_args
+        rendered_file = writer_args[0]
+
+        self.assertIn(
+            '--config=cloudify.broker_config',
+            rendered_file,
+        )

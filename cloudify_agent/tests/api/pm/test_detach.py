@@ -15,11 +15,12 @@
 
 import time
 import os
+
 import nose.tools
-from mock import patch
+from mock import patch, Mock
 
 from cloudify_agent.api.pm.detach import DetachedDaemon
-
+from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests.api.pm import BaseDaemonProcessManagementTest
 from cloudify_agent.tests.api.pm import only_os
 from cloudify_agent.tests import get_storage_directory
@@ -81,3 +82,114 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest):
         # sleep the cron delay time and make sure the daemon is still dead
         time.sleep(daemon.cron_respawn_delay * 60 + 5)
         self.assert_daemon_dead(daemon.name)
+
+
+class TestDetachedDaemonComponents(BaseTest):
+    default_daemon_args = {
+        'manager_ip': 'manager_ip',
+        'name': 'name',
+        'queue': 'queue',
+        'workdir': '/not/a/real/path'
+    }
+
+    @patch('cloudify_agent.api.pm.base.os.makedirs')
+    @patch('cloudify_agent.api.pm.detach.utils')
+    def test_create_config_called_with_workdir(self, mock_utils, mock_os):
+        # Created as part of CFY-3224 as workdir was not supplied and a
+        # regression would break broker SSL for the detached daemon
+        daemon = DetachedDaemon(**self.default_daemon_args)
+
+        daemon._create_config()
+
+        # We don't care about most of the args but there should only have been
+        # one call, with the workdir supplied
+        self.assertEqual(mock_utils.render_template_to_file.call_count, 1)
+
+        _, render_kwargs = mock_utils.render_template_to_file.call_args
+
+        self.assertEqual(
+            render_kwargs['workdir'],
+            '/not/a/real/path',
+        )
+
+    @patch('cloudify_agent.api.pm.base.os.makedirs')
+    def test_configure_creates_ssl_cert(self, mock_os):
+        daemon = DetachedDaemon(**self.default_daemon_args)
+
+        daemon._create_includes = Mock()
+        daemon._create_script = Mock()
+        daemon._create_config = Mock()
+        daemon._create_ssl_cert = Mock()
+        daemon._create_celery_conf = Mock()
+
+        daemon.configure()
+
+        daemon._create_ssl_cert.assert_called_once_with()
+
+    @patch('cloudify_agent.api.pm.base.os.makedirs')
+    def test_configure_creates_celery_config(self, mock_os):
+        daemon = DetachedDaemon(**self.default_daemon_args)
+
+        daemon._create_includes = Mock()
+        daemon._create_script = Mock()
+        daemon._create_config = Mock()
+        daemon._create_ssl_cert = Mock()
+        daemon._create_celery_conf = Mock()
+
+        daemon.configure()
+
+        daemon._create_celery_conf.assert_called_once_with()
+
+    @patch('cloudify_agent.api.pm.detach.utils.content_to_file')
+    @patch('cloudify_agent.api.pm.base.os.makedirs')
+    def test_rendered_script_uses_celery_conf(self, mock_os, mock_writer):
+        daemon = DetachedDaemon(**self.default_daemon_args)
+
+        daemon._create_includes = Mock()
+        daemon._create_config = Mock()
+        daemon._runner = Mock()
+        daemon._create_ssl_cert = Mock()
+        daemon._create_celery_conf = Mock()
+
+        daemon.configure()
+
+        # We don't care about most of the args but there should only have been
+        # one call, with ssl configured
+        self.assertEqual(1, mock_writer.call_count)
+
+        # Get the rendered content
+        writer_args, _ = mock_writer.call_args
+        rendered_file = writer_args[0]
+
+        self.assertIn(
+            '--config=cloudify.broker_config',
+            rendered_file,
+        )
+
+    @patch('cloudify_agent.api.pm.detach.utils.content_to_file')
+    @patch('cloudify_agent.api.pm.base.os.makedirs')
+    def test_rendered_script_allows_root(self, mock_os, mock_writer):
+        # When testing CFY-3224, detach was failing if the user using detach
+        # was root. This checks that it won't do so again.
+        daemon = DetachedDaemon(**self.default_daemon_args)
+
+        daemon._create_includes = Mock()
+        daemon._create_script = Mock()
+        daemon._runner = Mock()
+        daemon._create_ssl_cert = Mock()
+        daemon._create_celery_conf = Mock()
+
+        daemon.configure()
+
+        # We don't care about most of the args but there should only have been
+        # one call, with ssl configured
+        self.assertEqual(1, mock_writer.call_count)
+
+        # Get the rendered content
+        writer_args, _ = mock_writer.call_args
+        rendered_file = writer_args[0]
+
+        self.assertIn(
+            'export C_FORCE_ROOT=true',
+            rendered_file,
+        )

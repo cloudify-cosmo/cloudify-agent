@@ -72,7 +72,9 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
         self._run('cfy-agent daemons create --name=name '
                   '--queue=queue --manager-ip=127.0.0.1 --user=user '
                   '--process-management=init.d '
-                  '--key=value --complex-key=complex-value')
+                  '--key=value --complex-key=complex-value '
+                  '--broker_user=testuser '
+                  '--broker_pass=testpass')
 
         factory_new = factory_methods[4]
         factory_new.assert_called_once_with(
@@ -97,11 +99,112 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             logger=get_logger(),
             key='value',
             complex_key='complex-value',
-            broker_user='guest',
-            broker_pass='guest',
+            broker_user='testuser',
+            broker_pass='testpass',
             broker_ssl_cert=None,
             broker_ssl_enabled=False,
             broker_get_settings_from_manager=False,
+        )
+
+    @patch('cloudify_agent.shell.commands.daemons.api_utils')
+    def test_create_with_settings_from_manager(self,
+                                               mock_api_utils,
+                                               *factory_methods):
+        mock_api_utils.configure_mock(**{
+            'internal.get_broker_configuration.return_value': {
+                'broker_ip': '127.0.0.1',
+                'broker_user': 'manageruser',
+                'broker_pass': 'managerpass',
+                'broker_ssl_cert': '/not/a/real/cert.pem',
+                'broker_ssl_enabled': True,
+            }
+        })
+
+        self._run('cfy-agent daemons create --name=name '
+                  '--queue=queue --manager-ip=127.0.0.1 --user=user '
+                  '--process-management=init.d '
+                  '--key=value --complex-key=complex-value '
+                  '--broker-get-settings-from-manager')
+
+        factory_new = factory_methods[4]
+        factory_new.assert_called_once_with(
+            name='name',
+            queue='queue',
+            user='user',
+            manager_ip='127.0.0.1',
+            process_management='init.d',
+            broker_ip='127.0.0.1',
+            workdir=None,
+            max_workers=None,
+            min_workers=None,
+            broker_port=None,
+            includes=None,
+            host=None,
+            deployment_id=None,
+            log_level=None,
+            pid_file=None,
+            log_file=None,
+            manager_port=None,
+            extra_env_path=None,
+            logger=get_logger(),
+            key='value',
+            complex_key='complex-value',
+            broker_user='manageruser',
+            broker_pass='managerpass',
+            broker_ssl_cert='/not/a/real/cert.pem',
+            broker_ssl_enabled=True,
+            broker_get_settings_from_manager=True,
+        )
+
+    @patch('cloudify_agent.shell.commands.daemons.api_utils')
+    def test_settings_from_manager_win_conflicts(self,
+                                                 mock_api_utils,
+                                                 *factory_methods):
+        mock_api_utils.configure_mock(**{
+            'internal.get_broker_configuration.return_value': {
+                'broker_ip': '127.0.0.1',
+                'broker_user': 'manageruser',
+                'broker_pass': 'managerpass',
+                'broker_ssl_cert': '/not/a/real/cert.pem',
+                'broker_ssl_enabled': True,
+            }
+        })
+
+        self._run('cfy-agent daemons create --name=name '
+                  '--queue=queue --manager-ip=127.0.0.1 --user=user '
+                  '--process-management=init.d '
+                  '--broker-user=thisshouldnotbeused '
+                  '--key=value --complex-key=complex-value '
+                  '--broker-get-settings-from-manager')
+
+        factory_new = factory_methods[4]
+        factory_new.assert_called_once_with(
+            name='name',
+            queue='queue',
+            user='user',
+            manager_ip='127.0.0.1',
+            process_management='init.d',
+            broker_ip='127.0.0.1',
+            workdir=None,
+            max_workers=None,
+            min_workers=None,
+            broker_port=None,
+            includes=None,
+            host=None,
+            deployment_id=None,
+            log_level=None,
+            pid_file=None,
+            log_file=None,
+            manager_port=None,
+            extra_env_path=None,
+            logger=get_logger(),
+            key='value',
+            complex_key='complex-value',
+            broker_user='manageruser',
+            broker_pass='managerpass',
+            broker_ssl_cert='/not/a/real/cert.pem',
+            broker_ssl_enabled=True,
+            broker_get_settings_from_manager=True,
         )
 
     def test_configure(self, *factory_methods):
