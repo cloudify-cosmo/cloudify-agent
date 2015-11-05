@@ -131,6 +131,10 @@ def connection_attributes(cloudify_agent):
 
 @group('cfy-agent')
 def cfy_agent_attributes(cloudify_agent):
+    _cfy_agent_attributes_no_defaults(cloudify_agent)
+
+
+def _cfy_agent_attributes_no_defaults(cloudify_agent):
 
     if not cloudify_agent.get('process_management'):
         cloudify_agent['process_management'] = {}
@@ -162,6 +166,51 @@ def cfy_agent_attributes(cloudify_agent):
         cloudify_agent['manager_ip'] = get_manager_ip()
 
 
+def directory_attributes(cloudify_agent):
+    if not cloudify_agent.get('agent_dir'):
+        name = cloudify_agent['name']
+        basedir = cloudify_agent['basedir']
+        if cloudify_agent['windows']:
+            agent_dir = '{0}\\{1}'.format(basedir, name)
+        else:
+            agent_dir = os.path.join(basedir, name)
+        cloudify_agent['agent_dir'] = agent_dir
+
+    if not cloudify_agent.get('workdir'):
+        agent_dir = cloudify_agent['agent_dir']
+        if cloudify_agent['windows']:
+            workdir = '{0}\\{1}'.format(agent_dir, 'work')
+        else:
+            workdir = os.path.join(agent_dir, 'work')
+        cloudify_agent['workdir'] = workdir
+
+    if not cloudify_agent.get('envdir'):
+        agent_dir = cloudify_agent['agent_dir']
+        if cloudify_agent['windows']:
+            envdir = '{0}\\{1}'.format(agent_dir, 'env')
+        else:
+            envdir = os.path.join(agent_dir, 'env')
+        cloudify_agent['envdir'] = envdir
+
+
+@group('installation')
+def _add_installation_defaults(cloudify_agent):
+    pass
+
+
+@group('cfy-agent')
+def _add_cfy_agent_defaults(cloudify_agent):
+    pass
+
+
+def reinstallation_attributes(cloudify_agent):
+    _cfy_agent_attributes_no_defaults(cloudify_agent)
+    _add_cfy_agent_defaults(cloudify_agent)
+    if cloudify_agent.get('basedir'):
+        directory_attributes(cloudify_agent)
+    _add_installation_defaults(cloudify_agent)
+
+
 @group('installation')
 def installation_attributes(cloudify_agent, runner):
 
@@ -176,7 +225,6 @@ def installation_attributes(cloudify_agent, runner):
                 .format(get_manager_file_server_url())
         else:
             if not cloudify_agent.get('distro'):
-                # build one from distro and distro_codename
                 if cloudify_agent['local']:
                     cloudify_agent['distro'] = platform.dist()[0].lower()
                 elif cloudify_agent['remote_execution']:
@@ -210,34 +258,11 @@ def installation_attributes(cloudify_agent, runner):
                 # 'pwd' module does not exists in a windows python
                 # installation.
                 # TODO - maybe use some environment variables heuristics?
-                basedir = 'C:\\Users\\{0}'.format(cloudify_agent['user'])
+                basedir = utils.get_windows_home_dir(cloudify_agent['user'])
             elif cloudify_agent['remote_execution']:
                 basedir = runner.home_dir(cloudify_agent['user'])
             else:
                 basedir = '~{0}'.format(cloudify_agent['user'])
         cloudify_agent['basedir'] = basedir
 
-    if not cloudify_agent.get('agent_dir'):
-        name = cloudify_agent['name']
-        basedir = cloudify_agent['basedir']
-        if cloudify_agent['windows']:
-            agent_dir = '{0}\\{1}'.format(basedir, name)
-        else:
-            agent_dir = os.path.join(basedir, name)
-        cloudify_agent['agent_dir'] = agent_dir
-
-    if not cloudify_agent.get('workdir'):
-        agent_dir = cloudify_agent['agent_dir']
-        if cloudify_agent['windows']:
-            workdir = '{0}\\{1}'.format(agent_dir, 'work')
-        else:
-            workdir = os.path.join(agent_dir, 'work')
-        cloudify_agent['workdir'] = workdir
-
-    if not cloudify_agent.get('envdir'):
-        agent_dir = cloudify_agent['agent_dir']
-        if cloudify_agent['windows']:
-            envdir = '{0}\\{1}'.format(agent_dir, 'env')
-        else:
-            envdir = os.path.join(agent_dir, 'env')
-        cloudify_agent['envdir'] = envdir
+    directory_attributes(cloudify_agent)

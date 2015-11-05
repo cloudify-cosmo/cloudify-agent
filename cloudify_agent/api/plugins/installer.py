@@ -75,8 +75,8 @@ class PluginInstaller(object):
 
     def _wagon_install(self, plugin_id, args):
         client = get_rest_client()
-        fd, wagon_path = tempfile.mkstemp()
-        os.close(fd)
+        wagon_dir = tempfile.mkdtemp(prefix='{0}-'.format(plugin_id))
+        wagon_path = os.path.join(wagon_dir, 'wagon.tar.gz')
         try:
             self.logger.debug('Downloading plugin {0} from manager into {1}'
                               .format(plugin_id, wagon_path))
@@ -87,7 +87,9 @@ class PluginInstaller(object):
             w = wagon.Wagon(source=wagon_path)
             w.install(ignore_platform=True, install_args=args)
         finally:
-            os.remove(wagon_path)
+            self.logger.debug('Removing directory: {0}'
+                              .format(wagon_dir))
+            shutil.rmtree(wagon_dir, ignore_errors=True)
 
     def _pip_install(self, source, args):
         plugin_dir = None
@@ -109,7 +111,7 @@ class PluginInstaller(object):
             if plugin_dir and not os.path.isabs(source):
                 self.logger.debug('Removing directory: {0}'
                                   .format(plugin_dir))
-                shutil.rmtree(plugin_dir)
+                shutil.rmtree(plugin_dir, ignore_errors=True)
         return package_name
 
     def uninstall(self, package_name, ignore_missing=True):
@@ -299,6 +301,7 @@ def get_plugin_id(plugin):
     if os.name != 'nt':
         a_dist, _, a_dist_release = platform.linux_distribution(
             full_distribution_name=False)
+        a_dist, a_dist_release = a_dist.lower(), a_dist_release.lower()
         if not distribution:
             plugins = [p for p in plugins
                        if p.supported_platform == 'any' or

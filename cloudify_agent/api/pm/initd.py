@@ -55,7 +55,10 @@ class GenericLinuxDaemon(CronRespawnDaemon):
             self.workdir, '{0}-includes'.format(self.name))
 
         # initd specific configuration
-        self.start_on_boot = params.get('start_on_boot', False)
+        self.start_on_boot = str(params.get(
+            'start_on_boot', 'true')).lower() == 'true'
+        self._start_on_boot_handler = _StartOnBootHandler(self.service_name,
+                                                          self._runner)
 
     def configure(self):
 
@@ -77,16 +80,20 @@ class GenericLinuxDaemon(CronRespawnDaemon):
 
         if self.start_on_boot:
             self._logger.info('Creating start-on-boot entry')
-            self._create_start_on_boot_entry()
+            self._start_on_boot_handler.create()
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
 
-        self._logger.debug('Retrieving daemon stats')
+        self._logger.debug('Retrieving daemon registered tasks')
         registered = utils.get_agent_registered(self.name, self._celery)
         if registered:
             if not force:
                 raise exceptions.DaemonStillRunningException(self.name)
             self.stop()
+
+        if self.start_on_boot:
+            self._logger.info('Deleting start-on-boot entry')
+            self._start_on_boot_handler.delete()
 
         if os.path.exists(self.script_path):
             self._logger.debug('Deleting {0}'.format(self.script_path))
@@ -97,6 +104,11 @@ class GenericLinuxDaemon(CronRespawnDaemon):
         if os.path.exists(self.includes_path):
             self._logger.debug('Deleting {0}'.format(self.includes_path))
             self._runner.run('sudo rm {0}'.format(self.includes_path))
+
+    def before_self_stop(self):
+        if self.start_on_boot:
+            self._logger.info('Deleting start-on-boot entry')
+            self._start_on_boot_handler.delete()
 
     def apply_includes(self):
         with open(self.includes_path, 'w') as f:
@@ -172,32 +184,6 @@ class GenericLinuxDaemon(CronRespawnDaemon):
         self._runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))
         self._runner.run('sudo rm {0}'.format(rendered))
 
-    def _create_start_on_boot_entry(self):
-
-        def _handle_debian():
-            self._runner.run('sudo update-rc.d {0} defaults'.format(
-                self.service_name))
-
-        def _handle_rpm():
-            self._runner.run('sudo /sbin/chkconfig --add {0}'.format(
-                self.service_name))
-            self._runner.run('sudo /sbin/chkconfig {0} on'.format(
-                self.service_name))
-
-        if self._runner.run('which dpkg',
-                            exit_on_failure=False).return_code == 0:
-            _handle_debian()
-            return
-        if self._runner.run('which rpm').return_code == 0:
-            _handle_rpm()
-            return
-
-        raise exceptions.DaemonConfigurationError(
-            "Cannot create a start-on-boot entry. Unknown "
-            "distribution base. Supported distributions bases are "
-            "debian and RPM"
-        )
-
 
 def start_command(daemon):
     return 'sudo service {0} start'.format(daemon.service_name)
@@ -209,3 +195,47 @@ def stop_command(daemon):
 
 def status_command(daemon):
     return 'sudo service {0} status'.format(daemon.service_name)
+
+
+class _StartOnBootHandler(object):
+
+    def __init__(self, service_name, runner):
+        self._name = service_name
+        self._runner = runner
+        self._distro = None
+
+    def create(self):
+        if self.distro == 'debian':
+            commands = ['sudo update-rc.d {0} defaults'.format(self._name)]
+        elif self.distro == 'rpm':
+            commands = ['sudo /sbin/chkconfig --add {0}'.format(self._name),
+                        'sudo /sbin/chkconfig {0} on'.format(self._name)]
+        else:
+            raise RuntimeError('Illegal state')
+        for command in commands:
+            self._runner.run(command)
+
+    def delete(self):
+        if self.distro == 'debian':
+            command = 'sudo update-rc.d -f {0} remove'.format(self._name)
+        elif self.distro == 'rpm':
+            command = 'sudo /sbin/chkconfig {0} off'.format(self._name)
+        else:
+            raise RuntimeError('Illegal state')
+        self._runner.run(command)
+
+    @property
+    def distro(self):
+        if not self._distro:
+            if self._runner.run('which dpkg',
+                                exit_on_failure=False).return_code == 0:
+                self._distro = 'debian'
+            elif self._runner.run('which rpm',
+                                  exit_on_failure=False).return_code == 0:
+                self._distro = 'rpm'
+            else:
+                raise exceptions.DaemonConfigurationError(
+                    "Cannot create a start-on-boot entry. Unknown "
+                    "distribution base. Supported distributions bases are "
+                    "debian and RPM")
+        return self._distro

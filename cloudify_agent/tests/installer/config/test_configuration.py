@@ -61,6 +61,7 @@ class TestConfiguration(BaseTest):
             'basedir': basedir,
             'name': 'test_deployment',
             'manager_ip': 'localhost',
+            'manager_port': 8101,
             'queue': 'test_deployment',
             'envdir': envdir,
             'user': user,

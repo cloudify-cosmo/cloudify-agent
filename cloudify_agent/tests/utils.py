@@ -14,16 +14,23 @@
 #  * limitations under the License.
 
 import logging
+import platform
 import time
 import socket
 import subprocess
 import os
 import filecmp
 import tarfile
+
 from contextlib import contextmanager
 
+from agent_packager import packager
+
+from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import LocalCommandRunner
 from cloudify.utils import setup_logger
+
+import cloudify_agent
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.tests import resources
@@ -66,6 +73,64 @@ def create_plugin_tar(plugin_dir_name, target_directory):
     plugin_tar_file.add(plugin_source_path, plugin_dir_name)
     plugin_tar_file.close()
     return plugin_tar_file_name
+
+
+def get_source_uri():
+    return os.path.dirname(os.path.dirname(cloudify_agent.__file__))
+
+
+def get_requirements_uri():
+    return os.path.join(get_source_uri(), 'dev-requirements.txt')
+
+
+# This should be integrated into packager
+# For now, this is the best place
+def create_windows_installer(config, logger):
+    runner = LocalCommandRunner()
+    wheelhouse = resources.get_resource('winpackage/source/wheels')
+
+    pip_cmd = 'pip wheel --wheel-dir {wheel_dir} --requirement {req_file}'.\
+        format(wheel_dir=wheelhouse, req_file=config['requirements_file'])
+
+    logger.info('Building wheels into: {0}'.format(wheelhouse))
+    runner.run(pip_cmd)
+
+    pip_cmd = 'pip wheel --find-links {wheel_dir} --wheel-dir {wheel_dir} ' \
+              '{repo_url}'.format(wheel_dir=wheelhouse,
+                                  repo_url=config['cloudify_agent_module'])
+    runner.run(pip_cmd)
+
+    iscc_cmd = 'C:\\Program Files (x86)\\Inno Setup 5\\iscc.exe {0}'\
+        .format(resources.get_resource(
+            os.path.join('winpackage', 'create.iss')))
+    os.environ['VERSION'] = '0'
+    os.environ['iscc_output'] = os.getcwd()
+    runner.run(iscc_cmd)
+
+
+def create_agent_package(directory, config, package_logger=None):
+    if package_logger is None:
+        package_logger = logger
+    package_logger.info('Changing directory into {0}'.format(directory))
+    original = os.getcwd()
+    try:
+        package_logger.info('Creating Agent Package')
+        os.chdir(directory)
+        if platform.system() == 'Linux':
+            packager.create(config=config,
+                            config_file=None,
+                            force=False,
+                            verbose=False)
+            distname, _, distid = platform.dist()
+            return '{0}-{1}-agent.tar.gz'.format(distname, distid)
+        elif platform.system() == 'Windows':
+            create_windows_installer(config, logger)
+            return 'cloudify_agent_0.exe'
+        else:
+            raise NonRecoverableError('Platform not supported: {0}'
+                                      .format(platform.system()))
+    finally:
+        os.chdir(original)
 
 
 def are_dir_trees_equal(dir1, dir2):

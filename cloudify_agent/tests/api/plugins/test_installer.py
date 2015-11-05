@@ -308,6 +308,7 @@ class TestGetPluginID(BaseTest):
             self.skipTest('Linux only test')
         dist, _, dist_release = platform.linux_distribution(
             full_distribution_name=False)
+        dist, dist_release = dist.lower(), dist_release.lower()
         plugins = [
             {'id': '1'},
             {'id': '2'},
