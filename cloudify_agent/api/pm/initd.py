@@ -46,6 +46,8 @@ class GenericLinuxDaemon(CronRespawnDaemon):
     def __init__(self, logger=None, **params):
         super(GenericLinuxDaemon, self).__init__(logger=logger, **params)
 
+        self.pid_file = os.path.join(self.workdir,
+                                     '{0}.pid'.format(self.name))
         self.service_name = 'celeryd-{0}'.format(self.name)
         self.script_path = os.path.join(self.SCRIPT_DIR, self.service_name)
         self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
