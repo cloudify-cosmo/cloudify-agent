@@ -60,3 +60,49 @@ class BaseTest(unittest.TestCase):
 
         self.username = getpass.getuser()
         self.logger.info('Working directory: {0}'.format(self.temp_folder))
+
+
+class _AgentPackageGenerator(object):
+
+    def __init__(self):
+        self.initialized = False
+
+    def _initialize(self):
+        from cloudify_agent.tests import utils
+        self._resources_dir = tempfile.mkdtemp(
+            prefix='file-server-resource-base')
+        self._fs = utils.FileServer(
+            root_path=self._resources_dir, port=8888)
+        self._fs.start()
+        config = {
+            'cloudify_agent_module': utils.get_source_uri(),
+            'requirements_file': utils.get_requirements_uri()
+        }
+        package_name = utils.create_agent_package(self._resources_dir, config)
+        self._package_url = 'http://localhost:{0}/{1}'.format(
+            self._fs.port, package_name)
+        self._package_path = os.path.join(self._resources_dir, package_name)
+        self.initialized = True
+
+    def get_package_url(self):
+        if not self.initialized:
+            self._initialize()
+        return self._package_url
+
+    def get_package_path(self):
+        if not self.initialized:
+            self._initialize()
+        return self._package_path
+
+    def cleanup(self):
+        if self.initialized:
+            self._fs.stop()
+            shutil.rmtree(self._resources_dir)
+            self.initialized = False
+
+
+agent_package = _AgentPackageGenerator()
+
+
+def tearDown():
+    agent_package.cleanup()
