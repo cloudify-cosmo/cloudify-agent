@@ -99,8 +99,8 @@ class DetachedDaemon(CronRespawnDaemon):
                 self._logger.debug('Removing {0}'.format(self.pid_file))
                 os.remove(self.pid_file)
         except AttributeError:
-            # pid_file not defined. We're on a runtime environment where we don't use a pid_file
-            # at all.
+            # pid_file not defined. We're on a runtime environment where we
+            # don't use a pid_file at all.
             pass
 
         if os.path.exists(self.includes_path):
