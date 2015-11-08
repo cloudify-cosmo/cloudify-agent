@@ -12,10 +12,11 @@ function install_deps() {
 		sudo apt-get install -y curl python-dev git make gcc libyaml-dev zlib1g-dev
 	elif which yum; then
 		# centos/REHL
-		sudo yum -y update
-		sudo yum install curl python-devel make gcc git libyaml-devel -y
+		sudo yum -y update &&
+		sudo yum install curl python-devel make gcc git libyaml-devel -y &&
 		# this is required to build pyzmq under centos/RHEL
-		sudo yum install -y zeromq-devel -c http://download.opensuse.org/repositories/home:/fengshuo:/zeromq/CentOS_CentOS-6/home:fengshuo:zeromq.repo
+		sudo yum-config-manager --add-repo http://download.opensuse.org/repositories/home:/fengshuo:/zeromq/CentOS_CentOS-6/home:fengshuo:zeromq.repo &&
+		sudo yum install -y zeromq-devel
 	else
 		echo 'unsupported package manager, exiting'
 		exit 1
