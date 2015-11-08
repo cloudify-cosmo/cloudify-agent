@@ -15,7 +15,6 @@
 
 from cloudify import ctx
 
-from cloudify_agent.api import defaults
 from cloudify_agent.installer import exceptions
 
 #######################################################################
@@ -66,8 +65,25 @@ AGENT_ATTRIBUTES = {
         'group': 'cfy-agent'
     },
     'manager_port': {
-        'group': 'cfy-agent',
-        'default': defaults.MANAGER_PORT
+        'group': 'cfy-agent'
+    },
+    'manager_protocol': {
+        'group': 'cfy-agent'
+    },
+    'security_enabled': {
+        'group': 'cfy-agent'
+    },
+    'manager_username': {
+        'group': 'cfy-agent'
+    },
+    'manager_password': {
+        'group': 'cfy-agent'
+    },
+    'verify_manager_certificate': {
+        'group': 'cfy-agent'
+    },
+    'local_manager_cert_path': {
+        'group': 'cfy-agent'
     },
     'queue': {
         'group': 'cfy-agent'
