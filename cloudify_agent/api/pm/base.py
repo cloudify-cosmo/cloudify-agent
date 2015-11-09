@@ -144,6 +144,10 @@ class Daemon(object):
 
         location of the daemon log file. defaults to <workdir>/<name>.log
 
+    ``pid_file``:
+
+        location of the daemon pid file. defaults to <workdir>/<name>.pid
+
     ``includes``:
 
         a comma separated list of modules to include with this agent.
@@ -249,6 +253,9 @@ class Daemon(object):
         self.log_file = params.get(
             'log_file') or os.path.join(self.workdir,
                                         '{0}.log'.format(self.name))
+        self.pid_file = params.get(
+            'pid_file') or os.path.join(self.workdir,
+                                        '{0}.pid'.format(self.name))
 
         # accept the 'includes' parameter as a string as well
         # as a list. the string acceptance is important because this
