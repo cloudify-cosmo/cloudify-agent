@@ -173,8 +173,15 @@ class _Internal(object):
         broker_user, broker_pass = cfy_utils_internal.get_broker_credentials(
             bootstrap_agent
         )
+
+        # Get the broker IP from the bootstrap agent, or use the CLI supplied
+        # broker IP or manager IP if it is empty
+        broker_ip = bootstrap_agent.broker_ip
+        if broker_ip == '':
+            broker_ip = agent.get('broker_ip', agent['manager_ip'])
+
         attributes = {}
-        attributes['broker_ip'] = agent.get('broker_ip', agent['manager_ip'])
+        attributes['broker_ip'] = broker_ip
         attributes['broker_user'] = broker_user
         attributes['broker_pass'] = broker_pass
         attributes['broker_ssl_enabled'] = bootstrap_agent.broker_ssl_enabled
