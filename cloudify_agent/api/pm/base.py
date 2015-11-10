@@ -31,7 +31,6 @@ from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import defaults
-from cloudify_agent import operations
 
 
 class Daemon(object):
@@ -145,15 +144,6 @@ class Daemon(object):
 
         location of the daemon pid file. defaults to <workdir>/<name>.pid
 
-    ``includes``:
-
-        a comma separated list of modules to include with this agent.
-        if none if specified, only the built-in modules will be included.
-
-        see `cloudify_agent.operations.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES`
-
-        This option may also be passed as a regular JSON list.
-
     """
 
     # override this when adding implementations.
@@ -253,29 +243,6 @@ class Daemon(object):
         self.pid_file = params.get(
             'pid_file') or os.path.join(self.workdir,
                                         '{0}.pid'.format(self.name))
-
-        # accept the 'includes' parameter as a string as well
-        # as a list. the string acceptance is important because this
-        # class is instantiated by a CLI as well as API, and its not very
-        # convenient to pass proper lists on CLI.
-        includes = params.get('includes')
-        if includes:
-            if isinstance(includes, str):
-                self.includes = includes.split(',')
-            elif isinstance(includes, list):
-                self.includes = includes
-            else:
-                raise ValueError("Unexpected type for 'includes' parameter: "
-                                 "{0}. supported type are 'str' and 'list'"
-                                 .format(type(includes)))
-        else:
-            self.includes = []
-
-        # add built-in operations. check they don't already exist to avoid
-        # duplicates, which may happen when cloning daemons.
-        for module in operations.CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES:
-            if module not in self.includes:
-                self.includes.append(module)
 
         # create working directory if its missing
         if not os.path.exists(self.workdir):
@@ -399,14 +366,6 @@ class Daemon(object):
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
-    def apply_includes(self):
-
-        """
-        Apply the includes list of the agent. This method must modify the
-        includes configuration used when starting the agent.
-        """
-        raise NotImplementedError('Must be implemented by a subclass')
-
     def start_command(self):
 
         """
@@ -443,57 +402,6 @@ class Daemon(object):
     # the following methods is the common logic that would apply to any
     # process management implementation.
     ########################################################################
-
-    def register(self, plugin):
-
-        """
-        Register an additional plugin. This method will enable the addition
-        of operations defined in the plugin.
-
-        #####################################################################
-        # Note this method changes the
-        # internal 'includes' list, that means you must persist the daemon
-        # after running this method (by calling DaemonFactory.save) in order
-        # to be able to properly load this daemon at future times.
-        #####################################################################
-
-        :param plugin: the plugin name to register.
-        """
-
-        self._logger.debug('Listing modules of plugin: {0}'.format(plugin))
-        modules = self._list_plugin_files(plugin)
-
-        self.includes.extend(modules)
-
-        # process management specific implementation
-        self._logger.debug('Setting includes: {0}'.format(self.includes))
-        self.apply_includes()
-
-    def unregister(self, plugin):
-
-        """
-        Un-registers a plugin from the daemon. After applying this method,
-        the daemon will no longer recognize operations defined in that plugin.
-
-        #####################################################################
-        # Note this method changes the
-        # internal 'includes' list, that means you must persist the daemon
-        # after running this method (by calling DaemonFactory.save) in order
-        # to be able to properly load this daemon at future times.
-        #####################################################################
-
-        :param plugin: the plugin name to register.
-
-        """
-        self._logger.debug('Listing modules of plugin: {0}'.format(plugin))
-        modules = self._list_plugin_files(plugin)
-
-        for module in modules:
-            self.includes.remove(module)
-
-        # process management specific implementation
-        self._logger.debug('Applying includes: {0}'.format(self.includes))
-        self.apply_includes()
 
     def create(self):
 

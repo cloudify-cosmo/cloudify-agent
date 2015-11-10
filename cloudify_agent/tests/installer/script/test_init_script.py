@@ -23,6 +23,7 @@ from cloudify import exceptions
 from cloudify_agent.installer import script
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests import utils
+from cloudify_agent.tests.api.pm import only_os
 
 
 class BaseInitScriptTest(BaseTest):
@@ -76,11 +77,10 @@ class BaseInitScriptTest(BaseTest):
         return response.std_out
 
 
+@only_os('posix')
 class TestLinuxInitScript(BaseInitScriptTest):
 
     def setUp(self):
-        if os.name == 'nt':
-            self.skipTest('Linux only tests')
         self.windows = False
         super(TestLinuxInitScript, self).setUp()
 
@@ -129,11 +129,10 @@ class TestLinuxInitScript(BaseInitScriptTest):
         self.assertFalse(os.path.isfile('custom_agent_env.sh'))
 
 
+@only_os('nt')
 class TestWindowsInitScript(BaseInitScriptTest):
 
     def setUp(self):
-        if os.name != 'nt':
-            self.skipTest('Windows only tests')
         self.windows = True
         super(TestWindowsInitScript, self).setUp()
 

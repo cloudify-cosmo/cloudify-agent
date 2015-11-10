@@ -14,15 +14,36 @@
 #  * limitations under the License.
 
 import os
+import sys
 
+from cloudify import ctx
+from cloudify.utils import LocalCommandRunner
 from cloudify.decorators import operation
 
 
 @operation
 def run(**_):
-    pass
+    return 'run'
 
 
 @operation
 def get_env_variable(env_variable, **_):
     return os.environ[env_variable]
+
+
+@operation
+def do_logging(message, **_):
+    ctx.logger.info(message)
+
+
+@operation
+def call_entry_point(**_):
+    runner = LocalCommandRunner()
+    return runner.run('mock-plugin-entry-point').std_out
+
+
+def main():
+    sys.stdout.write('mock-plugin-entry-point')
+
+if __name__ == '__main__':
+    main()

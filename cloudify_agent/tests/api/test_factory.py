@@ -46,14 +46,6 @@ class TestDaemonFactory(BaseShellTest):
                          daemon.broker_url)
         self.assertEqual('user', daemon.user)
 
-    def test_new_wrong_includes_attribute(self):
-        self.assertRaises(ValueError, self.factory.new,
-                          process_management='init.d',
-                          queue='{0}-queue'.format(self.daemon_name),
-                          name=self.daemon_name,
-                          manager_ip='127.0.0.1',
-                          includes=set(['plugin']))
-
     def test_new_no_implementation(self):
         self.assertRaises(exceptions.DaemonNotImplementedError,
                           self.factory.new,

@@ -20,7 +20,6 @@ from cloudify.exceptions import CommandExecutionException
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
 from cloudify_agent.api import utils
-from cloudify_agent.included_plugins import included_plugins
 from cloudify_agent.api import exceptions
 from cloudify_agent.api.pm.base import CronRespawnDaemon
 
@@ -47,8 +46,6 @@ class DetachedDaemon(CronRespawnDaemon):
         self.script_path = os.path.join(self.workdir, self.name)
         self.config_path = os.path.join(self.workdir, '{0}.conf'.
                                         format(self.name))
-        self.includes_path = os.path.join(
-            self.workdir, '{0}-includes'.format(self.name))
 
     def start(self, interval=defaults.START_INTERVAL,
               timeout=defaults.START_TIMEOUT,
@@ -69,9 +66,6 @@ class DetachedDaemon(CronRespawnDaemon):
 
     def configure(self):
 
-        self._logger.debug('Creating includes file: {0}'
-                           .format(self.includes_path))
-        self._create_includes()
         self._logger.debug('Creating daemon script: {0}'
                            .format(self.script_path))
         self._create_script()
@@ -94,19 +88,12 @@ class DetachedDaemon(CronRespawnDaemon):
         if os.path.exists(self.pid_file):
             self._logger.debug('Removing {0}'.format(self.pid_file))
             os.remove(self.pid_file)
-        if os.path.exists(self.includes_path):
-            self._logger.debug('Removing {0}'.format(self.includes_path))
-            os.remove(self.includes_path)
         if os.path.exists(self.config_path):
             self._logger.debug('Removing {0}'.format(self.config_path))
             os.remove(self.config_path)
         if os.path.exists(self.script_path):
             self._logger.debug('Removing {0}'.format(self.script_path))
             os.remove(self.script_path)
-
-    def apply_includes(self):
-        with open(self.includes_path, 'w') as f:
-            f.write(','.join(self.includes))
 
     def start_command(self):
         if not os.path.isfile(self.script_path):
@@ -134,15 +121,6 @@ class DetachedDaemon(CronRespawnDaemon):
             self._logger.debug(str(e))
             return False
 
-    def _create_includes(self):
-        dir_name = os.path.dirname(self.includes_path)
-        if not os.path.exists(dir_name):
-            os.makedirs(dir_name)
-        open(self.includes_path, 'w').close()
-
-        for plugin in included_plugins:
-            self.register(plugin)
-
     def _create_script(self):
         self._logger.debug('Rendering detached script from template')
         rendered = utils.render_template_to_file(
@@ -156,8 +134,8 @@ class DetachedDaemon(CronRespawnDaemon):
             broker_url=self.broker_url,
             min_workers=self.min_workers,
             max_workers=self.max_workers,
-            includes_path=self.includes_path,
-            virtualenv_path=VIRTUALENV
+            virtualenv_path=VIRTUALENV,
+            workdir=self.workdir
         )
 
         # no sudo needed, yey!

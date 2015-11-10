@@ -20,17 +20,15 @@ import ssl
 import sys
 import os
 import copy
-
 from contextlib import contextmanager
 
 import celery
 
+import cloudify.manager
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
+
 from cloudify.utils import ManagerVersion
-
-import cloudify.manager
-
 from cloudify.utils import get_manager_file_server_url
 from cloudify.decorators import operation
 
@@ -40,46 +38,31 @@ from cloudify_agent.api import defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.app import app
-
 from cloudify_agent.installer.config import configuration
-
-
-##########################################################################
-# this array is used for creating the initial includes file of the agent
-# it should contain tasks that are inside the cloudify-agent project.
-##########################################################################
-CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES = [
-    'cloudify.plugins.workflows',
-    'cloudify_agent.operations',
-    'cloudify_agent.installer.operations',
-
-    # maintain backwards compatibility with version < 3.3
-    'worker_installer.tasks',
-    'windows_agent_installer.tasks',
-    'plugin_installer.tasks',
-    'windows_plugin_installer.tasks'
-]
-
-
-def _install_plugins(plugins):
-    installer = PluginInstaller(logger=ctx.logger)
-    for plugin in plugins:
-        ctx.logger.info('Installing plugin: {0}'.format(plugin['name']))
-        try:
-            package_name = installer.install(plugin,
-                                             blueprint_id=ctx.blueprint.id)
-        except exceptions.PluginInstallationError as e:
-            # preserve traceback
-            tpe, value, tb = sys.exc_info()
-            raise NonRecoverableError, NonRecoverableError(str(e)), tb
-        daemon = _load_daemon(logger=ctx.logger)
-        daemon.register(package_name)
-        _save_daemon(daemon)
 
 
 @operation
 def install_plugins(plugins, **_):
-    _install_plugins(plugins)
+    installer = PluginInstaller(logger=ctx.logger)
+    for plugin in plugins:
+        ctx.logger.info('Installing plugin: {0}'.format(plugin['name']))
+        try:
+            installer.install(plugin=plugin,
+                              deployment_id=ctx.deployment.id,
+                              blueprint_id=ctx.blueprint.id)
+        except exceptions.PluginInstallationError as e:
+            # preserve traceback
+            tpe, value, tb = sys.exc_info()
+            raise NonRecoverableError, NonRecoverableError(str(e)), tb
+
+
+@operation
+def uninstall_plugins(plugins, **_):
+    installer = PluginInstaller(logger=ctx.logger)
+    for plugin in plugins:
+        ctx.logger.info('Uninstalling plugin: {0}'.format(plugin['name']))
+        installer.uninstall(plugin=plugin,
+                            deployment_id=ctx.deployment.id)
 
 
 @operation
@@ -228,15 +211,23 @@ def _celery_client(ctx, agent):
         os.remove(cert_path)
 
 
-def _assert_agent_alive(name, celery_client):
+def _celery_task_name(version):
+    if not version or ManagerVersion(version).greater_than(
+            ManagerVersion('3.3.1')):
+        return 'cloudify.dispatch.dispatch'
+    else:
+        return 'script_runner.tasks.run'
+
+
+def _assert_agent_alive(name, celery_client, version=None):
     tasks = utils.get_agent_registered(name, celery_client)
     if not tasks:
         raise NonRecoverableError(
             'Could not access tasks list for agent {0}'.format(name))
-    if 'script_runner.tasks.run' not in tasks:
-        raise NonRecoverableError(
-            ('Task script_runner.tasks.run is not available in agent '
-             '{0}').format(name))
+    task_name = _celery_task_name(version)
+    if task_name not in tasks:
+        raise NonRecoverableError('Task {0} is not available in agent {1}'.
+                                  format(task_name, name))
 
 
 def _get_manager_version():
@@ -251,17 +242,26 @@ def _run_install_script(old_agent, timeout, validate_only=False):
     if 'version' not in old_agent:
         old_agent['version'] = str(_get_manager_version())
     new_agent = create_new_agent_dict(old_agent)
+    old_agent_version = new_agent['old_agent_version']
     with _celery_client(ctx, old_agent) as celery_client:
         old_agent_name = old_agent['name']
-        _assert_agent_alive(old_agent_name, celery_client)
+        _assert_agent_alive(old_agent_name, celery_client, old_agent_version)
         script_format = '{0}/cloudify/install_agent.py'
         script_url = script_format.format(get_manager_file_server_url())
+        script_runner_task = 'script_runner.tasks.run'
+        cloudify_context = {
+            'type': 'operation',
+            'task_name': script_runner_task,
+            'task_target': old_agent['queue']
+        }
+        kwargs = {'script_path': script_url,
+                  'cloudify_agent': new_agent,
+                  'validate_only': validate_only,
+                  '__cloudify_context': cloudify_context}
+        task = _celery_task_name(old_agent_version)
         result = celery_client.send_task(
-            'script_runner.tasks.run',
-            args=[script_url],
-            kwargs={
-                'cloudify_agent': new_agent,
-                'validate_only': validate_only},
+            task,
+            kwargs=kwargs,
             queue=old_agent['queue']
         )
         returned_agent = result.get(timeout=timeout)
@@ -281,7 +281,6 @@ def create_agent_from_old_agent(operation_timeout=300):
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
-    old_agent = ctx.instance.runtime_properties['cloudify_agent']
     if 'agent_status' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             ('agent_status key not available in runtime_properties, '

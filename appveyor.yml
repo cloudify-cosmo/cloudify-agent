@@ -53,8 +53,12 @@ install:
 build: false # Not a C# project, build stuff at the test step instead.
 
 before_test:
-  - echo Installing tox (2.0.0)
-  - pip install tox==2.0.0
+  - pip install virtualenv --upgrade
+  - virtualenv --version
+  - virtualenv env
+  - 'env\Scripts\activate.bat'
+  - echo Installing tox
+  - pip install tox
 
 test_script:
   - tox -e %TOX_ENV%

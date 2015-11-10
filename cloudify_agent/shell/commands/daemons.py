@@ -40,11 +40,6 @@ from cloudify_agent.shell.decorators import handle_failures
               help='The manager REST gateway port to connect to. [env {0}]'
               .format(env.CLOUDIFY_MANAGER_PORT),
               envvar=env.CLOUDIFY_MANAGER_PORT)
-@click.option('--includes',
-              help='A comma separated list of module names '
-                   'to be included in the daemon. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_INCLUDES),
-              envvar=env.CLOUDIFY_DAEMON_INCLUDES)
 @click.option('--name',
               help='The name of the daemon. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_NAME),
@@ -204,67 +199,6 @@ def configure(name, user=None):
     _save_daemon(daemon)
     click.echo('Successfully configured daemon: {0}'
                .format(daemon.name))
-
-
-@click.command()
-@click.option('--name',
-              help='The name of the daemon. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_NAME),
-              required=True,
-              envvar=env.CLOUDIFY_DAEMON_NAME)
-@click.option('--plugin',
-              help='The plugin name. As stated in its setup.py file.',
-              required=True)
-@handle_failures
-def register(name, plugin):
-
-    """
-    Registers an additional plugin. All methods decorated with the 'operation'
-    decorator inside plugin modules will be imported.
-
-    """
-
-    click.echo('Registering plugin {0} in daemon {1}'.format(plugin, name))
-    daemon = _load_daemon(name)
-    daemon.register(plugin)
-
-    # we need to save the daemon here because the includes attribute
-    # has changed - added a new plugin
-    _save_daemon(daemon)
-
-    click.echo('Successfully registered {0} with daemon: {1}'
-               .format(plugin, name))
-
-
-@click.command()
-@click.option('--name',
-              help='The name of the daemon. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_NAME),
-              required=True,
-              envvar=env.CLOUDIFY_DAEMON_NAME)
-@click.option('--plugin',
-              help='The plugin name. As stated in its setup.py file.',
-              required=True)
-@handle_failures
-def unregister(name, plugin):
-
-    """
-    Registers an additional plugin. All methods decorated with the 'operation'
-    decorator inside plugin modules will be imported.
-
-    """
-
-    click.echo('Un-registering plugin {0} from daemon {1}'
-               .format(plugin, name))
-    daemon = _load_daemon(name)
-    daemon.unregister(plugin)
-
-    # we need to save the daemon here because the includes attribute
-    # has changed - removed plugin
-    _save_daemon(daemon)
-
-    click.echo('Successfully un-registered {0} from daemon: {1}'
-               .format(plugin, name))
 
 
 @click.command()

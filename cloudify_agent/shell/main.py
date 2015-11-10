@@ -24,7 +24,6 @@ from cloudify_agent.api.utils import logger as api_utils_logger
 # adding all of our commands.
 
 from cloudify_agent.shell.commands import daemons
-from cloudify_agent.shell.commands import plugins
 from cloudify_agent.shell.commands import configure
 from cloudify_agent.shell.commands import installer
 
@@ -71,14 +70,9 @@ daemon_sub_command.add_command(daemons.start)
 daemon_sub_command.add_command(daemons.stop)
 daemon_sub_command.add_command(daemons.delete)
 daemon_sub_command.add_command(daemons.restart)
-daemon_sub_command.add_command(daemons.register)
-daemon_sub_command.add_command(daemons.unregister)
 daemon_sub_command.add_command(daemons.inspect)
 daemon_sub_command.add_command(daemons.ls)
 daemon_sub_command.add_command(daemons.status)
-
-plugins_sub_command.add_command(plugins.install)
-plugins_sub_command.add_command(plugins.uninstall)
 
 main.add_command(daemon_sub_command)
 main.add_command(plugins_sub_command)

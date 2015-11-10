@@ -16,7 +16,7 @@ export CELERY_WORK_DIR={{ workdir }}
 export CELERY_APP=cloudify_agent.app.app
 export CELERY_TASK_SERIALIZER=json
 export CELERY_RESULT_SERIALIZER=json
-export CELERY_RESULT_BACKEND=${CELERY_BROKER_URL}
+# Needed in case agent user is root
 export C_FORCE_ROOT="true"
 
 # Daemon variables, used by the daemonization script
@@ -29,12 +29,21 @@ CELERYD_LOG_LEVEL={{ log_level }}
 CELERYD_PID_FILE="{{ pid_file }}"
 CELERYD_LOG_FILE="{{ log_file }}"
 CELERYD_ENV_DIR={{ virtualenv_path }}
-CELERYD_OPTS="--events -Q {{ queue }} --hostname={{ name }} --autoscale={{ max_workers }},{{ min_workers }} --maxtasksperchild=10 -Ofair --without-gossip --without-mingle --config=cloudify.broker_config"
-# check if there some plugins that need to be included
-CELERY_INCLUDES=$(cat {{ includes_path }})
-if [ -n "${CELERY_INCLUDES}" ]; then
-    CELERYD_OPTS="${CELERYD_OPTS} --include=${CELERY_INCLUDES}"
-fi
+CELERYD_OPTS="\
+    --events \
+    -Q {{ queue }} \
+    --hostname={{ name }} \
+    --autoscale={{ max_workers }},{{ min_workers }} \
+    --maxtasksperchild=10 \
+    -Ofair \
+    --without-gossip \
+    --without-mingle \
+    --config=cloudify.broker_config \
+    --include=cloudify.dispatch \
+    --with-gate-keeper \
+    --gate-keeper-bucket-size={{ max_workers }} \
+    --with-logging-server \
+    --logging-server-logdir={{ workdir }}/logs"
 CELERY_BIN="${CELERYD_ENV_DIR}/bin/celery"
 
 # extra environment variables provided by users

@@ -27,54 +27,20 @@ from celery import Celery
 from cloudify import constants
 from cloudify.utils import LocalCommandRunner
 
-# from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils, defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api.plugins.installer import PluginInstaller
 
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests import resources
+from cloudify_agent.tests import utils as test_utils
 
 
 BUILT_IN_TASKS = [
-    'cloudify.plugins.workflows.scale',
-    'cloudify.plugins.workflows.auto_heal_reinstall_node_subgraph',
-    'cloudify.plugins.workflows.uninstall',
-    'cloudify.plugins.workflows.execute_operation',
-    'cloudify.plugins.workflows.install',
-    'cloudify.plugins.workflows.install_new_agents',
-    'script_runner.tasks.execute_workflow',
-    'script_runner.tasks.run',
-    'diamond_agent.tasks.install',
-    'diamond_agent.tasks.uninstall',
-    'diamond_agent.tasks.start',
-    'diamond_agent.tasks.stop',
-    'diamond_agent.tasks.add_collectors',
-    'diamond_agent.tasks.del_collectors',
-    'cloudify_agent.operations.create_agent_amqp',
-    'cloudify_agent.operations.install_plugins',
-    'cloudify_agent.operations.restart',
-    'cloudify_agent.operations.stop',
-    'cloudify_agent.operations.validate_agent_amqp',
-    'cloudify_agent.installer.operations.create',
-    'cloudify_agent.installer.operations.configure',
-    'cloudify_agent.installer.operations.start',
-    'cloudify_agent.installer.operations.stop',
-    'cloudify_agent.installer.operations.delete',
-    'cloudify_agent.installer.operations.restart',
-    'worker_installer.tasks.install',
-    'worker_installer.tasks.start',
-    'worker_installer.tasks.stop',
-    'worker_installer.tasks.restart',
-    'worker_installer.tasks.uninstall',
-    'windows_agent_installer.tasks.install',
-    'windows_agent_installer.tasks.start',
-    'windows_agent_installer.tasks.stop',
-    'windows_agent_installer.tasks.restart',
-    'windows_agent_installer.tasks.uninstall',
-    'plugin_installer.tasks.install',
-    'windows_plugin_installer.tasks.install'
+    'cloudify.dispatch.dispatch'
 ]
+PLUGIN_NAME = 'plugin'
+DEPLOYMENT_ID = 'deployment'
 
 
 def ci():
@@ -158,20 +124,13 @@ class BaseDaemonLiveTestCase(BaseTest):
         else:
             self.runner.run("pkill -9 -f 'celery'", exit_on_failure=False)
 
-    def assert_registered_tasks(self, name, additional_tasks=None):
-        if not additional_tasks:
-            additional_tasks = set()
+    def assert_registered_tasks(self, name):
         destination = 'celery@{0}'.format(name)
         c_inspect = self.celery.control.inspect(destination=[destination])
         registered = c_inspect.registered() or {}
-
-        def include(task):
-            return 'celery' not in task
-
-        daemon_tasks = set(filter(include, set(registered[destination])))
-        expected_tasks = set(BUILT_IN_TASKS)
-        expected_tasks.update(additional_tasks)
-        self.assertEqual(expected_tasks, daemon_tasks)
+        daemon_tasks = set(t for t in registered[destination]
+                           if 'celery' not in t)
+        self.assertEqual(set(BUILT_IN_TASKS), daemon_tasks)
 
     def assert_daemon_alive(self, name):
         registered = utils.get_agent_registered(name, self.celery)
@@ -222,8 +181,9 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
 
     def tearDown(self):
         super(BaseDaemonProcessManagementTest, self).tearDown()
-        self.installer.uninstall('mock-plugin')
-        self.installer.uninstall('mock-plugin-error')
+        self.installer.uninstall(plugin=self.plugin_struct())
+        self.installer.uninstall(plugin=self.plugin_struct(),
+                                 deployment_id=DEPLOYMENT_ID)
 
     @property
     def daemon_cls(self):
@@ -275,17 +235,19 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
 
     @patch_get_source
     def test_start_with_error(self):
-        daemon = self.create_daemon()
+        log_file = 'H:\\WATT\\lo' if os.name == 'nt' else '/root/no_permission'
+        daemon = self.create_daemon(log_file=log_file)
         daemon.create()
         daemon.configure()
-        self.installer.install(self.plugin_struct('mock-plugin-error'))
-        daemon.register('mock-plugin-error')
         try:
             daemon.start()
-            self.fail('Expected start operation to fail '
-                      'due to bad import')
+            self.fail('Expected start operation to fail due to bad logfile')
         except exceptions.DaemonError as e:
-            self.assertIn('cannot import name non_existent', str(e))
+            if os.name == 'nt':
+                expected_error = "No such file or directory: '"
+            else:
+                expected_error = "Permission denied: '{0}"
+            self.assertIn(expected_error.format(log_file), str(e))
 
     def test_start_short_timeout(self):
         daemon = self.create_daemon()
@@ -323,50 +285,15 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             self.assertTrue('failed to stop in -1 seconds' in str(e))
 
     @patch_get_source
-    def test_register(self):
-        daemon = self.create_daemon()
-        daemon.create()
-        daemon.configure()
-        self.installer.install(self.plugin_struct())
-        daemon.register('mock-plugin')
-        daemon.start()
-        self.assert_registered_tasks(
-            daemon.name,
-            additional_tasks=set(['mock_plugin.tasks.run',
-                                  'mock_plugin.tasks.get_env_variable'])
-        )
-
-    @patch_get_source
-    def test_unregister(self):
-        daemon = self.create_daemon()
-        daemon.create()
-        daemon.configure()
-        self.installer.install(self.plugin_struct())
-        daemon.register('mock-plugin')
-        daemon.start()
-        self.assert_registered_tasks(
-            daemon.name,
-            additional_tasks=set(['mock_plugin.tasks.run',
-                                  'mock_plugin.tasks.get_env_variable'])
-        )
-        daemon.unregister('mock-plugin')
-        daemon.restart()
-        self.assert_registered_tasks(daemon.name)
-
-    @patch_get_source
     def test_restart(self):
         daemon = self.create_daemon()
         daemon.create()
         daemon.configure()
         self.installer.install(self.plugin_struct())
         daemon.start()
-        daemon.register('mock-plugin')
         daemon.restart()
-        self.assert_registered_tasks(
-            daemon.name,
-            additional_tasks=set(['mock_plugin.tasks.run',
-                                  'mock_plugin.tasks.get_env_variable'])
-        )
+        self.assert_daemon_alive(daemon.name)
+        self.assert_registered_tasks(daemon.name)
 
     def test_two_daemons(self):
         daemon1 = self.create_daemon()
@@ -391,7 +318,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.create()
         daemon.configure()
         self.installer.install(self.plugin_struct())
-        daemon.register('mock-plugin')
         daemon.start()
 
         expected = {
@@ -401,6 +327,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
                 'http://{0}:53229'.format(daemon.manager_ip),
             constants.MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL_KEY:
                 'http://{0}:53229/blueprints'.format(daemon.manager_ip),
+            constants.CELERY_WORK_DIR_KEY: daemon.workdir,
             utils.internal.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY:
                 utils.internal.get_storage_directory(),
             utils.internal.CLOUDIFY_DAEMON_NAME_KEY: daemon.name,
@@ -408,10 +335,10 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         }
 
         def _get_env_var(var):
-            return self.celery.send_task(
-                name='mock_plugin.tasks.get_env_variable',
+            return self.send_task(
+                task_name='mock_plugin.tasks.get_env_variable',
                 queue=daemon.queue,
-                args=[var]).get(timeout=5)
+                kwargs={'env_variable': var})
 
         def _check_env_var(var, expected_value):
             _value = _get_env_var(var)
@@ -420,13 +347,8 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         for key, value in expected.iteritems():
             _check_env_var(key, value)
 
-        # def _check_env_path():
-        #     _path = _get_env_var('PATH')
-        #     self.assertIn(VIRTUALENV, _path)
-        # _check_env_path()
-
     @patch_get_source
-    def test_extra_env_path(self):
+    def test_extra_env(self):
         daemon = self.create_daemon()
         daemon.extra_env_path = utils.env_to_file(
             {'TEST_ENV_KEY': 'TEST_ENV_VALUE'},
@@ -435,16 +357,34 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.create()
         daemon.configure()
         self.installer.install(self.plugin_struct())
-        daemon.register('mock-plugin')
         daemon.start()
 
         # check the env file was properly sourced by querying the env
         # variable from the daemon process. this is done by a task
-        value = self.celery.send_task(
-            name='mock_plugin.tasks.get_env_variable',
+        value = self.send_task(
+            task_name='mock_plugin.tasks.get_env_variable',
             queue=daemon.queue,
-            args=['TEST_ENV_KEY']).get(timeout=10)
+            kwargs={'env_variable': 'TEST_ENV_KEY'})
         self.assertEqual(value, 'TEST_ENV_VALUE')
+
+    @patch_get_source
+    def test_execution_env(self):
+        daemon = self.create_daemon()
+        daemon.create()
+        daemon.configure()
+        self.installer.install(self.plugin_struct())
+        daemon.start()
+
+        # check that cloudify.dispatch.dispatch 'execution_env' processing
+        # works.
+        # not the most ideal place for this test. but on the other hand
+        # all the boilerplate is already here, so this is too tempting.
+        value = self.send_task(
+            task_name='mock_plugin.tasks.get_env_variable',
+            queue=daemon.queue,
+            kwargs={'env_variable': 'TEST_ENV_KEY2'},
+            execution_env={'TEST_ENV_KEY2': 'TEST_ENV_VALUE2'})
+        self.assertEqual(value, 'TEST_ENV_VALUE2')
 
     def test_delete(self):
         raise NotImplementedError('Must be implemented by sub-class')
@@ -465,9 +405,66 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.delete(force=True)
         self.assert_daemon_dead(daemon.name)
 
+    @patch_get_source
+    def test_logging(self):
+        message = 'THIS IS THE TEST MESSAGE LOG CONTENT'
+
+        daemon = self.create_daemon()
+        daemon.create()
+        daemon.configure()
+        self.installer.install(self.plugin_struct())
+        self.installer.install(self.plugin_struct(),
+                               deployment_id=DEPLOYMENT_ID)
+        daemon.start()
+
+        def log_and_assert(_message, _deployment_id=None):
+            self.send_task(
+                task_name='mock_plugin.tasks.do_logging',
+                queue=daemon.queue,
+                kwargs={'message': _message},
+                deployment_id=_deployment_id)
+
+            name = _deployment_id if _deployment_id else '__system__'
+            logdir = os.path.join(daemon.workdir, 'logs')
+            logfile = os.path.join(logdir, '{0}.log'.format(name))
+            try:
+                with open(logfile) as f:
+                    self.assertIn(_message, f.read())
+            except IOError:
+                self.logger.warning('{0} content: {1}'
+                                    .format(logdir, os.listdir(logdir)))
+                raise
+
+        # Test __system__ logs
+        log_and_assert(message)
+        # Test deployment logs
+        log_and_assert(message, DEPLOYMENT_ID)
+
     @staticmethod
     def plugin_struct(plugin_name='mock-plugin'):
         return {
             'source': os.path.join(resources.get_resource('plugins'),
-                                   plugin_name)
+                                   plugin_name),
+            'name': PLUGIN_NAME
         }
+
+    def send_task(self,
+                  task_name,
+                  queue,
+                  deployment_id=None,
+                  args=None,
+                  kwargs=None,
+                  timeout=10,
+                  execution_env=None):
+        cloudify_context = test_utils.op_context(task_name,
+                                                 task_target=queue,
+                                                 plugin_name=PLUGIN_NAME,
+                                                 execution_env=execution_env,
+                                                 deployment_id=deployment_id)
+        kwargs = kwargs or {}
+        kwargs['__cloudify_context'] = cloudify_context
+        return self.celery.send_task(
+            name='cloudify.dispatch.dispatch',
+            queue=queue,
+            args=args,
+            kwargs=kwargs).get(timeout=timeout)

@@ -14,4 +14,12 @@
 #    * limitations under the License.
 # ***************************************************************************/
 
+from cloudify.decorators import operation
+from towel_stuff import towel_location
+
 var = "var"
+
+
+@operation
+def do_stuff(**_):
+    return towel_location.where_is_my_towel()
