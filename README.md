@@ -1,7 +1,7 @@
 # Cloudify Agent
 
 [![Build Status](https://travis-ci.org/cloudify-cosmo/cloudify-agent.svg?branch=CFY-2649-cloudify-agent)](https://travis-ci.org/cloudify-cosmo/cloudify-agent)
-[![Build status](https://ci.appveyor.com/api/projects/status/35y0wbnkchevv90v?svg=true)](https://ci.appveyor.com/project/cloudify-cosmo/cloudify-agent)
+[![Build status](https://ci.appveyor.com/api/projects/status/d64cg2wy5ml72ebv/branch/master?svg=true)](https://ci.appveyor.com/project/Cloudify/cloudify-agent/branch/master)
 [![PyPI](http://img.shields.io/pypi/dm/cloudify-agent.svg)](http://img.shields.io/pypi/dm/cloudify-agent.svg)
 [![PypI](http://img.shields.io/pypi/v/cloudify-agent.svg)](http://img.shields.io/pypi/v/cloudify-agent.svg)
 
