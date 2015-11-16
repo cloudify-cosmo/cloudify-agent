@@ -90,7 +90,6 @@ class NonSuckingServiceManagerDaemon(Daemon):
             nssm_path=self.nssm_path,
             log_level=self.log_level,
             log_file=self.get_logfile(),
-            pid_file=self.pid_file,
             workdir=self.workdir,
             user=self.user,
             manager_ip=self.manager_ip,

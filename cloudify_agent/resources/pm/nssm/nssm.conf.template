@@ -9,7 +9,6 @@ echo Installing the agent as a windows service...
 --without-gossip ^
 --without-mingle ^
 --loglevel={{ log_level }} ^
---pidfile={{ pid_file }} ^
 --logfile={{ log_file }} ^
 --include={{ includes }} ^
 --config=cloudify.broker_config ^
