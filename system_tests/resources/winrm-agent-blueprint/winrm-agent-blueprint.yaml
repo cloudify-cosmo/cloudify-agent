@@ -17,6 +17,10 @@ node_templates:
 
   host:
     type: cloudify.openstack.nodes.WindowsServer
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          max_retries: 50
     properties:
       image: { get_input: image }
       flavor: { get_input: flavor }
