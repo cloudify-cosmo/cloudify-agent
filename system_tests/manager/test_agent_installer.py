@@ -14,6 +14,7 @@
 #    * limitations under the License.
 
 import os
+import uuid
 
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
@@ -59,6 +60,58 @@ class AgentInstallerTest(testenv.TestCase):
             }
         )
         self.execute_uninstall()
+
+    def _test_agent_alive_after_reboot(self, blueprint, inputs):
+
+        self.blueprint_yaml = resources.get_resource(blueprint)
+        value = str(uuid.uuid4())
+        inputs['value'] = value
+        deployment_id = self.test_id
+        self.upload_deploy_and_execute_install(
+            deployment_id=deployment_id,
+            inputs=inputs
+        )
+        self.cfy.execute_workflow(
+            workflow='execute_operation',
+            deployment_id=deployment_id,
+            parameters={
+                'operation': 'cloudify.interfaces.reboot_test.reboot',
+                'node_ids': ['host']
+            },
+            include_logs=True)
+        self.execute_uninstall(deployment_id=deployment_id)
+        app = self.client.node_instances.list(node_id='application',
+                                              deployment_id=deployment_id)[0]
+        self.assertEquals(value, app.runtime_properties['value'])
+
+    def test_ubuntu_agent_alive_after_reboot(self):
+
+        self._test_agent_alive_after_reboot(
+            blueprint='reboot-vm-blueprint/reboot-unix-vm-blueprint.yaml',
+            inputs={
+                'image': self.env.ubuntu_trusty_image_id,
+                'flavor': self.env.small_flavor_id,
+                'user': 'ubuntu'
+            })
+
+    def test_centos_agent_alive_after_reboot(self):
+
+        self._test_agent_alive_after_reboot(
+            blueprint='reboot-vm-blueprint/reboot-unix-vm-blueprint.yaml',
+            inputs={
+                'image': self.env.centos_7_image_name,
+                'flavor': self.env.small_flavor_id,
+                'user': self.env.centos_7_image_user
+            })
+
+    def test_winrm_agent_alive_after_reboot(self):
+
+        self._test_agent_alive_after_reboot(
+            blueprint='reboot-vm-blueprint/reboot-winrm-vm-blueprint.yaml',
+            inputs={
+                'image': self.env.windows_image_name,
+                'flavor': self.env.small_flavor_id
+            })
 
     def test_winrm_agent(self):
 

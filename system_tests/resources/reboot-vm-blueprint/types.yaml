@@ -1,0 +1,18 @@
+plugins:
+
+  reboot:
+    source: reboot-plugin
+    executor: central_deployment_agent
+
+node_types:
+
+  nodes.Application:
+    derived_from: cloudify.nodes.Root
+    properties:
+      value:
+        default: ''
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        delete:
+          implementation: scripts/application_delete.py
+          executor: host_agent
