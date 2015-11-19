@@ -53,15 +53,16 @@ class PluginInstaller(object):
                              when downloading plugins that were included
                              as part of the blueprint itself.
         """
-        plugin_id = get_plugin_id(plugin)
+        managed_plugin = get_managed_plugin(plugin)
         source = get_plugin_source(plugin, blueprint_id)
         args = get_plugin_args(plugin)
-        if plugin_id:
+        if managed_plugin:
             def build_description(*fields):
-                return ', '.join('{0}: {1}'.format(field, plugin.get(field))
-                                 for field in fields if plugin.get(field))
+                return ', '.join(
+                    '{0}: {1}'.format(field, managed_plugin.get(field))
+                    for field in fields if managed_plugin.get(field))
             message = ('Installing managed plugin: {0} [{1}]'
-                       .format(plugin_id,
+                       .format(managed_plugin.id,
                                build_description('package_name',
                                                  'package_version',
                                                  'supported_platform',
@@ -69,12 +70,13 @@ class PluginInstaller(object):
                                                  'distribution_release')))
             self.logger.info(message)
             try:
-                self._wagon_install(plugin_id, args)
+                self._wagon_install(managed_plugin.id, args)
             except Exception as e:
                 raise NonRecoverableError('Failed installing managed '
                                           'plugin: {0} [{1}][{2}]'
-                                          .format(plugin_id, plugin, e))
-            return plugin['package_name']
+                                          .format(managed_plugin.id,
+                                                  plugin, e))
+            return managed_plugin.package_name
         elif source:
             self.logger.info('Installing plugin from source')
             return self._pip_install(source, args)
@@ -278,7 +280,7 @@ def extract_package_name(package_dir):
     return plugin_name
 
 
-def get_plugin_id(plugin):
+def get_managed_plugin(plugin):
     package_name = plugin.get('package_name')
     package_version = plugin.get('package_version')
     distribution = plugin.get('distribution')
@@ -327,7 +329,7 @@ def get_plugin_id(plugin):
 
     plugin_result = max(plugins,
                         key=lambda plug: LooseVersion(plug.package_version))
-    return plugin_result.id
+    return plugin_result
 
 
 def get_plugin_source(plugin, blueprint_id=None):
