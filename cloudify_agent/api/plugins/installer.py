@@ -30,6 +30,7 @@ from cloudify.utils import LocalCommandRunner
 from cloudify.utils import get_manager_file_server_blueprints_root_url
 from cloudify.manager import get_rest_client
 
+from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
 from cloudify_agent.api import plugins
 from cloudify_agent.api.utils import get_pip_path
@@ -56,16 +57,24 @@ class PluginInstaller(object):
         source = get_plugin_source(plugin, blueprint_id)
         args = get_plugin_args(plugin)
         if plugin_id:
-            package_name = plugin['package_name']
-            self.logger.info('Installing managed plugin: {0} based on package_'
-                             'name: {1}'.format(plugin_id, package_name))
+            def build_description(*fields):
+                return ', '.join('{0}: {1}'.format(field, plugin.get(field))
+                                 for field in fields if plugin.get(field))
+            message = ('Installing managed plugin: {0} [{1}]'
+                       .format(plugin_id,
+                               build_description('package_name',
+                                                 'package_version',
+                                                 'supported_platform',
+                                                 'distribution',
+                                                 'distribution_release')))
+            self.logger.info(message)
             try:
                 self._wagon_install(plugin_id, args)
             except Exception as e:
                 raise NonRecoverableError('Failed installing managed '
                                           'plugin: {0} [{1}][{2}]'
                                           .format(plugin_id, plugin, e))
-            return package_name
+            return plugin['package_name']
         elif source:
             self.logger.info('Installing plugin from source')
             return self._pip_install(source, args)
@@ -85,7 +94,9 @@ class PluginInstaller(object):
             self.logger.debug('Installing plugin {0} using wagon'
                               .format(plugin_id))
             w = wagon.Wagon(source=wagon_path)
-            w.install(ignore_platform=True, install_args=args)
+            w.install(ignore_platform=True,
+                      install_args=args,
+                      virtualenv=VIRTUALENV)
         finally:
             self.logger.debug('Removing directory: {0}'
                               .format(wagon_dir))
