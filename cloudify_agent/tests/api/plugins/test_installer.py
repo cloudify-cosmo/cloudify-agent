@@ -262,17 +262,17 @@ class TestGetSourceAndGetArgs(BaseTest):
             source)
 
 
-class TestGetPluginID(BaseTest):
+class TestGetManagedPlugin(BaseTest):
 
     def test_no_package_name(self):
         with self._patch(plugins=[]) as client:
-            self.assertIsNone(installer.get_plugin_id(plugin={}))
+            self.assertIsNone(installer.get_managed_plugin(plugin={}))
             self.assertIsNone(client.plugins.kwargs)
 
     def test_no_managed_plugins(self):
         plugin = {'package_name': 'p'}
         with self._patch(plugins=[]) as client:
-            self.assertIsNone(installer.get_plugin_id(plugin=plugin))
+            self.assertIsNone(installer.get_managed_plugin(plugin=plugin))
             self.assertEqual(plugin, client.plugins.kwargs)
 
     def test_last_version_selection(self):
@@ -287,7 +287,8 @@ class TestGetPluginID(BaseTest):
             p['supported_platform'] = 'any'
         plugin = {'package_name': 'plugin'}
         with self._patch(plugins=plugins):
-            self.assertEquals('2', installer.get_plugin_id(plugin=plugin))
+            self.assertEquals('2',
+                              installer.get_managed_plugin(plugin=plugin).id)
 
     def test_implicit_supported_platform(self):
         plugins = [
@@ -301,7 +302,8 @@ class TestGetPluginID(BaseTest):
         plugin = {'package_name': 'plugin', 'distribution': 'x',
                   'distribution_release': 'x'}
         with self._patch(plugins=plugins):
-            self.assertEquals('3', installer.get_plugin_id(plugin=plugin))
+            self.assertEquals('3',
+                              installer.get_managed_plugin(plugin=plugin).id)
 
     def test_implicit_dist_and_dist_release(self):
         if os.name == 'nt':
@@ -319,7 +321,8 @@ class TestGetPluginID(BaseTest):
         ]
         plugin = {'package_name': 'plugin', 'supported_platform': 'x'}
         with self._patch(plugins=plugins):
-            self.assertEquals('4', installer.get_plugin_id(plugin=plugin))
+            self.assertEquals('4',
+                              installer.get_managed_plugin(plugin=plugin).id)
 
     def test_list_filter_query_builder(self):
         plugin1 = {'package_name': 'a'}
@@ -331,13 +334,13 @@ class TestGetPluginID(BaseTest):
                    'supported_platform': 'f'}
         for plugin in [plugin1, plugin2]:
             with self._patch(plugins=[]) as client:
-                installer.get_plugin_id(plugin)
+                installer.get_managed_plugin(plugin)
                 self.assertEqual(plugin, client.plugins.kwargs)
 
     @contextmanager
     def _patch(self, plugins):
         plugins = [Plugin(p) for p in plugins]
-        client = TestGetPluginID.Client(plugins)
+        client = TestGetManagedPlugin.Client(plugins)
         get_rest_client = lambda: client
         with patch('cloudify_agent.api.plugins.installer.get_rest_client',
                    get_rest_client):
@@ -354,4 +357,4 @@ class TestGetPluginID(BaseTest):
 
     class Client(object):
         def __init__(self, plugins):
-            self.plugins = TestGetPluginID.Plugins(plugins)
+            self.plugins = TestGetManagedPlugin.Plugins(plugins)
