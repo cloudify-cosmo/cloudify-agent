@@ -29,7 +29,7 @@ node_templates:
       image: { get_input: image }
       flavor: { get_input: flavor }
       cloudify_agent:
-        user: Admin
+        user: Administrator
         port: 5985
       server:
         userdata: |

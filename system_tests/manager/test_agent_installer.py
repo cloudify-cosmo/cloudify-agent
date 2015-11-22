@@ -174,7 +174,7 @@ class AgentInstallerTest(testenv.TestCase):
                                     install_method='init_script',
                                     name=None,
                                     install_userdata=None):
-        user = 'Admin'
+        user = 'Administrator'
         file_path = 'C:\\Users\\{0}\\test_file'.format(user)
         userdata = '#ps1_sysnative \nSet-Content {1} "{0}"'.format(
             self.expected_file_content, file_path)
@@ -194,7 +194,7 @@ class AgentInstallerTest(testenv.TestCase):
         name = 'cloudify_agent'
         install_userdata = install_script(name=name,
                                           windows=True,
-                                          user='Admin',
+                                          user='Administrator',
                                           manager_ip=self._manager_ip())
         self.test_windows_userdata_agent(install_method='provided',
                                          name=name,
