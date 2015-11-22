@@ -13,9 +13,9 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-START_TIMEOUT = 30
+START_TIMEOUT = 60
 START_INTERVAL = 1
-STOP_TIMEOUT = 30
+STOP_TIMEOUT = 60
 STOP_INTERVAL = 1
 MANAGER_PORT = 8101
 BROKER_PORT = 5672
