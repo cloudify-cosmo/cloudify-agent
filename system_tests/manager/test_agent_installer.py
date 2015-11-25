@@ -16,16 +16,13 @@
 import os
 import uuid
 
+from cloudify_agent.installer import script
+from system_tests import resources
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
 from cloudify.utils import setup_logger
-
-from nova_plugin.userdata import create_multi_mimetype_userdata
-
-from system_tests import resources
+from cloudify.compute import create_multi_mimetype_userdata
 from cosmo_tester.framework import testenv
-
-from cloudify_agent.installer import script
 
 
 class AgentInstallerTest(testenv.TestCase):
