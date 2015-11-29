@@ -22,24 +22,8 @@ function PatchCloudifyAgent($Branch)
 function DownloadAndExtractAgentPackage()
 {
     Download {{ conf.package_url }} {{ conf.basedir }}\cloudify-windows-agent.exe
-    {{ conf.basedir }}\cloudify-windows-agent.exe /SILENT /VERYSILENT /SUPPRESSMSGBOXES /DIR={{ conf.agent_dir }}
-
-    $CheckInstalledPath = "{{ conf.agent_dir }}\Scripts\cfy-agent.exe"
-    # Timeout: 5 minutes
-    for ($i = 0; $i -lt 20; $i++)
-    {
-        if (Test-Path $CheckInstalledPath)
-        {
-            Write-Host "Agent package installation took $($i * 15) seconds"
-            break
-        }
-        Start-Sleep -s 15
-    }
-
-    if (-not (Test-Path $CheckInstalledPath))
-    {
-        throw "Cloudify Agent installation failed"
-    }
+    # This call is not blocking so we pipe the output to null to make it blocking
+    {{ conf.basedir }}\cloudify-windows-agent.exe /SILENT /VERYSILENT /SUPPRESSMSGBOXES /DIR={{ conf.agent_dir }} | Out-Null
 }
 
 function ExportDaemonEnv()
