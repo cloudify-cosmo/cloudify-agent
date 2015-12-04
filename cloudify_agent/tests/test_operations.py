@@ -53,9 +53,17 @@ class TestCreateAgentAmqp(BaseTest):
             'user': 'vagrant',
             'key': '~/.ssh/id_rsa',
             'windows': False,
-            'broker_pass': 'test_pass',
             'package_url': 'http://10.0.4.46:53229/packages/agents/'
                            'ubuntu-trusty-agent.tar.gz',
+            'version': '3.3',
+            'broker_config': {
+                'broker_ip': '10.0.4.46',
+                'broker_pass': 'test_pass',
+                'broker_user': 'test_user',
+                'broker_port': '5672',
+                'broker_ssl_enable': False,
+                'broker_ssl_cert': ''
+            }
         }
         configuration.prepare_connection(old_agent)
         configuration.prepare_agent(old_agent, None)
@@ -70,8 +78,7 @@ class TestCreateAgentAmqp(BaseTest):
             node_name='host',
             properties={'cloudify_agent': {}},
             bootstrap_context=context.BootstrapContext({
-                'cloudify_agent': {
-                    'broker_user': 'test_user'}}))
+                'cloudify_agent': {}}))
         return mock
 
     def _patch_manager_env(self):
@@ -91,6 +98,7 @@ class TestCreateAgentAmqp(BaseTest):
         old_agent = self._create_agent()
         with self._patch_manager_env():
             new_agent = operations.create_new_agent_dict(old_agent)
+            new_agent['version'] = '3.4'
             third_agent = operations.create_new_agent_dict(new_agent)
         equal_keys = ['ip', 'basedir', 'user']
         for k in equal_keys:
@@ -137,8 +145,5 @@ class TestCreateAgentAmqp(BaseTest):
             self.assertNotEquals(old_name, new_name)
             self.assertNotEquals(old_agent_dir, new_agent_dir)
             self.assertNotEquals(old_queue, new_queue)
-            broker_url = 'amqp://test_user:test_pass@10.0.4.46:5672//'
-            celery_mock.assert_called_with(broker=broker_url,
-                                           backend=broker_url)
         finally:
             current_ctx.set(old_context)
