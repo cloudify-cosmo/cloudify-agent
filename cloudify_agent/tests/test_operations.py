@@ -170,6 +170,7 @@ class TestCreateAgentAmqp(BaseTest):
     def _create_node_instance_context(self):
         properties = {}
         properties['cloudify_agent'] = self._create_agent()
+        properties['agent_status'] = {'agent_alive_crossbroker': True}
         mock = mocks.MockCloudifyContext(
             node_id='host_af231',
             runtime_properties=properties,
