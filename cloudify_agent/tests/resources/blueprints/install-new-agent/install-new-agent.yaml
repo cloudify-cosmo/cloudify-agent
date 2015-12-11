@@ -37,6 +37,8 @@ node_templates:
           executor: central_deployment_agent
           inputs:
             validate_agent_timeout: 20
+            fail_on_agent_not_installable: True
+            fail_on_agent_dead: True
     relationships:
       - target: host
         type: cloudify.relationships.depends_on

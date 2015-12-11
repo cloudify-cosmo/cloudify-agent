@@ -302,7 +302,8 @@ def create_agent_amqp(install_agent_timeout, **_):
 
 
 @operation
-def validate_agent_amqp(validate_agent_timeout, **_):
+def validate_agent_amqp(validate_agent_timeout, fail_on_agent_dead=False,
+                        fail_on_agent_not_installable=False, **_):
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
@@ -331,3 +332,8 @@ def validate_agent_amqp(validate_agent_timeout, **_):
         result['agent_alive_crossbroker'] = True
     result['timestamp'] = time.time()
     ctx.instance.runtime_properties['agent_status'] = result
+    if fail_on_agent_dead and not result['agent_alive']:
+        raise NonRecoverableError(result['agent_alive_error'])
+    if fail_on_agent_not_installable and not result[
+            'agent_alive_crossbroker']:
+        raise NonRecoverableError(result['agent_alive_crossbroker_error'])
