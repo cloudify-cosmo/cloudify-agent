@@ -19,13 +19,13 @@ from setuptools import setup
 
 setup(
     name='reboot-plugin',
-    version='3.3',
+    version='3.3.1',
     author='Gigaspaces',
     author_email='cloudify@gigaspaces.com',
     packages=[
         'reboot_plugin'
     ],
     install_requires=[
-        'cloudify-openstack-plugin==1.3',
+        'cloudify-openstack-plugin==1.3.1',
     ]
 )
