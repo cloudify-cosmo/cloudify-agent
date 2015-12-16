@@ -24,7 +24,7 @@ from celery import Celery
 from mock import patch
 
 from cloudify.utils import LocalCommandRunner
-from cloudify_agent.tests import BaseTest, utils
+from cloudify_agent.tests import BaseTest, agent_package
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.installer.config import configuration
 
@@ -35,26 +35,7 @@ class TestInstaller(BaseTest):
 
     @classmethod
     def setUpClass(cls):
-        # We do not want to waste time on creating new agent package per each
-        # test so we create temporary directory for whole class instead of
-        # using BaseTest temporary directory.
-        cls._resources_dir = tempfile.mkdtemp(
-            prefix='file-server-resource-base')
-        cls._fs = utils.FileServer(
-            root_path=cls._resources_dir)
-        cls._fs.start()
-        config = {
-            'cloudify_agent_module': utils.get_source_uri(),
-            'requirements_file': utils.get_requirements_uri()
-        }
-        package_name = utils.create_agent_package(cls._resources_dir, config)
-        cls._package_url = 'http://localhost:{0}/{1}'.format(
-            cls._fs.port, package_name)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls._fs.stop()
-        shutil.rmtree(cls._resources_dir)
+        cls._package_url = agent_package.get_package_url()
 
     @patch('cloudify_agent.installer.config.configuration.ctx',
            mock_context())
