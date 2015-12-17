@@ -27,7 +27,8 @@ from cloudify import ctx
 from cloudify import mocks
 
 from cloudify.state import current_ctx
-from cloudify.tests.mocks.mock_rest_client import MockRestclient, MockManagerClient
+from cloudify.tests.mocks.mock_rest_client import MockRestclient, \
+    MockManagerClient
 from cloudify.workflows import local
 
 from cloudify_agent import operations
