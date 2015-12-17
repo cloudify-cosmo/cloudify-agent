@@ -40,6 +40,8 @@ from cloudify_agent.app import app
 
 from cloudify_agent.installer.config import configuration
 
+import cloudify.manager
+
 ##########################################################################
 # this array is used for creating the initial includes file of the agent
 # it should contain tasks that are inside the cloudify-agent project.
@@ -55,8 +57,6 @@ CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES = [
     'plugin_installer.tasks',
     'windows_plugin_installer.tasks'
 ]
-
-_VERSION = '3.3'
 
 
 def _install_plugins(plugins):
@@ -237,11 +237,17 @@ def _assert_agent_alive(name, celery_client):
              '{0}').format(name))
 
 
+def _get_manager_version():
+    version_json = cloudify.manager.get_rest_client().manager.get_version()
+    return '.'.join(version_json['version'].split('.')[0:2])
+
+
 def _run_install_script(old_agent, timeout, validate_only=False):
     # Assuming that if there is no version info in the agent then
     # this agent was installed by current manager.
     old_agent = copy.deepcopy(old_agent)
-    old_agent['version'] = old_agent.get('version', _VERSION)
+    if not old_agent.has_key('version'):
+        old_agent['version'] = _get_manager_version()
     new_agent = create_new_agent_dict(old_agent)
     with _celery_client(ctx, old_agent) as celery_client:
         old_agent_name = old_agent['name']

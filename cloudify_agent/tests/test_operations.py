@@ -27,6 +27,7 @@ from cloudify import ctx
 from cloudify import mocks
 
 from cloudify.state import current_ctx
+from cloudify.tests.mocks.mock_rest_client import MockRestclient, MockManagerClient
 from cloudify.workflows import local
 
 from cloudify_agent import operations
@@ -41,9 +42,19 @@ from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import only_ci
 
 
-_INSTALL_SCRIPT_URL = ('https://raw.githubusercontent.com/cloudify-cosmo/'
-                       'cloudify-manager/master/resources/rest-service/'
-                       'cloudify/install_agent.py')
+# To be changed to the original value when the CFY-4382 is merged to
+# cloudify-manager.
+_INSTALL_SCRIPT_URL = ('https://raw.githubusercontent.com/codilime/'
+                       'cloudify-manager/CFY-4382_sanity_checks/resources/'
+                       'rest-service/cloudify/install_agent.py')
+
+
+class _VersionProvidingMockRestclient(MockRestclient):
+    @property
+    def manager(self):
+        m = MockManagerClient()
+        m.get_version = lambda: {'version': '3.3'}
+        return m
 
 
 class TestInstallNewAgent(BaseDaemonLiveTestCase):
@@ -83,6 +94,7 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
             finally:
                 fs.stop()
 
+    @patch('cloudify.manager.get_rest_client', _VersionProvidingMockRestclient)
     @only_ci
     def test_install_new_agent(self):
         agent_name = utils.internal.generate_agent_name()
