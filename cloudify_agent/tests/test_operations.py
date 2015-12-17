@@ -27,8 +27,6 @@ from cloudify import ctx
 from cloudify import mocks
 
 from cloudify.state import current_ctx
-from cloudify.tests.mocks.mock_rest_client import MockRestclient, \
-    MockManagerClient
 from cloudify.workflows import local
 
 from cloudify_agent import operations
@@ -50,12 +48,15 @@ _INSTALL_SCRIPT_URL = ('https://raw.githubusercontent.com/codilime/'
                        'rest-service/cloudify/install_agent.py')
 
 
-class _VersionProvidingMockRestclient(MockRestclient):
+class _MockManagerClient(object):
+    def get_version(self):
+        return {'version': '3.3'}
+
+
+class _MockRestclient(object):
     @property
     def manager(self):
-        m = MockManagerClient()
-        m.get_version = lambda: {'version': '3.3'}
-        return m
+        return _MockManagerClient()
 
 
 class TestInstallNewAgent(BaseDaemonLiveTestCase):
@@ -95,7 +96,7 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
             finally:
                 fs.stop()
 
-    @patch('cloudify.manager.get_rest_client', _VersionProvidingMockRestclient)
+    @patch('cloudify.manager.get_rest_client', _MockRestclient)
     @only_ci
     def test_install_new_agent(self):
         agent_name = utils.internal.generate_agent_name()
