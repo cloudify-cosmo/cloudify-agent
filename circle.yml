@@ -1,0 +1,16 @@
+machine:
+  services:
+    - rabbitmq-server
+
+dependencies:
+  post:
+    - pyenv local 2.7.9 2.6.8
+  override:
+    - pip install tox==2.0.0
+
+test:
+  override:
+    - case $CIRCLE_NODE_INDEX in 0) tox -e py27 ;; 1) tox -e py26 ;; esac:
+        parallel: true
+    - case $CIRCLE_NODE_INDEX in 0) tox -e docs ;; 1) tox -e flake8 ;;esac:
+        parallel: true
