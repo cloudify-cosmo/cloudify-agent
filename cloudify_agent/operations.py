@@ -246,7 +246,7 @@ def _run_install_script(old_agent, timeout, validate_only=False):
     # Assuming that if there is no version info in the agent then
     # this agent was installed by current manager.
     old_agent = copy.deepcopy(old_agent)
-    if not old_agent.has_key('version'):
+    if 'version' not in old_agent:
         old_agent['version'] = _get_manager_version()
     new_agent = create_new_agent_dict(old_agent)
     with _celery_client(ctx, old_agent) as celery_client:
