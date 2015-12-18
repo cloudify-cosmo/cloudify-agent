@@ -27,6 +27,10 @@ node_templates:
               local: true
               package_url: { get_input: package_url }
               broker_get_settings_from_manager: false
+              broker_config:
+                broker_ip: 127.0.0.1
+                broker_port: 5672
+                broker_ssl_enable: true
 
   validator:
     type: cloudify.nodes.Root
