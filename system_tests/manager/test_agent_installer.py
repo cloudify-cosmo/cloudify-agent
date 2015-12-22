@@ -40,7 +40,7 @@ class AgentInstallerTest(testenv.TestCase):
             '3-2-agent-blueprint/3-2-agent-mispelled-blprint.yaml')
         self.upload_deploy_and_execute_install(
             inputs={
-                'image': self.env.ubuntu_image_id,
+                'image': self.env.ubuntu_trusty_image_id,
                 'flavor': self.env.small_flavor_id
             }
         )
