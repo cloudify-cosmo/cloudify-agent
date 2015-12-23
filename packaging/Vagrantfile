@@ -183,6 +183,31 @@ Vagrant.configure('2') do |config|
     end
   end
 
+  config.vm.define "redhat6_agent" do |redhat6|
+    #dummy box, will be overriden
+    redhat6.vm.box = "dummy"
+    redhat6.vm.box_url = "https://github.com/mitchellh/vagrant-aws/raw/master/dummy.box"
+    redhat6.vm.provider :aws do |aws, override|
+      aws.access_key_id = AWS_ACCESS_KEY_ID
+      aws.secret_access_key = AWS_ACCESS_KEY
+      aws.ami = "ami-8cfc51fb"
+      aws.region = "eu-west-1"
+      aws.instance_type = "m3.medium"
+      aws.keypair_name = "michaels_ireland"
+      aws.user_data = "#!/bin/bash\nsed -i -e 's/^Defaults.*requiretty/# Defaults requiretty/g' /etc/sudoers"
+      override.ssh.username = "ec2-user"
+      override.ssh.private_key_path = "/Users/michael/Keys/michaels_ireland.pem"
+      override.nfs.functional = false
+      aws.tags = { "Name" => "vagrant agent redhat6 build" }
+      aws.security_groups = "vagrant_linux_build"
+    end
+    redhat6.vm.provision "shell" do |s|
+      s.path = "linux/provision.sh"
+      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP}"
+      s.privileged = false
+    end
+  end
+
   config.vm.define "windows_agent" do |windows|
     windows.vm.box = "dummy"
     windows.vm.box_url = "https://github.com/mitchellh/vagrant-aws/raw/master/dummy.box"
