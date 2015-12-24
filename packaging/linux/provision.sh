@@ -59,10 +59,10 @@ function upload_to_s3() {
 
 
 # VERSION/PRERELEASE/BUILD must be exported as they is being read as an env var by the cloudify-agent-packager
-export VERSION="3.3.0"
-export PRERELEASE="ga"
-export BUILD="300"
-CORE_TAG_NAME="3.3"
+export VERSION="3.4.0"
+export PRERELEASE="m1"
+export BUILD="390"
+CORE_TAG_NAME="3.4m1"
 PLUGINS_TAG_NAME="1.3"
 
 GITHUB_USERNAME=$1
