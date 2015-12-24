@@ -77,7 +77,8 @@ BUILT_IN_TASKS = [
 
 
 def ci():
-    return 'TRAVIS_BUILD_DIR' in os.environ or 'APPVEYOR' in os.environ
+    return 'TRAVIS_BUILD_DIR' in os.environ or 'APPVEYOR' in os.environ or\
+        'CIRCLE_BUILD_NUM' in os.environ
 
 
 def patch_unless_ci(target, new):
@@ -95,7 +96,7 @@ def only_ci(func):
     def wrapper(*args, **kwargs):
         if not ci():
             raise RuntimeError('Error! This test cannot be executed '
-                               'outside of the travis CI '
+                               'outside of the travis or circle CI '
                                'system since it may corrupt '
                                'your local system files')
         func(*args, **kwargs)
