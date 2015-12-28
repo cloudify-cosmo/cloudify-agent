@@ -33,13 +33,6 @@ from cloudify_agent.installer.config import configuration
 from cloudify_agent.api import utils
 
 
-# This is not imported here because it imports celery which may not be
-# available, and celery is only required in one operation in this module
-def _app():
-    from cloudify_agent.app import app
-    return app
-
-
 def prepare_local_installer(cloudify_agent, logger=None):
     if os.name == 'nt':
         installer = LocalWindowsAgentInstaller(
@@ -179,8 +172,12 @@ def start(cloudify_agent, installer, **_):
             # (install_agent is True), it means that some other process is
             # installing the agent (e.g userdata). All that is left for us
             # to do is wait for the agent to start.
+
+            # celery is imported here since it's only used in this method
+            # and we can't assume it's always available
+            from cloudify_agent.app import app as celery_client
             registered = utils.get_agent_registered(cloudify_agent['name'],
-                                                    _app())
+                                                    celery_client)
             if registered:
                 ctx.logger.info('Agent has started')
             else:

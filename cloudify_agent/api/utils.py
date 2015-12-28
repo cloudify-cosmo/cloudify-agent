@@ -191,13 +191,35 @@ class _Internal(object):
 internal = _Internal()
 
 
-def get_agent_registered(name, celery):
+def get_celery_client(broker_url,
+                      ssl_enabled=False,
+                      ssl_cert_path=None):
+
+    # celery is imported locally since it's not used by any other method, and
+    # we want this utils module to be usable even if celery is not available
+    from celery import Celery
+
+    celery_client = Celery(broker=broker_url,
+                           backend=broker_url)
+    celery_client.conf.update(
+        CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES)
+    if ssl_enabled:
+        # import always?
+        import ssl
+        celery_client.conf.BROKER_USE_SSL = {
+            'ca_certs': ssl_cert_path,
+            'cert_reqs': ssl.cert_required,
+        }
+    return celery_client
+
+
+def get_agent_registered(name, celery_client):
 
     """
     Query for agent registered tasks based on agent name.
 
     :param name: the agent name
-    :param celery: the celery client to use
+    :param celery_client: the celery client to use
 
     :return: agents registered tasks
     :rtype: dict
@@ -205,7 +227,7 @@ def get_agent_registered(name, celery):
     """
 
     destination = 'celery@{0}'.format(name)
-    inspect = celery.control.inspect(
+    inspect = celery_client.control.inspect(
         destination=[destination])
     registered = (inspect.registered() or {}).get(destination)
     return registered
