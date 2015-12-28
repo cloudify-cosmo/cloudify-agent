@@ -13,20 +13,25 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import tempfile
 import time
 import threading
+import ssl
 import sys
 import os
 import copy
+
+from contextlib import contextmanager
 
 import celery
 
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 
+import cloudify.manager
+
 from cloudify.utils import get_manager_file_server_url
 from cloudify.decorators import operation
-from cloudify import utils as cloudify_utils
 
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api.factory import DaemonFactory
@@ -36,6 +41,7 @@ from cloudify_agent.api import utils
 from cloudify_agent.app import app
 
 from cloudify_agent.installer.config import configuration
+
 
 ##########################################################################
 # this array is used for creating the initial includes file of the agent
@@ -52,8 +58,6 @@ CLOUDIFY_AGENT_BUILT_IN_TASK_MODULES = [
     'plugin_installer.tasks',
     'windows_plugin_installer.tasks'
 ]
-
-_VERSION = '3.3'
 
 
 def _install_plugins(plugins):
@@ -75,23 +79,6 @@ def _install_plugins(plugins):
 @operation
 def install_plugins(plugins, **_):
     _install_plugins(plugins)
-
-
-def _get_broker_config(ctx):
-    attributes = {}
-    # Get the broker credentials for the daemon
-    bootstrap_agent = ctx.bootstrap_context.cloudify_agent
-
-    broker_user, broker_pass = cloudify_utils.internal.get_broker_credentials(
-        bootstrap_agent
-    )
-
-    attributes['broker_user'] = broker_user
-    attributes['broker_pass'] = broker_pass
-    attributes['broker_ip'] = bootstrap_agent.broker_ip
-    attributes['broker_ssl_enabled'] = bootstrap_agent.broker_ssl_enabled
-    attributes['broker_ssl_cert'] = bootstrap_agent.broker_ssl_cert
-    return attributes
 
 
 @operation
@@ -135,7 +122,7 @@ def restart(new_name=None, delay_period=5, **_):
     del attributes['pid_file']
 
     # Get the broker credentials for the daemon
-    attributes.update(_get_broker_config(ctx))
+    attributes.update(ctx.bootstrap_context.broker_config())
 
     new_daemon = DaemonFactory().new(logger=ctx.logger, **attributes)
 
@@ -186,15 +173,6 @@ def _save_daemon(daemon):
     factory.save(daemon)
 
 
-def _get_broker_url(ctx, agent):
-    agent = copy.deepcopy(agent)
-    broker = _get_broker_config(ctx)
-    for k, v in broker.iteritems():
-        if not agent.get(k):
-            agent[k] = v
-    return utils.internal.get_broker_url(agent)
-
-
 def create_new_agent_dict(old_agent):
     new_agent = {}
     new_agent['name'] = utils.internal.generate_new_agent_name(
@@ -206,54 +184,163 @@ def create_new_agent_dict(old_agent):
             new_agent[field] = old_agent[field]
     configuration.reinstallation_attributes(new_agent)
     new_agent['manager_file_server_url'] = get_manager_file_server_url()
-    # Assuming that if there is no version info in the agent then
-    # this agent was installed by current manager.
-    new_agent['old_agent_version'] = old_agent.get('version', _VERSION)
+    new_agent['old_agent_version'] = old_agent['version']
     return new_agent
 
 
-def create_agent_from_old_agent(install_agent_timeout=300):
-    if 'cloudify_agent' not in ctx.instance.runtime_properties:
-        raise NonRecoverableError(
-            'cloudify_agent key not available in runtime_properties')
-    old_agent = ctx.instance.runtime_properties['cloudify_agent']
-    new_agent = create_new_agent_dict(old_agent)
+@contextmanager
+def _celery_client(ctx, agent):
     # We retrieve broker url from old agent in order to support
     # cases when old agent is not connected to current rabbit server.
-    broker_url = _get_broker_url(ctx, old_agent)
-    env_broker_url = os.environ.get('CELERY_BROKER_URL')
-    os.environ['CELERY_BROKER_URL'] = broker_url
+    if 'broker_config' in agent:
+        broker_config = agent['broker_config']
+    else:
+        broker_config = ctx.bootstrap_context.broker_config()
+    broker_url = utils.internal.get_broker_url(broker_config)
+    ctx.logger.info('Connecting to {0}'.format(broker_url))
+    celery_client = celery.Celery()
+    # We can't pass broker_url to Celery constructor because it would
+    # be overriden by the value from broker_config.py.
+    config = {
+        'BROKER_URL': broker_url,
+        'CELERY_RESULT_BACKEND': broker_url
+    }
+    if agent['version'] != '3.2':
+        config['CELERY_TASK_RESULT_EXPIRES'] = \
+            defaults.CELERY_TASK_RESULT_EXPIRES
+    fd, cert_path = tempfile.mkstemp()
+    os.close(fd)
     try:
-        celery_client = celery.Celery(broker=broker_url, backend=broker_url)
-        if new_agent['old_agent_version'] != '3.2':
-            celery_client.conf.update(
-                CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES
-            )
+        if broker_config.get('broker_ssl_enabled'):
+            with open(cert_path, 'w') as cert_file:
+                cert_file.write(broker_config.get('broker_ssl_cert', ''))
+            broker_ssl = {
+                'ca_certs': cert_path,
+                'cert_reqs': ssl.CERT_REQUIRED
+            }
+        else:
+            broker_ssl = False
+        config['BROKER_USE_SSL'] = broker_ssl
+        celery_client.conf.update(**config)
+        yield celery_client
+    finally:
+        os.remove(cert_path)
+
+
+def _assert_agent_alive(name, celery_client):
+    tasks = utils.get_agent_registered(name, celery_client)
+    if not tasks:
+        raise NonRecoverableError(
+            'Could not access tasks list for agent {0}'.format(name))
+    if 'script_runner.tasks.run' not in tasks:
+        raise NonRecoverableError(
+            ('Task script_runner.tasks.run is not available in agent '
+             '{0}').format(name))
+
+
+def _get_manager_version():
+    version_json = cloudify.manager.get_rest_client().manager.get_version()
+    return '.'.join(version_json['version'].split('.')[0:2])
+
+
+def _run_install_script(old_agent, timeout, validate_only=False):
+    # Assuming that if there is no version info in the agent then
+    # this agent was installed by current manager.
+    old_agent = copy.deepcopy(old_agent)
+    if 'version' not in old_agent:
+        old_agent['version'] = _get_manager_version()
+    new_agent = create_new_agent_dict(old_agent)
+    with _celery_client(ctx, old_agent) as celery_client:
+        old_agent_name = old_agent['name']
+        _assert_agent_alive(old_agent_name, celery_client)
         script_format = '{0}/cloudify/install_agent.py'
         script_url = script_format.format(get_manager_file_server_url())
         result = celery_client.send_task(
             'script_runner.tasks.run',
             args=[script_url],
-            kwargs={'cloudify_agent': new_agent},
+            kwargs={
+                'cloudify_agent': new_agent,
+                'validate_only': validate_only},
             queue=old_agent['queue']
         )
-        returned_agent = result.get(timeout=install_agent_timeout)
-    finally:
-        if env_broker_url is None:
-            del(os.environ['CELERY_BROKER_URL'])
-        else:
-            os.environ['CELERY_BROKER_URL'] = env_broker_url
-    # Make sure that new celery agent was started:
-    agent_status = app.control.inspect(destination=[
-        'celery@{0}'.format(returned_agent['name'])])
-    if not agent_status.active():
-        raise NonRecoverableError('Could not start agent.')
-    # Setting old_cloudify_agent in order to uninstall it later.
-    ctx.instance.runtime_properties['old_cloudify_agent'] = old_agent
+        returned_agent = result.get(timeout=timeout)
+    if returned_agent['name'] != new_agent['name']:
+        raise NonRecoverableError(
+            'Expected agent name {0}, received {1}'.format(
+                new_agent['name'], returned_agent['name'])
+        )
     returned_agent.pop('old_agent_version', None)
+    return {
+        'old': old_agent,
+        'new': returned_agent
+    }
+
+
+def create_agent_from_old_agent(operation_timeout=300):
+    if 'cloudify_agent' not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            'cloudify_agent key not available in runtime_properties')
+    old_agent = ctx.instance.runtime_properties['cloudify_agent']
+    if 'agent_status' not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            ('agent_status key not available in runtime_properties, '
+             'validation needs to be performed before new agent installation'))
+    status = ctx.instance.runtime_properties['agent_status']
+    if not status['agent_alive_crossbroker']:
+        raise NonRecoverableError(
+            ('Last validation attempt has shown that agent is dead. '
+             'Rerun validation.'))
+    old_agent = ctx.instance.runtime_properties['cloudify_agent']
+    agents = _run_install_script(old_agent,
+                                 operation_timeout,
+                                 validate_only=False)
+    # Make sure that new celery agent was started:
+    returned_agent = agents['new']
+    ctx.logger.info('Installed agent {0}'.format(returned_agent['name']))
+    _assert_agent_alive(returned_agent['name'], app)
+    # Setting old_cloudify_agent in order to uninstall it later.
+    ctx.instance.runtime_properties['old_cloudify_agent'] = agents['old']
     ctx.instance.runtime_properties['cloudify_agent'] = returned_agent
 
 
 @operation
 def create_agent_amqp(install_agent_timeout, **_):
     create_agent_from_old_agent(install_agent_timeout)
+
+
+@operation
+def validate_agent_amqp(validate_agent_timeout, fail_on_agent_dead=False,
+                        fail_on_agent_not_installable=False, **_):
+    if 'cloudify_agent' not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            'cloudify_agent key not available in runtime_properties')
+    agent = ctx.instance.runtime_properties['cloudify_agent']
+    agent_name = agent['name']
+    result = {}
+    ctx.logger.info(('Checking if agent can be accessed through '
+                     'current rabbitmq'))
+    try:
+        _assert_agent_alive(agent_name, app)
+    except Exception as e:
+        result['agent_alive'] = False
+        result['agent_alive_error'] = str(e)
+        ctx.logger.info('Agent unavailable, reason {0}'.format(str(e)))
+    else:
+        result['agent_alive'] = True
+    ctx.logger.info(('Checking if agent can be accessed through '
+                     'different rabbitmq'))
+    try:
+        _run_install_script(agent, validate_agent_timeout, validate_only=True)
+    except Exception as e:
+        result['agent_alive_crossbroker'] = False
+        result['agent_alive_crossbroker_error'] = str(e)
+        ctx.logger.info('Agent unavailable, reason {0}'.format(str(e)))
+    else:
+        result['agent_alive_crossbroker'] = True
+    result['timestamp'] = time.time()
+    ctx.instance.runtime_properties['agent_status'] = result
+    if fail_on_agent_dead and not result['agent_alive']:
+        raise NonRecoverableError(result['agent_alive_error'])
+    if fail_on_agent_not_installable and not result[
+            'agent_alive_crossbroker']:
+        raise NonRecoverableError(result['agent_alive_crossbroker_error'])
