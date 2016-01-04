@@ -150,9 +150,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
             self._runner.run('sc config {0} start= disabled'.format(self.name))
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        self._logger.debug('Retrieving daemon registered tasks')
-        registered = utils.get_agent_registered(self.name, self._celery)
-        if registered:
+        if self._is_agent_registered():
             if not force:
                 raise exceptions.DaemonStillRunningException(self.name)
             self.stop()
