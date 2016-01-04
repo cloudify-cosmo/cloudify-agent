@@ -16,13 +16,10 @@
 import getpass
 import json
 import os
-import ssl
 import time
 
-from celery import Celery
-
-from cloudify.utils import LocalCommandRunner
-from cloudify.utils import setup_logger
+from cloudify.utils import (LocalCommandRunner,
+                            setup_logger)
 from cloudify import amqp_client
 from cloudify_rest_client.client import CloudifyClient
 from cloudify.constants import (
@@ -290,17 +287,6 @@ class Daemon(object):
         self.process_management = self.PROCESS_MANAGEMENT
         self.virtualenv = VIRTUALENV
 
-        # initialize an internal celery client
-        self._celery = Celery(broker=self.broker_url,
-                              backend=self.broker_url)
-        self._celery.conf.update(
-            CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES)
-        if self.broker_ssl_enabled:
-            self._celery.conf.BROKER_USE_SSL = {
-                'ca_certs': self._get_ssl_cert_path(),
-                'cert_reqs': ssl.CERT_REQUIRED,
-            }
-
     def _get_celery_conf_path(self):
         return os.path.join(self.workdir, 'broker_config.json')
 
@@ -375,6 +361,18 @@ class Daemon(object):
         else:
             return ''
 
+    def _is_agent_registered(self):
+        try:
+            self._logger.debug('Retrieving daemon registered tasks')
+            celery_client = utils.get_celery_client(
+                broker_url=self.broker_url,
+                ssl_enabled=self.broker_ssl_enabled,
+                ssl_cert_path=self._get_ssl_cert_path())
+            return utils.get_agent_registered(self.name, celery_client)
+        finally:
+            if celery_client:
+                celery_client.close()
+
     ########################################################################
     # the following methods must be implemented by the sub-classes as they
     # may exhibit custom logic. usually this would be related to process
@@ -432,10 +430,10 @@ class Daemon(object):
     def status(self):
 
         """
-        Query the daemon status, This method will can be usually
-        implemented by simply running the status command. However, this is
-        not always the case as different commands and process management
-        tools may behave differently.
+        Query the daemon status, This method can be usually implemented
+        by simply running the status command. However, this is not always
+        the case, as different commands and process management tools may
+        behave differently.
 
         :return: True if the service is running, False otherwise
         """
@@ -540,8 +538,7 @@ class Daemon(object):
         while time.time() < end_time:
             self._logger.debug('Querying daemon {0} registered tasks'.format(
                 self.name))
-            registered = utils.get_agent_registered(self.name, self._celery)
-            if registered:
+            if self._is_agent_registered():
                 # make sure the status command recognizes the daemon is up
                 status = self.status()
                 if status:
@@ -584,8 +581,7 @@ class Daemon(object):
             self._logger.debug('Querying daemon {0} registered tasks'.format(
                 self.name))
             # check the process has shutdown
-            registered = utils.get_agent_registered(self.name, self._celery)
-            if not registered:
+            if not self._is_agent_registered():
                 # make sure the status command also recognizes the
                 # daemon is down
                 status = self.status()
@@ -692,9 +688,11 @@ class Daemon(object):
             ssl_enabled=self.broker_ssl_enabled,
             ssl_cert_path=self._get_ssl_cert_path(),
         )
+
         try:
             channel = client.connection.channel()
             self._logger.debug('Deleting queue: {0}'.format(self.queue))
+
             channel.queue_delete(self.queue)
             pid_box_queue = 'celery@{0}.celery.pidbox'.format(self.name)
             self._logger.debug('Deleting queue: {0}'.format(pid_box_queue))

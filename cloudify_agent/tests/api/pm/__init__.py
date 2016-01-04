@@ -140,6 +140,8 @@ class BaseDaemonLiveTestCase(BaseTest):
 
     def tearDown(self):
         super(BaseDaemonLiveTestCase, self).tearDown()
+        if self.celery:
+            self.celery.close()
         if os.name == 'nt':
             # with windows we need to stop and remove the service
             nssm_path = utils.get_absolute_resource_path(

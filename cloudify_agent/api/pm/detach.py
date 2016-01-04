@@ -86,10 +86,7 @@ class DetachedDaemon(CronRespawnDaemon):
         self._create_celery_conf()
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-
-        self._logger.debug('Retrieving daemon registered tasks')
-        registered = utils.get_agent_registered(self.name, self._celery)
-        if registered:
+        if self._is_agent_registered():
             if not force:
                 raise exceptions.DaemonStillRunningException(self.name)
             self.stop()
