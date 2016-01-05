@@ -362,12 +362,12 @@ class Daemon(object):
             return ''
 
     def _is_agent_registered(self):
+        celery_client = utils.get_celery_client(
+            broker_url=self.broker_url,
+            ssl_enabled=self.broker_ssl_enabled,
+            ssl_cert_path=self._get_ssl_cert_path())
         try:
             self._logger.debug('Retrieving daemon registered tasks')
-            celery_client = utils.get_celery_client(
-                broker_url=self.broker_url,
-                ssl_enabled=self.broker_ssl_enabled,
-                ssl_cert_path=self._get_ssl_cert_path())
             return utils.get_agent_registered(self.name, celery_client)
         finally:
             if celery_client:
