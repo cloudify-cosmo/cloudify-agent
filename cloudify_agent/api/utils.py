@@ -208,7 +208,7 @@ def get_celery_client(broker_url,
         import ssl
         celery_client.conf.BROKER_USE_SSL = {
             'ca_certs': ssl_cert_path,
-            'cert_reqs': ssl.cert_required,
+            'cert_reqs': ssl.CERT_REQUIRED,
         }
     return celery_client
 
