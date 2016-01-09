@@ -60,6 +60,14 @@ if daemon_name:
         logger.addHandler(handler)
         logger.setLevel(loglevel)
 
+    @signals.worker_process_init.connect
+    def declare_fork(**kwargs):
+        try:
+            import Crypto.Random
+            Crypto.Random.atfork()
+        except ImportError:
+            pass
+
 
 # This attribute is used as the celery App instance.
 # it is referenced in two ways:
