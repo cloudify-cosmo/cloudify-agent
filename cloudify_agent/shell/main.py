@@ -21,6 +21,13 @@ from cloudify.utils import setup_logger
 
 from cloudify_agent.api.utils import logger as api_utils_logger
 
+# adding all of our commands.
+
+from cloudify_agent.shell.commands import daemons
+from cloudify_agent.shell.commands import plugins
+from cloudify_agent.shell.commands import configure
+from cloudify_agent.shell.commands import installer
+
 
 _logger = setup_logger('cloudify_agent.shell.main',
                        logger_format='%(message)s',
@@ -55,13 +62,6 @@ def daemon_sub_command():
 def plugins_sub_command():
     pass
 
-
-# adding all of our commands.
-
-from cloudify_agent.shell.commands import daemons
-from cloudify_agent.shell.commands import plugins
-from cloudify_agent.shell.commands import configure
-from cloudify_agent.shell.commands import installer
 
 main.add_command(configure.configure)
 
