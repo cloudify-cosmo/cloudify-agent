@@ -27,6 +27,7 @@ import celery
 
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
+from cloudify.utils import ManagerVersion
 
 import cloudify.manager
 
@@ -205,7 +206,7 @@ def _celery_client(ctx, agent):
         'BROKER_URL': broker_url,
         'CELERY_RESULT_BACKEND': broker_url
     }
-    if agent['version'] != '3.2':
+    if not ManagerVersion(agent['version']).equals(ManagerVersion('3.2')):
         config['CELERY_TASK_RESULT_EXPIRES'] = \
             defaults.CELERY_TASK_RESULT_EXPIRES
     fd, cert_path = tempfile.mkstemp()
@@ -240,7 +241,7 @@ def _assert_agent_alive(name, celery_client):
 
 def _get_manager_version():
     version_json = cloudify.manager.get_rest_client().manager.get_version()
-    return '.'.join(version_json['version'].split('.')[0:2])
+    return ManagerVersion(version_json['version'])
 
 
 def _run_install_script(old_agent, timeout, validate_only=False):
@@ -248,7 +249,7 @@ def _run_install_script(old_agent, timeout, validate_only=False):
     # this agent was installed by current manager.
     old_agent = copy.deepcopy(old_agent)
     if 'version' not in old_agent:
-        old_agent['version'] = _get_manager_version()
+        old_agent['version'] = str(_get_manager_version())
     new_agent = create_new_agent_dict(old_agent)
     with _celery_client(ctx, old_agent) as celery_client:
         old_agent_name = old_agent['name']
