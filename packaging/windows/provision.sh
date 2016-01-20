@@ -6,7 +6,6 @@ function install_requirements() {
 }
 
 function download_wheels() {
-    # NEED TO ADD SOFTLAYER AND VSPHERE HERE!
     pip wheel --wheel-dir packaging/source/wheels --requirement "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/$CORE_TAG_NAME/dev-requirements.txt"
     pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels "https://github.com/cloudify-cosmo/cloudify-agent/archive/$CORE_TAG_NAME.zip"
 }
