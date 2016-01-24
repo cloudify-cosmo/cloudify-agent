@@ -28,44 +28,20 @@ function install_requirements() {
 	sudo pip install pip==6.0.8 --upgrade
 	sudo pip install virtualenv==12.0.7 &&
 	sudo pip install setuptools==19.1.1 --upgrade &&
-	sudo pip install cloudify-agent-packager==3.5.3 &&
-	sudo pip install s3cmd==1.5.2
-}
+	sudo pip install cloudify-agent-packager==3.5.3
 
-function upload_to_s3() {
-    ###
-    # This will upload both the artifact and md5 files to the relevant bucket.
-    # Note that the bucket path is also appended the version.
-    ###
-    s3cmd put --force --acl-public --access_key=${AWS_ACCESS_KEY_ID} --secret_key=${AWS_ACCESS_KEY} \
-    	--no-preserve --progress --human-readable-sizes --check-md5 *.tar.gz* s3://${AWS_S3_BUCKET_PATH}/
 }
 
 
 # VERSION/PRERELEASE/BUILD must be exported as they is being read as an env var by the cloudify-agent-packager
-export VERSION="3.4.0"
-export PRERELEASE="m1"
-export BUILD="390"
 CORE_TAG_NAME="3.4m1"
-PLUGINS_TAG_NAME="1.3.1"
+curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-packager/$CORE_TAG_NAME/common/provision.sh -o ./common-provision.sh &&
+source common-provision.sh
 
 GITHUB_USERNAME=$1
 GITHUB_PASSWORD=$2
-
 AWS_ACCESS_KEY_ID=$3
 AWS_ACCESS_KEY=$4
-AWS_S3_BUCKET_PATH="gigaspaces-repository-eu/org/cloudify3/${VERSION}/${PRERELEASE}"
-
-echo "VERSION: ${VERSION}"
-echo "PRERELEASE: ${PRERELEASE}"
-echo "BUILD: ${BUILD}"
-echo "CORE_TAG_NAME: ${CORE_TAG_NAME}"
-echo "PLUGINS_TAG_NAME: ${PLUGINS_TAG_NAME}"
-echo "AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}"
-echo "AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}"
-echo "AWS_S3_BUCKET_PATH: ${AWS_S3_BUCKET_PATH}"
-echo "GITHUB_USERNAME: ${GITHUB_USERNAME}"
-echo "GITHUB_PASSWORD: ${GITHUB_PASSWORD}"
 
 
 cd ~
@@ -73,8 +49,5 @@ install_deps &&
 install_requirements &&
 sudo rm -rf ~/.cache
 cd /tmp && cfy-ap -c /vagrant/linux/packager.yaml -f -v &&
-
-# this should be used AFTER renaming the agent tar to contain versions. adding a version to the name of the tar should also be implemented
-# within the agent-packager.
-cd /tmp && md5sum=$(md5sum *.tar.gz) && echo $md5sum | sudo tee ${md5sum##* }.md5 &&
-[ -z ${AWS_ACCESS_KEY} ] || upload_to_s3
+create_md5 "tar.gz" &&
+[ -z ${AWS_ACCESS_KEY} ] || upload_to_s3 "tar.gz" && upload_to_s3 "md5"
