@@ -341,7 +341,10 @@ class TestGetManagedPlugin(BaseTest):
     def _patch(self, plugins):
         plugins = [Plugin(p) for p in plugins]
         client = TestGetManagedPlugin.Client(plugins)
-        get_rest_client = lambda: client
+
+        def get_rest_client():
+            return client
+
         with patch('cloudify_agent.api.plugins.installer.get_rest_client',
                    get_rest_client):
             yield client

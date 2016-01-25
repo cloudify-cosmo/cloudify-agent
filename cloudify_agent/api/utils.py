@@ -60,7 +60,6 @@ class _Internal(object):
         """
         Returns the storage directory the current daemon is stored under.
         """
-
         return os.environ[cls.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY]
 
     @classmethod
@@ -161,8 +160,10 @@ class _Internal(object):
     @staticmethod
     def get_broker_configuration(agent):
         client = CloudifyClient(
-            agent['manager_ip'],
-            agent['manager_port'],
+            host=agent['manager_ip'],
+            port=agent['manager_port'],
+            protocol=agent['manager_protocol'],
+            trust_all=True
         )
         bootstrap_context_dict = client.manager.get_context()
         bootstrap_context_dict = bootstrap_context_dict['context']['cloudify']

@@ -175,6 +175,7 @@ class DetachedDaemon(CronRespawnDaemon):
             broker_url=self.broker_url,
             manager_ip=self.manager_ip,
             manager_port=self.manager_port,
+            manager_protocol=self.manager_protocol,
             extra_env_path=self.extra_env_path,
             storage_dir=utils.internal.get_storage_directory(self.user),
             workdir=self.workdir,

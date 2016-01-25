@@ -20,6 +20,10 @@ import click
 from cloudify.utils import setup_logger
 
 from cloudify_agent.api.utils import logger as api_utils_logger
+from cloudify_agent.shell.commands import daemons
+from cloudify_agent.shell.commands import plugins
+from cloudify_agent.shell.commands import configure
+from cloudify_agent.shell.commands import installer
 
 
 _logger = setup_logger('cloudify_agent.shell.main',
@@ -57,11 +61,6 @@ def plugins_sub_command():
 
 
 # adding all of our commands.
-
-from cloudify_agent.shell.commands import daemons
-from cloudify_agent.shell.commands import plugins
-from cloudify_agent.shell.commands import configure
-from cloudify_agent.shell.commands import installer
 
 main.add_command(configure.configure)
 

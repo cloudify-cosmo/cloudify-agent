@@ -158,6 +158,7 @@ class GenericLinuxDaemon(CronRespawnDaemon):
             workdir=self.workdir,
             manager_ip=self.manager_ip,
             manager_port=self.manager_port,
+            manager_protocol=self.manager_protocol,
             broker_url=self.broker_url,
             user=self.user,
             min_workers=self.min_workers,

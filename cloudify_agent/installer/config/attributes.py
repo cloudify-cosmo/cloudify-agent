@@ -69,6 +69,9 @@ AGENT_ATTRIBUTES = {
         'group': 'cfy-agent',
         'default': defaults.MANAGER_PORT
     },
+    'manager_protocol': {
+        'group': 'cfy-agent'
+    },
     'queue': {
         'group': 'cfy-agent'
     },

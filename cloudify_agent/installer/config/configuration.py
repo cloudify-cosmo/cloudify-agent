@@ -20,8 +20,6 @@ import platform
 from cloudify import ctx
 from cloudify import context
 from cloudify import constants
-from cloudify.utils import get_manager_ip
-from cloudify.utils import get_manager_file_server_url
 
 from cloudify import utils as cloudify_utils
 from cloudify_agent.api import utils
@@ -163,7 +161,12 @@ def _cfy_agent_attributes_no_defaults(cloudify_agent):
 
     if not cloudify_agent.get('manager_ip'):
         # by default, the manager ip will be set by an environment variable
-        cloudify_agent['manager_ip'] = get_manager_ip()
+        cloudify_agent['manager_ip'] = cloudify_utils.get_manager_ip()
+
+    if not cloudify_agent.get('manager_protocol'):
+        # by default, the manager's REST protocol will be set by an env var
+        cloudify_agent['manager_protocol'] = \
+            cloudify_utils.get_rest_service_protocol()
 
 
 def directory_attributes(cloudify_agent):
@@ -222,7 +225,7 @@ def installation_attributes(cloudify_agent, runner):
             # no distribution difference in windows installation
             cloudify_agent['package_url'] = '{0}/packages/agents' \
                                             '/cloudify-windows-agent.exe'\
-                .format(get_manager_file_server_url())
+                .format(cloudify_utils.get_manager_file_server_url())
         else:
             if not cloudify_agent.get('distro'):
                 if cloudify_agent['local']:
@@ -243,7 +246,7 @@ def installation_attributes(cloudify_agent, runner):
                     'distro_codename' in cloudify_agent):
                 cloudify_agent['package_url'] = '{0}/packages/agents' \
                                                 '/{1}-{2}-agent.tar.gz' \
-                    .format(get_manager_file_server_url(),
+                    .format(cloudify_utils.get_manager_file_server_url(),
                             cloudify_agent['distro'],
                             cloudify_agent['distro_codename'])
 

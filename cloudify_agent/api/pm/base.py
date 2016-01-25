@@ -224,6 +224,8 @@ class Daemon(object):
         self.deployment_id = params.get('deployment_id')
         self.manager_port = params.get(
             'manager_port') or defaults.MANAGER_PORT
+        self.manager_protocol = params.get(
+            'manager_protocol') or defaults.MANAGER_PROTOCOL
         self.name = params.get(
             'name') or self._get_name_from_manager()
         self.queue = params.get(
@@ -757,7 +759,10 @@ class Daemon(object):
         return self._runtime_properties['cloudify_agent']['queue']
 
     def _get_runtime_properties(self):
-        client = CloudifyClient(host=self.manager_ip, port=self.manager_port)
+        client = CloudifyClient(host=self.manager_ip,
+                                port=self.manager_port,
+                                protocol=self.manager_protocol,
+                                trust_all=True)
         node_instances = client.node_instances.list(
             deployment_id=self.deployment_id)
 

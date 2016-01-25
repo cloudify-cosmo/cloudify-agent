@@ -6,6 +6,7 @@ export CLOUDIFY_DAEMON_STORAGE_DIRECTORY={{ storage_dir }}
 export CLOUDIFY_DAEMON_USER={{ user }}
 export MANAGEMENT_IP={{ manager_ip }}
 export MANAGER_REST_PORT={{ manager_port }}
+export MANAGER_REST_PROTOCOL={{ manager_protocol }}
 export MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229
 export MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL=http://{{ manager_ip }}:53229/blueprints
 export VIRTUALENV={{ virtualenv_path }}

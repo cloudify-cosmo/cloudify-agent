@@ -32,6 +32,7 @@ class TestConfiguration(BaseTest):
         super(TestConfiguration, self).setUp()
         os.environ[constants.MANAGER_FILE_SERVER_URL_KEY] = 'localhost'
         os.environ[constants.MANAGER_IP_KEY] = 'localhost'
+        os.environ[constants.MANAGER_REST_PROTOCOL_KEY] = 'http'
 
     def tearDown(self):
         del os.environ[constants.MANAGER_FILE_SERVER_URL_KEY]
@@ -62,6 +63,7 @@ class TestConfiguration(BaseTest):
             'name': 'test_deployment',
             'manager_ip': 'localhost',
             'manager_port': 8101,
+            'manager_protocol': 'http',
             'queue': 'test_deployment',
             'envdir': envdir,
             'user': user,
