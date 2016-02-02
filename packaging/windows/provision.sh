@@ -20,7 +20,7 @@ function download_resources() {
     curl -O https://dl.dropboxusercontent.com/u/407576/cfy-win-cli-package-resources/python/python.msi
     popd
     pushd packaging/source/virtualenv
-    curl -O https://dl.dropboxusercontent.com/u/407576/cfy-win-cli-package-resources/virtualenv/virtualenv-12.1.1-py2.py3-none-any.whl
+    curl -O https://pypi.python.org/packages/py2.py3/v/virtualenv/virtualenv-14.0.5-py2.py3-none-any.whl
     popd
 }
 

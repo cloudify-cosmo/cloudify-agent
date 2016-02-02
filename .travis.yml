@@ -14,7 +14,7 @@ env:
   - TOX_ENV=py26
 
 install:
-  - pip install tox==2.0.0
+  - pip install tox
 
 script:
   - tox -e $TOX_ENV

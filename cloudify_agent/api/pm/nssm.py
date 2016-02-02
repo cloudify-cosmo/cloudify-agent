@@ -22,7 +22,6 @@ from cloudify_agent.api import defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.api.pm.base import Daemon
-from cloudify_agent.included_plugins import included_plugins
 
 
 class NonSuckingServiceManagerDaemon(Daemon):
@@ -97,7 +96,6 @@ class NonSuckingServiceManagerDaemon(Daemon):
             broker_url=self.broker_url,
             min_workers=self.min_workers,
             max_workers=self.max_workers,
-            includes=','.join(self.includes),
             virtualenv_path=VIRTUALENV,
             name=self.name,
             storage_dir=utils.internal.get_storage_directory(self.user),
@@ -120,29 +118,6 @@ class NonSuckingServiceManagerDaemon(Daemon):
         self._create_ssl_cert()
         self._logger.info('Deploying celery configuration.')
         self._create_celery_conf()
-
-        # register plugins
-        for plugin in included_plugins:
-            self.register(plugin)
-
-    def apply_includes(self):
-        output = self._runner.run(
-            '{0} get {1} AppParameters'.format(
-                self.nssm_path, self.name)).std_out
-
-        # apparently nssm output is encoded in utf16.
-        # encode to ascii to be able to parse this
-        app_parameters = output.decode('utf16').encode('utf-8').rstrip()
-
-        current_includes = app_parameters.split('--include=')[1].split()[0]
-
-        new_app_parameters = app_parameters.replace(
-            current_includes,
-            ','.join(self.includes))
-
-        self._runner.run('{0} set {1} AppParameters {2}'
-                         .format(self.nssm_path, self.name,
-                                 new_app_parameters))
 
     def before_self_stop(self):
         if self.startup_policy in ['boot', 'system', 'auto']:

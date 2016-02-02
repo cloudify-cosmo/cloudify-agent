@@ -1,5 +1,5 @@
 #########
-# Copyright (c) 2014 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2013 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,21 +13,9 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+from cloudify.decorators import operation
 
-from setuptools import setup
 
-
-setup(
-    name='mock-plugin',
-    version='3.4a1',
-    author='Gigaspaces',
-    author_email='cloudify@gigaspaces.com',
-    packages=[
-        'mock_plugin'
-    ],
-    entry_points={
-        'console_scripts': [
-            'mock-plugin-entry-point = mock_plugin.tasks:main',
-        ]
-    },
-)
+@operation
+def run(**_):
+    return 'run-modified'

@@ -75,7 +75,6 @@ class TestGenericLinuxDaemon(BaseDaemonProcessManagementTest):
         daemon.configure()
         self.assertTrue(os.path.exists(daemon.script_path))
         self.assertTrue(os.path.exists(daemon.config_path))
-        self.assertTrue(os.path.exists(daemon.includes_path))
 
     def test_delete(self):
         daemon = self.create_daemon()
@@ -86,7 +85,6 @@ class TestGenericLinuxDaemon(BaseDaemonProcessManagementTest):
         daemon.delete()
         self.assertFalse(os.path.exists(daemon.script_path))
         self.assertFalse(os.path.exists(daemon.config_path))
-        self.assertFalse(os.path.exists(daemon.includes_path))
 
     @only_ci
     def test_configure_start_on_boot(self):

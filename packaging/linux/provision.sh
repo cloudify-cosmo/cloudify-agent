@@ -13,7 +13,7 @@ function install_deps() {
 	elif which yum; then
 		# centos/REHL
 		sudo yum -y update &&
-		sudo yum install curl python-devel make gcc git libyaml-devel yum-utils -y &&
+		sudo yum install curl python-devel make gcc gcc-c++ git libyaml-devel yum-utils -y &&
 		# this is required to build pyzmq under centos/RHEL
 		sudo yum-config-manager --add-repo http://download.opensuse.org/repositories/home:/fengshuo:/zeromq/CentOS_CentOS-6/home:fengshuo:zeromq.repo &&
 		sudo yum install -y zeromq-devel
@@ -26,10 +26,9 @@ function install_deps() {
 function install_requirements() {
 	curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python
 	sudo pip install pip==6.0.8 --upgrade
-	sudo pip install virtualenv==12.0.7 &&
+	sudo pip install "virtualenv>=14.0.0,<15.0.0" &&
 	sudo pip install setuptools==19.1.1 --upgrade &&
-	sudo pip install cloudify-agent-packager==3.5.3
-
+	sudo pip install cloudify-agent-packager==4.0.0
 }
 
 

@@ -46,7 +46,6 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             process_management='init.d',
             broker_ip=None,
             workdir=None,
-            includes=None,
             log_level=None,
             pid_file=None,
             log_file=None,
@@ -86,7 +85,6 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             max_workers=None,
             min_workers=None,
             broker_port=None,
-            includes=None,
             host=None,
             deployment_id=None,
             log_level=None,
@@ -165,26 +163,6 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
 
         daemon = factory_load.return_value
         daemon.restart.assert_called_once_with()
-
-    def test_register(self, *factory_methods):
-        self._run('cfy-agent daemons register '
-                  '--name=name --plugin=plugin')
-
-        factory_load = factory_methods[2]
-        factory_load.assert_called_once_with('name', logger=get_logger())
-
-        daemon = factory_load.return_value
-        daemon.register.assert_called_once_with('plugin')
-
-    def test_unregister(self, *factory_methods):
-        self._run('cfy-agent daemons unregister '
-                  '--name=name --plugin=plugin')
-
-        factory_load = factory_methods[2]
-        factory_load.assert_called_once_with('name', logger=get_logger())
-
-        daemon = factory_load.return_value
-        daemon.unregister.assert_called_once_with('plugin')
 
     @patch('cloudify_agent.shell.commands.daemons.api_utils'
            '.internal.daemon_to_dict')

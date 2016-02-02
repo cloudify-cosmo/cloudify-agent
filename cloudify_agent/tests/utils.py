@@ -21,9 +21,9 @@ import subprocess
 import os
 import filecmp
 import tarfile
-
 from contextlib import contextmanager
 
+from wagon import wagon
 from agent_packager import packager
 
 from cloudify.exceptions import NonRecoverableError
@@ -34,7 +34,6 @@ import cloudify_agent
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.tests import resources
-
 
 logger = setup_logger('cloudify_agent.tests.utils')
 
@@ -73,6 +72,29 @@ def create_plugin_tar(plugin_dir_name, target_directory):
     plugin_tar_file.add(plugin_source_path, plugin_dir_name)
     plugin_tar_file.close()
     return plugin_tar_file_name
+
+
+def create_plugin_wagon(plugin_dir_name, target_directory, requirements=False):
+
+    """
+    Create a wagon from a plugin.
+
+    :param plugin_dir_name: the plugin directory name, relative to the
+    resources package.
+    :type plugin_dir_name: str
+    :param target_directory: the directory to create the wagon in
+    :type target_directory: str
+    :param requirements: optional requirements for wagon
+    :type requirements: str
+
+    :return: path to created wagon`
+    :rtype: str
+    """
+    plugin_source_path = resources.get_resource(os.path.join(
+        'plugins', plugin_dir_name))
+    w = wagon.Wagon(plugin_source_path)
+    return w.create(with_requirements=requirements,
+                    archive_destination_dir=target_directory)
 
 
 def get_source_uri():
@@ -235,3 +257,26 @@ class FileServer(object):
             return True
         except socket.error:
             return False
+
+
+def op_context(task_name,
+               task_target='non-empty-value',
+               deployment_id=None,
+               plugin_name=None,
+               package_name=None,
+               package_version=None,
+               execution_env=None):
+    result = {
+        'type': 'operation',
+        'task_name': task_name,
+        'task_target': task_target,
+        'execution_env': execution_env,
+        'plugin': {
+            'name': plugin_name,
+            'package_name': package_name,
+            'package_version': package_version
+        }
+    }
+    if deployment_id:
+        result['deployment_id'] = deployment_id
+    return result

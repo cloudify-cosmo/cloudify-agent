@@ -15,7 +15,11 @@
 --loglevel={{ log_level }} \
 --pidfile={{ pid_file }} \
 --logfile={{ log_file }} \
---include=$(cat {{ includes_path }}) \
+--include=cloudify.dispatch \
 --detach \
 --config=cloudify.broker_config \
--Ofair
+-Ofair \
+--with-gate-keeper \
+--gate-keeper-bucket-size={{ max_workers }} \
+--with-logging-server \
+--logging-server-logdir={{ workdir }}/logs

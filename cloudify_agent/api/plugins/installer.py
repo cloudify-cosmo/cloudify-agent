@@ -13,14 +13,15 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import errno
 import os
 import sys
 import shutil
 import tempfile
 import platform
 
+import fasteners
 import pip
-from distutils.version import LooseVersion
 from wagon import wagon
 from wagon import utils as wagon_utils
 
@@ -31,10 +32,12 @@ from cloudify.utils import get_manager_file_server_blueprints_root_url
 from cloudify.manager import get_rest_client
 
 from cloudify_agent import VIRTUALENV
-from cloudify_agent.api import utils
 from cloudify_agent.api import plugins
 from cloudify_agent.api.utils import get_pip_path
 from cloudify_agent.api import exceptions
+
+
+SYSTEM_DEPLOYMENT = '__system__'
 
 
 class PluginInstaller(object):
@@ -43,58 +46,125 @@ class PluginInstaller(object):
         self.logger = logger or setup_logger(self.__class__.__name__)
         self.runner = LocalCommandRunner(logger=self.logger)
 
-    def install(self, plugin, blueprint_id=None):
+    def install(self,
+                plugin,
+                deployment_id=None,
+                blueprint_id=None):
         """
         Install the plugin to the current virtualenv.
 
         :param plugin: A plugin structure as defined in the blueprint.
+        :param deployment_id: The deployment id associated with this
+                              installation.
         :param blueprint_id: The blueprint id associated with this
                              installation. if specified, will be used
                              when downloading plugins that were included
                              as part of the blueprint itself.
         """
-        managed_plugin = get_managed_plugin(plugin)
+        # deployment_id may be empty in some tests.
+        deployment_id = deployment_id or SYSTEM_DEPLOYMENT
+        managed_plugin = get_managed_plugin(plugin,
+                                            logger=self.logger)
         source = get_plugin_source(plugin, blueprint_id)
         args = get_plugin_args(plugin)
-        if managed_plugin:
-            def build_description(*fields):
-                return ', '.join(
-                    '{0}: {1}'.format(field, managed_plugin.get(field))
-                    for field in fields if managed_plugin.get(field))
-            message = ('Installing managed plugin: {0} [{1}]'
-                       .format(managed_plugin.id,
-                               build_description('package_name',
-                                                 'package_version',
-                                                 'supported_platform',
-                                                 'distribution',
-                                                 'distribution_release')))
-            self.logger.info(message)
-            try:
-                self._wagon_install(managed_plugin.id, args)
-            except Exception as e:
-                raise NonRecoverableError('Failed installing managed '
-                                          'plugin: {0} [{1}][{2}]'
-                                          .format(managed_plugin.id,
-                                                  plugin, e))
-            return managed_plugin.package_name
-        elif source:
-            self.logger.info('Installing plugin from source')
-            return self._pip_install(source, args)
-        else:
-            raise NonRecoverableError('No source or managed plugin found for'
-                                      ' {0}'.format(plugin))
+        tmp_plugin_dir = tempfile.mkdtemp(prefix='{0}-'.format(plugin['name']))
+        args = '{0} --prefix="{1}"'.format(args, tmp_plugin_dir).strip()
+        self._create_plugins_dir_if_missing()
+        try:
+            if managed_plugin:
+                self._install_managed_plugin(
+                    managed_plugin=managed_plugin,
+                    plugin=plugin,
+                    args=args,
+                    tmp_plugin_dir=tmp_plugin_dir)
+            elif source:
+                self._install_source_plugin(
+                    deployment_id=deployment_id,
+                    plugin=plugin,
+                    source=source,
+                    args=args,
+                    tmp_plugin_dir=tmp_plugin_dir)
+            else:
+                raise NonRecoverableError(
+                    'No source or managed plugin found for {0}'.format(plugin))
+        finally:
+            self._rmtree(tmp_plugin_dir)
 
-    def _wagon_install(self, plugin_id, args):
+    def _install_managed_plugin(self, managed_plugin, plugin, args,
+                                tmp_plugin_dir):
+        matching_existing_installation = False
+        package_name = managed_plugin.package_name
+        dst_dir = '{0}-{1}'.format(package_name,
+                                   managed_plugin.package_version)
+        dst_dir = self._full_dst_dir(dst_dir)
+        lock = self._lock(dst_dir)
+        lock.acquire()
+        try:
+            if os.path.exists(dst_dir):
+                plugin_id_path = os.path.join(dst_dir, 'plugin.id')
+                if os.path.exists(plugin_id_path):
+                    with open(plugin_id_path) as f:
+                        existing_plugin_id = f.read().strip()
+                    matching_existing_installation = (
+                        existing_plugin_id == managed_plugin.id)
+                    if not matching_existing_installation:
+                        self.logger.warning(
+                            'Managed plugin installation found but its ID '
+                            'does not match the ID of the plugin currently'
+                            ' on the manager. Existing '
+                            'installation will be overridden. '
+                            '[existing: {0}]'.format(existing_plugin_id))
+                        self._rmtree(dst_dir)
+                else:
+                    self.logger.warning(
+                        'Managed plugin installation found but it is '
+                        'in a corrupted state. Existing installation '
+                        'will be overridden.')
+                    self._rmtree(dst_dir)
+
+            fields = ['package_name',
+                      'package_version',
+                      'supported_platform',
+                      'distribution',
+                      'distribution_release']
+            description = ', '.join('{0}: {1}'.format(
+                field, managed_plugin.get(field))
+                for field in fields if managed_plugin.get(field))
+
+            if matching_existing_installation:
+                self.logger.info(
+                    'Skipping installation of managed plugin: {0} '
+                    'as it is already installed [{1}]'
+                    .format(managed_plugin.id, description))
+            else:
+                self.logger.info('Installing managed plugin: {0} [{1}]'
+                                 .format(managed_plugin.id, description))
+                try:
+                    self._wagon_install(plugin=managed_plugin, args=args)
+                    shutil.move(tmp_plugin_dir, dst_dir)
+                    with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
+                        f.write(managed_plugin.id)
+                except Exception as e:
+                    tpe, value, tb = sys.exc_info()
+                    raise NonRecoverableError('Failed installing managed '
+                                              'plugin: {0} [{1}][{2}]'
+                                              .format(managed_plugin.id,
+                                                      plugin, e)), None, tb
+        finally:
+            if lock:
+                lock.release()
+
+    def _wagon_install(self, plugin, args):
         client = get_rest_client()
-        wagon_dir = tempfile.mkdtemp(prefix='{0}-'.format(plugin_id))
+        wagon_dir = tempfile.mkdtemp(prefix='{0}-'.format(plugin.id))
         wagon_path = os.path.join(wagon_dir, 'wagon.tar.gz')
         try:
             self.logger.debug('Downloading plugin {0} from manager into {1}'
-                              .format(plugin_id, wagon_path))
-            client.plugins.download(plugin_id=plugin_id,
+                              .format(plugin.id, wagon_path))
+            client.plugins.download(plugin_id=plugin.id,
                                     output_file=wagon_path)
             self.logger.debug('Installing plugin {0} using wagon'
-                              .format(plugin_id))
+                              .format(plugin.id))
             w = wagon.Wagon(source=wagon_path)
             w.install(ignore_platform=True,
                       install_args=args,
@@ -102,7 +172,22 @@ class PluginInstaller(object):
         finally:
             self.logger.debug('Removing directory: {0}'
                               .format(wagon_dir))
-            shutil.rmtree(wagon_dir, ignore_errors=True)
+            self._rmtree(wagon_dir)
+
+    def _install_source_plugin(self, deployment_id, plugin, source, args,
+                               tmp_plugin_dir):
+        dst_dir = '{0}-{1}'.format(deployment_id, plugin['name'])
+        dst_dir = self._full_dst_dir(dst_dir)
+        if os.path.exists(dst_dir):
+            self.logger.warning(
+                'Source plugin {0} already exists for deployment {1}. '
+                'This probably means a previous deployment with the '
+                'same name was not cleaned properly. Removing existing'
+                ' directory'.format(plugin['name'], deployment_id))
+            self._rmtree(dst_dir)
+        self.logger.info('Installing plugin from source')
+        self._pip_install(source=source, args=args)
+        shutil.move(tmp_plugin_dir, dst_dir)
 
     def _pip_install(self, source, args):
         plugin_dir = None
@@ -124,34 +209,48 @@ class PluginInstaller(object):
             if plugin_dir and not os.path.isabs(source):
                 self.logger.debug('Removing directory: {0}'
                                   .format(plugin_dir))
-                shutil.rmtree(plugin_dir, ignore_errors=True)
+                self._rmtree(plugin_dir)
         return package_name
 
-    def uninstall(self, package_name, ignore_missing=True):
-        """
-        Uninstall the plugin from the current virtualenv. By default this
-        operation will fail when trying to uninstall a plugin that is not
-        installed, use `ignore_missing` to change this behavior.
+    def uninstall(self, plugin, deployment_id=None):
+        """Uninstall a previously installed plugin (only supports source
+        plugins) """
+        deployment_id = deployment_id or SYSTEM_DEPLOYMENT
+        self.logger.info('Uninstalling plugin from source')
+        dst_dir = '{0}-{1}'.format(deployment_id, plugin['name'])
+        dst_dir = self._full_dst_dir(dst_dir)
+        if os.path.isdir(dst_dir):
+            self._rmtree(dst_dir)
 
-        :param package_name: the package name as stated in the setup.py file
-        :param ignore_missing: ignore failures in uninstalling missing plugins.
-        """
+    def uninstall_wagon(self, package_name, package_version):
+        """Only used by tests for cleanup purposes"""
+        dst_dir = '{0}-{1}'.format(package_name, package_version)
+        dst_dir = self._full_dst_dir(dst_dir)
+        if os.path.isdir(dst_dir):
+            self._rmtree(dst_dir)
 
-        if not ignore_missing:
-            self.runner.run('{0} uninstall -y {1}'.format(
-                utils.get_pip_path(), package_name))
-        else:
-            out = self.runner.run(
-                '{0} freeze'.format(utils.get_pip_path())).std_out
-            packages = []
-            for line in out.splitlines():
-                packages.append(line.split('==')[0])
-            if package_name in packages:
-                self.runner.run('{0} uninstall -y {1}'.format(
-                    utils.get_pip_path(), package_name))
-            else:
-                self.logger.info('{0} not installed. Nothing to do'
-                                 .format(package_name))
+    @staticmethod
+    def _create_plugins_dir_if_missing():
+        plugins_dir = os.path.join(VIRTUALENV, 'plugins')
+        if not os.path.exists(plugins_dir):
+            try:
+                os.makedirs(plugins_dir)
+            except OSError as e:
+                if e.errno != errno.EEXIST:
+                    raise
+
+    @staticmethod
+    def _full_dst_dir(dst_dir):
+        plugins_dir = os.path.join(VIRTUALENV, 'plugins')
+        return os.path.join(plugins_dir, dst_dir)
+
+    @staticmethod
+    def _lock(path):
+        return fasteners.InterProcessLock('{0}.lock'.format(path))
+
+    @staticmethod
+    def _rmtree(path):
+        shutil.rmtree(path, ignore_errors=True)
 
 
 def extract_package_to_dir(package_url):
@@ -280,7 +379,7 @@ def extract_package_name(package_dir):
     return plugin_name
 
 
-def get_managed_plugin(plugin):
+def get_managed_plugin(plugin, logger=None):
     package_name = plugin.get('package_name')
     package_version = plugin.get('package_version')
     distribution = plugin.get('distribution')
@@ -288,14 +387,17 @@ def get_managed_plugin(plugin):
     distribution_release = plugin.get('distribution_release')
     supported_platform = plugin.get('supported_platform')
 
-    if not package_name:
+    if not (package_name and package_version):
+        if package_name and logger:
+            logger.warn('package_name {0} is specified but no package_version '
+                        'found, skipping wagon installation.'
+                        .format(package_name))
         return None
 
     query_parameters = {
-        'package_name': package_name
+        'package_name': package_name,
+        'package_version': package_version
     }
-    if package_version:
-        query_parameters['package_version'] = package_version
     if distribution:
         query_parameters['distribution'] = distribution
     if distribution_version:
@@ -327,9 +429,9 @@ def get_managed_plugin(plugin):
     if not plugins:
         return None
 
-    plugin_result = max(plugins,
-                        key=lambda plug: LooseVersion(plug.package_version))
-    return plugin_result
+    # we return the first one because both package name and version
+    # are required fields. No one pick is better than the other
+    return plugins[0]
 
 
 def get_plugin_source(plugin, blueprint_id=None):

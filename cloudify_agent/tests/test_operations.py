@@ -41,8 +41,6 @@ from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import only_ci
 
 
-# To be changed to the original value when the CFY-4382 is merged to
-# cloudify-manager.
 _INSTALL_SCRIPT_URL = ('https://raw.githubusercontent.com/cloudify-cosmo/'
                        'cloudify-manager/master/resources/'
                        'rest-service/cloudify/install_agent.py')
@@ -50,7 +48,7 @@ _INSTALL_SCRIPT_URL = ('https://raw.githubusercontent.com/cloudify-cosmo/'
 
 class _MockManagerClient(object):
     def get_version(self):
-        return {'version': '3.3'}
+        return {'version': '3.4'}
 
 
 class _MockRestclient(object):
@@ -144,6 +142,10 @@ def _get_celery_mock():
     celery_mock.send_task = keeper.set_value
     return MagicMock(return_value=celery_mock)
 
+rest_mock = MagicMock()
+rest_mock.manager = MagicMock()
+rest_mock.manager.get_version = lambda: '3.3'
+
 
 class TestCreateAgentAmqp(BaseTest):
 
@@ -167,7 +169,7 @@ class TestCreateAgentAmqp(BaseTest):
             'windows': False,
             'package_url': 'http://10.0.4.46:53229/packages/agents/'
                            'ubuntu-trusty-agent.tar.gz',
-            'version': '3.3',
+            'version': '3.4',
             'broker_config': {
                 'broker_ip': '10.0.4.46',
                 'broker_pass': 'test_pass',
@@ -236,7 +238,7 @@ class TestCreateAgentAmqp(BaseTest):
     @patch('cloudify_agent.operations.celery.Celery', _get_celery_mock())
     @patch('cloudify_agent.operations.app', MagicMock())
     @patch('cloudify_agent.api.utils.get_agent_registered',
-           MagicMock(return_value={'script_runner.tasks.run': {}}))
+           MagicMock(return_value={'cloudify.dispatch.dispatch': {}}))
     def test_create_agent_from_old_agent(self):
         context = self._create_node_instance_context()
         old_context = ctx

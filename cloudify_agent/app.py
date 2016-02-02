@@ -25,16 +25,50 @@ import logging.handlers
 
 from celery import Celery, signals
 
-from cloudify import constants
+from cloudify.celery import gate_keeper
+from cloudify.celery import logging_server
 
-from cloudify_agent.api import utils, defaults
+from cloudify_agent.api import utils
 
 
 LOGFILE_SIZE_BYTES = 5 * 1024 * 1024
 LOGFILE_BACKUP_COUNT = 5
 
 
-broker_url = os.environ.get(constants.CELERY_BROKER_URL_KEY, 'amqp://')
+@signals.setup_logging.connect
+def setup_logging_handler(loglevel, logfile, format, **kwargs):
+    logger = logging.getLogger()
+    if os.name == 'nt':
+        logfile = logfile.format(os.getpid())
+    handler = logging.handlers.RotatingFileHandler(
+        logfile,
+        maxBytes=LOGFILE_SIZE_BYTES,
+        backupCount=LOGFILE_BACKUP_COUNT)
+    handler.setFormatter(logging.Formatter(fmt=format))
+    handler.setLevel(loglevel)
+    logger.handlers = []
+    logger.addHandler(handler)
+    logger.setLevel(loglevel)
+
+
+@signals.worker_process_init.connect
+def declare_fork(**kwargs):
+    try:
+        import Crypto.Random
+        Crypto.Random.atfork()
+    except ImportError:
+        pass
+
+
+# This attribute is used as the celery App instance.
+# it is referenced in two ways:
+#   1. Celery command line --app options.
+#   2. cloudify.dispatch.dispatch uses it as the 'task' decorator.
+# For app configuration, see cloudify.broker_config.
+app = Celery()
+gate_keeper.configure_app(app)
+logging_server.configure_app(app)
+
 
 try:
     # running inside an agent
@@ -42,48 +76,6 @@ try:
 except KeyError:
     # running outside an agent
     daemon_name = None
-
-
-if daemon_name:
-    @signals.setup_logging.connect
-    def setup_logging_handler(loglevel, logfile, format, **kwargs):
-        logger = logging.getLogger()
-        if os.name == 'nt':
-            logfile = logfile.format(os.getpid())
-        handler = logging.handlers.RotatingFileHandler(
-            logfile,
-            maxBytes=LOGFILE_SIZE_BYTES,
-            backupCount=LOGFILE_BACKUP_COUNT)
-        handler.setFormatter(logging.Formatter(fmt=format))
-        handler.setLevel(loglevel)
-        logger.handlers = []
-        logger.addHandler(handler)
-        logger.setLevel(loglevel)
-
-    @signals.worker_process_init.connect
-    def declare_fork(**kwargs):
-        try:
-            import Crypto.Random
-            Crypto.Random.atfork()
-        except ImportError:
-            pass
-
-
-# This attribute is used as the celery App instance.
-# it is referenced in two ways:
-#   1. Celery command line --app options.
-#   2. The operation decorator uses app.task as the underlying
-#      celery task decorator. (cloudify.decorators)
-app = Celery(broker=broker_url)
-
-# result backend should be configured like this
-# instead of in the constructor because of an issue with celery
-# result backends running on windows hosts
-# see https://github.com/celery/celery/issues/897
-app.conf.update(
-    CELERY_RESULT_BACKEND=broker_url,
-    CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES)
-
 
 if daemon_name:
 

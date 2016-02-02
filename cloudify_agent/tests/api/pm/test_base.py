@@ -139,9 +139,6 @@ class TestNotImplemented(BaseTest):
             broker_pass='guest',
         )
 
-    def test_apply_includes(self):
-        self.assertRaises(NotImplementedError, self.daemon.apply_includes)
-
     def test_start_command(self):
         self.assertRaises(NotImplementedError, self.daemon.start_command)
 

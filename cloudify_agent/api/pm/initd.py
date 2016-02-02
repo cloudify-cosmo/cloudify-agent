@@ -21,7 +21,6 @@ from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
-from cloudify_agent.included_plugins import included_plugins
 from cloudify_agent.api.pm.base import CronRespawnDaemon
 
 
@@ -49,8 +48,6 @@ class GenericLinuxDaemon(CronRespawnDaemon):
         self.service_name = 'celeryd-{0}'.format(self.name)
         self.script_path = os.path.join(self.SCRIPT_DIR, self.service_name)
         self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
-        self.includes_path = os.path.join(
-            self.workdir, '{0}-includes'.format(self.name))
 
         # initd specific configuration
         self.start_on_boot = str(params.get(
@@ -60,9 +57,6 @@ class GenericLinuxDaemon(CronRespawnDaemon):
 
     def configure(self):
 
-        self._logger.debug('Creating includes file: {0}'
-                           .format(self.includes_path))
-        self._create_includes()
         self._logger.debug('Creating daemon script: {0}'
                            .format(self.script_path))
         self._create_script()
@@ -96,18 +90,11 @@ class GenericLinuxDaemon(CronRespawnDaemon):
         if os.path.exists(self.config_path):
             self._logger.debug('Deleting {0}'.format(self.config_path))
             self._runner.run('sudo rm {0}'.format(self.config_path))
-        if os.path.exists(self.includes_path):
-            self._logger.debug('Deleting {0}'.format(self.includes_path))
-            self._runner.run('sudo rm {0}'.format(self.includes_path))
 
     def before_self_stop(self):
         if self.start_on_boot:
             self._logger.info('Deleting start-on-boot entry')
             self._start_on_boot_handler.delete()
-
-    def apply_includes(self):
-        with open(self.includes_path, 'w') as f:
-            f.write(','.join(self.includes))
 
     def stop_command(self):
         return stop_command(self)
@@ -127,15 +114,6 @@ class GenericLinuxDaemon(CronRespawnDaemon):
         except CommandExecutionException as e:
             self._logger.debug(str(e))
             return False
-
-    def _create_includes(self):
-        dir_name = os.path.dirname(self.includes_path)
-        if not os.path.exists(dir_name):
-            os.makedirs(dir_name)
-        open(self.includes_path, 'w').close()
-
-        for plugin in included_plugins:
-            self.register(plugin)
 
     def _create_script(self):
         self._logger.debug('Rendering init.d script from template')
@@ -162,7 +140,6 @@ class GenericLinuxDaemon(CronRespawnDaemon):
             user=self.user,
             min_workers=self.min_workers,
             max_workers=self.max_workers,
-            includes_path=self.includes_path,
             virtualenv_path=VIRTUALENV,
             extra_env_path=self.extra_env_path,
             name=self.name,
