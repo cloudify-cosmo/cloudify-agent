@@ -262,10 +262,40 @@ def extract_package_to_dir(package_url):
     :return: the directory the package was extracted to.
     """
 
+    # Plugin installation during deployment creation occurs not in the main
+    # thread, but rather in the local task thread pool.
+    # When installing source based plugins, pip will install an
+    # interrupt handler using signal.signal, this will fail saying something
+    # like "signals are only allowed in the main thread"
+    # from examining the code, I found patching signal in pip.util.ui
+    # is the cleanest form. No "official" way of disabling this was found.
+    _previous_signal = []
+
+    def _patch_pip_download():
+        try:
+            import pip.utils.ui
+        except ImportError:
+            return
+
+        def _stub_signal(sig, action):
+            return None
+        if hasattr(pip.utils.ui, 'signal'):
+            _previous_signal.append(pip.utils.ui.signal)
+            pip.utils.ui.signal = _stub_signal
+
+    def _restore_pip_download():
+        try:
+            import pip.utils.ui
+        except ImportError:
+            return
+        if hasattr(pip.utils.ui, 'signal') and _previous_signal:
+            pip.utils.ui.signal = _previous_signal[0]
+
     plugin_dir = None
 
     try:
         plugin_dir = tempfile.mkdtemp()
+        _patch_pip_download()
         # check pip version and unpack plugin_url accordingly
         if is_pip6_or_higher():
             pip.download.unpack_url(link=pip.index.Link(package_url),
@@ -280,13 +310,14 @@ def extract_package_to_dir(package_url):
                                location=plugin_dir,
                                download_dir=None,
                                only_download=False)
-
     except Exception as e:
         if plugin_dir and os.path.exists(plugin_dir):
             shutil.rmtree(plugin_dir)
         raise exceptions.PluginInstallationError(
             'Failed to download and unpack package from {0}: {1}'
             .format(package_url, str(e)))
+    finally:
+        _restore_pip_download()
 
     return plugin_dir
 
