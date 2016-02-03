@@ -15,6 +15,7 @@
 
 import os
 import uuid
+import time
 
 from cloudify_agent.installer import script
 from system_tests import resources
@@ -199,9 +200,11 @@ class AgentInstallerTest(testenv.TestCase):
     def _test_userdata_agent(self, image, flavor, user, os_family,
                              userdata, file_path, install_method,
                              name=None):
+        deployment_id = 'userdata{0}'.format(time.time())
         self.blueprint_yaml = resources.get_resource(
             'userdata-agent-blueprint/userdata-agent-blueprint.yaml')
         self.upload_deploy_and_execute_install(
+            deployment_id=deployment_id,
             inputs={
                 'image': image,
                 'flavor': flavor,
@@ -214,8 +217,9 @@ class AgentInstallerTest(testenv.TestCase):
             }
         )
         self.assert_outputs({'MY_ENV_VAR': 'MY_ENV_VAR_VALUE',
-                             'file_content': self.expected_file_content})
-        self.execute_uninstall()
+                             'file_content': self.expected_file_content},
+                            deployment_id=deployment_id)
+        self.execute_uninstall(deployment_id=deployment_id)
 
     def _manager_ip(self):
         nova_client, _, _ = self.env.handler.openstack_clients()
