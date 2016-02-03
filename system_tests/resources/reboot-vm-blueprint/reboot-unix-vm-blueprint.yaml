@@ -35,7 +35,7 @@ node_templates:
         user: { get_input: user }
     interfaces:
       cloudify.interfaces.reboot_test:
-        reboot: reboot.reboot_plugin.tasks.reboot
+        reboot: openstack.nova_plugin.reboot.reboot
 
   application:
     type: nodes.Application
