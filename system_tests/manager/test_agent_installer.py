@@ -66,8 +66,7 @@ class AgentInstallerTest(testenv.TestCase):
         deployment_id = self.test_id
         self.upload_deploy_and_execute_install(
             deployment_id=deployment_id,
-            inputs=inputs
-        )
+            inputs=inputs)
         self.cfy.execute_workflow(
             workflow='execute_operation',
             deployment_id=deployment_id,

@@ -43,7 +43,7 @@ node_templates:
           &netsh advfirewall firewall add rule name="WinRM 5986" protocol=TCP dir=in localport=5986 action=allow
     interfaces:
       cloudify.interfaces.reboot_test:
-        reboot: reboot.reboot_plugin.tasks.reboot
+        reboot: openstack.nova_plugin.reboot.reboot
 
   application:
     type: nodes.Application
