@@ -21,6 +21,7 @@ import subprocess
 import os
 import filecmp
 import tarfile
+import uuid
 from contextlib import contextmanager
 
 from wagon import wagon
@@ -45,7 +46,22 @@ def env(key, value):
     del os.environ[key]
 
 
-def create_plugin_tar(plugin_dir_name, target_directory):
+def create_mock_plugin(basedir, install_requires=None):
+    install_requires = install_requires or []
+    name = str(uuid.uuid4())
+    plugin_dir = os.path.join(basedir, name)
+    setup_py = os.path.join(plugin_dir, 'setup.py')
+    os.mkdir(plugin_dir)
+    with open(setup_py, 'w') as f:
+        f.write('from setuptools import setup; '
+                'setup(name="{0}", install_requires={1}, version="0.1")'
+                .format(name, install_requires))
+    return name
+
+
+def create_plugin_tar(plugin_dir_name,
+                      target_directory,
+                      basedir=None):
 
     """
     Create a tar file from the plugin.
@@ -61,20 +77,29 @@ def create_plugin_tar(plugin_dir_name, target_directory):
     :rtype: str
     """
 
-    plugin_source_path = resources.get_resource(os.path.join(
-        'plugins', plugin_dir_name))
+    if basedir:
+        plugin_source_path = os.path.join(basedir, plugin_dir_name)
+    else:
+        plugin_source_path = resources.get_resource(os.path.join(
+            'plugins', plugin_dir_name))
 
     plugin_tar_file_name = '{0}.tar'.format(plugin_dir_name)
     target_tar_file_path = os.path.join(target_directory,
                                         plugin_tar_file_name)
 
     plugin_tar_file = tarfile.TarFile(target_tar_file_path, 'w')
-    plugin_tar_file.add(plugin_source_path, plugin_dir_name)
-    plugin_tar_file.close()
+    try:
+        plugin_tar_file.add(plugin_source_path, plugin_dir_name)
+    finally:
+        plugin_tar_file.close()
+
     return plugin_tar_file_name
 
 
-def create_plugin_wagon(plugin_dir_name, target_directory, requirements=False):
+def create_plugin_wagon(plugin_dir_name,
+                        target_directory,
+                        requirements=False,
+                        basedir=None):
 
     """
     Create a wagon from a plugin.
@@ -90,8 +115,11 @@ def create_plugin_wagon(plugin_dir_name, target_directory, requirements=False):
     :return: path to created wagon`
     :rtype: str
     """
-    plugin_source_path = resources.get_resource(os.path.join(
-        'plugins', plugin_dir_name))
+    if basedir:
+        plugin_source_path = os.path.join(basedir, plugin_dir_name)
+    else:
+        plugin_source_path = resources.get_resource(os.path.join(
+            'plugins', plugin_dir_name))
     w = wagon.Wagon(plugin_source_path)
     return w.create(with_requirements=requirements,
                     archive_destination_dir=target_directory)

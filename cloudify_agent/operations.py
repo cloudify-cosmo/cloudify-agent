@@ -61,8 +61,13 @@ def uninstall_plugins(plugins, **_):
     installer = PluginInstaller(logger=ctx.logger)
     for plugin in plugins:
         ctx.logger.info('Uninstalling plugin: {0}'.format(plugin['name']))
-        installer.uninstall(plugin=plugin,
-                            deployment_id=ctx.deployment.id)
+        if plugin.get('wagon'):
+            installer.uninstall_wagon(
+                package_name=plugin['package_name'],
+                package_version=plugin['package_version'])
+        else:
+            installer.uninstall(plugin=plugin,
+                                deployment_id=ctx.deployment.id)
 
 
 @operation
