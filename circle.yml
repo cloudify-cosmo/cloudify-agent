@@ -1,4 +1,6 @@
 machine:
+  python:
+    version: 2.7.9
   services:
     - rabbitmq-server
 
@@ -15,6 +17,7 @@ dependencies:
   pre:
     - pyenv local 2.7.9 2.6.8
   override:
+    - pip install -U pip
     - pip install tox
 
 test:
