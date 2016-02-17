@@ -7,8 +7,8 @@ function install_requirements() {
 
 function download_wheels() {
     # NEED TO ADD SOFTLAYER AND VSPHERE HERE!
-    pip wheel --wheel-dir packaging/source/wheels --requirement "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/$CORE_TAG_NAME/dev-requirements.txt"
-    pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels "https://github.com/cloudify-cosmo/cloudify-agent/archive/$CORE_TAG_NAME.zip"
+    pip wheel --wheel-dir packaging/source/wheels --requirement "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/3.3.1-sec1/dev-requirements.txt"
+    pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels "https://github.com/cloudify-cosmo/cloudify-agent/archive/3.3.1-sec1.zip"
 }
 
 function download_resources() {
@@ -59,7 +59,7 @@ PLUGINS_TAG_NAME="1.3.1"
 AWS_ACCESS_KEY_ID=$1
 AWS_ACCESS_KEY=$2
 AWS_S3_BUCKET="gigaspaces-repository-eu"
-AWS_S3_PATH="org/cloudify3/${VERSION}/${PRERELEASE}-RELEASE"
+AWS_S3_PATH="org/cloudify3/${VERSION}/SEC1-PATCH"
 
 echo "VERSION: ${VERSION}"
 echo "PRERELEASE: ${PRERELEASE}"

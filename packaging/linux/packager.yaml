@@ -1,6 +1,6 @@
 python_path: /usr/bin/python
-cloudify_agent_module: https://github.com/cloudify-cosmo/cloudify-agent/archive/3.3.1.zip
-requirements_file: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/3.3.1/dev-requirements.txt
+cloudify_agent_module: https://github.com/cloudify-cosmo/cloudify-agent/archive/3.3.1-sec1.zip
+requirements_file: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/3.3.1-sec1/dev-requirements.txt
 additional_plugins:
     # These are cloned during the machine provisioning process as they are private repositories
     cloudify_vsphere_plugin: /tmp/cloudify-vsphere-plugin
