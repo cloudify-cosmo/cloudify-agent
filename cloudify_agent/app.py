@@ -24,6 +24,7 @@ import logging
 import logging.handlers
 
 from celery import Celery, signals
+from celery.utils.log import ColorFormatter
 
 from cloudify.celery import gate_keeper
 from cloudify.celery import logging_server
@@ -36,16 +37,20 @@ LOGFILE_BACKUP_COUNT = 5
 
 
 @signals.setup_logging.connect
-def setup_logging_handler(loglevel, logfile, format, **kwargs):
-    logger = logging.getLogger()
-    if os.name == 'nt':
-        logfile = logfile.format(os.getpid())
-    handler = logging.handlers.RotatingFileHandler(
-        logfile,
-        maxBytes=LOGFILE_SIZE_BYTES,
-        backupCount=LOGFILE_BACKUP_COUNT)
-    handler.setFormatter(logging.Formatter(fmt=format))
+def setup_logging_handler(loglevel, logfile, format, colorize, **kwargs):
+    if logfile:
+        if os.name == 'nt':
+            logfile = logfile.format(os.getpid())
+        handler = logging.handlers.RotatingFileHandler(
+            logfile,
+            maxBytes=LOGFILE_SIZE_BYTES,
+            backupCount=LOGFILE_BACKUP_COUNT)
+        handler.setFormatter(logging.Formatter(fmt=format))
+    else:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(ColorFormatter(fmt=format, use_color=colorize))
     handler.setLevel(loglevel)
+    logger = logging.getLogger()
     logger.handlers = []
     logger.addHandler(handler)
     logger.setLevel(loglevel)
