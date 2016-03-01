@@ -33,7 +33,6 @@ from cloudify.exceptions import NonRecoverableError
 from cloudify_rest_client.plugins import Plugin
 
 from cloudify_agent.api.plugins import installer
-from cloudify_agent.api import exceptions
 
 from cloudify_agent.tests import resources
 from cloudify_agent.tests import utils as test_utils
@@ -290,73 +289,6 @@ class PluginInstallerTest(BaseTest):
         self.assertEqual(
             'mock-plugin',
             installer.extract_package_name(package_dir))
-
-
-class PipVersionParserTestCase(BaseTest):
-
-    def test_parse_long_format_version(self):
-        version_tupple = installer.parse_pip_version('1.5.4')
-        self.assertEqual(('1', '5', '4'), version_tupple)
-
-    def test_parse_short_format_version(self):
-        version_tupple = installer.parse_pip_version('6.0')
-        self.assertEqual(('6', '0', ''), version_tupple)
-
-    def test_pip6_not_higher(self):
-        result = installer.is_pip6_or_higher('1.5.4')
-        self.assertEqual(result, False)
-
-    def test_pip6_exactly(self):
-        result = installer.is_pip6_or_higher('6.0')
-        self.assertEqual(result, True)
-
-    def test_pip6_is_higher(self):
-        result = installer.is_pip6_or_higher('6.0.6')
-        self.assertEqual(result, True)
-
-    def test_parse_invalid_major_version(self):
-        expected_err_msg = 'Invalid pip version: "a.5.4", major version is ' \
-                           '"a" while expected to be a number'
-        self.assertRaisesRegex(
-            exceptions.PluginInstallationError, expected_err_msg,
-            installer.parse_pip_version, 'a.5.4')
-
-    def test_parse_invalid_minor_version(self):
-        expected_err_msg = 'Invalid pip version: "1.a.4", minor version is ' \
-                           '"a" while expected to be a number'
-        self.assertRaisesRegex(
-            exceptions.PluginInstallationError, expected_err_msg,
-            installer.parse_pip_version, '1.a.4')
-
-    def test_parse_too_short_version(self):
-        expected_err_msg = 'Unknown formatting of pip version: ' \
-                           '"6", expected ' \
-                           'dot-delimited numbers ' \
-                           '\(e.g. "1.5.4", "6.0"\)'
-        self.assertRaisesRegex(
-            exceptions.PluginInstallationError, expected_err_msg,
-            installer.parse_pip_version, '6')
-
-    def test_parse_numeric_version(self):
-        expected_err_msg = 'Invalid pip version: 6 is not a string'
-        self.assertRaisesRegex(
-            exceptions.PluginInstallationError, expected_err_msg,
-            installer.parse_pip_version, 6)
-
-    def test_parse_alpha_version(self):
-        expected_err_msg = 'Unknown formatting of pip ' \
-                           'version: "a", expected ' \
-                           'dot-delimited ' \
-                           'numbers \(e.g. "1.5.4", "6.0"\)'
-        self.assertRaisesRegex(
-            exceptions.PluginInstallationError, expected_err_msg,
-            installer.parse_pip_version, 'a')
-
-    def test_parse_wrong_obj(self):
-        expected_err_msg = 'Invalid pip version: \[6\] is not a string'
-        self.assertRaisesRegex(
-            exceptions.PluginInstallationError, expected_err_msg,
-            installer.parse_pip_version, [6])
 
 
 class TestGetSourceAndGetArgs(BaseTest):

@@ -19,9 +19,9 @@ import sys
 import shutil
 import tempfile
 import platform
+import logging
 
 import fasteners
-import pip
 from wagon import wagon
 from wagon import utils as wagon_utils
 
@@ -262,54 +262,60 @@ def extract_package_to_dir(package_url):
     :return: the directory the package was extracted to.
     """
 
-    # Plugin installation during deployment creation occurs not in the main
+    # 1) Plugin installation during deployment creation occurs not in the main
     # thread, but rather in the local task thread pool.
     # When installing source based plugins, pip will install an
     # interrupt handler using signal.signal, this will fail saying something
     # like "signals are only allowed in the main thread"
     # from examining the code, I found patching signal in pip.util.ui
     # is the cleanest form. No "official" way of disabling this was found.
+    # 2) pip.utils logger may be used internally by pip during some
+    # ImportError. This interferes with our ZMQLoggingHandler which during
+    # the first time it is invoked tries importing some stuff. This causes
+    # a deadlock between the handler lock and the global import lock. One side
+    # holds the import lock and tried writing to the logger and is blocked on
+    # the handler lock, while the other side holds the handler lock and is
+    # blocked on the import lock. This is why we patch the logging level
+    # of this logger - by name, before importing pip. (see CFY-4866)
     _previous_signal = []
+    _previous_level = []
 
     def _patch_pip_download():
+        pip_utils_logger = logging.getLogger('pip.utils')
+        _previous_level.append(pip_utils_logger.level)
+        pip_utils_logger.setLevel(logging.CRITICAL)
+
         try:
             import pip.utils.ui
-        except ImportError:
-            return
 
-        def _stub_signal(sig, action):
-            return None
-        if hasattr(pip.utils.ui, 'signal'):
-            _previous_signal.append(pip.utils.ui.signal)
-            pip.utils.ui.signal = _stub_signal
+            def _stub_signal(sig, action):
+                return None
+            if hasattr(pip.utils.ui, 'signal'):
+                _previous_signal.append(pip.utils.ui.signal)
+                pip.utils.ui.signal = _stub_signal
+        except ImportError:
+            pass
 
     def _restore_pip_download():
         try:
             import pip.utils.ui
+            if hasattr(pip.utils.ui, 'signal') and _previous_signal:
+                pip.utils.ui.signal = _previous_signal[0]
         except ImportError:
-            return
-        if hasattr(pip.utils.ui, 'signal') and _previous_signal:
-            pip.utils.ui.signal = _previous_signal[0]
+            pass
+        pip_utils_logger = logging.getLogger('pip.utils')
+        pip_utils_logger.setLevel(_previous_level[0])
 
     plugin_dir = None
-
     try:
         plugin_dir = tempfile.mkdtemp()
         _patch_pip_download()
-        # check pip version and unpack plugin_url accordingly
-        if is_pip6_or_higher():
-            pip.download.unpack_url(link=pip.index.Link(package_url),
-                                    location=plugin_dir,
-                                    download_dir=None,
-                                    only_download=False)
-        else:
-            req_set = pip.req.RequirementSet(build_dir=None,
-                                             src_dir=None,
-                                             download_dir=None)
-            req_set.unpack_url(link=pip.index.Link(package_url),
-                               location=plugin_dir,
-                               download_dir=None,
-                               only_download=False)
+        # Import here, after patch
+        import pip
+        pip.download.unpack_url(link=pip.index.Link(package_url),
+                                location=plugin_dir,
+                                download_dir=None,
+                                only_download=False)
     except Exception as e:
         if plugin_dir and os.path.exists(plugin_dir):
             shutil.rmtree(plugin_dir)
@@ -320,73 +326,6 @@ def extract_package_to_dir(package_url):
         _restore_pip_download()
 
     return plugin_dir
-
-
-def is_pip6_or_higher(pip_version=None):
-
-    """
-    Determines if the pip version passed is higher than version 6.
-
-    :param pip_version: the version of pip
-
-    :return: whether or not the version is higher than version 6.
-    """
-
-    major, minor, micro = parse_pip_version(pip_version)
-    if int(major) >= 6:
-        return True
-    else:
-        return False
-
-
-def parse_pip_version(pip_version=''):
-    """
-    Parses a pip version string to identify major, minor, micro versions.
-
-    :param pip_version: the version of pip
-
-    :return: major, minor, micro version of pip
-    :rtype: tuple
-    """
-
-    if not pip_version:
-        try:
-            pip_version = pip.__version__
-        except AttributeError as e:
-            raise exceptions.PluginInstallationError(
-                'Failed to get pip version: ', str(e))
-
-    if not isinstance(pip_version, basestring):
-        raise exceptions.PluginInstallationError(
-            'Invalid pip version: {0} is not a string'
-            .format(pip_version))
-
-    if not pip_version.__contains__("."):
-        raise exceptions.PluginInstallationError(
-            'Unknown formatting of pip version: "{0}", expected '
-            'dot-delimited numbers (e.g. "1.5.4", "6.0")'
-            .format(pip_version))
-
-    version_parts = pip_version.split('.')
-    major = version_parts[0]
-    minor = version_parts[1]
-    micro = ''
-    if len(version_parts) > 2:
-        micro = version_parts[2]
-
-    if not str(major).isdigit():
-        raise exceptions.PluginInstallationError(
-            'Invalid pip version: "{0}", major version is "{1}" '
-            'while expected to be a number'
-            .format(pip_version, major))
-
-    if not str(minor).isdigit():
-        raise exceptions.PluginInstallationError(
-            'Invalid pip version: "{0}", minor version is "{1}" while '
-            'expected to be a number'
-            .format(pip_version, minor))
-
-    return major, minor, micro
 
 
 def extract_package_name(package_dir):
