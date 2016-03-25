@@ -110,6 +110,14 @@ class AgentInstaller(object):
         self.runner.run('{0} install {1}'
                         .format(pip_path, source_url))
 
+        # scripts inside the virtualenv will have /path/to/venv/bin/python
+        # as their shebang. If this exceeds 128 bytes, the scripts will
+        # become non-executable, unless make the virtualenv relocatable
+        # Do this after installing the agent, so that the agent script
+        # is also made relocatable
+        self.runner.run('virtualenv --relocatable {0}'.format(
+            self.cloudify_agent['envdir']))
+
     def _from_package(self):
 
         self.logger.info('Downloading Agent Package from {0}'.format(
@@ -259,7 +267,8 @@ class LinuxInstallerMixin(AgentInstaller):
         get_pip = self.download(get_pip_url)
         self.logger.info('Running pip installation script')
         self.runner.run('sudo python {0}'.format(get_pip))
-        return '{0}/bin/pip'.format(self.cloudify_agent['envdir'])
+        return '{0}/bin/python {0}/bin/pip'.format(
+            self.cloudify_agent['envdir'])
 
     def install_virtualenv(self):
         self.runner.run('sudo pip install virtualenv')
