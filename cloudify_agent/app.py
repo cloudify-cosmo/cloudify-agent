@@ -25,12 +25,12 @@ import logging.handlers
 
 from celery import Celery, signals
 from celery.utils.log import ColorFormatter
+from celery.worker.loops import asynloop
 
 from cloudify.celery import gate_keeper
 from cloudify.celery import logging_server
 
 from cloudify_agent.api import utils
-
 
 LOGFILE_SIZE_BYTES = 5 * 1024 * 1024
 LOGFILE_BACKUP_COUNT = 5
@@ -65,6 +65,21 @@ def declare_fork(**kwargs):
         pass
 
 
+# This is a ugly hack to restart the hub event loop
+# after the Celery mainProcess started...
+@signals.worker_ready.connect
+def reset_worker_tasks_state(sender, *args, **kwargs):
+    if sender.loop is not asynloop:
+        return
+    inspector = app.control.inspect(destination=[sender.hostname])
+
+    def callback(*args, **kwargs):
+        try:
+            inspector.stats()
+        except:
+            pass
+    sender.hub.call_soon(callback=callback)
+
 # This attribute is used as the celery App instance.
 # it is referenced in two ways:
 #   1. Celery command line --app options.
@@ -73,7 +88,6 @@ def declare_fork(**kwargs):
 app = Celery()
 gate_keeper.configure_app(app)
 logging_server.configure_app(app)
-
 
 try:
     # running inside an agent
