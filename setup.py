@@ -27,7 +27,8 @@ install_requires = [
     'fabric==1.8.3',
     'wagon==0.3.0',
     'fasteners==0.13.0',
-    'pyzmq==15.1.0'
+    'pyzmq==15.1.0',
+    'virtualenv>=12.1'
 ]
 
 setup(
