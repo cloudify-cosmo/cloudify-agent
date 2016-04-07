@@ -327,6 +327,8 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
                 'http://{0}:53229'.format(daemon.manager_ip),
             constants.MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL_KEY:
                 'http://{0}:53229/blueprints'.format(daemon.manager_ip),
+            constants.MANAGER_FILE_SERVER_DEPLOYMENTS_ROOT_URL_KEY:
+                'http://{0}:53229/deployments'.format(daemon.manager_ip),
             constants.CELERY_WORK_DIR_KEY: daemon.workdir,
             utils.internal.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY:
                 utils.internal.get_storage_directory(),

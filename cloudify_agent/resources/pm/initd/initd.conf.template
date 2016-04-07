@@ -8,6 +8,7 @@ export MANAGEMENT_IP={{ manager_ip }}
 export MANAGER_REST_PORT={{ manager_port }}
 export MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229
 export MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL=http://{{ manager_ip }}:53229/blueprints
+export MANAGER_FILE_SERVER_DEPLOYMENTS_ROOT_URL=http://{{ manager_ip }}:53229/deployments
 export VIRTUALENV={{ virtualenv_path }}
 export PATH="${VIRTUALENV}/bin:${PATH}"
 
