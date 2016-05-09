@@ -22,6 +22,7 @@ import sys
 import traceback
 import logging
 import logging.handlers
+import locale
 
 from celery import Celery, signals
 from celery.utils.log import ColorFormatter
@@ -31,6 +32,9 @@ from cloudify.celery import gate_keeper
 from cloudify.celery import logging_server
 
 from cloudify_agent.api import utils
+
+#set default locale to get correct codeset for logging (timezone string)
+locale.setlocale(locale.LC_ALL, '')
 
 LOGFILE_SIZE_BYTES = 5 * 1024 * 1024
 LOGFILE_BACKUP_COUNT = 5
