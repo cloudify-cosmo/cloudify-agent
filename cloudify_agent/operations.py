@@ -240,7 +240,7 @@ def _get_manager_version():
     return ManagerVersion(version_json['version'])
 
 
-def _run_install_script(old_agent, timeout, validate_only=False):
+def _run_install_script(security_ctx, old_agent, timeout, validate_only=False):
     # Assuming that if there is no version info in the agent then
     # this agent was installed by current manager.
     old_agent = copy.deepcopy(old_agent)
@@ -257,7 +257,8 @@ def _run_install_script(old_agent, timeout, validate_only=False):
         cloudify_context = {
             'type': 'operation',
             'task_name': script_runner_task,
-            'task_target': old_agent['queue']
+            'task_target': old_agent['queue'],
+            'security_context': security_ctx
         }
         kwargs = {'script_path': script_url,
                   'cloudify_agent': new_agent,
@@ -282,7 +283,7 @@ def _run_install_script(old_agent, timeout, validate_only=False):
     }
 
 
-def create_agent_from_old_agent(operation_timeout=300):
+def create_agent_from_old_agent(ctx, operation_timeout=300):
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
@@ -296,7 +297,8 @@ def create_agent_from_old_agent(operation_timeout=300):
             ('Last validation attempt has shown that agent is dead. '
              'Rerun validation.'))
     old_agent = ctx.instance.runtime_properties['cloudify_agent']
-    agents = _run_install_script(old_agent,
+    agents = _run_install_script(ctx.security_context,
+                                 old_agent,
                                  operation_timeout,
                                  validate_only=False)
     # Make sure that new celery agent was started:
@@ -309,12 +311,12 @@ def create_agent_from_old_agent(operation_timeout=300):
 
 
 @operation
-def create_agent_amqp(install_agent_timeout, **_):
-    create_agent_from_old_agent(install_agent_timeout)
+def create_agent_amqp(ctx, install_agent_timeout, **_):
+    create_agent_from_old_agent(ctx, install_agent_timeout)
 
 
 @operation
-def validate_agent_amqp(validate_agent_timeout, fail_on_agent_dead=False,
+def validate_agent_amqp(ctx, validate_agent_timeout, fail_on_agent_dead=False,
                         fail_on_agent_not_installable=False, **_):
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
@@ -335,7 +337,8 @@ def validate_agent_amqp(validate_agent_timeout, fail_on_agent_dead=False,
     ctx.logger.info(('Checking if agent can be accessed through '
                      'different rabbitmq'))
     try:
-        _run_install_script(agent, validate_agent_timeout, validate_only=True)
+        _run_install_script(ctx.security_context, agent,
+                            validate_agent_timeout, validate_only=True)
     except Exception as e:
         result['agent_alive_crossbroker'] = False
         result['agent_alive_crossbroker_error'] = str(e)
