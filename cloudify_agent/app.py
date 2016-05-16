@@ -33,7 +33,7 @@ from cloudify.celery import logging_server
 
 from cloudify_agent.api import utils
 
-#set default locale to get correct codeset for logging (timezone string)
+# set default locale to get correct codeset for logging (timezone string)
 locale.setlocale(locale.LC_ALL, '')
 
 LOGFILE_SIZE_BYTES = 5 * 1024 * 1024
