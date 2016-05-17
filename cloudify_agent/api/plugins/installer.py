@@ -26,6 +26,7 @@ from wagon import wagon
 from wagon import utils as wagon_utils
 
 from cloudify.exceptions import NonRecoverableError
+from cloudify.exceptions import CommandExecutionException
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
 from cloudify.utils import get_manager_file_server_blueprints_root_url
@@ -68,11 +69,16 @@ class PluginInstaller(object):
         source = get_plugin_source(plugin, blueprint_id)
         args = get_plugin_args(plugin)
         tmp_plugin_dir = tempfile.mkdtemp(prefix='{0}-'.format(plugin['name']))
-        args = '{0} --prefix="{1}"'.format(args, tmp_plugin_dir).strip()
+        constraint = os.path.join(tmp_plugin_dir, 'constraint.txt')
+        with open(constraint, 'w') as f:
+            f.write(self._pip_freeze())
+        args = '{0} --prefix="{1}" --constraint="{2}"'.format(
+                args, tmp_plugin_dir, constraint).strip()
         self._create_plugins_dir_if_missing()
         try:
             if managed_plugin:
                 self._install_managed_plugin(
+                    deployment_id=deployment_id,
                     managed_plugin=managed_plugin,
                     plugin=plugin,
                     args=args,
@@ -90,11 +96,14 @@ class PluginInstaller(object):
         finally:
             self._rmtree(tmp_plugin_dir)
 
-    def _install_managed_plugin(self, managed_plugin, plugin, args,
+    def _install_managed_plugin(self,
+                                deployment_id,
+                                managed_plugin,
+                                plugin,
+                                args,
                                 tmp_plugin_dir):
         matching_existing_installation = False
-        package_name = managed_plugin.package_name
-        dst_dir = '{0}-{1}'.format(package_name,
+        dst_dir = '{0}-{1}'.format(managed_plugin.package_name,
                                    managed_plugin.package_version)
         dst_dir = self._full_dst_dir(dst_dir)
         lock = self._lock(dst_dir)
@@ -108,19 +117,16 @@ class PluginInstaller(object):
                     matching_existing_installation = (
                         existing_plugin_id == managed_plugin.id)
                     if not matching_existing_installation:
-                        self.logger.warning(
+                        raise exceptions.PluginInstallationError(
                             'Managed plugin installation found but its ID '
-                            'does not match the ID of the plugin currently'
-                            ' on the manager. Existing '
-                            'installation will be overridden. '
-                            '[existing: {0}]'.format(existing_plugin_id))
-                        self._rmtree(dst_dir)
+                            'does not match the ID of the plugin currently '
+                            'on the manager. [existing: {0}, new: {1}]'
+                            .format(existing_plugin_id,
+                                    managed_plugin.id))
                 else:
-                    self.logger.warning(
+                    raise exceptions.PluginInstallationError(
                         'Managed plugin installation found but it is '
-                        'in a corrupted state. Existing installation '
-                        'will be overridden.')
-                    self._rmtree(dst_dir)
+                        'in a corrupted state. [{0}]'.format(managed_plugin))
 
             fields = ['package_name',
                       'package_version',
@@ -133,9 +139,14 @@ class PluginInstaller(object):
 
             if matching_existing_installation:
                 self.logger.info(
-                    'Skipping installation of managed plugin: {0} '
-                    'as it is already installed [{1}]'
+                    'Using existing installation of managed plugin: {0} [{1}]'
                     .format(managed_plugin.id, description))
+            elif (deployment_id != SYSTEM_DEPLOYMENT and
+                  plugin['executor'] == 'central_deployment_agent'):
+                raise exceptions.PluginInstallationError(
+                    'Central deployment agent managed plugins can only be '
+                    'installed using the REST plugins API. [{0}]'
+                    .format(managed_plugin))
             else:
                 self.logger.info('Installing managed plugin: {0} [{1}]'
                                  .format(managed_plugin.id, description))
@@ -174,20 +185,30 @@ class PluginInstaller(object):
                               .format(wagon_dir))
             self._rmtree(wagon_dir)
 
-    def _install_source_plugin(self, deployment_id, plugin, source, args,
+    def _install_source_plugin(self,
+                               deployment_id,
+                               plugin,
+                               source,
+                               args,
                                tmp_plugin_dir):
         dst_dir = '{0}-{1}'.format(deployment_id, plugin['name'])
         dst_dir = self._full_dst_dir(dst_dir)
         if os.path.exists(dst_dir):
-            self.logger.warning(
+            raise exceptions.PluginInstallationError(
                 'Source plugin {0} already exists for deployment {1}. '
                 'This probably means a previous deployment with the '
-                'same name was not cleaned properly. Removing existing'
-                ' directory'.format(plugin['name'], deployment_id))
-            self._rmtree(dst_dir)
+                'same name was not cleaned properly.'
+                .format(plugin['name'], deployment_id))
         self.logger.info('Installing plugin from source')
         self._pip_install(source=source, args=args)
         shutil.move(tmp_plugin_dir, dst_dir)
+
+    def _pip_freeze(self):
+        try:
+            return self.runner.run('{0} freeze'.format(get_pip_path())).std_out
+        except CommandExecutionException as e:
+            raise exceptions.PluginInstallationError(
+                'Failed running pip freeze. ({0})'.format(e))
 
     def _pip_install(self, source, args):
         plugin_dir = None
@@ -223,7 +244,7 @@ class PluginInstaller(object):
             self._rmtree(dst_dir)
 
     def uninstall_wagon(self, package_name, package_version):
-        """Only used by tests for cleanup purposes"""
+        """Uninstall a wagon (used by tests and by the plugins REST API)"""
         dst_dir = '{0}-{1}'.format(package_name, package_version)
         dst_dir = self._full_dst_dir(dst_dir)
         if os.path.isdir(dst_dir):

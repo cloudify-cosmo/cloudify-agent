@@ -32,6 +32,7 @@ from cloudify.utils import LocalCommandRunner
 from cloudify.exceptions import NonRecoverableError
 from cloudify_rest_client.plugins import Plugin
 
+from cloudify_agent.api import exceptions
 from cloudify_agent.api.plugins import installer
 
 from cloudify_agent.tests import resources
@@ -48,6 +49,8 @@ PACKAGE_VERSION = '1.0'
 class PluginInstallerTest(BaseTest):
 
     fs = None
+    file_server_resource_base = None
+    plugins_work_dir = None
 
     @classmethod
     def setUpClass(cls):
@@ -55,8 +58,10 @@ class PluginInstallerTest(BaseTest):
         cls.logger = setup_logger(cls.__name__, logger_level=logging.DEBUG)
         cls.runner = LocalCommandRunner(cls.logger)
 
+        cls.plugins_work_dir = tempfile.mkdtemp(
+            prefix='plugins-work-dir-')
         cls.file_server_resource_base = tempfile.mkdtemp(
-            prefix='file-server-resource-base')
+            prefix='file-server-resource-base-')
         cls.fs = test_utils.FileServer(
             root_path=cls.file_server_resource_base)
         cls.fs.start()
@@ -83,20 +88,26 @@ class PluginInstallerTest(BaseTest):
 
     def tearDown(self):
         self.installer.uninstall(plugin=self._plugin_struct(''))
+        self.installer.uninstall(plugin=self._plugin_struct(''),
+                                 deployment_id='deployment')
         self.installer.uninstall_wagon(PACKAGE_NAME, PACKAGE_VERSION)
 
     @classmethod
     def tearDownClass(cls):
         cls.fs.stop()
+        shutil.rmtree(cls.file_server_resource_base, ignore_errors=True)
+        shutil.rmtree(cls.plugins_work_dir, ignore_errors=True)
 
     def _create_plugin_url(self, plugin_tar_name):
         return '{0}/{1}'.format(self.file_server_url, plugin_tar_name)
 
-    def _plugin_struct(self, source=None, args=None, name=PLUGIN_NAME):
+    def _plugin_struct(self, source=None, args=None, name=PLUGIN_NAME,
+                       executor=None):
         return {
             'source': self._create_plugin_url(source) if source else None,
             'install_arguments': args,
-            'name': name
+            'name': name,
+            'executor': executor
         }
 
     def _assert_task_runnable(self, task_name,
@@ -151,6 +162,13 @@ class PluginInstallerTest(BaseTest):
             expected_return='on the brilliant marble-sanded beaches of '
                             'Santraginus V')
 
+    def test_install_from_source_already_exists(self):
+        self.installer.install(self._plugin_struct(source='mock-plugin.tar'))
+        with self.assertRaises(exceptions.PluginInstallationError) as c:
+            self.installer.install(
+                self._plugin_struct(source='mock-plugin.tar'))
+        self.assertIn('already exists', str(c.exception))
+
     def test_uninstall_from_source(self):
         self.installer.install(self._plugin_struct(source='mock-plugin.tar'))
         self._assert_task_runnable('mock_plugin.tasks.run',
@@ -187,7 +205,7 @@ class PluginInstallerTest(BaseTest):
                                       download_path=self.wagons[PACKAGE_NAME]):
             class TestLoggingHandler(logging.Handler):
                 def emit(self, record):
-                    if 'Skipping' in record.message:
+                    if 'Using' in record.message:
                         with open(output_path, 'w') as of:
                             of.write(record.message)
             handler = TestLoggingHandler()
@@ -205,7 +223,8 @@ class PluginInstallerTest(BaseTest):
                 self.logger.removeHandler(handler)
         self._assert_wagon_plugin_installed()
         with open(output_path) as f:
-            self.assertIn('Skipping installation of managed plugin', f.read())
+            self.assertIn('Using existing installation of managed plugin',
+                          f.read())
 
     def _assert_wagon_plugin_installed(self):
         self._assert_task_runnable('mock_plugin.tasks.run',
@@ -233,7 +252,9 @@ class PluginInstallerTest(BaseTest):
         os.remove(plugin_id_path)
         # the installation here should identify a plugin.id missing
         # and re-install the plugin
-        self.test_install_from_wagon()
+        with self.assertRaises(exceptions.PluginInstallationError) as c:
+            self.test_install_from_wagon()
+        self.assertIn('corrupted state', str(c.exception))
 
     def test_install_from_wagon_overriding_same_version(self):
         self.test_install_from_wagon()
@@ -241,16 +262,20 @@ class PluginInstallerTest(BaseTest):
                 PACKAGE_NAME, PACKAGE_VERSION,
                 download_path=self.wagons['mock-plugin-modified'],
                 plugin_id='2'):
-            self.installer.install(self._plugin_struct())
-            self._assert_task_runnable('mock_plugin.tasks.run',
-                                       expected_return='run-modified',
-                                       package_name=PACKAGE_NAME,
-                                       package_version=PACKAGE_VERSION)
+            with self.assertRaises(exceptions.PluginInstallationError) as c:
+                self.installer.install(self._plugin_struct())
+            self.assertIn('does not match the ID', str(c.exception))
+
+    def test_install_from_wagon_central_deployment(self):
+        with _patch_for_install_wagon(PACKAGE_NAME, PACKAGE_VERSION,
+                                      download_path=self.wagons[PACKAGE_NAME]):
+            with self.assertRaises(exceptions.PluginInstallationError) as c:
+                self.installer.install(self._plugin_struct(
+                    executor='central_deployment_agent'),
+                    deployment_id='deployment')
+            self.assertIn('REST plugins API', str(c.exception))
 
     def test_uninstall_from_wagon(self):
-        # This test is here to validate the cleanup logic of other tests.
-        # currently, wagons based plugins are never uninstalled
-        # in a running system
         self.test_install_from_wagon()
         self.installer.uninstall_wagon(PACKAGE_NAME, PACKAGE_VERSION)
         self._assert_task_not_runnable('mock_plugin.tasks.run',
@@ -289,6 +314,43 @@ class PluginInstallerTest(BaseTest):
         self.assertEqual(
             'mock-plugin',
             installer.extract_package_name(package_dir))
+
+    def test_install_dependencies_versions_conflict(self):
+        def extract_requests_version():
+            pip_freeze = self.installer._pip_freeze().split('\n')
+            for package in pip_freeze:
+                if package.startswith('requests=='):
+                    requests_version = package.split('==')[0]
+                    return requests_version
+            raise AssertionError('Expected requests to be installed.')
+        requests_plugin = test_utils.create_mock_plugin(
+                basedir=self.plugins_work_dir,
+                install_requires=['requests==2.6.0'])
+        requests_tar = test_utils.create_plugin_tar(
+                basedir=self.plugins_work_dir,
+                plugin_dir_name=requests_plugin,
+                target_directory=self.file_server_resource_base)
+        requests_wagon = test_utils.create_plugin_wagon(
+                basedir=self.plugins_work_dir,
+                plugin_dir_name=requests_plugin,
+                target_directory=self.file_server_resource_base)
+        before_requests_version = extract_requests_version()
+        plugin_struct = self._plugin_struct(source=requests_tar,
+                                            name=requests_plugin)
+        try:
+            self.installer.install(plugin_struct)
+            after_requests_version = extract_requests_version()
+        finally:
+            self.installer.uninstall(plugin=plugin_struct)
+        self.assertEqual(before_requests_version, after_requests_version)
+        try:
+            with _patch_for_install_wagon(requests_plugin, '0.1',
+                                          download_path=requests_wagon):
+                self.installer.install(self._plugin_struct())
+            after_requests_version = extract_requests_version()
+        finally:
+            self.installer.uninstall_wagon(requests_plugin, '0.1')
+        self.assertEqual(before_requests_version, after_requests_version)
 
 
 class TestGetSourceAndGetArgs(BaseTest):
