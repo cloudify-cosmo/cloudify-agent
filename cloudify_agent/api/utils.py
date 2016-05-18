@@ -160,9 +160,15 @@ class _Internal(object):
 
     @staticmethod
     def get_broker_configuration(agent):
+
+        headers = None
+        if agent['bypass_maintenance_mode']:
+            headers = {'X-BYPASS-MAINTENANCE': 'true'}
+
         client = CloudifyClient(
             agent['manager_ip'],
             agent['manager_port'],
+            headers=headers
         )
         bootstrap_context_dict = client.manager.get_context()
         bootstrap_context_dict = bootstrap_context_dict['context']['cloudify']

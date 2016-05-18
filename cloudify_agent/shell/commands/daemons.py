@@ -140,6 +140,10 @@ from cloudify_agent.shell.decorators import handle_failures
                    'env {0}]'
                    .format(env.CLOUDIFY_DAEMON_EXTRA_ENV),
               envvar=env.CLOUDIFY_DAEMON_EXTRA_ENV)
+@click.option('--bypass-maintenance-mode',
+              help='bypass maintenance mode on rest requests. [env {0}]'
+                   .format(env.CLOUDIFY_BYPASS_MAINTENANCE_MODE),
+              envvar=env.CLOUDIFY_BYPASS_MAINTENANCE_MODE)
 # this is defined in order to allow passing any kind of option to the
 # command line. in order to support creating daemons of different kind via
 # the same command line. this argument is parsed as keyword arguments which

@@ -62,6 +62,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             broker_ssl_cert=None,
             broker_ssl_enabled=False,
             broker_get_settings_from_manager=False,
+            bypass_maintenance_mode=None,
         )
 
         daemon = factory_new.return_value
@@ -100,6 +101,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             broker_ssl_cert=None,
             broker_ssl_enabled=False,
             broker_get_settings_from_manager=False,
+            bypass_maintenance_mode=None,
         )
 
     def test_configure(self, *factory_methods):
