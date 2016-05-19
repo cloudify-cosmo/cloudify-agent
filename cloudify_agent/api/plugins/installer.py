@@ -89,7 +89,8 @@ class PluginInstaller(object):
                     plugin=plugin,
                     source=source,
                     args=args,
-                    tmp_plugin_dir=tmp_plugin_dir)
+                    tmp_plugin_dir=tmp_plugin_dir,
+                    constraint=constraint)
             else:
                 raise NonRecoverableError(
                     'No source or managed plugin found for {0}'.format(plugin))
@@ -190,7 +191,8 @@ class PluginInstaller(object):
                                plugin,
                                source,
                                args,
-                               tmp_plugin_dir):
+                               tmp_plugin_dir,
+                               constraint):
         dst_dir = '{0}-{1}'.format(deployment_id, plugin['name'])
         dst_dir = self._full_dst_dir(dst_dir)
         if os.path.exists(dst_dir):
@@ -200,7 +202,7 @@ class PluginInstaller(object):
                 'same name was not cleaned properly.'
                 .format(plugin['name'], deployment_id))
         self.logger.info('Installing plugin from source')
-        self._pip_install(source=source, args=args)
+        self._pip_install(source=source, args=args, constraint=constraint)
         shutil.move(tmp_plugin_dir, dst_dir)
 
     def _pip_freeze(self):
@@ -210,7 +212,7 @@ class PluginInstaller(object):
             raise exceptions.PluginInstallationError(
                 'Failed running pip freeze. ({0})'.format(e))
 
-    def _pip_install(self, source, args):
+    def _pip_install(self, source, args, constraint):
         plugin_dir = None
         try:
             if os.path.isabs(source):
@@ -218,12 +220,18 @@ class PluginInstaller(object):
             else:
                 self.logger.debug('Extracting archive: {0}'.format(source))
                 plugin_dir = extract_package_to_dir(source)
+            package_name = extract_package_name(plugin_dir)
+            if self._package_installed_in_agent_env(constraint, package_name):
+                self.logger.warn('Skipping source plugin {0} installation, '
+                                 'as the plugin is already installed in the '
+                                 'agent virtualenv.'.format(package_name))
+                return
             self.logger.debug('Installing from directory: {0} '
-                              '[args={1}]'.format(plugin_dir, args))
+                              '[args={1}, package_name={2}]'
+                              .format(plugin_dir, args, package_name))
             command = '{0} install {1} {2}'.format(
                 get_pip_path(), plugin_dir, args)
             self.runner.run(command, cwd=plugin_dir)
-            package_name = extract_package_name(plugin_dir)
             self.logger.debug('Retrieved package name: {0}'
                               .format(package_name))
         finally:
@@ -231,7 +239,16 @@ class PluginInstaller(object):
                 self.logger.debug('Removing directory: {0}'
                                   .format(plugin_dir))
                 self._rmtree(plugin_dir)
-        return package_name
+
+    @staticmethod
+    def _package_installed_in_agent_env(constraint, package_name):
+        package_name = package_name.lower()
+        with open(constraint) as f:
+            constraints = f.read().split(os.linesep)
+        return any(
+            (c.lower().startswith('{0}=='.format(package_name)) or
+             'egg={0}'.format(package_name.replace('-', '_')) in c.lower())
+            for c in constraints)
 
     def uninstall(self, plugin, deployment_id=None):
         """Uninstall a previously installed plugin (only supports source
