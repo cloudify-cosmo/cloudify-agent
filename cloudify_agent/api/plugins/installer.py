@@ -75,6 +75,20 @@ class PluginInstaller(object):
         args = '{0} --prefix="{1}" --constraint="{2}"'.format(
                 args, tmp_plugin_dir, constraint).strip()
         self._create_plugins_dir_if_missing()
+
+        (current_platform,
+         current_distro,
+         current_distro_release) = _extract_platform_and_distro_info()
+
+        self.logger.debug('Installing plugin {0} '
+                          '[current_platform={1},'
+                          ' current_distro={2},'
+                          ' current_distro_release={3}]'
+                          .format(plugin['name'],
+                                  current_platform,
+                                  current_distro,
+                                  current_distro_release))
+
         try:
             if managed_plugin:
                 self._install_managed_plugin(
@@ -93,7 +107,14 @@ class PluginInstaller(object):
                     constraint=constraint)
             else:
                 raise NonRecoverableError(
-                    'No source or managed plugin found for {0}'.format(plugin))
+                    'No source or managed plugin found for {0} '
+                    '[current_platform={1},'
+                    ' current_distro={2},'
+                    ' current_distro_release={3}]'
+                    .format(plugin,
+                            current_platform,
+                            current_distro,
+                            current_distro_release))
         finally:
             self._rmtree(tmp_plugin_dir)
 
@@ -417,14 +438,14 @@ def get_managed_plugin(plugin, logger=None):
     client = get_rest_client()
     plugins = client.plugins.list(**query_parameters)
 
+    (current_platform,
+     a_dist,
+     a_dist_release) = _extract_platform_and_distro_info()
+
     if not supported_platform:
-        current_platform = wagon_utils.get_platform()
         plugins = [p for p in plugins
                    if p.supported_platform in ['any', current_platform]]
     if os.name != 'nt':
-        a_dist, _, a_dist_release = platform.linux_distribution(
-            full_distribution_name=False)
-        a_dist, a_dist_release = a_dist.lower(), a_dist_release.lower()
         if not distribution:
             plugins = [p for p in plugins
                        if p.supported_platform == 'any' or
@@ -440,6 +461,13 @@ def get_managed_plugin(plugin, logger=None):
     # we return the first one because both package name and version
     # are required fields. No one pick is better than the other
     return plugins[0]
+
+
+def _extract_platform_and_distro_info():
+    current_platform = wagon_utils.get_platform()
+    distribution, _, distribution_release = platform.linux_distribution(
+        full_distribution_name=False)
+    return current_platform, distribution.lower(), distribution_release.lower()
 
 
 def get_plugin_source(plugin, blueprint_id=None):
