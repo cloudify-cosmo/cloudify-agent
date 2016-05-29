@@ -21,6 +21,7 @@ import copy
 
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
+from cloudify.utils import get_is_bypass_maintenance
 
 from cloudify_agent.api import utils
 from cloudify_agent.shell import env
@@ -190,7 +191,8 @@ class AgentInstaller(object):
             env.CLOUDIFY_DAEMON_WORKDIR: self.cloudify_agent['workdir'],
             env.CLOUDIFY_DAEMON_EXTRA_ENV:
             self.create_custom_env_file_on_target(
-                self.cloudify_agent.get('env', {}))
+                self.cloudify_agent.get('env', {})),
+            env.CLOUDIFY_BYPASS_MAINTENANCE_MODE: get_is_bypass_maintenance()
         }
 
         execution_env = utils.purge_none_values(execution_env)
