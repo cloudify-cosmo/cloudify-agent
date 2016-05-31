@@ -39,7 +39,7 @@ GITHUB_PASSWORD=$2
 AWS_ACCESS_KEY_ID=$3
 AWS_ACCESS_KEY=$4
 
-
+install_common_prereqs &&
 cd ~
 install_deps &&
 install_requirements &&
