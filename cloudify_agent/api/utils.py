@@ -162,7 +162,7 @@ class _Internal(object):
     def get_broker_configuration(agent):
 
         headers = None
-        if agent['bypass_maintenance_mode']:
+        if agent.get('bypass_maintenance_mode'):
             headers = {'X-BYPASS-MAINTENANCE': 'true'}
 
         client = CloudifyClient(
