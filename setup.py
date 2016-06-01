@@ -25,7 +25,7 @@ install_requires = [
     'jinja2==2.7.2',
     'pywinrm==0.0.3',
     'fabric==1.8.3',
-    'wagon==0.3.0',
+    'wagon==0.3.1',
     'fasteners==0.13.0',
     'pyzmq==15.1.0',
     'virtualenv>=12.1'
