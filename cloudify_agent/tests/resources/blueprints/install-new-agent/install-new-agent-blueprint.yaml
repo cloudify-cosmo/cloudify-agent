@@ -8,9 +8,6 @@ inputs:
   name:
     description: Desired name for the agent
 
-  package_url:
-    description: url of agent package
-
 node_templates:
 
   host:
@@ -25,7 +22,6 @@ node_templates:
               ip: 127.0.0.1
               manager_ip: 127.0.0.1
               local: true
-              package_url: { get_input: package_url }
               broker_get_settings_from_manager: false
               broker_config:
                 broker_ip: 127.0.0.1
