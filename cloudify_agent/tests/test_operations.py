@@ -104,7 +104,6 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
         self.logger.info('Initiating local env')
         inputs = {
             'name': agent_name,
-            'package_url': agent_package.get_package_url()
         }
         with self._manager_env():
             env = local.init_env(name=self._testMethodName,

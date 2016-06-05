@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import os
+import sys
 import logging
 import tempfile
 import getpass
@@ -76,7 +77,9 @@ class _AgentPackageGenerator(object):
         self._fs.start()
         config = {
             'cloudify_agent_module': utils.get_source_uri(),
-            'requirements_file': utils.get_requirements_uri()
+            'requirements_file': utils.get_requirements_uri(),
+            'python_path': os.path.join(
+                getattr(sys, 'real_prefix', sys.prefix), 'bin', 'python'),
         }
         package_name = utils.create_agent_package(self._resources_dir, config)
         self._package_url = 'http://localhost:{0}/{1}'.format(
