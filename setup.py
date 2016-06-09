@@ -28,7 +28,7 @@ install_requires = [
     'wagon==0.3.1',
     'fasteners==0.13.0',
     'pyzmq==15.1.0',
-    'virtualenv>=12.1'
+    'virtualenv>=14.0.0,<15.0.0'
 ]
 
 setup(
