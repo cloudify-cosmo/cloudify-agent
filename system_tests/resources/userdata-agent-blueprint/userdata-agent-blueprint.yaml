@@ -40,7 +40,7 @@ node_templates:
   host:
     type: cloudify.openstack.nodes.Server
     interfaces:
-      cloudify.interfaces.lifecycle:
+      cloudify.interfaces.cloudify_agent:
         start:
           max_retries: 50
     properties:
