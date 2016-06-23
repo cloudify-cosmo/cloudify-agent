@@ -23,6 +23,8 @@ import pkg_resources
 from jinja2 import Template
 
 from cloudify.context import BootstrapContext
+from cloudify.workflows import tasks as workflows_tasks
+
 from cloudify.utils import setup_logger
 
 from cloudify_rest_client import CloudifyClient
@@ -234,9 +236,13 @@ def get_agent_registered(name, celery_client):
 
     destination = 'celery@{0}'.format(name)
     inspect = celery_client.control.inspect(
-        destination=[destination])
-    registered = (inspect.registered() or {}).get(destination)
-    return registered
+        destination=[destination],
+        timeout=workflows_tasks.INSPECT_TIMEOUT)
+
+    registered = inspect.registered()
+    if registered is None or destination not in registered:
+        return None
+    return set(registered[destination])
 
 
 def get_windows_home_dir(username):
