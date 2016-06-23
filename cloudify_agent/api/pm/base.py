@@ -21,16 +21,17 @@ import time
 from cloudify.utils import (LocalCommandRunner,
                             setup_logger)
 from cloudify import amqp_client
+from cloudify import constants
 from cloudify_rest_client.client import CloudifyClient
-from cloudify.constants import (
-    BROKER_PORT_NO_SSL,
-    BROKER_PORT_SSL,
-)
+
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import defaults
+
+
+AGENT_IS_REGISTERED_TIMEOUT = 1
 
 
 class Daemon(object):
@@ -300,9 +301,9 @@ class Daemon(object):
         self.broker_ssl_cert has been set.
         """
         if self.broker_ssl_enabled:
-            return BROKER_PORT_SSL
+            return constants.BROKER_PORT_SSL
         else:
-            return BROKER_PORT_NO_SSL
+            return constants.BROKER_PORT_NO_SSL
 
     def _create_ssl_cert(self):
         """
@@ -335,7 +336,10 @@ class Daemon(object):
             ssl_cert_path=self._get_ssl_cert_path())
         try:
             self._logger.debug('Retrieving daemon registered tasks')
-            return utils.get_agent_registered(self.name, celery_client)
+            return utils.get_agent_registered(
+                    self.name,
+                    celery_client,
+                    timeout=AGENT_IS_REGISTERED_TIMEOUT)
         finally:
             if celery_client:
                 celery_client.close()
