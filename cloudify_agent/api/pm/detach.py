@@ -58,11 +58,10 @@ class DetachedDaemon(CronRespawnDaemon):
 
     def stop(self, interval=defaults.STOP_INTERVAL,
              timeout=defaults.STOP_TIMEOUT):
-        super(DetachedDaemon, self).stop(interval, timeout)
-
         # remove cron job
         self._logger.debug('Removing cron JOB')
         self._runner.run(self.create_disable_cron_script())
+        super(DetachedDaemon, self).stop(interval, timeout)
 
     def configure(self):
 

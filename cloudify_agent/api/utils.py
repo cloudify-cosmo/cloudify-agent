@@ -221,13 +221,16 @@ def get_celery_client(broker_url,
     return celery_client
 
 
-def get_agent_registered(name, celery_client):
+def get_agent_registered(name,
+                         celery_client,
+                         timeout=workflows_tasks.INSPECT_TIMEOUT):
 
     """
     Query for agent registered tasks based on agent name.
 
     :param name: the agent name
     :param celery_client: the celery client to use
+    :param timeout: timeout for inspect command
 
     :return: agents registered tasks
     :rtype: dict
@@ -237,7 +240,7 @@ def get_agent_registered(name, celery_client):
     destination = 'celery@{0}'.format(name)
     inspect = celery_client.control.inspect(
         destination=[destination],
-        timeout=workflows_tasks.INSPECT_TIMEOUT)
+        timeout=timeout)
 
     registered = inspect.registered()
     if registered is None or destination not in registered:
