@@ -379,7 +379,9 @@ def extract_package_to_dir(package_url):
         if plugin_dir and os.path.exists(plugin_dir):
             shutil.rmtree(plugin_dir)
         raise exceptions.PluginInstallationError(
-            'Failed to download and unpack package from {0}: {1}'
+            'Failed to download and unpack package from {0}: {1}.'
+            'You may consider uploading the plugin\'s Wagon archive to the manager,'
+            'For more information please refer to the documentation.'
             .format(package_url, str(e)))
     finally:
         _restore_pip_download()
