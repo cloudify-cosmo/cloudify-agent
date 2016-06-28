@@ -195,6 +195,10 @@ def _cfy_agent_attributes_no_defaults(cloudify_agent):
         cloudify_agent['verify_rest_certificate'] = \
             cloudify_utils.is_verify_rest_certificate()
 
+    if not cloudify_agent.get('bypass_maintenance'):
+        cloudify_agent['bypass_maintenance_mode'] = \
+            cloudify_utils.get_is_bypass_maintenance()
+
 
 def directory_attributes(cloudify_agent):
     if not cloudify_agent.get('agent_dir'):
