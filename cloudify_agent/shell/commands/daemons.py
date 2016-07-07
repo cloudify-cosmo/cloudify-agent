@@ -136,6 +136,13 @@ from cloudify_agent.shell.decorators import handle_failures
               default=None,
               type=click.Path(exists=True, readable=True, file_okay=True),
               envvar=env.CLOUDIFY_BROKER_SSL_CERT)
+@click.option('--broker-ssl-cert-path',
+              help='The path to a local copy of the Broker public cert, '
+                   'used for cert verification, if required [env {0}]'
+              .format(env.CLOUDIFY_BROKER_SSL_CERT_PATH),
+              type=click.Path(exists=False, readable=False, file_okay=True),
+              envvar=env.CLOUDIFY_BROKER_SSL_CERT_PATH
+              )
 @click.option('--broker-get-settings-from-manager/'
               '--broker-do-not-get-settings-from-manager',
               default=False,
@@ -452,7 +459,8 @@ def _create_rest_ssl_cert(agent):
     click.echo('Deploying REST SSL certificate (if defined).')
     rest_cert_content = agent['rest_cert_content']
     if rest_cert_content and agent['verify_rest_certificate']:
-        local_rest_cert_file = os.path.join(agent['workdir'], 'rest.crt')
+        local_rest_cert_file = \
+            os.path.expanduser(agent['local_rest_cert_file'])
         agent['local_rest_cert_file'] = local_rest_cert_file
         api_utils.safe_create_dir(os.path.dirname(local_rest_cert_file))
         with open(local_rest_cert_file, 'w') as rest_cert_file:
@@ -467,7 +475,8 @@ def _create_broker_ssl_cert(agent):
     click.echo('Deploying broker SSL certificate (if defined).')
     broker_ssl_cert_content = agent['broker_ssl_cert']
     if broker_ssl_cert_content:
-        broker_ssl_cert_path = os.path.join(agent['workdir'], 'broker.crt')
+        broker_ssl_cert_path = \
+            os.path.expanduser(agent['broker_ssl_cert_path'])
         agent['broker_ssl_cert_path'] = broker_ssl_cert_path
         api_utils.safe_create_dir(os.path.dirname(broker_ssl_cert_path))
         with open(broker_ssl_cert_path, 'w') as broker_cert_file:

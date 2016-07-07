@@ -226,6 +226,15 @@ def directory_attributes(cloudify_agent):
             envdir = os.path.join(agent_dir, 'env')
         cloudify_agent['envdir'] = envdir
 
+    certs_dir = '~/.cloudify/certs'
+    if not cloudify_agent.get('local_rest_cert_file'):
+        cloudify_agent['local_rest_cert_file'] = \
+            os.path.join(certs_dir, 'rest.crt')
+
+    if not cloudify_agent.get('broker_ssl_cert_path'):
+        cloudify_agent['broker_ssl_cert_path'] = \
+            os.path.join(certs_dir, 'broker.crt')
+
 
 @group('installation')
 def _add_installation_defaults(cloudify_agent):
