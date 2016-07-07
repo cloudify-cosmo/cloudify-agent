@@ -70,6 +70,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             rest_password='',
             verify_rest_certificate=False,
             local_rest_cert_file=None,
+            broker_ssl_cert_path=None,
             rest_cert_content='',
             bypass_maintenance_mode=None,
         )
@@ -118,6 +119,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             rest_password='',
             verify_rest_certificate=False,
             local_rest_cert_file=None,
+            broker_ssl_cert_path=None,
             rest_cert_content='',
             bypass_maintenance_mode=None,
         )

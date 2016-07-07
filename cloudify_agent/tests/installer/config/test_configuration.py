@@ -46,6 +46,7 @@ class TestConfiguration(BaseTest):
         agent_dir = os.path.join(basedir, 'test_deployment')
         envdir = os.path.join(agent_dir, 'env')
         workdir = os.path.join(agent_dir, 'work')
+        certs_dir = '~/.cloudify/certs'
         # This test needs to be adapted to security settings
         expected = {
             'agent_dir': agent_dir,
@@ -67,6 +68,8 @@ class TestConfiguration(BaseTest):
             'max_workers': 5,
             'min_workers': 0,
             'workdir': workdir,
+            'broker_ssl_cert_path': os.path.join(certs_dir, 'broker.crt'),
+            'local_rest_cert_file': os.path.join(certs_dir, 'rest.crt'),
             'windows': os.name == 'nt',
             'system_python': 'python',
             'remote_execution': True,
@@ -114,6 +117,7 @@ class TestConfiguration(BaseTest):
         agent_dir = os.path.join(basedir, 'test_deployment')
         envdir = os.path.join(agent_dir, 'env')
         workdir = os.path.join(agent_dir, 'work')
+        certs_dir = '~/.cloudify/certs'
         # This test needs to be adapted to security settings
         expected = {
             'agent_dir': agent_dir,
@@ -135,6 +139,8 @@ class TestConfiguration(BaseTest):
             'max_workers': 5,
             'min_workers': 0,
             'workdir': workdir,
+            'broker_ssl_cert_path': os.path.join(certs_dir, 'broker.crt'),
+            'local_rest_cert_file': os.path.join(certs_dir, 'rest.crt'),
             'windows': os.name == 'nt',
             'system_python': 'python',
             'remote_execution': True,
