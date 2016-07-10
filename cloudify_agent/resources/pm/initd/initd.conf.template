@@ -4,11 +4,19 @@
 export CLOUDIFY_DAEMON_NAME={{ name }}
 export CLOUDIFY_DAEMON_STORAGE_DIRECTORY={{ storage_dir }}
 export CLOUDIFY_DAEMON_USER={{ user }}
-export MANAGEMENT_IP={{ manager_ip }}
-export MANAGER_REST_PORT={{ manager_port }}
-export MANAGER_FILE_SERVER_URL=http://{{ manager_ip }}:53229
-export MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL=http://{{ manager_ip }}:53229/blueprints
-export MANAGER_FILE_SERVER_DEPLOYMENTS_ROOT_URL=http://{{ manager_ip }}:53229/deployments
+export REST_HOST={{ rest_host }}
+export REST_PORT={{ rest_port }}
+export REST_PROTOCOL={{ rest_protocol }}
+export FILE_SERVER_HOST={{ file_server_host }}
+export SECURITY_ENABLED={{ security_enabled }}
+export REST_USERNAME={{ rest_username }}
+export REST_PASSWORD={{ rest_password }}
+export VERIFY_REST_CERTIFICATE={{ verify_rest_certificate }}
+export LOCAL_REST_CERT_FILE={{ local_rest_cert_file }}
+export REST_CERT_CONTENT={{ rest_cert_content }}
+export MANAGER_FILE_SERVER_URL=http://{{ file_server_host }}:53229
+export MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL=http://{{ file_server_host }}:53229/blueprints
+export MANAGER_FILE_SERVER_DEPLOYMENTS_ROOT_URL=http://{{ file_server_host }}:53229/deployments
 export VIRTUALENV={{ virtualenv_path }}
 export PATH="${VIRTUALENV}/bin:${PATH}"
 

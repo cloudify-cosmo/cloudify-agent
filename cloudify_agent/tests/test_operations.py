@@ -84,9 +84,17 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
         urllib.urlretrieve(install_script_url,
                            os.path.join(resources_dir, 'install_agent.py'))
         new_env = {
-            constants.MANAGER_IP_KEY: 'localhost',
+            constants.REST_HOST_KEY: 'localhost',
+            constants.FILE_SERVER_HOST_KEY: 'localhost',
             constants.MANAGER_FILE_SERVER_URL_KEY:
-                'http://localhost:{0}'.format(port)
+                'http://localhost:{0}'.format(port),
+            constants.SECURITY_ENABLED_KEY: 'True',
+            constants.REST_PROTOCOL_KEY: 'http',
+            constants.REST_PORT_KEY: '80',
+            constants.REST_USERNAME_KEY: '',
+            constants.REST_PASSWORD_KEY: '',
+            constants.VERIFY_REST_CERTIFICATE_KEY: '',
+            constants.REST_CERT_CONTENT_KEY: ''
         }
         with patch.dict(os.environ, new_env):
             try:
@@ -159,7 +167,8 @@ class TestCreateAgentAmqp(BaseTest):
             'local': False,
             'remote_execution': False,
             'ip': '10.0.4.47',
-            'manager_ip': '10.0.4.46',
+            'rest_host': '10.0.4.46',
+            'file_server_host': '10.0.4.46',
             'distro': 'ubuntu',
             'distro_codename': 'trusty',
             'basedir': '/home/vagrant',
@@ -197,8 +206,10 @@ class TestCreateAgentAmqp(BaseTest):
 
     def _patch_manager_env(self):
         new_env = {
-            constants.MANAGER_IP_KEY: '10.0.4.48',
-            constants.MANAGER_FILE_SERVER_URL_KEY: 'http://10.0.4.48:53229'
+            constants.REST_HOST_KEY: '10.0.4.48',
+            constants.FILE_SERVER_HOST_KEY: '10.0.4.48',
+            constants.MANAGER_FILE_SERVER_URL_KEY: 'http://10.0.4.48:53229',
+            constants.SECURITY_ENABLED_KEY: 'True'
         }
         return patch.dict(os.environ, new_env)
 
@@ -219,7 +230,7 @@ class TestCreateAgentAmqp(BaseTest):
             self.assertEqual(old_agent[k], new_agent[k])
             self.assertEqual(old_agent[k], third_agent[k])
         nonequal_keys = ['agent_dir', 'workdir',
-                         'envdir', 'name', 'manager_ip']
+                         'envdir', 'name', 'rest_host']
         for k in nonequal_keys:
             self.assertNotEqual(old_agent[k], new_agent[k])
             self.assertNotEqual(old_agent[k], third_agent[k])

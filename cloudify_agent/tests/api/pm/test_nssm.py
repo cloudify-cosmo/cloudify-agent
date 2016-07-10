@@ -39,7 +39,6 @@ class TestNonSuckingServiceManagerDaemon(BaseDaemonProcessManagementTest):
     def test_configure(self):
         daemon = self.create_daemon()
         daemon.create()
-
         daemon.configure()
         self.assertTrue(os.path.exists(daemon.config_path))
 

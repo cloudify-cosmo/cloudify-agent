@@ -58,9 +58,13 @@ class TestUtils(BaseTest):
 
     def test_daemon_to_dict(self):
 
-        daemon = Daemon(manager_ip='127.0.0.1', name='name', queue='queue')
+        daemon = Daemon(rest_host='127.0.0.1', name='name',
+                        queue='queue', broker_ip='127.0.0.1',
+                        file_server_host='127.0.0.1')
         daemon_json = utils.internal.daemon_to_dict(daemon)
-        self.assertEqual(daemon_json['manager_ip'], '127.0.0.1')
+        self.assertEqual(daemon_json['rest_host'], '127.0.0.1')
+        self.assertEqual(daemon_json['broker_ip'], '127.0.0.1')
+        self.assertEqual(daemon_json['file_server_host'], '127.0.0.1')
         self.assertEqual(daemon_json['name'], 'name')
         self.assertEqual(daemon_json['queue'], 'queue')
 
@@ -75,11 +79,11 @@ class TestUtils(BaseTest):
     def test_rendered_template_to_file(self):
         temp = utils.render_template_to_file(
             template_path=os.path.join('pm', 'initd', 'initd.conf.template'),
-            manager_ip='127.0.0.1'
+            rest_host='127.0.0.1'
         )
         with open(temp) as f:
             rendered = f.read()
-            self.assertTrue('export MANAGEMENT_IP=127.0.0.1' in rendered)
+            self.assertTrue('export REST_HOST=127.0.0.1' in rendered)
 
     def test_resource_to_tempfile(self):
         temp = utils.resource_to_tempfile(

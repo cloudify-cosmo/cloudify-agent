@@ -30,7 +30,9 @@ class TestDaemonDefaults(BaseTest):
     def setUp(self):
         super(TestDaemonDefaults, self).setUp()
         self.daemon = Daemon(
-            manager_ip='manager_ip',
+            rest_host='127.0.0.1',
+            broker_ip='127.0.0.1',
+            file_server_host='127.0.0.1',
             queue='queue',
             name='name',
             broker_user='guest',
@@ -40,8 +42,11 @@ class TestDaemonDefaults(BaseTest):
     def test_default_workdir(self):
         self.assertEqual(self.temp_folder, self.daemon.workdir)
 
-    def test_default_manager_port(self):
-        self.assertEqual(8101, self.daemon.manager_port)
+    def test_default_rest_protocol(self):
+        self.assertEqual('http', self.daemon.rest_protocol)
+
+    def test_default_rest_port(self):
+        self.assertEqual(80, self.daemon.rest_port)
 
     def test_default_min_workers(self):
         self.assertEqual(0, self.daemon.min_workers)
@@ -50,7 +55,7 @@ class TestDaemonDefaults(BaseTest):
         self.assertEqual(5, self.daemon.max_workers)
 
     def test_default_broker_url(self):
-        self.assertEqual('amqp://guest:guest@manager_ip:5672//',
+        self.assertEqual('amqp://guest:guest@127.0.0.1:5672//',
                          self.daemon.broker_url)
 
     def test_default_user(self):
@@ -61,7 +66,7 @@ class TestDaemonDefaults(BaseTest):
        get_storage_directory)
 class TestDaemonValidations(BaseTest):
 
-    def test_missing_manager_ip(self):
+    def test_missing_rest_host(self):
         try:
             Daemon(
                 name='name',
@@ -71,9 +76,9 @@ class TestDaemonValidations(BaseTest):
                 broker_user='guest',
                 broker_pass='guest',
             )
-            self.fail('Expected ValueError due to missing manager_ip')
+            self.fail('Expected ValueError due to missing rest_host')
         except exceptions.DaemonMissingMandatoryPropertyError as e:
-            self.assertTrue('manager_ip is mandatory' in e.message)
+            self.assertTrue('rest_host is mandatory' in e.message)
 
     def test_bad_min_workers(self):
         try:
@@ -81,7 +86,9 @@ class TestDaemonValidations(BaseTest):
                 name='name',
                 queue='queue',
                 host='queue',
-                manager_ip='manager_ip',
+                rest_host='127.0.0.1',
+                broker_ip='127.0.0.1',
+                file_server_host='127.0.0.1',
                 user='user',
                 min_workers='bad',
                 broker_user='guest',
@@ -97,7 +104,9 @@ class TestDaemonValidations(BaseTest):
                 name='name',
                 queue='queue',
                 host='queue',
-                manager_ip='manager_ip',
+                rest_host='127.0.0.1',
+                broker_ip='127.0.0.1',
+                file_server_host='127.0.0.1',
                 user='user',
                 max_workers='bad',
                 broker_user='guest',
@@ -113,7 +122,9 @@ class TestDaemonValidations(BaseTest):
                 name='name',
                 queue='queue',
                 host='queue',
-                manager_ip='manager_ip',
+                rest_host='127.0.0.1',
+                broker_ip='127.0.0.1',
+                file_server_host='127.0.0.1',
                 user='user',
                 max_workers=4,
                 min_workers=5,
@@ -132,7 +143,9 @@ class TestNotImplemented(BaseTest):
     @classmethod
     def setUpClass(cls):
         cls.daemon = Daemon(
-            manager_ip='manager_ip',
+            rest_host='127.0.0.1',
+            broker_ip='127.0.0.1',
+            file_server_host='127.0.0.1',
             name='name',
             queue='queue',
             broker_user='guest',

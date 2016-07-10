@@ -169,19 +169,34 @@ class AgentInstaller(object):
     def _create_agent_env(self):
 
         execution_env = {
-
-            # mandatory values calculated before the agent
-            # is actually created
-            env.CLOUDIFY_MANAGER_IP: self.cloudify_agent['manager_ip'],
+            # mandatory values calculated before the agent is actually created
             env.CLOUDIFY_DAEMON_QUEUE: self.cloudify_agent['queue'],
             env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
+            env.CLOUDIFY_REST_HOST: self.cloudify_agent['rest_host'],
+            env.CLOUDIFY_FILE_SERVER_HOST:
+                self.cloudify_agent['file_server_host'],
+            env.CLOUDIFY_BROKER_IP: self.cloudify_agent['broker_ip'],
 
             # these are variables that have default values that will be set
             # by the agent on the remote host if not set here
             env.CLOUDIFY_DAEMON_USER: self.cloudify_agent.get('user'),
-            env.CLOUDIFY_BROKER_IP: self.cloudify_agent.get('broker_ip'),
+            # broker_ip might not be set yet, and retrieved from the manager
+
             env.CLOUDIFY_BROKER_PORT: self.cloudify_agent.get('broker_port'),
-            env.CLOUDIFY_MANAGER_PORT: self.cloudify_agent.get('manager_port'),
+            env.CLOUDIFY_REST_PORT:
+                self.cloudify_agent.get('rest_port'),
+            env.CLOUDIFY_REST_PROTOCOL: self.cloudify_agent.get(
+                'rest_protocol'),
+            env.CLOUDIFY_SECURITY_ENABLED:
+                self.cloudify_agent.get('security_enabled'),
+            env.CLOUDIFY_REST_USERNAME:
+                self.cloudify_agent.get('rest_username'),
+            env.CLOUDIFY_REST_PASSWORD:
+                self.cloudify_agent.get('rest_password'),
+            env.CLOUDIFY_VERIFY_REST_CERTIFICATE:
+                self.cloudify_agent.get('verify_rest_certificate'),
+            env.CLOUDIFY_REST_CERT_CONTENT:
+                self.cloudify_agent.get('rest_cert_content'),
             env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(
                 'max_workers'),
             env.CLOUDIFY_DAEMON_MIN_WORKERS: self.cloudify_agent.get(

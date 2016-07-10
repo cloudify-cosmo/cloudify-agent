@@ -21,13 +21,19 @@ node_templates:
 
   host:
     type: cloudify.nodes.Compute
-    properties:
-      cloudify_agent:
-        name: { get_input: name }
-        queue: { get_input: queue }
-        ip: 127.0.0.1
-        manager_ip: 127.0.0.1
-        local: true
-        source_url: { get_input: source_url }
-        requirements: { get_input: requirements_file }
-        broker_get_settings_from_manager: false
+    interfaces:
+      cloudify.interfaces.worker_installer:
+        install:
+          inputs:
+            cloudify_agent:
+              name: { get_input: name }
+              queue: { get_input: queue }
+              ip: 127.0.0.1
+              rest_host: 127.0.0.1
+              local: true
+              source_url: { get_input: source_url }
+              requirements: { get_input: requirements_file }
+              broker_get_settings_from_manager: false
+              broker_ip: 127.0.0.1
+              agent_config:
+                ip: 127.0.0.1

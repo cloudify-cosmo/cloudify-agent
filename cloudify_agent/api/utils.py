@@ -18,9 +18,13 @@ import json
 import copy
 import tempfile
 import os
+import errno
 import getpass
+import types
+
 import pkg_resources
 from jinja2 import Template
+from itsdangerous import base64_encode
 
 from cloudify.context import BootstrapContext
 from cloudify.workflows import tasks as workflows_tasks
@@ -163,31 +167,27 @@ class _Internal(object):
     @staticmethod
     def get_broker_configuration(agent):
 
-        headers = None
-        if agent.get('bypass_maintenance_mode'):
-            headers = {'X-BYPASS-MAINTENANCE': 'true'}
+        client = get_rest_client(
+            security_enabled=agent['security_enabled'],
+            rest_host=agent['rest_host'],
+            rest_protocol=agent['rest_protocol'],
+            rest_port=agent['rest_port'],
+            rest_username=agent['rest_username'],
+            rest_password=agent['rest_password'],
+            verify_rest_certificate=agent['verify_rest_certificate'],
+            ssl_cert_path=agent['local_rest_cert_file'],
+            bypass_maintenance_mode=agent['bypass_maintenance_mode'])
 
-        client = CloudifyClient(
-            agent['manager_ip'],
-            agent['manager_port'],
-            headers=headers
-        )
         bootstrap_context_dict = client.manager.get_context()
         bootstrap_context_dict = bootstrap_context_dict['context']['cloudify']
         bootstrap_context = BootstrapContext(bootstrap_context_dict)
-        attributes = bootstrap_context.broker_config(
-            fallback_to_manager_ip=False)
-        if not attributes.get('broker_ip'):
-            attributes['broker_ip'] = agent['manager_ip']
+        attributes = bootstrap_context.broker_config()
         return attributes
 
     @staticmethod
     def get_broker_url(agent):
+        broker_ip = agent['broker_ip']
         broker_port = agent.get('broker_port', defaults.BROKER_PORT)
-        if agent.get('broker_ip'):
-            broker_ip = agent['broker_ip']
-        else:
-            broker_ip = agent['manager_ip']
         broker_user = agent.get('broker_user', 'guest')
         broker_pass = agent.get('broker_pass', 'guest')
         return defaults.BROKER_URL.format(username=broker_user,
@@ -200,8 +200,8 @@ internal = _Internal()
 
 
 def get_celery_client(broker_url,
-                      ssl_enabled=False,
-                      ssl_cert_path=None):
+                      broker_ssl_enabled=False,
+                      broker_ssl_cert_path=None):
 
     # celery is imported locally since it's not used by any other method, and
     # we want this utils module to be usable even if celery is not available
@@ -211,11 +211,11 @@ def get_celery_client(broker_url,
                            backend=broker_url)
     celery_client.conf.update(
         CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES)
-    if ssl_enabled:
+    if broker_ssl_enabled:
         # import always?
         import ssl
         celery_client.conf.BROKER_USE_SSL = {
-            'ca_certs': ssl_cert_path,
+            'ca_certs': broker_ssl_cert_path,
             'cert_reqs': ssl.CERT_REQUIRED,
         }
     return celery_client
@@ -458,6 +458,19 @@ def env_to_file(env_variables, destination_path=None, posix=True):
     return destination_path
 
 
+def get_bool_or_default(raw_value, default_value):
+    if raw_value is None:
+        return default_value
+
+    if isinstance(raw_value, types.BooleanType):
+        return raw_value
+    elif isinstance(raw_value, basestring):
+        return raw_value.lower() == 'true'
+    else:
+        raise ValueError('value has invalid type: {0}, expected boolean or '
+                         'string'.format(type(raw_value)))
+
+
 def stringify_values(dictionary):
 
     """
@@ -525,3 +538,59 @@ def json_loads(content):
         return json.loads(content)
     except ValueError as e:
         raise ValueError('{0}:{1}{2}'.format(str(e), os.linesep, content))
+
+
+def safe_create_dir(path):
+    # creating a dir, ignoring exists error to handle possible race condition
+    try:
+        os.makedirs(path)
+    except OSError as ose:
+        if ose.errno != errno.EEXIST:
+            raise
+
+
+def get_rest_client(security_enabled,
+                    rest_host,
+                    rest_protocol,
+                    rest_port,
+                    rest_username=None,
+                    rest_password=None,
+                    verify_rest_certificate=False,
+                    ssl_cert_path=None,
+                    bypass_maintenance_mode=False):
+
+    headers = {}
+    if bypass_maintenance_mode:
+        headers['X-BYPASS-MAINTENANCE'] = 'true'
+
+    if not security_enabled:
+        return CloudifyClient(host=rest_host,
+                              protocol=rest_protocol,
+                              port=rest_port)
+
+    if not rest_username or not rest_password:
+        raise ValueError('username or password are missing! Both are '
+                         'required to create a REST client for a secured '
+                         'manager [{0}]'.format(rest_host))
+
+    credentials = '{0}:{1}'.format(rest_username, rest_password)
+    headers['Authorization'] = 'Basic ' + base64_encode(credentials)
+
+    if verify_rest_certificate:
+        if not ssl_cert_path:
+            raise ValueError('missing ssl_cert_path, verifying REST '
+                             'certificate cannot be performed'.
+                             format(rest_host))
+        trust_all = False
+    else:
+        trust_all = True
+        ssl_cert_path = None
+
+    rest_client = CloudifyClient(host=rest_host,
+                                 protocol=rest_protocol,
+                                 port=rest_port,
+                                 headers=headers,
+                                 trust_all=trust_all,
+                                 cert=ssl_cert_path)
+
+    return rest_client

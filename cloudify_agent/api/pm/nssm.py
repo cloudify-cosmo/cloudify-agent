@@ -76,12 +76,15 @@ class NonSuckingServiceManagerDaemon(Daemon):
         self.failure_reset_timeout = params.get('failure_reset_timeout', 60)
         self.failure_restart_delay = params.get('failure_restart_delay', 5000)
 
-    def configure(self):
+    def create_script(self):
+        pass
 
+    def create_config(self):
         env_string = self._create_env_string()
 
         # creating the installation script
-        self._logger.debug('Rendering configuration script from template')
+        self._logger.debug('Rendering configuration script "{0}" from template'
+                           .format(self.config_path))
         utils.render_template_to_file(
             template_path='pm/nssm/nssm.conf.template',
             file_path=self.config_path,
@@ -91,8 +94,16 @@ class NonSuckingServiceManagerDaemon(Daemon):
             log_file=self.get_logfile(),
             workdir=self.workdir,
             user=self.user,
-            manager_ip=self.manager_ip,
-            manager_port=self.manager_port,
+            rest_host=self.rest_host,
+            rest_port=self.rest_port,
+            rest_protocol=self.rest_protocol,
+            file_server_host=self.file_server_host,
+            security_enabled=self.security_enabled,
+            rest_username=self.rest_username,
+            rest_password=self.rest_password,
+            verify_rest_certificate=self.verify_rest_certificate,
+            local_rest_cert_file=self.local_rest_cert_file,
+            rest_cert_content=self.rest_cert_content,
             broker_url=self.broker_url,
             min_workers=self.min_workers,
             max_workers=self.max_workers,
@@ -112,12 +123,6 @@ class NonSuckingServiceManagerDaemon(Daemon):
         self._logger.info('Running configuration script')
         self._runner.run(self.config_path)
         self._logger.debug('Successfully executed configuration script')
-
-        # Add the celery config
-        self._logger.info('Deploying SSL cert (if defined).')
-        self._create_ssl_cert()
-        self._logger.info('Deploying celery configuration.')
-        self._create_celery_conf()
 
     def before_self_stop(self):
         if self.startup_policy in ['boot', 'system', 'auto']:
