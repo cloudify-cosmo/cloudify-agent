@@ -37,6 +37,16 @@ from cloudify_agent.shell.decorators import handle_failures
               .format(env.CLOUDIFY_FILE_SERVER_HOST),
               required=True,
               envvar=env.CLOUDIFY_FILE_SERVER_HOST)
+@click.option('--file-server-port',
+              help='The port of the file server [env {0}]'
+              .format(env.CLOUDIFY_FILE_SERVER_PORT),
+              required=True,
+              envvar=env.CLOUDIFY_FILE_SERVER_PORT)
+@click.option('--file-server-protocol',
+              help='The protocol of the file server [env {0}]'
+              .format(env.CLOUDIFY_FILE_SERVER_PROTOCOL),
+              required=True,
+              envvar=env.CLOUDIFY_FILE_SERVER_PROTOCOL)
 @click.option('--rest-host',
               help='The IP or host name of the REST service [env {0}]'
               .format(env.CLOUDIFY_REST_HOST),
@@ -211,9 +221,13 @@ def create(**params):
     click.echo('Creating...')
 
     _create_rest_ssl_cert(attributes)
+    # _create_rest_ssl_cert called before get_broker_configuration because it
+    # might be required for the rest call to succeed
     if attributes['broker_get_settings_from_manager']:
         broker = api_utils.internal.get_broker_configuration(attributes)
         attributes.update(broker)
+    # _create_broker_ssl_cert called after get_broker_configuration because the
+    # cert might be retrieved there
     _create_broker_ssl_cert(attributes)
 
     from cloudify_agent.shell.main import get_logger

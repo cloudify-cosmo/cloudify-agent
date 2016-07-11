@@ -42,6 +42,8 @@ class BaseTest(unittest.TestCase):
         constants.MANAGER_FILE_SERVER_URL_KEY: 'localhost',
         constants.REST_HOST_KEY: 'localhost',
         constants.FILE_SERVER_HOST_KEY: 'localhost',
+        constants.FILE_SERVER_PROTOCOL_KEY: 'http',
+        constants.FILE_SERVER_PORT_KEY: '53229',
         constants.SECURITY_ENABLED_KEY: 'False',
         constants.REST_PROTOCOL_KEY: 'http',
         constants.REST_PORT_KEY: '80',
