@@ -91,8 +91,6 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
             constants.SECURITY_ENABLED_KEY: 'True',
             constants.REST_PROTOCOL_KEY: 'http',
             constants.REST_PORT_KEY: '80',
-            constants.REST_USERNAME_KEY: '',
-            constants.REST_PASSWORD_KEY: '',
             constants.VERIFY_REST_CERTIFICATE_KEY: '',
             constants.REST_CERT_CONTENT_KEY: ''
         }
@@ -187,8 +185,15 @@ class TestCreateAgentAmqp(BaseTest):
                 'broker_ssl_cert': ''
             }
         }
+
+        operation_ctx = mocks.MockCloudifyContext(runtime_properties={
+            'rest_token': 'token1234'
+        })
+        old_context = ctx
         configuration.prepare_connection(old_agent)
+        current_ctx.set(operation_ctx)
         configuration.prepare_agent(old_agent, None)
+        current_ctx.set(old_context)
         return old_agent
 
     def _create_node_instance_context(self):
@@ -219,6 +224,7 @@ class TestCreateAgentAmqp(BaseTest):
            mock_context())
     @patch('cloudify_agent.installer.config.attributes.ctx',
            mock_context())
+    @patch('cloudify.utils.ctx', mock_context())
     def test_create_agent_dict(self):
         old_agent = self._create_agent()
         with self._patch_manager_env():

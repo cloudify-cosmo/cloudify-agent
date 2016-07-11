@@ -130,6 +130,10 @@ class Daemon(object):
 
         the password to use in REST calls. No default.
 
+    ``rest_token``:
+
+        the token to use in REST calls. No default.
+
     ``verify_rest_certificate``:
 
         indicates whether agents should verify the REST server's SSL
@@ -235,8 +239,23 @@ class Daemon(object):
         self.broker_ip = params['broker_ip']
         self.file_server_host = params['file_server_host']
 
-        # Optional parameters
+        # Optional parameters - REST client
         self.validate_optional()
+        self.rest_port = params.get(
+            'rest_port') or defaults.REST_PORT
+        self.rest_protocol = params.get(
+            'rest_protocol') or defaults.REST_PROTOCOL
+        self.verify_rest_certificate = params.get('verify_rest_certificate')
+        self.local_rest_cert_file = params.get('local_rest_cert_file', '')
+        self.rest_cert_content = params.get('rest_ssl_cert_content', '')
+        self.security_enabled = params.get('security_enabled')
+        # REST credentials need to be prefixed with _ so they're not stored
+        # when the daemon is serialized
+        self._rest_username = params.get('rest_username')
+        self._rest_password = params.get('rest_password')
+        self._rest_token = params.get('rest_token')
+
+        # Optional parameters
         self.name = params.get(
             'name') or self._get_name_from_manager()
         self.user = params.get('user') or getpass.getuser()
@@ -250,16 +269,6 @@ class Daemon(object):
         self.broker_pass = params.get('broker_pass', 'guest')
         self.host = params.get('host')
         self.deployment_id = params.get('deployment_id')
-        self.rest_port = params.get(
-            'rest_port') or defaults.REST_PORT
-        self.rest_protocol = params.get(
-            'rest_protocol') or defaults.REST_PROTOCOL
-        self.security_enabled = params.get('security_enabled')
-        self.rest_username = params.get('rest_username')
-        self.rest_password = params.get('rest_password')
-        self.verify_rest_certificate = params.get('verify_rest_certificate')
-        self.local_rest_cert_file = params.get('local_rest_cert_file', '')
-        self.rest_cert_content = params.get('rest_ssl_cert_content', '')
         self.queue = params.get(
             'queue') or self._get_queue_from_manager()
 
@@ -703,8 +712,9 @@ class Daemon(object):
             rest_host=self.rest_host,
             rest_protocol=self.rest_protocol,
             rest_port=self.rest_port,
-            rest_username=self.rest_username,
-            rest_password=self.rest_password,
+            rest_username=self._rest_username,
+            rest_password=self._rest_password,
+            rest_token=self._rest_token,
             verify_rest_certificate=self.verify_rest_certificate,
             ssl_cert_path=self.local_rest_cert_file
         )

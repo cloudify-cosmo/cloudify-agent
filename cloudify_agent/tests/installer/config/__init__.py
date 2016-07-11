@@ -39,5 +39,6 @@ def mock_context(agent_properties=None,
         bootstrap_context=BootstrapContext(
             bootstrap_context={'cloudify_agent': agent_context})
     )
-    setattr(context, 'installer', MagicMock())
+    context.installer = MagicMock()
+    context._get_current_object = lambda: context
     return context
