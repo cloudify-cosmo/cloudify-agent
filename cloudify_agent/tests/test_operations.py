@@ -86,6 +86,8 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
         new_env = {
             constants.REST_HOST_KEY: 'localhost',
             constants.FILE_SERVER_HOST_KEY: 'localhost',
+            constants.FILE_SERVER_PROTOCOL_KEY: 'http',
+            constants.FILE_SERVER_PORT_KEY: '53229',
             constants.MANAGER_FILE_SERVER_URL_KEY:
                 'http://localhost:{0}'.format(port),
             constants.SECURITY_ENABLED_KEY: 'True',

@@ -105,6 +105,14 @@ class Daemon(object):
 
         the IP or hostname of the file server (Required)
 
+    ``file_server_port``:
+
+        the port of the file server (Required)
+
+    ``file_server_protocol``:
+
+        the protocol of the file server. defaults to HTTP.
+
     ``rest_host``:
 
         the ip address/host name of the manager, running the
@@ -235,9 +243,9 @@ class Daemon(object):
 
         # Mandatory parameters
         self.validate_mandatory()
+        self.file_server_host = params['file_server_host']
         self.rest_host = params['rest_host']
         self.broker_ip = params['broker_ip']
-        self.file_server_host = params['file_server_host']
 
         # Optional parameters - REST client
         self.validate_optional()
@@ -269,6 +277,20 @@ class Daemon(object):
         self.broker_pass = params.get('broker_pass', 'guest')
         self.host = params.get('host')
         self.deployment_id = params.get('deployment_id')
+        self.file_server_port = params.get(
+            'file_server_port') or defaults.FILE_SERVER_PORT
+        self.file_server_protocol = \
+            params.get('file_server_protocol') or defaults.FILE_SERVER_PROTOCOL
+        self.rest_port = params.get(
+            'rest_port') or defaults.REST_PORT
+        self.rest_protocol = params.get(
+            'rest_protocol') or defaults.REST_PROTOCOL
+        self.security_enabled = params.get('security_enabled')
+        self.rest_username = params.get('rest_username')
+        self.rest_password = params.get('rest_password')
+        self.verify_rest_certificate = params.get('verify_rest_certificate')
+        self.local_rest_cert_file = params.get('local_rest_cert_file', '')
+        self.rest_cert_content = params.get('rest_ssl_cert_content', '')
         self.queue = params.get(
             'queue') or self._get_queue_from_manager()
 

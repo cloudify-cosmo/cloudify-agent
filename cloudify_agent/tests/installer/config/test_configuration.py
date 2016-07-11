@@ -26,9 +26,6 @@ from cloudify_agent.tests.installer.config import mock_context
 
 class TestConfiguration(BaseTest):
 
-    def setUp(self):
-        super(TestConfiguration, self).setUp()
-
     @patch('cloudify_agent.installer.config.configuration.ctx',
            mock_context())
     @patch('cloudify_agent.installer.config.decorators.ctx',
@@ -59,6 +56,8 @@ class TestConfiguration(BaseTest):
             'rest_port': 80,
             'rest_protocol': 'http',
             'file_server_host': 'localhost',
+            'file_server_port': 53229,
+            'file_server_protocol': 'http',
             'queue': 'test_deployment',
             'envdir': envdir,
             'user': user,
@@ -111,6 +110,7 @@ class TestConfiguration(BaseTest):
                           'rest_protocol': 'https', 'rest_port': '443',
                           'rest_username': 'the_user',
                           'rest_password': 'the_pass',
+                          'file_server_protocol': 'https',
                           'verify_rest_certificate': True,
                           'rest_cert_content': '--this_is-my-certificate--'}
         configuration.prepare_connection(cloudify_agent)
@@ -133,6 +133,8 @@ class TestConfiguration(BaseTest):
             'rest_port': '443',
             'rest_protocol': 'https',
             'file_server_host': 'localhost',
+            'file_server_port': 53229,
+            'file_server_protocol': 'https',
             'queue': 'test_deployment',
             'envdir': envdir,
             'user': user,

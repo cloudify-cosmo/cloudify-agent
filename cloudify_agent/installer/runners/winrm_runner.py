@@ -159,11 +159,16 @@ class WinRMRunner(object):
 
         return self.run('echo')
 
-    def download(self, url, output_path=None):
+    def download(self, url, output_path=None, skip_verification=False):
 
         """
         :param url: URL to the resource to download.
         :param output_path: Local path the resource will be saved as.
+        :param skip_verification: If False, SSL certificates sent by the server
+               will be verified; otherwise certificates will be trusted without
+               verification. Defaults to False.
+        :param certificate_file: a local cert file to use for SSL certificate
+               verification.
 
         :return the destination path the url was downloaded to.
         """
@@ -172,10 +177,24 @@ class WinRMRunner(object):
             output_path = self.mktemp()
 
         self.logger.info('Downloading {0}'.format(url))
-        self.run(
-            '''@powershell -Command "(new-object System.Net.WebClient)\
-.Downloadfile('{0}','{1}')"'''
-            .format(url, output_path))
+        # TODO: check args for https and cert use
+        # see: https://blogs.technet.microsoft.com/bshukla/2010/04/12/
+        # ignoring-ssl-trust-in-powershell-system-net-webclient/
+        if skip_verification:
+            # making the client skip cert verification
+            self.run('''@powershell -Command "[System.Net.ServicePointManager]\
+::ServerCertificateValidationCallback = {$true}"''')
+
+        # downloading agent package from the manager
+        self.run('''@powershell -Command "(new-object System.Net.WebClient)\
+.Downloadfile('{0}','{1}')"'''.format(url, output_path))
+
+        if skip_verification:
+            # cancelling the skip of cert verification, to make future requests
+            # more secure
+            self.run('''@powershell -Command "[System.Net.ServicePointManager]\
+::ServerCertificateValidationCallback = {$null}"''')
+
         return output_path
 
     def move(self, src, dst):
