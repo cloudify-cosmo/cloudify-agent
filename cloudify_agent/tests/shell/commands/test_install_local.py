@@ -43,6 +43,7 @@ class TestInstaller(BaseTest):
            mock_context())
     @patch('cloudify_agent.installer.config.attributes.ctx',
            mock_context())
+    @patch('cloudify.utils.ctx', mock_context())
     def _test_agent_installation(self, agent):
         if 'user' not in agent:
             agent['user'] = getpass.getuser()
@@ -74,6 +75,7 @@ class TestInstaller(BaseTest):
            mock_context())
     @patch('cloudify_agent.installer.config.attributes.ctx',
            mock_context())
+    @patch('cloudify.utils.ctx', mock_context())
     def _prepare_configuration(self, agent):
         agent['name'] = '{0}_{1}'.format(
             agent.get('name', 'agent_'),
