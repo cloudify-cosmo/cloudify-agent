@@ -566,7 +566,8 @@ def get_rest_client(security_enabled,
     if not security_enabled:
         return CloudifyClient(host=rest_host,
                               protocol=rest_protocol,
-                              port=rest_port)
+                              port=rest_port,
+                              headers=headers)
 
     if not rest_username or not rest_password:
         raise ValueError('username or password are missing! Both are '
