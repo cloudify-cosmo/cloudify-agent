@@ -39,12 +39,6 @@ def install_local(agent_file, output_agent_file):
             defaults.REST_PROTOCOL
     if not cloudify_agent.get('rest_port'):
         cloudify_agent['rest_port'] = defaults.REST_PORT
-    if cloudify_agent.get('broker_get_settings_from_manager', True):
-        broker_config = utils.internal.get_broker_configuration(cloudify_agent)
-    else:
-        broker_config = cloudify_agent
-    broker_url = utils.internal.get_broker_url(broker_config)
-    os.environ['CELERY_BROKER_URL'] = broker_url
     os.environ[utils.internal.CLOUDIFY_DAEMON_USER_KEY] = str(
         cloudify_agent['user'])
     if 'basedir' not in cloudify_agent:
