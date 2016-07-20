@@ -75,7 +75,8 @@ class TestConfiguration(BaseTest):
             'rest_cert_content': '',
             'rest_username': '',
             'rest_password': '',
-            'verify_rest_certificate': False
+            'verify_rest_certificate': False,
+            'bypass_maintenance_mode': False
         }
         if os.name == 'posix':
             distro = platform.dist()[0].lower()
@@ -143,7 +144,8 @@ class TestConfiguration(BaseTest):
             'rest_cert_content': '--this_is-my-certificate--',
             'rest_username': 'the_user',
             'rest_password': 'the_pass',
-            'verify_rest_certificate': True
+            'verify_rest_certificate': True,
+            'bypass_maintenance_mode': False
         }
         if os.name == 'posix':
             distro = platform.dist()[0].lower()
