@@ -207,7 +207,11 @@ class AgentInstaller(object):
             env.CLOUDIFY_DAEMON_EXTRA_ENV:
             self.create_custom_env_file_on_target(
                 self.cloudify_agent.get('env', {})),
-            env.CLOUDIFY_BYPASS_MAINTENANCE_MODE: get_is_bypass_maintenance()
+            env.CLOUDIFY_BYPASS_MAINTENANCE_MODE: get_is_bypass_maintenance(),
+            env.CLOUDIFY_LOCAL_REST_CERT_FILE:
+                self.cloudify_agent['local_rest_cert_file'],
+            env.CLOUDIFY_BROKER_SSL_CERT_PATH:
+                self.cloudify_agent['broker_ssl_cert_path']
         }
 
         execution_env = utils.purge_none_values(execution_env)
