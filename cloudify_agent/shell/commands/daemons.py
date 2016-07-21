@@ -46,14 +46,6 @@ from cloudify_agent.shell.decorators import handle_failures
               help='The manager REST port to connect to. [env {0}]'
               .format(env.CLOUDIFY_REST_PORT),
               envvar=env.CLOUDIFY_REST_PORT)
-@click.option('--rest-protocol',
-              help='The protocol to use when sending REST calls to the '
-                   'manager. [env {0}]'.format(env.CLOUDIFY_REST_PROTOCOL),
-              envvar=env.CLOUDIFY_REST_PROTOCOL)
-@click.option('--security-enabled',
-              help='True if REST service security is enabled, False otherwise.'
-                   ' [env {0}]'.format(env.CLOUDIFY_SECURITY_ENABLED),
-              envvar=env.CLOUDIFY_SECURITY_ENABLED)
 @click.option('--rest-username',
               help='The username to use when sending REST calls. [env {0}]'
               .format(env.CLOUDIFY_REST_USERNAME),
@@ -62,6 +54,19 @@ from cloudify_agent.shell.decorators import handle_failures
               help='The password to use when sending REST calls. [env {0}]'
               .format(env.CLOUDIFY_REST_PASSWORD),
               envvar=env.CLOUDIFY_REST_PASSWORD)
+@click.option('--rest-token',
+              help='The token to use when sending REST calls. Takes '
+                   'precedence over username/password. [env {0}]'
+              .format(env.CLOUDIFY_REST_TOKEN),
+              envvar=env.CLOUDIFY_REST_TOKEN)
+@click.option('--rest-protocol',
+              help='The protocol to use when sending REST calls to the '
+                   'manager. [env {0}]'.format(env.CLOUDIFY_REST_PROTOCOL),
+              envvar=env.CLOUDIFY_REST_PROTOCOL)
+@click.option('--security-enabled',
+              help='True if REST service security is enabled, False otherwise.'
+                   ' [env {0}]'.format(env.CLOUDIFY_SECURITY_ENABLED),
+              envvar=env.CLOUDIFY_SECURITY_ENABLED)
 @click.option('--verify-rest-certificate',
               help='True to verify the REST server\' SSl certificate, False '
                    'otherwise. [env {0}]'

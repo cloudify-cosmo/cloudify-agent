@@ -174,6 +174,7 @@ class _Internal(object):
             rest_port=agent['rest_port'],
             rest_username=agent['rest_username'],
             rest_password=agent['rest_password'],
+            rest_token=agent['rest_token'],
             verify_rest_certificate=agent['verify_rest_certificate'],
             ssl_cert_path=agent['local_rest_cert_file'],
             bypass_maintenance_mode=agent['bypass_maintenance_mode'])
@@ -555,6 +556,7 @@ def get_rest_client(security_enabled,
                     rest_port,
                     rest_username=None,
                     rest_password=None,
+                    rest_token=None,
                     verify_rest_certificate=False,
                     ssl_cert_path=None,
                     bypass_maintenance_mode=False):
@@ -569,13 +571,17 @@ def get_rest_client(security_enabled,
                               port=rest_port,
                               headers=headers)
 
-    if not rest_username or not rest_password:
-        raise ValueError('username or password are missing! Both are '
-                         'required to create a REST client for a secured '
-                         'manager [{0}]'.format(rest_host))
+    if (not rest_username or not rest_password) and not rest_token:
+        raise ValueError('REST credentials are missing! Either username and '
+                         'password, or an auth token are required to create '
+                         'a REST client for a secured manager [{0}]'
+                         .format(rest_host))
 
-    credentials = '{0}:{1}'.format(rest_username, rest_password)
-    headers['Authorization'] = 'Basic ' + base64_encode(credentials)
+    if rest_token:
+        headers['Authentication-Token'] = rest_token
+    else:
+        credentials = '{0}:{1}'.format(rest_username, rest_password)
+        headers['Authorization'] = 'Basic ' + base64_encode(credentials)
 
     if verify_rest_certificate:
         if not ssl_cert_path:

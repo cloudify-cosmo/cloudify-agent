@@ -35,6 +35,7 @@ class TestConfiguration(BaseTest):
            mock_context())
     @patch('cloudify_agent.installer.config.attributes.ctx',
            mock_context())
+    @patch('cloudify.utils.ctx', mock_context())
     def test_prepare(self):
 
         cloudify_agent = {'local': True}
@@ -76,10 +77,11 @@ class TestConfiguration(BaseTest):
             'broker_get_settings_from_manager': True,
             'security_enabled': False,
             'rest_cert_content': '',
-            'rest_username': '',
-            'rest_password': '',
+            'rest_username': None,
+            'rest_password': None,
             'verify_rest_certificate': False,
-            'bypass_maintenance_mode': False
+            'bypass_maintenance_mode': False,
+            'rest_token': None
         }
         if os.name == 'posix':
             distro = platform.dist()[0].lower()
@@ -102,6 +104,7 @@ class TestConfiguration(BaseTest):
            mock_context())
     @patch('cloudify_agent.installer.config.attributes.ctx',
            mock_context())
+    @patch('cloudify.utils.ctx', mock_context())
     def test_prepare_secured(self):
 
         cloudify_agent = {'local': True, 'security_enabled': True,
@@ -151,7 +154,8 @@ class TestConfiguration(BaseTest):
             'rest_username': 'the_user',
             'rest_password': 'the_pass',
             'verify_rest_certificate': True,
-            'bypass_maintenance_mode': False
+            'bypass_maintenance_mode': False,
+            'rest_token': None
         }
         if os.name == 'posix':
             distro = platform.dist()[0].lower()
