@@ -46,8 +46,6 @@ class BaseTest(unittest.TestCase):
         constants.REST_PROTOCOL_KEY: 'http',
         constants.REST_PORT_KEY: '80',
         constants.REST_CERT_CONTENT_KEY: '',
-        constants.REST_USERNAME_KEY: '',
-        constants.REST_PASSWORD_KEY: '',
         constants.VERIFY_REST_CERTIFICATE_KEY: ''
     }
 

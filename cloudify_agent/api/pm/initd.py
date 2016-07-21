@@ -127,8 +127,6 @@ class GenericLinuxDaemon(CronRespawnDaemon):
             rest_protocol=self.rest_protocol,
             file_server_host=self.file_server_host,
             security_enabled=self.security_enabled,
-            rest_username=self.rest_username,
-            rest_password=self.rest_password,
             verify_rest_certificate=self.verify_rest_certificate,
             local_rest_cert_file=self.local_rest_cert_file,
             rest_cert_content=self.rest_cert_content,

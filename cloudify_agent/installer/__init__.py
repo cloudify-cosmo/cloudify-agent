@@ -193,6 +193,8 @@ class AgentInstaller(object):
                 self.cloudify_agent.get('rest_username'),
             env.CLOUDIFY_REST_PASSWORD:
                 self.cloudify_agent.get('rest_password'),
+            env.CLOUDIFY_REST_TOKEN:
+                self.cloudify_agent.get('rest_token'),
             env.CLOUDIFY_VERIFY_REST_CERTIFICATE:
                 self.cloudify_agent.get('verify_rest_certificate'),
             env.CLOUDIFY_REST_CERT_CONTENT:

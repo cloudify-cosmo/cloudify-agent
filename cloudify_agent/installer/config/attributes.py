@@ -82,6 +82,9 @@ AGENT_ATTRIBUTES = {
     'rest_password': {
         'group': 'cfy-agent'
     },
+    'rest_token': {
+        'group': 'cfy-agent'
+    },
     'verify_rest_certificate': {
         'group': 'cfy-agent'
     },
