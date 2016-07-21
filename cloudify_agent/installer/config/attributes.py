@@ -88,6 +88,9 @@ AGENT_ATTRIBUTES = {
     'local_rest_cert_file': {
         'group': 'cfy-agent'
     },
+    'broker_ssl_cert_path': {
+        'group': 'cfy-agent'
+    },
     'rest_cert_content': {
         'group': 'cfy-agent'
     },
