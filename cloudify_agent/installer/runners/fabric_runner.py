@@ -353,7 +353,8 @@ class FabricRunner(object):
 
         return self.mktemp(create=create, directory=True, **attributes)
 
-    def download(self, url, output_path=None, **attributes):
+    def download(self, url, output_path=None, skip_verification=False,
+                 certificate_file=None, **attributes):
 
         """
         Downloads the contents of the url.
@@ -365,9 +366,14 @@ class FabricRunner(object):
 
         :param url: URL to the resource.
         :param output_path: Path where the resource will be downloaded to.
-                            If not specified, a temporary file will be used.
-        :param attributes: custom attributes passed directly to
-                           fabric's run command
+               If not specified, a temporary file will be used.
+        :param skip_verification: If False, SSL certificates sent by the server
+               will be verified; otherwise certificates will be trusted without
+               verification. Defaults to False.
+        :param certificate_file: a local cert file to use for SSL certificate
+               verification.
+        :param attributes: custom attributes passed directly to fabric's
+               run command.
 
         :return: the output path.
         """
@@ -379,18 +385,29 @@ class FabricRunner(object):
             self.logger.debug('Attempting to locate wget on the host '
                               'machine')
             self.run('which wget', **attributes)
-            command = 'wget -T 30 {0} -O {1}'.format(url, output_path)
+            args = '-T 30'
+            if skip_verification:
+                args += ' --no-check-certificate'
+            if certificate_file:
+                args += ' --certificate={0}'.format(certificate_file)
+            command = 'wget {0} {1} -O {2}'.format(args, url, output_path)
         except CommandExecutionException:
             try:
                 self.logger.debug(
                     'wget not found. Attempting to locate cURL on the host '
                     'machine')
                 self.run('which curl', **attributes)
-                command = 'curl {0} -o {1}'.format(url, output_path)
+                args = ''
+                if skip_verification:
+                    args += ' -k'
+                if certificate_file:
+                    args += ' --cacert {0}'.format(certificate_file)
+                command = 'curl {0} {1} -o {2}'.format(args, url, output_path)
             except CommandExecutionException:
                 raise exceptions.AgentInstallerConfigurationError(
                     'Cannot find neither wget nor curl'
                     .format(url))
+
         self.run(command, **attributes)
         return output_path
 

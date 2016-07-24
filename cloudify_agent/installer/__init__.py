@@ -169,12 +169,13 @@ class AgentInstaller(object):
     def _create_agent_env(self):
 
         execution_env = {
-            # mandatory values calculated before the agent is actually created
+            # mandatory values calculated before the agent
+            # is actually created
             env.CLOUDIFY_DAEMON_QUEUE: self.cloudify_agent['queue'],
             env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
-            env.CLOUDIFY_REST_HOST: self.cloudify_agent['rest_host'],
             env.CLOUDIFY_FILE_SERVER_HOST:
                 self.cloudify_agent['file_server_host'],
+            env.CLOUDIFY_REST_HOST: self.cloudify_agent['rest_host'],
             env.CLOUDIFY_BROKER_IP: self.cloudify_agent['broker_ip'],
 
             # these are variables that have default values that will be set
@@ -183,6 +184,10 @@ class AgentInstaller(object):
             # broker_ip might not be set yet, and retrieved from the manager
 
             env.CLOUDIFY_BROKER_PORT: self.cloudify_agent.get('broker_port'),
+            env.CLOUDIFY_FILE_SERVER_PORT:
+                self.cloudify_agent['file_server_port'],
+            env.CLOUDIFY_FILE_SERVER_PROTOCOL:
+                self.cloudify_agent.get('file_server_protocol'),
             env.CLOUDIFY_REST_PORT:
                 self.cloudify_agent.get('rest_port'),
             env.CLOUDIFY_REST_PROTOCOL: self.cloudify_agent.get(
@@ -336,7 +341,17 @@ class RemoteInstallerMixin(AgentInstaller):
             return None
 
     def download(self, url, destination=None):
-        return self.runner.download(url, destination)
+        if self.cloudify_agent['windows']:
+            return self.runner.download(url,
+                                        output_path=destination,
+                                        skip_verification=True)
+        else:
+            local_cert_file = self.cloudify_agent.get('local_rest_cert_file')
+            return self.runner.download(
+                url,
+                output_path=destination,
+                skip_verification=not bool(local_cert_file),
+                certificate_file=local_cert_file)
 
     def move(self, source, target):
         self.runner.move(source, target)

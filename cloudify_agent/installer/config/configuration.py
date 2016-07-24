@@ -156,12 +156,21 @@ def _cfy_agent_attributes_no_defaults(cloudify_agent):
         cloudify_agent['name'] = name
 
     if not cloudify_agent.get('queue'):
-        # by default, the queue of the agent is the same as the name
+        # by default, queue of the agent is the same as the name
         cloudify_agent['queue'] = cloudify_agent['name']
 
     if not cloudify_agent.get('file_server_host'):
         cloudify_agent['file_server_host'] = \
             cloudify_utils.get_manager_file_server_host()
+
+    if not cloudify_agent.get('file_server_port'):
+        # by default, file_server_port is set by an environment variable
+        cloudify_agent['file_server_port'] = \
+            cloudify_utils.get_manager_file_server_port()
+
+    if not cloudify_agent.get('file_server_protocol'):
+        cloudify_agent['file_server_protocol'] = \
+            cloudify_utils.get_manager_file_server_protocol()
 
     if not cloudify_agent.get('rest_host'):
         cloudify_agent['rest_host'] = \
