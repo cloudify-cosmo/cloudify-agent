@@ -98,6 +98,8 @@ class NonSuckingServiceManagerDaemon(Daemon):
             rest_port=self.rest_port,
             rest_protocol=self.rest_protocol,
             file_server_host=self.file_server_host,
+            file_server_port=self.file_server_port,
+            file_server_protocol=self.file_server_protocol,
             security_enabled=self.security_enabled,
             verify_rest_certificate=self.verify_rest_certificate,
             local_rest_cert_file=self.local_rest_cert_file,

@@ -43,6 +43,12 @@ AGENT_ATTRIBUTES = {
     'file_server_host': {
         'group': 'connection'
     },
+    'file_server_port': {
+        'group': 'connection'
+    },
+    'file_server_protocol': {
+        'group': 'connection'
+    },
     'key': {
         'context_attribute': 'agent_key_path',
         'group': 'connection'
