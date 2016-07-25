@@ -54,7 +54,6 @@ class BaseTest(unittest.TestCase):
     def setUp(self):
 
         # change levels to 'DEBUG' to troubleshoot.
-        # dummy line
         self.logger = setup_logger(
             'cloudify-agent.tests',
             logger_level=logging.INFO)
