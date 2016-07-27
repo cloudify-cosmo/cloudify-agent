@@ -17,6 +17,8 @@ import os
 import uuid
 import time
 
+from cloudify import constants
+from cloudify_agent.api import defaults
 from cloudify_agent.installer import script
 from system_tests import resources
 from cloudify.state import current_ctx
@@ -232,6 +234,20 @@ class AgentInstallerTest(testenv.TestCase):
 
 
 def install_script(name, windows, user, manager_host):
+
+    env_vars = {}
+    env_vars[constants.MANAGER_FILE_SERVER_URL_KEY] = '{0}://{1}:{2}'.format(
+        defaults.FILE_SERVER_PROTOCOL, manager_host, defaults.FILE_SERVER_PORT)
+    env_vars[constants.FILE_SERVER_PORT_KEY] = str(defaults.FILE_SERVER_PORT)
+    env_vars[constants.FILE_SERVER_PROTOCOL_KEY] = \
+        defaults.FILE_SERVER_PROTOCOL
+    env_vars[constants.REST_PORT_KEY] = str(defaults.REST_PORT)
+    env_vars[constants.REST_PROTOCOL_KEY] = defaults.REST_PROTOCOL
+    env_vars[constants.SECURITY_ENABLED_KEY] = str(defaults.SECURITY_ENABLED)
+    env_vars[constants.VERIFY_REST_CERTIFICATE_KEY] = \
+        str(defaults.VERIFY_REST_CERTIFICATE)
+    env_vars[constants.REST_CERT_CONTENT_KEY] = ''
+
     ctx = MockCloudifyContext(
         node_id='node',
         properties={'agent_config': {
@@ -239,15 +255,19 @@ def install_script(name, windows, user, manager_host):
             'windows': windows,
             'install_method': 'provided',
             'rest_host': manager_host,
+            'file_server_host': manager_host,
+            'broker_ip': manager_host,
             'name': name
         }})
     try:
         current_ctx.set(ctx)
-        os.environ['MANAGER_FILE_SERVER_URL'] = 'http://{0}:53229'.format(
-            manager_host)
+        os.environ.update(env_vars)
+
         init_script = script.init_script(cloudify_agent={})
     finally:
-        os.environ.pop('MANAGER_FILE_SERVER_URL')
+        for var_name in env_vars.iterkeys():
+            os.environ.pop(var_name)
+
         current_ctx.clear()
     result = '\n'.join(init_script.split('\n')[:-1])
     if windows:
