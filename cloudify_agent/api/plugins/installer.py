@@ -22,6 +22,7 @@ import platform
 import logging
 
 import fasteners
+import requests
 from wagon import wagon
 from wagon import utils as wagon_utils
 
@@ -30,6 +31,8 @@ from cloudify.exceptions import CommandExecutionException
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
 from cloudify.utils import get_manager_file_server_blueprints_root_url
+from cloudify.utils import is_verify_rest_certificate
+from cloudify.utils import get_local_rest_certificate
 from cloudify.manager import get_rest_client
 
 from cloudify_agent import VIRTUALENV
@@ -366,15 +369,33 @@ def extract_package_to_dir(package_url):
         pip_utils_logger.setLevel(_previous_level[0])
 
     plugin_dir = None
+
+    temp_ca_bundle = None
     try:
         plugin_dir = tempfile.mkdtemp()
         _patch_pip_download()
+
+        if is_verify_rest_certificate():
+            session = requests.Session()
+
+            with tempfile.NamedTemporaryFile(delete=False) as temp_ca_bundle:
+                with open(requests.utils.DEFAULT_CA_BUNDLE_PATH) as cacerts:
+                    temp_ca_bundle.write(cacerts.read())
+                temp_ca_bundle.write('\n')
+                with open(get_local_rest_certificate()) as local_cert:
+                    temp_ca_bundle.write(local_cert.read())
+
+            session.verify = temp_ca_bundle.name
+        else:
+            session = None
+
         # Import here, after patch
         import pip
         pip.download.unpack_url(link=pip.index.Link(package_url),
                                 location=plugin_dir,
                                 download_dir=None,
-                                only_download=False)
+                                only_download=False,
+                                session=session)
     except Exception as e:
         if plugin_dir and os.path.exists(plugin_dir):
             shutil.rmtree(plugin_dir)
@@ -385,6 +406,8 @@ def extract_package_to_dir(package_url):
             'the documentation.'.format(package_url, str(e)))
     finally:
         _restore_pip_download()
+        if temp_ca_bundle is not None:
+            os.unlink(temp_ca_bundle.name)
 
     return plugin_dir
 
