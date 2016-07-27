@@ -25,11 +25,11 @@ import fasteners
 from wagon import wagon
 from wagon import utils as wagon_utils
 
+from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.exceptions import CommandExecutionException
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
-from cloudify.utils import get_manager_file_server_blueprints_root_url
 from cloudify.manager import get_rest_client
 
 from cloudify_agent import VIRTUALENV
@@ -494,11 +494,9 @@ def get_plugin_source(plugin, blueprint_id=None):
         if blueprint_id is None:
             raise ValueError('blueprint_id must be specified when plugin '
                              'source does not contain a schema')
-        blueprints_root = get_manager_file_server_blueprints_root_url()
-        blueprint_plugins_url = '{0}/{1}/plugins'.format(
-            blueprints_root, blueprint_id)
 
-        source = '{0}/{1}.zip'.format(blueprint_plugins_url, source)
+        plugin_zip = ctx.download_resource('plugins/{0}.zip'.format(source))
+        source = 'file://{0}'.format(plugin_zip)
 
     return source
 
