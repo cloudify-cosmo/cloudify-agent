@@ -198,14 +198,14 @@ class AgentInstaller(object):
             # broker_ip might not be set yet, and retrieved from the manager
 
             env.CLOUDIFY_BROKER_PORT: self.cloudify_agent.get('broker_port'),
-            env.CLOUDIFY_FILE_SERVER_PORT:
-                self.cloudify_agent['file_server_port'],
-            env.CLOUDIFY_FILE_SERVER_PROTOCOL:
-                self.cloudify_agent.get('file_server_protocol'),
             env.CLOUDIFY_REST_PORT:
                 self.cloudify_agent.get('rest_port'),
             env.CLOUDIFY_REST_PROTOCOL: self.cloudify_agent.get(
                 'rest_protocol'),
+            env.CLOUDIFY_FILE_SERVER_PORT:
+                self.cloudify_agent.get('file_server_port'),
+            env.CLOUDIFY_FILE_SERVER_PROTOCOL:
+                self.cloudify_agent.get('file_server_protocol'),
             env.CLOUDIFY_SECURITY_ENABLED:
                 self.cloudify_agent.get('security_enabled'),
             env.CLOUDIFY_REST_USERNAME:

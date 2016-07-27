@@ -164,7 +164,6 @@ def _cfy_agent_attributes_no_defaults(cloudify_agent):
             cloudify_utils.get_manager_file_server_host()
 
     if not cloudify_agent.get('file_server_port'):
-        # by default, file_server_port is set by an environment variable
         cloudify_agent['file_server_port'] = \
             cloudify_utils.get_manager_file_server_port()
 
