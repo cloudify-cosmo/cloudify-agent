@@ -24,7 +24,6 @@ from contextlib import contextmanager
 from wagon import utils as wagon_utils
 from mock import patch
 
-from cloudify import constants
 from cloudify import dispatch
 from cloudify import exceptions as cloudify_exceptions
 from cloudify.utils import setup_logger
@@ -382,15 +381,12 @@ class TestGetSourceAndGetArgs(BaseTest):
         plugin = {
             'source': 'plugin-dir-name'
         }
-        with test_utils.env(
-                constants.MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL_KEY,
-                'localhost'):
-            source = installer.get_plugin_source(
-                plugin,
-                blueprint_id='blueprint_id')
-        self.assertEqual(
-            'localhost/blueprint_id/plugins/plugin-dir-name.zip',
-            source)
+        with patch('cloudify_agent.api.plugins.installer.ctx', **{
+                'download_resource.return_value': '/tmp/plugin-dir-name.zip'}):
+                source = installer.get_plugin_source(
+                    plugin,
+                    blueprint_id='blueprint_id')
+        self.assertEqual('file:///tmp/plugin-dir-name.zip', source)
 
 
 class TestGetManagedPlugin(BaseTest):
