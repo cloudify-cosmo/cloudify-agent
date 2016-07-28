@@ -389,7 +389,7 @@ class FabricRunner(object):
             if skip_verification:
                 args += ' --no-check-certificate'
             if certificate_file:
-                args += ' --certificate={0}'.format(certificate_file)
+                args += ' --ca-certificate={0}'.format(certificate_file)
             command = 'wget {0} {1} -O {2}'.format(args, url, output_path)
         except CommandExecutionException:
             try:
