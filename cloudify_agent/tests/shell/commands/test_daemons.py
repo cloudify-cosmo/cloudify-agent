@@ -13,8 +13,10 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import os
 from mock import patch
 
+import cloudify_agent.shell.env as env_constants
 from cloudify_agent.api import utils
 from cloudify_agent.shell.main import get_logger
 from cloudify_agent.tests.shell.commands import BaseCommandLineTestCase
@@ -71,9 +73,11 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             rest_username=None,
             rest_password=None,
             rest_token=None,
-            broker_ssl_cert_path=None,
+            broker_ssl_cert_path=os.environ[
+                env_constants.CLOUDIFY_BROKER_SSL_CERT_PATH],
             verify_rest_certificate=False,
-            local_rest_cert_file=None,
+            local_rest_cert_file=os.environ[
+                env_constants.CLOUDIFY_AGENT_REST_CERT_PATH],
             rest_cert_content='',
             bypass_maintenance_mode=None,
         )
@@ -114,7 +118,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             broker_user='guest',
             broker_pass='guest',
             broker_ssl_cert=None,
-            broker_ssl_cert_path=None,
+            broker_ssl_cert_path=os.environ[
+                env_constants.CLOUDIFY_BROKER_SSL_CERT_PATH],
             broker_ssl_enabled=False,
             broker_get_settings_from_manager=False,
             security_enabled=False,
@@ -125,7 +130,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             rest_password=None,
             rest_token=None,
             verify_rest_certificate=False,
-            local_rest_cert_file=None,
+            local_rest_cert_file=os.environ[
+                env_constants.CLOUDIFY_AGENT_REST_CERT_PATH],
             rest_cert_content='',
             bypass_maintenance_mode=None,
         )

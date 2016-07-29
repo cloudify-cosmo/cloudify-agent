@@ -94,7 +94,7 @@ AGENT_ATTRIBUTES = {
     'verify_rest_certificate': {
         'group': 'cfy-agent'
     },
-    'local_rest_cert_file': {
+    'agent_rest_cert_path': {
         'group': 'cfy-agent'
     },
     'broker_ssl_cert_path': {
