@@ -16,11 +16,10 @@
 import os
 import tempfile
 import shutil
-import urllib
 import copy
 
 from cloudify.utils import setup_logger
-from cloudify.utils import LocalCommandRunner
+from cloudify_agent.installer.runners.local_runner import LocalCommandRunner
 from cloudify.utils import get_is_bypass_maintenance
 
 from cloudify_agent.api import utils
@@ -59,6 +58,10 @@ class AgentInstaller(object):
             execution_env=execution_env)
 
     def create_agent(self):
+        if self.cloudify_agent.get('verify_rest_certificate') and \
+                self.rest_cert_content:
+            self.upload_certificate()
+
         if 'source_url' in self.cloudify_agent:
             self.logger.info('Creating agent from source')
             self._from_source()
@@ -157,6 +160,17 @@ class AgentInstaller(object):
 
     def create_custom_env_file_on_target(self, environment):
         raise NotImplementedError('Must be implemented by sub-class')
+
+    def upload_certificate(self):
+        raise NotImplementedError('Must be implemented by sub-class')
+
+    @property
+    def rest_cert_content(self):
+        cert_content = self.cloudify_agent.get('rest_cert_content')
+        if not cert_content:
+            return None
+
+        return cert_content.decode('string-escape')
 
     @property
     def runner(self):
@@ -259,7 +273,7 @@ class WindowsInstallerMixin(AgentInstaller):
         get_pip_url = 'https://bootstrap.pypa.io/get-pip.py'
         self.logger.info('Downloading get-pip from {0}'.format(get_pip_url))
         destination = '{0}\\get-pip.py'.format(self.cloudify_agent['basedir'])
-        get_pip = self.download(get_pip_url, destination)
+        get_pip = self.runner.download(get_pip_url, destination)
         self.logger.info('Running pip installation script')
         self.runner.run('{0} {1}'.format(self.cloudify_agent[
             'system_python'], get_pip))
@@ -292,7 +306,7 @@ class LinuxInstallerMixin(AgentInstaller):
     def install_pip(self):
         get_pip_url = 'https://bootstrap.pypa.io/get-pip.py'
         self.logger.info('Downloading get-pip from {0}'.format(get_pip_url))
-        get_pip = self.download(get_pip_url)
+        get_pip = self.runner.download(get_pip_url)
         self.logger.info('Running pip installation script')
         self.runner.run('sudo python {0}'.format(get_pip))
         return '{0}/bin/python {0}/bin/pip'.format(
@@ -309,12 +323,14 @@ class LocalInstallerMixin(AgentInstaller):
         return LocalCommandRunner(logger=self.logger)
 
     def download(self, url, destination=None):
-        if destination is None:
-            fh_num, destination = tempfile.mkstemp()
-            os.close(fh_num)
+        verify_cert = self.cloudify_agent['verify_rest_certificate']
 
-        urllib.urlretrieve(url, destination)
-        return destination
+        return self.runner.download(
+            url,
+            output_path=destination,
+            skip_verification=not verify_cert,
+            certificate_file=self.cloudify_agent.get(
+                'local_rest_cert_file'))
 
     def delete_agent(self):
         self.run_daemon_command('delete')
@@ -328,6 +344,14 @@ class LocalInstallerMixin(AgentInstaller):
 
     def move(self, source, target):
         shutil.move(source, target)
+
+    def upload_certificate(self):
+        cert_file = self.cloudify_agent['local_rest_cert_file']
+        cert_content = self.rest_cert_content
+
+        if not os.path.exists(cert_file):
+            with open(cert_file) as f:
+                f.write(cert_content)
 
 
 class RemoteInstallerMixin(AgentInstaller):
@@ -355,3 +379,15 @@ class RemoteInstallerMixin(AgentInstaller):
 
     def move(self, source, target):
         self.runner.move(source, target)
+
+    def upload_certificate(self):
+        cert_file = self.cloudify_agent['local_rest_cert_file']
+        cert_content = self.rest_cert_content
+
+        if not self.runner.exists(cert_file):
+            with tempfile.NamedTemporaryFile(delete=False) as f:
+                f.write(cert_content)
+            try:
+                self.runner.put_file(f.name, cert_file)
+            finally:
+                os.unlink(f.name)
