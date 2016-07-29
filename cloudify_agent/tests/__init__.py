@@ -24,6 +24,7 @@ import unittest2 as unittest
 
 from cloudify import constants
 from cloudify.utils import setup_logger
+import cloudify_agent.shell.env as env_constants
 
 
 try:
@@ -48,7 +49,11 @@ class BaseTest(unittest.TestCase):
         constants.REST_PROTOCOL_KEY: 'http',
         constants.REST_PORT_KEY: '80',
         constants.REST_CERT_CONTENT_KEY: '',
-        constants.VERIFY_REST_CERTIFICATE_KEY: ''
+        constants.VERIFY_REST_CERTIFICATE_KEY: '',
+        constants.AGENT_REST_CERT_PATH: 'rest/cert/path',
+        constants.BROKER_SSL_CERT_PATH: 'broker/cert/path',
+        env_constants.CLOUDIFY_AGENT_REST_CERT_PATH: 'rest/cert/path',
+        env_constants.CLOUDIFY_BROKER_SSL_CERT_PATH: 'broker/cert/path'
     }
 
     def setUp(self):

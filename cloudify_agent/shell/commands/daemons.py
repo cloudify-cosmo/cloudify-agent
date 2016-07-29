@@ -85,9 +85,9 @@ from cloudify_agent.shell.decorators import handle_failures
 @click.option('--local-rest-cert-file',
               help='The path to a local copy of the REST public cert, used for'
                    ' cert verification, if required [env {0}]'
-              .format(env.CLOUDIFY_LOCAL_REST_CERT_FILE),
+              .format(env.CLOUDIFY_AGENT_REST_CERT_PATH),
               type=click.Path(exists=False, readable=False, file_okay=True),
-              envvar=env.CLOUDIFY_LOCAL_REST_CERT_FILE)
+              envvar=env.CLOUDIFY_AGENT_REST_CERT_PATH)
 @click.option('--rest-cert-content',
               help='The string content of the REST SSL certificate [env {0}]'
               .format(env.CLOUDIFY_REST_CERT_CONTENT),
