@@ -346,10 +346,14 @@ class LocalInstallerMixin(AgentInstaller):
         shutil.move(source, target)
 
     def upload_certificate(self):
-        cert_file = self.cloudify_agent['local_rest_cert_file']
+        cert_file = os.path.expanduser(
+            self.cloudify_agent['local_rest_cert_file'])
         cert_content = self.rest_cert_content
 
         if not os.path.exists(cert_file):
+            cert_dir = os.path.dirname(cert_file)
+            if not os.path.exists(cert_dir):
+                utils.safe_create_dir(cert_dir)
             with open(cert_file) as f:
                 f.write(cert_content)
 
@@ -387,9 +391,32 @@ class RemoteInstallerMixin(AgentInstaller):
         cert_content = self.rest_cert_content
 
         if not self.runner.exists(cert_file):
+            self._create_cert_dir(cert_file)
             with tempfile.NamedTemporaryFile(delete=False) as f:
                 f.write(cert_content)
             try:
                 self.runner.put_file(f.name, cert_file)
             finally:
                 os.unlink(f.name)
+
+    def _create_cert_dir(self, cert_file):
+        """Create the directory containing the manager certificate.
+
+        For cross-platform compatibility, use python to create the directory.
+        """
+
+        try:
+            self.runner.python(
+                'import os',
+                'os.makedirs(os.path.dirname(os.path.expanduser(\'{0}\')))'
+                .format(cert_file))
+        except:
+            # an error was thrown - if the directory does exist, we assume
+            # it was a "directory already exists" error and continue.
+            exists = self.runner.python(
+                'import os',
+                'os.path.exists(os.path.dirname(os.path.expanduser(\'{0}\')))'
+                .format(cert_file))
+
+            if 'True' not in exists:
+                raise
