@@ -32,7 +32,7 @@ class LocalCommandRunner(_UtilsLocalCommandRunner):
             raise HttpException(url, response.status_code, response.reason)
 
         if output_path:
-            destination_file = open(output_path, 'w')
+            destination_file = open(output_path, 'wb')
             destination = output_path
         else:
             destination_file = tempfile.NamedTemporaryFile(delete=False)
