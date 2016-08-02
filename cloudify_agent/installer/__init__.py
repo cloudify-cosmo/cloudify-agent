@@ -341,16 +341,18 @@ class RemoteInstallerMixin(AgentInstaller):
             return None
 
     def download(self, url, destination=None):
+        local_cert_file = self.cloudify_agent['local_rest_cert_file']
+        verify_cert = self.cloudify_agent['verify_rest_certificate']
         if self.cloudify_agent['windows']:
-            return self.runner.download(url,
-                                        output_path=destination,
-                                        skip_verification=True)
-        else:
-            local_cert_file = self.cloudify_agent.get('local_rest_cert_file')
             return self.runner.download(
                 url,
                 output_path=destination,
-                skip_verification=not bool(local_cert_file),
+                skip_verification=not verify_cert)
+        else:
+            return self.runner.download(
+                url,
+                output_path=destination,
+                skip_verification=not verify_cert,
                 certificate_file=local_cert_file)
 
     def move(self, source, target):
