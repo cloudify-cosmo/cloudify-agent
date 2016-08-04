@@ -253,6 +253,10 @@ class Daemon(object):
             'rest_port') or defaults.REST_PORT
         self.rest_protocol = params.get(
             'rest_protocol') or defaults.REST_PROTOCOL
+        self.file_server_port = params.get(
+            'file_server_port') or defaults.FILE_SERVER_PORT
+        self.file_server_protocol = params.get(
+            'file_server_protocol') or defaults.FILE_SERVER_PROTOCOL
         self.verify_rest_certificate = params.get('verify_rest_certificate')
         self.local_rest_cert_file = params.get('local_rest_cert_file', '')
         self.rest_cert_content = params.get('rest_ssl_cert_content', '')
@@ -277,17 +281,7 @@ class Daemon(object):
         self.broker_pass = params.get('broker_pass', 'guest')
         self.host = params.get('host')
         self.deployment_id = params.get('deployment_id')
-        self.file_server_port = params.get(
-            'file_server_port') or defaults.FILE_SERVER_PORT
-        self.file_server_protocol = \
-            params.get('file_server_protocol') or defaults.FILE_SERVER_PROTOCOL
-        self.rest_port = params.get(
-            'rest_port') or defaults.REST_PORT
-        self.rest_protocol = params.get(
-            'rest_protocol') or defaults.REST_PROTOCOL
         self.security_enabled = params.get('security_enabled')
-        self.rest_username = params.get('rest_username')
-        self.rest_password = params.get('rest_password')
         self.verify_rest_certificate = params.get('verify_rest_certificate')
         self.local_rest_cert_file = params.get('local_rest_cert_file', '')
         self.rest_cert_content = params.get('rest_ssl_cert_content', '')
