@@ -326,6 +326,7 @@ class LocalInstallerMixin(AgentInstaller):
         verify_cert = self.cloudify_agent['verify_rest_certificate']
 
         local_cert_file = self.cloudify_agent.get('agent_rest_cert_path')
+
         if local_cert_file:
             local_cert_file = os.path.expanduser(local_cert_file)
 
@@ -373,6 +374,7 @@ class RemoteInstallerMixin(AgentInstaller):
 
     def download(self, url, destination=None):
         agent_rest_cert_path = self.cloudify_agent['agent_rest_cert_path']
+
         verify_cert = self.cloudify_agent['verify_rest_certificate']
         if self.cloudify_agent['windows']:
             return self.runner.download(

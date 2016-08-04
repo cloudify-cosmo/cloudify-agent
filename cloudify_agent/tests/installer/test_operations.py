@@ -30,8 +30,6 @@ from cloudify_agent.tests.utils import (
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import only_ci, only_os
 from cloudify_agent.api import utils
-
-
 ##############################################################################
 # these tests run a local workflow to install the agent on the local machine.
 # it should support both windows and linux machines. and thus, testing the
@@ -39,6 +37,7 @@ from cloudify_agent.api import utils
 # the remote use cases are tested as system tests because they require
 # actually launching VM's from the test.
 ##############################################################################
+
 
 class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
