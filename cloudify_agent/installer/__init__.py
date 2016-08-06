@@ -354,7 +354,7 @@ class LocalInstallerMixin(AgentInstaller):
             cert_dir = os.path.dirname(cert_file)
             if not os.path.exists(cert_dir):
                 utils.safe_create_dir(cert_dir)
-            with open(cert_file) as f:
+            with open(cert_file, 'wb') as f:
                 f.write(cert_content)
 
 
