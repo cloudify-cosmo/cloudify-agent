@@ -17,50 +17,50 @@
 from setuptools import setup
 
 install_requires = [
-    'cloudify-plugins-common==3.5a1',
-    'cloudify-rest-client==3.5a1',
-    'cloudify-script-plugin==1.4',
-    'click==4.0',
-    'celery==3.1.17',
-    'jinja2==2.7.2',
-    'pywinrm==0.0.3',
+    'click==6.6',
+    'wagon==0.3.3',
     'fabric==1.8.3',
-    'wagon==0.3.2',
-    'fasteners==0.13.0',
+    'jinja2==2.7.2',
     'pyzmq==15.1.0',
+    'pywinrm==0.0.3',
+    'celery==3.1.17',
+    'fasteners==0.13.0',
     'virtualenv>=14.0.0,<15.0.0'
+    'cloudify-script-plugin==1.4',
+    'cloudify-rest-client==3.5a1',
+    'cloudify-plugins-common==3.5a1',
 ]
 
 setup(
     name='cloudify-agent',
     version='3.5a1',
     author='Gigaspaces',
-    author_email='cloudify@gigaspaces.com',
+    author_email='cosmo-admin@gigaspaces.com',
     packages=[
         'worker_installer',
-        'windows_agent_installer',
         'plugin_installer',
+        'windows_agent_installer',
         'windows_plugin_installer',
         'cloudify_agent',
         'cloudify_agent.api',
+        'cloudify_agent.shell',
         'cloudify_agent.api.pm',
-        'cloudify_agent.api.plugins',
         'cloudify_agent.installer',
+        'cloudify_agent.api.plugins',
+        'cloudify_agent.shell.commands'
         'cloudify_agent.installer.config',
         'cloudify_agent.installer.runners',
-        'cloudify_agent.shell',
-        'cloudify_agent.shell.commands'
     ],
     package_data={
         'cloudify_agent': [
+            'resources/respawn.sh.template',
             'resources/disable-requiretty.sh',
             'resources/crontab/disable.sh.template',
             'resources/crontab/enable.sh.template',
-            'resources/respawn.sh.template',
-            'resources/pm/initd/initd.conf.template',
             'resources/pm/initd/initd.template',
-            'resources/pm/detach/detach.conf.template',
+            'resources/pm/initd/initd.conf.template',
             'resources/pm/detach/detach.template',
+            'resources/pm/detach/detach.conf.template',
             'resources/pm/nssm/nssm.exe',
             'resources/pm/nssm/nssm.conf.template',
             'resources/script/linux.sh.template',
