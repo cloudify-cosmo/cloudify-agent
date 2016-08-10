@@ -325,12 +325,15 @@ class LocalInstallerMixin(AgentInstaller):
     def download(self, url, destination=None):
         verify_cert = self.cloudify_agent['verify_rest_certificate']
 
+        local_cert_file = self.cloudify_agent.get('local_rest_cert_file')
+        if local_cert_file:
+            local_cert_file = os.path.expanduser(local_cert_file)
+
         return self.runner.download(
             url,
             output_path=destination,
             skip_verification=not verify_cert,
-            certificate_file=self.cloudify_agent.get(
-                'local_rest_cert_file'))
+            certificate_file=local_cert_file)
 
     def delete_agent(self):
         self.run_daemon_command('delete')
