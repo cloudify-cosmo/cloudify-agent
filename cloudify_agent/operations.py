@@ -241,7 +241,8 @@ def _get_manager_version():
     return ManagerVersion(version_json['version'])
 
 
-def _run_install_script(old_agent, timeout, validate_only=False):
+def _run_install_script(old_agent, timeout, validate_only=False,
+                        install_script=None):
     # Assuming that if there is no version info in the agent then
     # this agent was installed by current manager.
     old_agent = copy.deepcopy(old_agent)
@@ -252,15 +253,17 @@ def _run_install_script(old_agent, timeout, validate_only=False):
     with _celery_client(ctx, old_agent) as celery_client:
         old_agent_name = old_agent['name']
         _assert_agent_alive(old_agent_name, celery_client, old_agent_version)
-        script_format = '{0}/cloudify/install_agent.py'
-        script_url = script_format.format(get_manager_file_server_url())
+        if install_script is None:
+            script_format = '{0}/cloudify/install_agent.py'
+            install_script = script_format.format(
+                get_manager_file_server_url())
         script_runner_task = 'script_runner.tasks.run'
         cloudify_context = {
             'type': 'operation',
             'task_name': script_runner_task,
             'task_target': old_agent['queue']
         }
-        kwargs = {'script_path': script_url,
+        kwargs = {'script_path': install_script,
                   'cloudify_agent': new_agent,
                   'validate_only': validate_only,
                   '__cloudify_context': cloudify_context}
@@ -283,7 +286,7 @@ def _run_install_script(old_agent, timeout, validate_only=False):
     }
 
 
-def create_agent_from_old_agent(operation_timeout=300):
+def create_agent_from_old_agent(operation_timeout=300, install_script=None):
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
@@ -299,7 +302,8 @@ def create_agent_from_old_agent(operation_timeout=300):
     old_agent = ctx.instance.runtime_properties['cloudify_agent']
     agents = _run_install_script(old_agent,
                                  operation_timeout,
-                                 validate_only=False)
+                                 validate_only=False,
+                                 install_script=install_script)
     # Make sure that new celery agent was started:
     returned_agent = agents['new']
     ctx.logger.info('Installed agent {0}'.format(returned_agent['name']))
@@ -310,13 +314,15 @@ def create_agent_from_old_agent(operation_timeout=300):
 
 
 @operation
-def create_agent_amqp(install_agent_timeout, **_):
-    create_agent_from_old_agent(install_agent_timeout)
+def create_agent_amqp(install_agent_timeout, install_script=None, **_):
+    create_agent_from_old_agent(install_agent_timeout,
+                                install_script=install_script)
 
 
 @operation
 def validate_agent_amqp(validate_agent_timeout, fail_on_agent_dead=False,
-                        fail_on_agent_not_installable=False, **_):
+                        fail_on_agent_not_installable=False,
+                        install_script=None, **_):
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
@@ -336,7 +342,8 @@ def validate_agent_amqp(validate_agent_timeout, fail_on_agent_dead=False,
     ctx.logger.info(('Checking if agent can be accessed through '
                      'different rabbitmq'))
     try:
-        _run_install_script(agent, validate_agent_timeout, validate_only=True)
+        _run_install_script(agent, validate_agent_timeout, validate_only=True,
+                            install_script=install_script)
     except Exception as e:
         result['agent_alive_crossbroker'] = False
         result['agent_alive_crossbroker_error'] = str(e)
