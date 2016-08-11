@@ -25,7 +25,7 @@ install_requires = [
     'pywinrm==0.0.3',
     'celery==3.1.17',
     'fasteners==0.13.0',
-    'virtualenv>=14.0.0,<15.0.0'
+    'virtualenv>=14.0.0,<15.0.0',
     'cloudify-script-plugin==1.4',
     'cloudify-rest-client==3.5a1',
     'cloudify-plugins-common==3.5a1',
