@@ -13,8 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-
-import crypt
 import os
 import requests
 import shutil
@@ -33,7 +31,9 @@ from cloudify_agent.installer.runners.fabric_runner import (
     FabricRunner,
     FabricCommandExecutionException
 )
+from cloudify_agent.installer.runners.winrm_runner import WinRMRunner
 from cloudify_agent.installer.linux import RemoteLinuxAgentInstaller
+from cloudify_agent.installer.windows import RemoteWindowsAgentInstaller
 from cloudify_agent.installer.operations import prepare_local_installer
 
 
@@ -53,8 +53,11 @@ class HTTPSServer(HTTPServer):
         HTTPServer.__init__(self, *args, **kwargs)
 
     def server_bind(self):
+        with open(self.certfile) as f:
+            print 'Starting with {0!r}'.format(f.read())
         self.socket = ssl.wrap_socket(self.socket, certfile=self.certfile,
-                                      keyfile=self.keyfile)
+                                      keyfile=self.keyfile,
+                                      ssl_version=ssl.PROTOCOL_TLSv1)
         HTTPServer.server_bind(self)
 
 
@@ -75,9 +78,17 @@ class BaseInstallerDownloadTest(TestCase):
         fd, key_name = tempfile.mkstemp(prefix='key-')
         self.addCleanup(os.unlink, key_name)
         os.close(fd)
-        subprocess.check_call(['openssl', 'req', '-x509', '-newkey', 'rsa:512',
-                               '-nodes', '-subj', "/CN=localhost", '-keyout',
-                               key_name, '-out', cert_name])
+        openssl_args = ['openssl', 'req', '-x509', '-newkey', 'rsa:512',
+                        '-nodes', '-subj', "/CN=localhost", '-keyout',
+                        key_name, '-out', cert_name]
+
+        if os.name == 'nt':
+            openssl_args.extend([
+                '-config',
+                'C:\\OpenSSL-Win64\\bin\\openssl.cfg'
+            ])
+
+        subprocess.check_call(openssl_args)
         return cert_name, key_name
 
     def run_fileserver(self, certfile, keyfile):
@@ -129,7 +140,7 @@ class BaseInstallerDownloadTest(TestCase):
         return os.path.expanduser(path)
 
     def _run_test(self, cloudify_agent, should_fail=False):
-        cert_path = cloudify_agent['local_rest_cert_file']
+        cert_path = cloudify_agent['agent_rest_cert_path']
         cert_dir = os.path.dirname(self._expanduser(cert_path))
         installer = self.make_installer(cloudify_agent)
 
@@ -141,7 +152,7 @@ class BaseInstallerDownloadTest(TestCase):
     @only_ci
     def test_create_dir_upload_cert(self):
         cloudify_agent = {
-            'local_rest_cert_file': '~/certs/rest.pem',
+            'agent_rest_cert_path': '~/certs/rest.pem',
             'rest_cert_content': self.cert_content,
             'verify_rest_certificate': True,
             'windows': os.name == 'nt'
@@ -153,7 +164,7 @@ class BaseInstallerDownloadTest(TestCase):
     def test_preexisting_cert(self):
         cert_path = '~/certs/rest.pem'
         cloudify_agent = {
-            'local_rest_cert_file': cert_path,
+            'agent_rest_cert_path': cert_path,
             'rest_cert_content': 'invalid',
             'verify_rest_certificate': True,
             'windows': os.name == 'nt'
@@ -166,7 +177,7 @@ class BaseInstallerDownloadTest(TestCase):
     @only_ci
     def test_invalid_cert(self):
         cloudify_agent = {
-            'local_rest_cert_file': '~/certs/rest.pem',
+            'agent_rest_cert_path': '~/certs/rest.pem',
             'rest_cert_content': 'invalid',
             'verify_rest_certificate': True,
             'windows': os.name == 'nt'
@@ -192,15 +203,17 @@ class FabricInstallerTest(BaseInstallerDownloadTest):
 
     @classmethod
     def setUpClass(cls):
+        from celery.contrib import rdb
+        rdb.set_trace()
+        import crypt
         subprocess.check_call([
-            'useradd', '-p', crypt.crypt(FABRIC_TEST_PASSWORD, '22'),
-            '-m',
-            FABRIC_TEST_USER
+            'sudo', 'useradd', '-p', crypt.crypt(FABRIC_TEST_PASSWORD, '22'),
+            '-m', FABRIC_TEST_USER
         ])
 
     @classmethod
     def tearDownClass(cls):
-        subprocess.check_call(['userdel', '-fr', FABRIC_TEST_USER])
+        subprocess.check_call(['sudo', 'userdel', '-fr', FABRIC_TEST_USER])
 
     def _expanduser(self, path):
         return path.replace('~', '/home/{0}'.format(FABRIC_TEST_USER))
@@ -213,9 +226,22 @@ class FabricInstallerTest(BaseInstallerDownloadTest):
             raise requests.exceptions.SSLError()
 
 
-@only_ci
-@only_os
 @nose.tools.istest
 class LocalInstallerTest(BaseInstallerDownloadTest):
     def make_installer(self, cloudify_agent):
         return prepare_local_installer(cloudify_agent)
+
+
+@nose.tools.istest
+@only_os('nt')
+class WinRMInstallerTest(BaseInstallerDownloadTest):
+    installer_cls = RemoteWindowsAgentInstaller
+
+    def make_runner(self):
+        return WinRMRunner(
+            host='localhost',
+            port=5985,
+            user='test_user',
+            password='Pass@word1',
+            logger=Mock()
+        )

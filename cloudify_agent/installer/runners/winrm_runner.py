@@ -159,7 +159,8 @@ class WinRMRunner(object):
 
         return self.run('echo')
 
-    def download(self, url, output_path=None, skip_verification=False):
+    def download(self, url, output_path=None, skip_verification=False,
+                 certificate_file=None):
 
         """
         :param url: URL to the resource to download.
@@ -184,12 +185,26 @@ class WinRMRunner(object):
             # making the client skip cert verification
             self.run('''@powershell -Command "[System.Net.ServicePointManager]\
 ::ServerCertificateValidationCallback = {$true}"''')
+        elif certificate_file:
+            cmd = '''@powershell -Command "[System.Net.ServicePointManager]\
+::ServerCertificateValidationCallback = {\
+param($sender, $certificate, $chain, $sslPolicyErrors);\
+if ($sslPolicyErrors -eq [System.Net.Security.SslPolicyErrors]::None){\
+    return $true;\
+} elseif ( $sslPolicyErrors -eq [System.Net.Security.SslPolicyErrors]::\
+RemoteCertificateChainErrors \
+-and ($chain.ChainStatus.Length -eq 1) \
+-and ($chain.ChainStatus[0].Status -eq 'UntrustedRoot')){\
+return (new-object System.Security.Cryptography.X509Certificates\
+.X509Certificate '%s').Equals($certificate)}}''' % certificate_file
+            self.logger.info('cmd {0!r}'.format(cmd))
+            self.run(cmd)
 
         # downloading agent package from the manager
         self.run('''@powershell -Command "(new-object System.Net.WebClient)\
 .Downloadfile('{0}','{1}')"'''.format(url, output_path))
 
-        if skip_verification:
+        if skip_verification or certificate_file:
             # cancelling the skip of cert verification, to make future requests
             # more secure
             self.run('''@powershell -Command "[System.Net.ServicePointManager]\

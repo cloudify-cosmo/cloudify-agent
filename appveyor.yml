@@ -7,6 +7,11 @@ environment:
       PYTHON_VERSION: 2.7.8
       PYTHON_ARCH: 32
 
+  winrm_user: test_user
+  winrm_pass: Pass@word1
+  user_cert: c:\projects\cloudify-agent\user.pem
+  user_key: c:\projects\cloudify-agent\key.pem
+
 install:
 
   #################################
@@ -27,21 +32,21 @@ install:
   # Download and install Erlang
   #################################
 
-  - echo Downloading Erlang...
-  - ps: (new-object System.Net.WebClient).Downloadfile('http://www.erlang.org/download/otp_win32_17.5.exe', 'C:\Users\appveyor\erlang.exe')
-  - echo Installing Erlang...
-  - start /B /WAIT C:\Users\appveyor\erlang.exe /S /D=C:\Users\appveyor\erlang
-  - set ERLANG_HOME=C:\Users\appveyor\erlang
+  # - echo Downloading Erlang...
+  # - ps: (new-object System.Net.WebClient).Downloadfile('http://www.erlang.org/download/otp_win32_17.5.exe', 'C:\Users\appveyor\erlang.exe')
+  # - echo Installing Erlang...
+  # - start /B /WAIT C:\Users\appveyor\erlang.exe /S /D=C:\Users\appveyor\erlang
+  # - set ERLANG_HOME=C:\Users\appveyor\erlang
 
-  #################################
-  # Download and install RabbitMQ
-  #################################
+  # #################################
+  # # Download and install RabbitMQ
+  # #################################
 
-  - echo Downloading Rabbit...
-  - ps: (new-object System.Net.WebClient).Downloadfile('https://www.rabbitmq.com/releases/rabbitmq-server/v3.5.2/rabbitmq-server-3.5.2.exe', 'C:\Users\appveyor\rabbit.exe')
-  - echo Installing Rabbit...
-  - start /B /WAIT C:\Users\appveyor\rabbit.exe /S
-  - ps: (Get-Service -Name RabbitMQ).Status
+  # - echo Downloading Rabbit...
+  # - ps: (new-object System.Net.WebClient).Downloadfile('https://www.rabbitmq.com/releases/rabbitmq-server/v3.5.2/rabbitmq-server-3.5.2.exe', 'C:\Users\appveyor\rabbit.exe')
+  # - echo Installing Rabbit...
+  # - start /B /WAIT C:\Users\appveyor\rabbit.exe /S
+  # - ps: (Get-Service -Name RabbitMQ).Status
 
   - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
 
@@ -49,6 +54,22 @@ install:
   - ps: (new-object System.Net.WebClient).Downloadfile('https://bootstrap.pypa.io/get-pip.py', 'C:\Users\appveyor\get-pip.py')
   - ps: Start-Process -FilePath "C:\Python27\python.exe" -ArgumentList "C:\Users\appveyor\get-pip.py" -Wait -Passthru
   - pip --version
+
+  - ps: net user /add $env:winrm_user $env:winrm_pass
+  - ps: net localgroup administrators $env:winrm_user /add
+  - ps: $env:PATH="C:\OpenSSL-Win64\bin;$env:PATH"
+  - ps: Import-Module C:\projects\cloudify-agent\WinrmAppveyor.psm1
+  - ps: New-ClientCertificate $env:winrm_user c:\projects\cloudify-agent
+  - ps: $env:user_cert_thumb = (Import-pfxCertificate -FilePath c:\projects\cloudify-agent\user.pfx -CertStoreLocation Cert:\LocalMachine\root).Thumbprint
+  - ps: Import-pfxCertificate -FilePath c:\projects\cloudify-agent\user.pfx -CertStoreLocation Cert:\LocalMachine\TrustedPeople
+  - ps: $env:winrm_cert = (New-SelfSignedCertificate -DnsName localhost -CertStoreLocation cert:\localmachine\my).Thumbprint
+  - ps: winrm create winrm/config/Listener?Address=*+Transport=HTTPS "@{Hostname=`"localhost`";CertificateThumbprint=`"$($env:winrm_cert)`"}"
+  - ps: winrm set winrm/config/client/auth '@{Basic="true"}'
+  - ps: winrm set winrm/config/service/auth '@{Basic="true"}'
+  - ps: winrm set winrm/config/service/auth '@{Certificate="true"}'
+  - ps: winrm set winrm/config/service/auth '@{CbtHardeningLevel="Strict"}'
+  - ps: winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+  - ps: New-WinrmUserCertificateMapping $env:user_cert_thumb
 
 build: false # Not a C# project, build stuff at the test step instead.
 
