@@ -70,8 +70,8 @@ class AgentInstallerTest(testenv.TestCase):
         self.upload_deploy_and_execute_install(
             deployment_id=deployment_id,
             inputs=inputs)
-        self.cfy.execute_workflow(
-            workflow='execute_operation',
+        self.cfy.executions.start(
+            'execute_operation',
             deployment_id=deployment_id,
             parameters={
                 'operation': 'cloudify.interfaces.reboot_test.reboot',
