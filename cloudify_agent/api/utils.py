@@ -24,7 +24,7 @@ import types
 
 import pkg_resources
 from jinja2 import Template
-from itsdangerous import base64_encode
+from base64 import urlsafe_b64encode
 
 from cloudify.context import BootstrapContext
 from cloudify.workflows import tasks as workflows_tasks
@@ -581,7 +581,7 @@ def get_rest_client(security_enabled,
         headers['Authentication-Token'] = rest_token
     else:
         credentials = '{0}:{1}'.format(rest_username, rest_password)
-        headers['Authorization'] = 'Basic ' + base64_encode(credentials)
+        headers['Authorization'] = 'Basic ' + urlsafe_b64encode(credentials)
 
     if verify_rest_certificate:
         if not ssl_cert_path:
