@@ -23,26 +23,40 @@ from cloudify_agent.installer import operations
 
 
 @operation
-def install(**_):
-    operations.create(**_)
-    operations.configure(**_)
+def install(**kwargs):
+    _fix_winrm_port_for_old_windows_blueprints(kwargs)
+    operations.create(**kwargs)
+    operations.configure(**kwargs)
 
 
 @operation
-def start(**_):
-    operations.start(**_)
+def start(**kwargs):
+    _fix_winrm_port_for_old_windows_blueprints(kwargs)
+    operations.start(**kwargs)
 
 
 @operation
-def stop(**_):
-    operations.stop(**_)
+def stop(**kwargs):
+    _fix_winrm_port_for_old_windows_blueprints(kwargs)
+    operations.stop(**kwargs)
 
 
 @operation
-def restart(**_):
-    operations.restart(**_)
+def restart(**kwargs):
+    _fix_winrm_port_for_old_windows_blueprints(kwargs)
+    operations.restart(**kwargs)
 
 
 @operation
-def uninstall(**_):
-    operations.delete(**_)
+def uninstall(**kwargs):
+    _fix_winrm_port_for_old_windows_blueprints(kwargs)
+    operations.delete(**kwargs)
+
+
+def _fix_winrm_port_for_old_windows_blueprints(kwargs):
+    cloudify_agent = kwargs.get('cloudify_agent') or {}
+    agent_config = kwargs.get('agent_config') or {}
+    cloudify_agent.update(agent_config)
+    cloudify_agent.setdefault('windows', True)
+    cloudify_agent.setdefault('port', 5985)
+    kwargs['cloudify_agent'] = cloudify_agent
