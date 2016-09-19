@@ -80,6 +80,7 @@ class Daemon(object):
     ``broker_ip``:
 
         the host name or ip address of the broker to connect to.
+        defaults to the rest_host value.
 
     ``broker_ssl_enabled``:
 
@@ -198,7 +199,6 @@ class Daemon(object):
     # they will be validated upon daemon creation
     MANDATORY_PARAMS = [
         'rest_host',
-        'broker_ip',
         'file_server_host'
     ]
 
@@ -245,7 +245,7 @@ class Daemon(object):
         self.validate_mandatory()
         self.file_server_host = params['file_server_host']
         self.rest_host = params['rest_host']
-        self.broker_ip = params['broker_ip']
+        self.broker_ip = params.get('broker_ip', self.rest_host)
 
         # Optional parameters - REST client
         self.validate_optional()
