@@ -211,6 +211,14 @@ def reinstallation_attributes(cloudify_agent):
     _add_installation_defaults(cloudify_agent)
 
 
+def _get_manager_file_server_url(cloudify_agent):
+    ip = cloudify_agent.get('manager_ip')
+    if ip is None:
+        url = get_manager_file_server_url()
+    else:
+        url = 'http://{}:53229'.format(ip)
+    return url
+
 @group('installation')
 def installation_attributes(cloudify_agent, runner):
 
@@ -222,7 +230,7 @@ def installation_attributes(cloudify_agent, runner):
             # no distribution difference in windows installation
             cloudify_agent['package_url'] = '{0}/packages/agents' \
                                             '/cloudify-windows-agent.exe'\
-                .format(get_manager_file_server_url())
+                .format(_get_manager_file_server_url(cloudify_agent))
         else:
             if not cloudify_agent.get('distro'):
                 if cloudify_agent['local']:
@@ -243,7 +251,7 @@ def installation_attributes(cloudify_agent, runner):
                     'distro_codename' in cloudify_agent):
                 cloudify_agent['package_url'] = '{0}/packages/agents' \
                                                 '/{1}-{2}-agent.tar.gz' \
-                    .format(get_manager_file_server_url(),
+                    .format(_get_manager_file_server_url(cloudify_agent),
                             cloudify_agent['distro'],
                             cloudify_agent['distro_codename'])
 
