@@ -213,11 +213,8 @@ def reinstallation_attributes(cloudify_agent):
 
 def _get_manager_file_server_url(cloudify_agent):
     ip = cloudify_agent.get('manager_ip')
-    if ip is None:
-        url = get_manager_file_server_url()
-    else:
-        url = 'http://{}:53229'.format(ip)
-    return url
+    return 'http://{}:53229'.format(ip)
+
 
 @group('installation')
 def installation_attributes(cloudify_agent, runner):
