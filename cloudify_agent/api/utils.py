@@ -21,6 +21,7 @@ import os
 import errno
 import getpass
 import types
+import urllib
 
 import pkg_resources
 from jinja2 import Template
@@ -191,8 +192,8 @@ class _Internal(object):
         broker_port = agent.get('broker_port', defaults.BROKER_PORT)
         broker_user = agent.get('broker_user', 'guest')
         broker_pass = agent.get('broker_pass', 'guest')
-        return defaults.BROKER_URL.format(username=broker_user,
-                                          password=broker_pass,
+        return defaults.BROKER_URL.format(username=urllib.quote(broker_user),
+                                          password=urllib.quote(broker_pass),
                                           host=broker_ip,
                                           port=broker_port)
 
