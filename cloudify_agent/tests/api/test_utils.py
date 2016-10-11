@@ -103,3 +103,9 @@ class TestUtils(BaseTest):
     def test_generate_agent_name(self):
         name = utils.internal.generate_agent_name()
         self.assertIn(defaults.CLOUDIFY_AGENT_PREFIX, name)
+
+    def test_get_broker_url(self):
+        config = dict(broker_ip='10.50.50.3', broker_port=4567,
+                      broker_user='us#er', broker_pass='pa$$word')
+        self.assertEqual('amqp://us%23er:pa%24%24word@10.50.50.3:4567//',
+                         utils.internal.get_broker_url(config))
