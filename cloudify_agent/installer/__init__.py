@@ -208,10 +208,6 @@ class AgentInstaller(object):
                 self.cloudify_agent.get('file_server_protocol'),
             env.CLOUDIFY_SECURITY_ENABLED:
                 self.cloudify_agent.get('security_enabled'),
-            env.CLOUDIFY_REST_USERNAME:
-                self.cloudify_agent.get('rest_username'),
-            env.CLOUDIFY_REST_PASSWORD:
-                self.cloudify_agent.get('rest_password'),
             env.CLOUDIFY_REST_TOKEN:
                 self.cloudify_agent.get('rest_token'),
             env.CLOUDIFY_VERIFY_REST_CERTIFICATE:

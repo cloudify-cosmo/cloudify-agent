@@ -130,14 +130,6 @@ class Daemon(object):
 
         True if REST security is enabled, False otherwise
 
-    ``rest_username``:
-
-        the username to use in REST calls. No default.
-
-    ``rest_password``:
-
-        the password to use in REST calls. No default.
-
     ``rest_token``:
 
         the token to use in REST calls. No default.
@@ -261,10 +253,8 @@ class Daemon(object):
         self.local_rest_cert_file = params.get('local_rest_cert_file', '')
         self.rest_cert_content = params.get('rest_ssl_cert_content', '')
         self.security_enabled = params.get('security_enabled')
-        # REST credentials need to be prefixed with _ so they're not stored
+        # REST token needs to be prefixed with _ so it's not stored
         # when the daemon is serialized
-        self._rest_username = params.get('rest_username')
-        self._rest_password = params.get('rest_password')
         self._rest_token = params.get('rest_token')
 
         # Optional parameters
@@ -728,8 +718,6 @@ class Daemon(object):
             rest_host=self.rest_host,
             rest_protocol=self.rest_protocol,
             rest_port=self.rest_port,
-            rest_username=self._rest_username,
-            rest_password=self._rest_password,
             rest_token=self._rest_token,
             verify_rest_certificate=self.verify_rest_certificate,
             ssl_cert_path=self.local_rest_cert_file

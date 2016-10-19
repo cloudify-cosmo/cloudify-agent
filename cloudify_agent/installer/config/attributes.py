@@ -82,12 +82,6 @@ AGENT_ATTRIBUTES = {
     'security_enabled': {
         'group': 'cfy-agent'
     },
-    'rest_username': {
-        'group': 'cfy-agent'
-    },
-    'rest_password': {
-        'group': 'cfy-agent'
-    },
     'rest_token': {
         'group': 'cfy-agent'
     },
