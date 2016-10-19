@@ -77,8 +77,6 @@ class TestConfiguration(BaseTest):
             'broker_get_settings_from_manager': True,
             'security_enabled': False,
             'rest_cert_content': '',
-            'rest_username': None,
-            'rest_password': None,
             'verify_rest_certificate': False,
             'bypass_maintenance_mode': False,
             'rest_token': None
@@ -109,8 +107,6 @@ class TestConfiguration(BaseTest):
 
         cloudify_agent = {'local': True, 'security_enabled': True,
                           'rest_protocol': 'https', 'rest_port': '443',
-                          'rest_username': 'the_user',
-                          'rest_password': 'the_pass',
                           'file_server_protocol': 'https',
                           'verify_rest_certificate': True,
                           'rest_cert_content': '--this_is-my-certificate--'}
@@ -154,8 +150,6 @@ class TestConfiguration(BaseTest):
             'broker_get_settings_from_manager': True,
             'security_enabled': True,
             'rest_cert_content': '--this_is-my-certificate--',
-            'rest_username': 'the_user',
-            'rest_password': 'the_pass',
             'verify_rest_certificate': True,
             'bypass_maintenance_mode': False,
             'rest_token': None

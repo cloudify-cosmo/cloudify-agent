@@ -187,14 +187,6 @@ def _cfy_agent_attributes_no_defaults(cloudify_agent):
         cloudify_agent['rest_port'] = \
             cloudify_utils.get_manager_rest_service_port()
 
-    if not cloudify_agent.get('rest_username'):
-        cloudify_agent['rest_username'] = \
-            cloudify_utils.get_rest_username()
-
-    if not cloudify_agent.get('rest_password'):
-        cloudify_agent['rest_password'] = \
-            cloudify_utils.get_rest_password()
-
     if not cloudify_agent.get('rest_token'):
         cloudify_agent['rest_token'] = \
             cloudify_utils.get_rest_token()

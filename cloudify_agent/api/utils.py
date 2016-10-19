@@ -25,7 +25,6 @@ import urllib
 
 import pkg_resources
 from jinja2 import Template
-from base64 import urlsafe_b64encode
 
 from cloudify.context import BootstrapContext
 from cloudify.workflows import tasks as workflows_tasks
@@ -173,8 +172,6 @@ class _Internal(object):
             rest_host=agent['rest_host'],
             rest_protocol=agent['rest_protocol'],
             rest_port=agent['rest_port'],
-            rest_username=agent['rest_username'],
-            rest_password=agent['rest_password'],
             rest_token=agent['rest_token'],
             verify_rest_certificate=agent['verify_rest_certificate'],
             ssl_cert_path=agent['local_rest_cert_file'],
@@ -555,8 +552,6 @@ def get_rest_client(security_enabled,
                     rest_host,
                     rest_protocol,
                     rest_port,
-                    rest_username=None,
-                    rest_password=None,
                     rest_token=None,
                     verify_rest_certificate=False,
                     ssl_cert_path=None,
@@ -572,17 +567,12 @@ def get_rest_client(security_enabled,
                               port=rest_port,
                               headers=headers)
 
-    if (not rest_username or not rest_password) and not rest_token:
-        raise ValueError('REST credentials are missing! Either username and '
-                         'password, or an auth token are required to create '
-                         'a REST client for a secured manager [{0}]'
+    if not rest_token:
+        raise ValueError('REST auth token is missing! It is required to '
+                         'create a REST client for a secured manager [{0}]'
                          .format(rest_host))
 
-    if rest_token:
-        headers['Authentication-Token'] = rest_token
-    else:
-        credentials = '{0}:{1}'.format(rest_username, rest_password)
-        headers['Authorization'] = 'Basic ' + urlsafe_b64encode(credentials)
+    headers['Authentication-Token'] = rest_token
 
     if verify_rest_certificate:
         if not ssl_cert_path:
