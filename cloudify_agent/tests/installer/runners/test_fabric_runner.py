@@ -81,6 +81,7 @@ class TestValidations(BaseTest):
             host='host',
             user='password')
 
+
 @only_os('posix')
 class TestAbortException(BaseTest):
 
