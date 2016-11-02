@@ -13,7 +13,12 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+from mock import patch
+
 from cloudify_agent.installer import exceptions
+from cloudify_agent.installer.runners.fabric_runner import (
+    FabricCommandExecutionError,
+)
 
 # these imports may run on a windows box, in which case they may fail. (if
 # the pywin32 extensions). The tests wont run anyway because of the decorator,
@@ -75,3 +80,28 @@ class TestValidations(BaseTest):
             validate_connection=False,
             host='host',
             user='password')
+
+@only_os('posix')
+class TestAbortException(BaseTest):
+
+    """Test behavior on fabric abort."""
+
+    def test_exception_message(self):
+        """Exception message is the same one used by fabric."""
+        expected_message = '<message>'
+
+        runner = FabricRunner(
+            validate_connection=False,
+            user='user',
+            host='host',
+            password='password',
+        )
+
+        fabric_api_path = (
+            'cloudify_agent.installer.runners.fabric_runner.fabric_api'
+        )
+        with patch(fabric_api_path) as fabric_api:
+            fabric_api.run.side_effect = Exception(expected_message)
+            with self.assertRaises(FabricCommandExecutionError) as context:
+                runner.run('a command')
+            self.assertEqual(context.exception.error, expected_message)
