@@ -41,5 +41,6 @@ def delete_reboot():
 def main():
     globals()[inputs.operation]()
 
+
 if __name__ == '__main__':
     main()

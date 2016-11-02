@@ -45,5 +45,6 @@ def call_entry_point(**_):
 def main():
     sys.stdout.write('mock-plugin-entry-point')
 
+
 if __name__ == '__main__':
     main()
