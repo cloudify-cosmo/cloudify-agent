@@ -234,6 +234,7 @@ class Daemon(object):
         self.file_server_host = params['file_server_host']
         self.rest_host = params['rest_host']
         self.broker_ip = params['broker_ip']
+        self.cluster = params.get('cluster', [])
 
         # Optional parameters - REST client
         self.validate_optional()
@@ -278,15 +279,24 @@ class Daemon(object):
         # components of this differ from the passed in broker_user, pass, etc
         # These components need to be known for the _delete_amqp_queues
         # function.
-        self.broker_url = defaults.BROKER_URL.format(
-            host=self.broker_ip,
-            port=self.broker_port,
-            username=self.broker_user,
-            password=self.broker_pass,
-        )
+        if self.cluster:
+            self.broker_url = [defaults.BROKER_URL.format(
+                host=node['broker_ip'],
+                port=self.broker_port,  # not set in provider context
+                username=node['broker_user'],
+                password=node['broker_pass'],
+            ) for node in self.cluster]
+        else:
+            self.broker_url = defaults.BROKER_URL.format(
+                host=self.broker_ip,
+                port=self.broker_port,
+                username=self.broker_user,
+                password=self.broker_pass,
+            )
         self.min_workers = params.get('min_workers') or defaults.MIN_WORKERS
         self.max_workers = params.get('max_workers') or defaults.MAX_WORKERS
         self.workdir = params.get('workdir') or os.getcwd()
+
         self.extra_env_path = params.get('extra_env_path')
         self.log_level = params.get('log_level') or defaults.LOG_LEVEL
         self.log_file = params.get(
@@ -317,6 +327,7 @@ class Daemon(object):
             'broker_username': self.broker_user,
             'broker_password': self.broker_pass,
             'broker_hostname': self.broker_ip,
+            'cluster': self.cluster
         }
         with open(self._get_celery_conf_path(), 'w') as conf_handle:
             json.dump(config, conf_handle)
@@ -365,9 +376,9 @@ class Daemon(object):
         try:
             self._logger.debug('Retrieving daemon registered tasks')
             return utils.get_agent_registered(
-                    self.name,
-                    celery_client,
-                    timeout=AGENT_IS_REGISTERED_TIMEOUT)
+                self.name,
+                celery_client,
+                timeout=AGENT_IS_REGISTERED_TIMEOUT)
         finally:
             if celery_client:
                 celery_client.close()
@@ -629,12 +640,22 @@ class Daemon(object):
             raise exceptions.DaemonError(error)
 
     def _delete_amqp_queues(self):
+        # don't use self.broker_* - if we're connected to a cluster, we need
+        # to figure out the current cluster master; for that, examine a celery
+        # client to see which broker was chosen
+        celery_client = utils.get_celery_client(
+            broker_url=self.broker_url,
+            broker_ssl_enabled=self.broker_ssl_enabled,
+            broker_ssl_cert_path=self.broker_ssl_cert_path)
+        celery_connection = celery_client.pool.connection
+        ssl_enabled = bool(celery_connection.ssl)
+        cert_path = celery_connection.ssl['ca_certs'] if ssl_enabled else None
         client = amqp_client.create_client(
-            amqp_host=self.broker_ip,
-            amqp_user=self.broker_user,
-            amqp_pass=self.broker_pass,
-            ssl_enabled=self.broker_ssl_enabled,
-            ssl_cert_path=self.broker_ssl_cert_path
+            amqp_host=celery_connection.hostname,
+            amqp_user=celery_connection.userid,
+            amqp_pass=celery_connection.password,
+            ssl_enabled=ssl_enabled,
+            ssl_cert_path=cert_path
         )
 
         try:

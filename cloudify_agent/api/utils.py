@@ -212,8 +212,12 @@ def get_celery_client(broker_url,
 
     celery_client = Celery(broker=broker_url,
                            backend=broker_url)
+    # connect eagerly to error out as early as possible, and to force choosing
+    # the broker if multiple urls were passed
+    celery_client.pool.connection.ensure_connection()
     celery_client.conf.update(
         CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES)
+
     if broker_ssl_enabled:
         # import always?
         import ssl
