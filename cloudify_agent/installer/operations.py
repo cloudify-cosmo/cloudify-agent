@@ -127,7 +127,6 @@ def init_agent_installer(func=None, validate_connection=True):
 @operation
 @init_agent_installer
 def create(cloudify_agent, installer, **_):
-
     if ctx.type == context.NODE_INSTANCE:
 
         # save runtime properties immediately so that they will be available

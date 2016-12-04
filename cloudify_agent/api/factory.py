@@ -16,6 +16,7 @@
 import os
 import json
 
+from cloudify.cluster import set_cluster_nodes
 from cloudify.utils import setup_logger
 
 from cloudify_agent.api import exceptions
@@ -202,6 +203,9 @@ class DaemonFactory(object):
             props = utils.internal.daemon_to_dict(daemon)
             json.dump(props, f, indent=2)
             f.write(os.linesep)
+
+        if getattr(daemon, 'cluster'):
+            set_cluster_nodes(daemon.cluster)
 
     def delete(self, name):
 

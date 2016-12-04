@@ -37,13 +37,15 @@ from cloudify_agent.tests import utils as test_utils
 
 
 BUILT_IN_TASKS = [
-    'cloudify.dispatch.dispatch'
+    'cloudify.dispatch.dispatch',
+    'cluster-update'
 ]
 PLUGIN_NAME = 'plugin'
 DEPLOYMENT_ID = 'deployment'
 
 
 def ci():
+    return True
     for env_var in ['TRAVIS_BUILD_DIR', 'APPVEYOR', 'CIRCLE_BUILD_NUM']:
         if env_var in os.environ:
             return True

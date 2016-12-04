@@ -19,19 +19,25 @@ used outside the scope of an @operation.
 """
 import os
 import sys
+import itertools
 import traceback
 import logging
 import logging.handlers
+import kombu.connection
 
 from celery import Celery, signals
-from celery.utils.log import ColorFormatter
+from celery.utils.log import ColorFormatter, get_logger
 from celery.worker.loops import asynloop
 
+from cloudify import cluster
 from cloudify.celery import gate_keeper
 from cloudify.celery import logging_server
 
 from cloudify_agent.api import utils
+from cloudify_agent.api.factory import DaemonFactory
 
+
+logger = get_logger(__name__)
 LOGFILE_SIZE_BYTES = 5 * 1024 * 1024
 LOGFILE_BACKUP_COUNT = 5
 
@@ -81,16 +87,63 @@ def reset_worker_tasks_state(sender, *args, **kwargs):
     sender.hub.call_soon(callback=callback)
 
 
+class HeartbeatCelery(Celery):
+    """A Celery app that sends AMQP heartbeats."""
+    def connection(self, *args, **kwargs):
+        kwargs['heartbeat'] = 5
+        return super(HeartbeatCelery, self).connection(*args, **kwargs)
+
+
 # This attribute is used as the celery App instance.
 # it is referenced in two ways:
 #   1. Celery command line --app options.
 #   2. cloudify.dispatch.dispatch uses it as the 'task' decorator.
 # For app configuration, see cloudify.broker_config.
-
-
-app = Celery()
+app = HeartbeatCelery()
 gate_keeper.configure_app(app)
 logging_server.configure_app(app)
+
+
+def _set_master(daemon_name, node):
+    factory = DaemonFactory()
+    daemon = factory.load(daemon_name)
+    daemon.broker_ip = node['broker_ip']
+    daemon.broker_user = node['broker_user']
+    daemon.broker_pass = node['broker_pass']
+    factory.save(daemon)
+    cluster.set_cluster_active(node)
+
+
+def _make_failover_strategy(daemon_name):
+    def _strategy(initial_brokers):
+        logger.debug('Failover strategy: searching for a new rabbitmq server')
+        brokers = itertools.cycle(initial_brokers)
+        while True:
+            if cluster.is_cluster_configured():
+                nodes = cluster.get_cluster_nodes()
+                for node in nodes:
+                    _set_master(daemon_name, node)
+                    broker_url = 'amqp://{0}:{1}@{2}:5672//'.format(
+                        node['broker_user'],
+                        node['broker_pass'],
+                        node['broker_ip'])
+                    logger.debug('Trying broker at {0}'
+                                 .format(broker_url))
+                    yield broker_url
+            else:
+                logger.debug('cluster config file does not exist')
+                broker_url = next(brokers)
+                if len(initial_brokers) > 1:
+                    logger.debug('writing config file')
+                    cluster.config_from_broker_urls(broker_url,
+                                                    initial_brokers)
+                    _set_master(daemon_name, cluster.get_cluster_active())
+                logger.debug('Trying broker at {0}'
+                             .format(broker_url))
+                yield broker_url
+
+    return _strategy
+
 
 try:
     # running inside an agent
@@ -124,3 +177,11 @@ if daemon_name:
         current_excepthook(exception_type, value, the_traceback)
 
     sys.excepthook = new_excepthook
+
+    kombu.connection.failover_strategies['check_cluster_config'] = \
+        _make_failover_strategy(daemon_name)
+    app.conf['BROKER_FAILOVER_STRATEGY'] = 'check_cluster_config'
+
+    @app.task(name='cluster-update')
+    def cluster_update(nodes):
+        cluster.set_cluster_nodes(nodes)

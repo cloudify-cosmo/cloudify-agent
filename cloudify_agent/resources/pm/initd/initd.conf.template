@@ -52,7 +52,8 @@ CELERYD_OPTS="\
     --with-gate-keeper \
     --gate-keeper-bucket-size={{ max_workers }} \
     --with-logging-server \
-    --logging-server-logdir={{ workdir }}/logs"
+    --logging-server-logdir={{ workdir }}/logs \
+    --heartbeat-interval=2"
 CELERY_BIN="${CELERYD_ENV_DIR}/bin/celery"
 
 # extra environment variables provided by users
