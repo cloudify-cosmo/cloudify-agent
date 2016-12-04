@@ -80,6 +80,7 @@ def reset_worker_tasks_state(sender, *args, **kwargs):
             pass
     sender.hub.call_soon(callback=callback)
 
+
 # This attribute is used as the celery App instance.
 # it is referenced in two ways:
 #   1. Celery command line --app options.

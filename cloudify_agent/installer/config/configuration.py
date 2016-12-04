@@ -133,7 +133,6 @@ def cfy_agent_attributes(cloudify_agent):
 
 
 def _cfy_agent_attributes_no_defaults(cloudify_agent):
-
     if not cloudify_agent.get('process_management'):
         cloudify_agent['process_management'] = {}
 
@@ -159,10 +158,6 @@ def _cfy_agent_attributes_no_defaults(cloudify_agent):
         # by default, queue of the agent is the same as the name
         cloudify_agent['queue'] = cloudify_agent['name']
 
-    if not cloudify_agent.get('file_server_host'):
-        cloudify_agent['file_server_host'] = \
-            cloudify_utils.get_manager_file_server_host()
-
     if not cloudify_agent.get('file_server_port'):
         cloudify_agent['file_server_port'] = \
             cloudify_utils.get_manager_file_server_port()
@@ -171,9 +166,8 @@ def _cfy_agent_attributes_no_defaults(cloudify_agent):
         cloudify_agent['file_server_protocol'] = \
             cloudify_utils.get_manager_file_server_protocol()
 
-    if not cloudify_agent.get('rest_host'):
-        cloudify_agent['rest_host'] = \
-            cloudify_utils.get_manager_rest_service_host()
+    # Get a string representation of a list of all possible manager ips
+    cloudify_agent['manager_ips'] = ','.join(agent_utils.get_all_private_ips())
 
     if not cloudify_agent.get('security_enabled'):
         cloudify_agent['security_enabled'] = \

@@ -188,11 +188,7 @@ class Daemon(object):
 
     # add specific mandatory parameters for different implementations.
     # they will be validated upon daemon creation
-    MANDATORY_PARAMS = [
-        'rest_host',
-        'broker_ip',
-        'file_server_host'
-    ]
+    MANDATORY_PARAMS = ['rest_host', 'broker_ip', 'file_server_host']
 
     def __init__(self, logger=None, **params):
 
@@ -241,8 +237,7 @@ class Daemon(object):
 
         # Optional parameters - REST client
         self.validate_optional()
-        self.rest_port = params.get(
-            'rest_port') or defaults.REST_PORT
+        self.rest_port = params.get('rest_port') or defaults.REST_PORT
         self.rest_protocol = params.get(
             'rest_protocol') or defaults.REST_PROTOCOL
         self.file_server_port = params.get(
@@ -275,8 +270,7 @@ class Daemon(object):
         self.verify_rest_certificate = params.get('verify_rest_certificate')
         self.local_rest_cert_file = params.get('local_rest_cert_file', '')
         self.rest_cert_content = params.get('rest_ssl_cert_content', '')
-        self.queue = params.get(
-            'queue') or self._get_queue_from_manager()
+        self.queue = params.get('queue') or self._get_queue_from_manager()
 
         # This is not retrieved by param as an option any more as it then
         # introduces ambiguity over which values should be used if the
@@ -289,12 +283,9 @@ class Daemon(object):
             username=self.broker_user,
             password=self.broker_pass,
         )
-        self.min_workers = params.get(
-            'min_workers') or defaults.MIN_WORKERS
-        self.max_workers = params.get(
-            'max_workers') or defaults.MAX_WORKERS
-        self.workdir = params.get(
-            'workdir') or os.getcwd()
+        self.min_workers = params.get('min_workers') or defaults.MIN_WORKERS
+        self.max_workers = params.get('max_workers') or defaults.MAX_WORKERS
+        self.workdir = params.get('workdir') or os.getcwd()
         self.extra_env_path = params.get('extra_env_path')
         self.log_level = params.get('log_level') or defaults.LOG_LEVEL
         self.log_file = params.get(
@@ -360,7 +351,10 @@ class Daemon(object):
         to be called before self.broker_port has been set and after
         self.broker_ssl_cert has been set.
         """
-        if self.broker_ssl_enabled:
+        broker_port = self._params.get('broker_port')
+        if broker_port:
+            return broker_port
+        elif self.broker_ssl_enabled:
             return constants.BROKER_PORT_SSL
         else:
             return constants.BROKER_PORT_NO_SSL
@@ -642,7 +636,7 @@ class Daemon(object):
             amqp_user=self.broker_user,
             amqp_pass=self.broker_pass,
             ssl_enabled=self.broker_ssl_enabled,
-            ssl_cert_path=self.broker_ssl_cert_path,
+            ssl_cert_path=self.broker_ssl_cert_path
         )
 
         try:
