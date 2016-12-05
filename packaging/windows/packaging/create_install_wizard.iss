@@ -1,7 +1,7 @@
 #define AppName "Cloudify Windows Agent"
 #define AppVersion GetEnv('VERSION')
 #define AppMilestone GetEnv('PRERELEASE')
-//#define AppBuild GetEnv('BUILD')
+#define AppBuild GetEnv('BUILD')
 #define AppPublisher "GigaSpaces Technologies"
 #define AppURL "http://getcloudify.org/"
 
@@ -18,7 +18,7 @@ AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
 DefaultDirName={pf}\Cloudify
 DisableProgramGroupPage=yes
-OutputBaseFilename=cloudify-windows-agent_{#AppVersion}-{#AppMilestone}-b{#AppBuild}
+OutputBaseFilename=cloudify-windows-agent_{#AppVersion}-{#AppMilestone}
 Compression=lzma
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=
