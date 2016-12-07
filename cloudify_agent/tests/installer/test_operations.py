@@ -17,7 +17,7 @@ import shutil
 import tempfile
 import uuid
 
-from mock import patch
+from mock import patch, MagicMock
 
 from cloudify.workflows import local
 from cloudify.utils import setup_logger
@@ -39,7 +39,8 @@ from cloudify_agent.api import utils
 # the remote use cases are tested as system tests because they require
 # actually launching VM's from the test.
 ##############################################################################
-
+@patch('cloudify_agent.api.utils.get_all_private_ips',
+       MagicMock(return_value=['127.0.0.1']))
 class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
     """

@@ -172,7 +172,7 @@ class AgentInstaller(object):
 
             # mandatory values calculated before the agent
             # is actually created
-            env.CLOUDIFY_MANAGER_IP: self.cloudify_agent['manager_ip'],
+            env.CLOUDIFY_MANAGER_IPS: self.cloudify_agent['manager_ips'],
             env.CLOUDIFY_DAEMON_QUEUE: self.cloudify_agent['queue'],
             env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
 
@@ -192,7 +192,8 @@ class AgentInstaller(object):
             env.CLOUDIFY_DAEMON_EXTRA_ENV:
             self.create_custom_env_file_on_target(
                 self.cloudify_agent.get('env', {})),
-            env.CLOUDIFY_BYPASS_MAINTENANCE_MODE: get_is_bypass_maintenance()
+            env.CLOUDIFY_BYPASS_MAINTENANCE_MODE: get_is_bypass_maintenance(),
+            env.CLOUDIFY_AGENT_IP: self.cloudify_agent.get('ip')
         }
 
         execution_env = utils.purge_none_values(execution_env)

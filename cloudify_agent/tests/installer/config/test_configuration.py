@@ -21,6 +21,7 @@ from mock import patch
 from cloudify import constants
 
 from cloudify_agent.api import utils
+from cloudify_agent.tests.api.pm import only_os
 from cloudify_agent.installer.config import configuration
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests.installer.config import mock_context
@@ -43,6 +44,7 @@ class TestConfiguration(BaseTest):
            mock_context())
     @patch('cloudify_agent.installer.config.attributes.ctx',
            mock_context())
+    @only_os('posix')
     def test_prepare(self):
 
         cloudify_agent = {'local': True}
@@ -60,7 +62,7 @@ class TestConfiguration(BaseTest):
                 {'name': 'init.d' if os.name == 'posix' else 'nssm'},
             'basedir': basedir,
             'name': 'test_deployment',
-            'manager_ip': 'localhost',
+            'manager_ips': ','.join(utils.get_all_private_ips()),
             'manager_port': 8101,
             'queue': 'test_deployment',
             'envdir': envdir,
