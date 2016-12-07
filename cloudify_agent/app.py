@@ -85,6 +85,8 @@ def reset_worker_tasks_state(sender, *args, **kwargs):
 #   1. Celery command line --app options.
 #   2. cloudify.dispatch.dispatch uses it as the 'task' decorator.
 # For app configuration, see cloudify.broker_config.
+
+
 app = Celery()
 gate_keeper.configure_app(app)
 logging_server.configure_app(app)
