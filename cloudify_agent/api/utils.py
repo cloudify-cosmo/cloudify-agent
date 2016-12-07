@@ -20,6 +20,11 @@ import tempfile
 import os
 import getpass
 import pkg_resources
+import sys
+import socket
+import struct
+import array
+
 from jinja2 import Template
 
 from cloudify.context import BootstrapContext
@@ -525,3 +530,64 @@ def json_loads(content):
         return json.loads(content)
     except ValueError as e:
         raise ValueError('{0}:{1}{2}'.format(str(e), os.linesep, content))
+
+
+class IPExtractor(object):
+    @staticmethod
+    def get_all_private_ips(max_interfaces=128):
+        """Returns a list of all the current machine's private IPs (linux only)
+        """
+        struct_size = IPExtractor._get_struct_size()
+        bytes_to_read = struct_size * max_interfaces
+        buff = array.array('B', '\0' * bytes_to_read)
+        bytes_read = IPExtractor._read_bytes(bytes_to_read, buff)
+        name_str = buff.tostring()
+        return IPExtractor._get_ips_from_str(bytes_read, struct_size, name_str)
+
+    @staticmethod
+    def _get_struct_size():
+        """Calculate the size of bytes we should read, and the size of
+        each struct
+        """
+        is_64bits = sys.maxsize > 2**32
+        return 40 if is_64bits else 32
+
+    @staticmethod
+    def _read_bytes(bytes_to_read, buff):
+        """Read `bytes_to_read` bytes from a socket into `buff`
+        :param bytes_to_read: (Max) number of bytes to read
+        :param buff: The buffer into which to read the bytes
+        :return: Number of bytes read
+        """
+        # Importing here, because fcntl is only supported on linux, and this
+        # piece of code will only ever run on the manager, so there shouldn't
+        # be a problem
+        import fcntl
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        return struct.unpack('iL', fcntl.ioctl(
+            s.fileno(),
+            # 0x8912 = SIOCGIFCONF - an op to return a list of
+            # interface addresses (see man for netdevice)
+            0x8912,
+            # buffer_info returns a (address, length) tuple
+            struct.pack('iL', bytes_to_read, buff.buffer_info()[0])
+        ))[0]
+
+    @staticmethod
+    def _get_ips_from_str(bytes_read, struct_size, str_buff):
+        """Traverse the buffer - split it into `struct_size`d chunks and
+        extract the IP address from each chunk
+        :param bytes_read: Total length of the buffer
+        :param struct_size: Size of each struct
+        :param str_buff: A string representation of the buffer
+        :return: A list of IP addresses
+        """
+        ips = []
+        for i in range(0, bytes_read, struct_size):
+            ip = socket.inet_ntoa(str_buff[i + 20:i + 24])
+            if ip != '127.0.0.1':
+                ips.append(ip)
+        return ips
+
+
+get_all_private_ips = IPExtractor.get_all_private_ips

@@ -22,13 +22,19 @@ from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.shell import env
 from cloudify_agent.shell.decorators import handle_failures
 
+from .manager_ip import get_manager_ip
+
 
 @click.command(context_settings=dict(ignore_unknown_options=True))
-@click.option('--manager-ip',
-              help='The manager IP to connect to. [env {0}]'
-              .format(env.CLOUDIFY_MANAGER_IP),
+@click.option('--manager-ips',
+              help="A comma separated list of the manager's IPs [env {0}]"
+              .format(env.CLOUDIFY_MANAGER_IPS),
               required=True,
-              envvar=env.CLOUDIFY_MANAGER_IP)
+              envvar=env.CLOUDIFY_MANAGER_IPS)
+@click.option('--agent-ip',
+              help="The agent IP by which the manager communicates with the "
+                   "current host [env {0}]".format(env.CLOUDIFY_AGENT_IP),
+              envvar=env.CLOUDIFY_AGENT_IP)
 @click.option('--process-management',
               help='The process management system to use '
                    'when creating the daemon. [env {0}]'
@@ -65,12 +71,6 @@ from cloudify_agent.shell.decorators import handle_failures
                    'Defaults to current working directory. [env {0}]'
                    .format(env.CLOUDIFY_DAEMON_WORKDIR),
               envvar=env.CLOUDIFY_DAEMON_WORKDIR)
-@click.option('--broker-ip',
-              help='The broker ip to connect to. '
-                   'If not specified, the --manager_ip '
-                   'option will be used. [{0}]'
-                   .format(env.CLOUDIFY_BROKER_IP),
-              envvar=env.CLOUDIFY_BROKER_IP)
 @click.option('--broker-port',
               help='The broker port to connect to. If not set, this will be '
                    'determined based on whether SSL is enabled. It will be '
@@ -161,6 +161,11 @@ def create(**params):
     custom_arg = attributes.pop('custom_options', ())
     attributes.update(_parse_custom_options(custom_arg))
     click.echo('Creating...')
+    manager_ip = get_manager_ip(attributes)
+    click.echo('Calculated manager IP: {0}'.format(manager_ip))
+    attributes['manager_ip'] = manager_ip
+    attributes['broker_ip'] = manager_ip
+
     from cloudify_agent.shell.main import get_logger
 
     if attributes['broker_get_settings_from_manager']:
