@@ -149,6 +149,7 @@ def _get_celery_mock():
     celery_mock.send_task = keeper.set_value
     return MagicMock(return_value=celery_mock)
 
+
 rest_mock = MagicMock()
 rest_mock.manager = MagicMock()
 rest_mock.manager.get_version = lambda: '3.3'
