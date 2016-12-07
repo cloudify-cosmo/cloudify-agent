@@ -19,7 +19,6 @@ AppUpdatesURL={#AppURL}
 DefaultDirName={pf}\Cloudify
 DisableProgramGroupPage=yes
 OutputBaseFilename=cloudify-windows-agent_{#AppVersion}-{#AppMilestone}
-;OutputBaseFilename=cloudify-windows-agent_{#AppVersion}-{#AppMilestone}-b{#AppBuild}
 Compression=lzma
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=
