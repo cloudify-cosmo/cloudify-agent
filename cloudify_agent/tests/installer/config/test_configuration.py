@@ -20,6 +20,7 @@ from mock import patch
 
 from cloudify import constants
 from cloudify_agent.api import utils
+from cloudify_agent.tests.api.pm import only_os
 from cloudify_agent.installer.config import configuration
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests.installer.config import mock_context
@@ -34,8 +35,8 @@ class TestConfiguration(BaseTest):
     @patch('cloudify_agent.installer.config.attributes.ctx',
            mock_context())
     @patch('cloudify.utils.ctx', mock_context())
+    @only_os('posix')
     def test_prepare(self):
-
         cloudify_agent = {'local': True}
         configuration.prepare_connection(cloudify_agent)
         configuration.prepare_agent(cloudify_agent, None)
@@ -102,6 +103,7 @@ class TestConfiguration(BaseTest):
     @patch('cloudify_agent.installer.config.attributes.ctx',
            mock_context())
     @patch('cloudify.utils.ctx', mock_context())
+    @only_os('posix')
     def test_prepare_secured(self):
 
         cloudify_agent = {'local': True, 'security_enabled': True,
@@ -166,3 +168,14 @@ class TestConfiguration(BaseTest):
 
         self.maxDiff = None
         self.assertDictEqual(expected, cloudify_agent)
+
+    @patch('cloudify_agent.installer.config.decorators.ctx',
+           mock_context(
+               agent_runtime_properties={'extra': {'connection_timeout': 10}}
+           ))
+    def test_connection_timeout_propagation(self):
+        # Testing that if a connection timeout is passed as an agent runtime
+        # property, it would be propagated to the cloudify agent dict
+        cloudify_agent = {'local': True}
+        configuration.prepare_connection(cloudify_agent)
+        self.assertEqual(cloudify_agent['connection_timeout'], 10)

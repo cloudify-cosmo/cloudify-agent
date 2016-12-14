@@ -67,6 +67,9 @@ AGENT_ATTRIBUTES = {
     'remote_execution': {
         'group': 'connection',
     },
+    'connection_timeout': {
+        'group': 'connection'
+    },
     'windows': {
         'group': 'connection'
     },
