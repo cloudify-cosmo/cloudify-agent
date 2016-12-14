@@ -93,3 +93,14 @@ class TestConfiguration(BaseTest):
 
         self.maxDiff = None
         self.assertDictEqual(expected, cloudify_agent)
+
+    @patch('cloudify_agent.installer.config.decorators.ctx',
+           mock_context(
+               agent_runtime_properties={'extra': {'connection_timeout': 10}}
+           ))
+    def test_connection_timeout_propagation(self):
+        # Testing that if a connection timeout is passed as an agent runtime
+        # property, it would be propagated to the cloudify agent dict
+        cloudify_agent = {'local': True}
+        configuration.prepare_connection(cloudify_agent)
+        self.assertEqual(cloudify_agent['connection_timeout'], 10)

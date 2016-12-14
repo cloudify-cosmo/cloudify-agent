@@ -13,6 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import click
 import socket
 import operator
 
@@ -27,8 +28,12 @@ class ManagerIP(object):
         """
         broker_port = ManagerIP._get_broker_port(params)
         manager_ips = ManagerIP._get_manager_ip_list(params)
+        timeout = params.get('connection_timeout')
+        click.echo('Available list of manager IPs: {0}'.format(manager_ips))
         for ip in manager_ips:
+            click.echo('Trying to connect to: {0}'.format(ip))
             sock = socket.socket()
+            sock.settimeout(timeout)
             try:
                 # Try to connect to the ip, and return it if successful
                 sock.connect((ip, broker_port))
@@ -56,7 +61,7 @@ class ManagerIP(object):
 
         # If an agent IP was provided, use it to try to sort the list of
         # manager IPs according to the proximity to the agent IP
-        agent_ip = params.pop('agent_ip')
+        agent_ip = params.pop('agent_ip', None)
         if agent_ip:
             manager_ips = ManagerIP._get_sorted_manager_ips(
                 manager_ips,

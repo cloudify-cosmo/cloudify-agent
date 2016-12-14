@@ -35,6 +35,10 @@ from .manager_ip import get_manager_ip
               help="The agent IP by which the manager communicates with the "
                    "current host [env {0}]".format(env.CLOUDIFY_AGENT_IP),
               envvar=env.CLOUDIFY_AGENT_IP)
+@click.option('--connection-timeout',
+              help="The timeout to use when trying to get the correct manager "
+                   "IP [env {0}]".format(env.CLOUDIFY_CONNECTION_TIMEOUT),
+              envvar=env.CLOUDIFY_CONNECTION_TIMEOUT)
 @click.option('--process-management',
               help='The process management system to use '
                    'when creating the daemon. [env {0}]'
