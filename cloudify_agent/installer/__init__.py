@@ -193,7 +193,9 @@ class AgentInstaller(object):
             self.create_custom_env_file_on_target(
                 self.cloudify_agent.get('env', {})),
             env.CLOUDIFY_BYPASS_MAINTENANCE_MODE: get_is_bypass_maintenance(),
-            env.CLOUDIFY_AGENT_IP: self.cloudify_agent.get('ip')
+            env.CLOUDIFY_AGENT_IP: self.cloudify_agent.get('ip'),
+            env.CLOUDIFY_CONNECTION_TIMEOUT:
+                self.cloudify_agent.get('connection_timeout')
         }
 
         execution_env = utils.purge_none_values(execution_env)

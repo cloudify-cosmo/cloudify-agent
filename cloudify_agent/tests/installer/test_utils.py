@@ -13,10 +13,11 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-
 from cloudify_agent.installer import utils
+from cloudify_agent.shell.commands.manager_ip import get_manager_ip
 
 from cloudify_agent.tests import BaseTest
+from cloudify_agent.tests.api.pm import only_os
 
 
 class TestUtils(BaseTest):
@@ -61,3 +62,15 @@ class TestUtils(BaseTest):
         purged = utils.purge_none_values(dictionary)
         self.assertEqual(purged['key'], 'value')
         self.assertNotIn('key2', purged)
+
+    @only_os('posix')
+    def test_manager_ip_selection(self):
+        ips = utils.get_all_private_ips()
+        ips.insert(0, '254.254.254.254')
+        ips.append('172.20.0.2')
+        attrs = {
+            'manager_ips': ','.join(ips),
+            'connection_timeout': 0.3
+        }
+        # This will throw an error if none of the addresses will work
+        get_manager_ip(attrs)
