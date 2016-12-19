@@ -7,4 +7,4 @@ https://github.com/cloudify-cosmo/cloudify-script-plugin/archive/master.zip
 # requires having compilation tools such as gcc, that we could not assume exist on any agent machine.
 # Since the actual diamond version is consistent across all diamond-plugin versions,
 # it would allow us to install any version of the diamond plugin, without needing gcc to recompile diamond.
-https://github.com/cloudify-cosmo/cloudify-diamond-plugin/archive/master.zip
+https://github.com/cloudify-cosmo/cloudify-diamond-plugin/archive/1.3.5.zip
