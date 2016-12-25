@@ -13,11 +13,12 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from cloudify_agent.installer import utils
-from cloudify_agent.shell.commands.manager_ip import get_manager_ip
+from mock import patch, MagicMock
 
+from cloudify_agent.installer import utils, LocalInstallerMixin
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests.api.pm import only_os
+from cloudify_agent.api.utils import get_all_private_ips
 
 
 class TestUtils(BaseTest):
@@ -65,12 +66,19 @@ class TestUtils(BaseTest):
 
     @only_os('posix')
     def test_manager_ip_selection(self):
-        ips = utils.get_all_private_ips()
-        ips.insert(0, '254.254.254.254')
-        ips.append('172.20.0.2')
-        attrs = {
-            'manager_ips': ','.join(ips),
-            'connection_timeout': 0.3
-        }
+        agent_installer = LocalInstallerMixin({})
         # This will throw an error if none of the addresses will work
-        get_manager_ip(attrs)
+        ip = agent_installer._calculate_manager_ip(22)
+        self.logger.info('Calculated IP: {0}'.format(ip))
+
+    @only_os('posix')
+    def test_manager_ip_selection_with_extra_ips(self):
+        agent_installer = LocalInstallerMixin({})
+        all_ips = get_all_private_ips()
+        all_ips.insert(0, '254.254.254.254')
+        all_ips.append('172.20.0.2')
+        with patch('cloudify_agent.api.utils.get_all_private_ips',
+                   MagicMock(return_value=all_ips)):
+            # This will throw an error if none of the addresses will work
+            ip = agent_installer._calculate_manager_ip(22)
+        self.logger.info('Calculated IP: {0}'.format(ip))

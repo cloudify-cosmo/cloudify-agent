@@ -24,6 +24,7 @@ import sys
 import socket
 import struct
 import array
+import operator
 
 from jinja2 import Template
 
@@ -534,15 +535,23 @@ def json_loads(content):
 
 class IPExtractor(object):
     @staticmethod
-    def get_all_private_ips(max_interfaces=128):
+    def get_all_private_ips(sort_ip=None, max_interfaces=128):
         """Returns a list of all the current machine's private IPs (linux only)
+
+        :param sort_ip: If passed, the list of IPs will be sorted by their
+        proximity to this IP
+        :param max_interfaces: The number of net interfaces on the machine
         """
         struct_size = IPExtractor._get_struct_size()
         bytes_to_read = struct_size * max_interfaces
         buff = array.array('B', '\0' * bytes_to_read)
         bytes_read = IPExtractor._read_bytes(bytes_to_read, buff)
         name_str = buff.tostring()
-        return IPExtractor._get_ips_from_str(bytes_read, struct_size, name_str)
+        ips = IPExtractor._get_ips_from_str(bytes_read, struct_size, name_str)
+        if sort_ip:
+            return IPExtractor._sort_ips(ips, sort_ip)
+        else:
+            return ips
 
     @staticmethod
     def _get_struct_size():
@@ -559,9 +568,9 @@ class IPExtractor(object):
         :param buff: The buffer into which to read the bytes
         :return: Number of bytes read
         """
-        # Importing here, because fcntl is only supported on linux, and this
-        # piece of code will only ever run on the manager, so there shouldn't
-        # be a problem
+        # Importing here to avoid errors on Windows machine (fcntl is only
+        # supported on linux), as this piece of code will only ever run on
+        # the manager, so there shouldn't be a problem
         import fcntl
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         return struct.unpack('iL', fcntl.ioctl(
@@ -588,6 +597,32 @@ class IPExtractor(object):
             if ip != '127.0.0.1':
                 ips.append(ip)
         return ips
+
+    @staticmethod
+    def _sort_ips(ips, sort_ip):
+        """Receive a list of IPs and an IP on which to sort them, and return
+        a the list sorted by the proximity of each IP to the sort IP
+        """
+        # Init all the IPs with zero proximity
+        proximity_dict = dict((ip, 0) for ip in ips)
+        # Split the IP by `.` - should have 4 parts
+        delimited_sort_ip = sort_ip.split('.')
+        for ip in ips:
+            delimited_ip = ip.split('.')
+            # Compare each of the 4 parts - if they're equal, increase the
+            # proximity, otherwise - quit the loop (no point in checking
+            # after first mismatch)
+            for i in range(4):
+                if delimited_sort_ip[i] == delimited_ip[i]:
+                    proximity_dict[ip] += 1
+                else:
+                    break
+        # Get a list of tuples (IP, proximity) in descending order
+        sorted_ips = sorted(proximity_dict.items(),
+                            key=operator.itemgetter(1),
+                            reverse=True)
+        # Return only the IPs
+        return [ip[0] for ip in sorted_ips]
 
 
 get_all_private_ips = IPExtractor.get_all_private_ips

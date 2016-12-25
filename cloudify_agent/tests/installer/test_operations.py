@@ -16,11 +16,13 @@
 import shutil
 import tempfile
 import uuid
+import os
 
-from mock import patch, MagicMock
+from mock import patch
 
 from cloudify.workflows import local
 from cloudify.utils import setup_logger
+from cloudify.constants import MANAGER_IP_KEY
 
 from cloudify_agent.tests import resources
 from cloudify_agent.tests.utils import (
@@ -39,8 +41,6 @@ from cloudify_agent.api import utils
 # the remote use cases are tested as system tests because they require
 # actually launching VM's from the test.
 ##############################################################################
-@patch('cloudify_agent.api.utils.get_all_private_ips',
-       MagicMock(return_value=['127.0.0.1']))
 class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
     """
@@ -64,6 +64,7 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
         self.addCleanup(self.fs.stop)
         self.addCleanup(shutil.rmtree, self.resource_base)
+        os.environ[MANAGER_IP_KEY] = '127.0.0.1'
 
     @patch.dict('agent_packager.logger.LOGGER',
                 disable_existing_loggers=False)
@@ -188,8 +189,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
         env.execute('uninstall', task_retries=1)
         self.wait_for_daemon_dead(name=agent_name)
 
-    @only_os('posix')
     @only_ci
+    @only_os('posix')
     @patch('cloudify.workflows.local._validate_node')
     def test_local_agent_from_source_long_name(self, _):
         """Agent still works with a filepath longer than 128 bytes

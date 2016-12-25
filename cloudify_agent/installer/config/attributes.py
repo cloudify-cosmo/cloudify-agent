@@ -62,6 +62,9 @@ AGENT_ATTRIBUTES = {
     'connection_timeout': {
         'group': 'connection'
     },
+    'connection_retries': {
+        'group': 'connection'
+    },
     'windows': {
         'group': 'connection'
     },

@@ -21,9 +21,10 @@ import uuid
 import shutil
 
 from celery import Celery
-from mock import patch, MagicMock
+from mock import patch
 
 from cloudify.utils import LocalCommandRunner
+from cloudify.constants import MANAGER_IP_KEY
 from cloudify_agent.tests import BaseTest, agent_package
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.installer.config import configuration
@@ -31,13 +32,15 @@ from cloudify_agent.installer.config import configuration
 from cloudify_agent.tests.installer.config import mock_context
 
 
-@patch('cloudify_agent.api.utils.get_all_private_ips',
-       MagicMock(return_value=['127.0.0.1']))
 class TestInstaller(BaseTest):
 
     @classmethod
     def setUpClass(cls):
         cls._package_url = agent_package.get_package_url()
+
+    def setUp(self):
+        super(TestInstaller, self).setUp()
+        os.environ[MANAGER_IP_KEY] = '127.0.0.1'
 
     @patch('cloudify_agent.installer.config.configuration.ctx',
            mock_context())

@@ -38,7 +38,7 @@ from cloudify_agent.tests.installer.config import mock_context
 from cloudify_agent.tests.utils import FileServer
 
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
-from cloudify_agent.tests.api.pm import only_ci, only_os
+from cloudify_agent.tests.api.pm import only_ci
 
 
 _INSTALL_SCRIPT_URL = ('https://raw.githubusercontent.com/cloudify-cosmo/'
@@ -58,7 +58,6 @@ class _MockRestclient(object):
 
 
 class TestInstallNewAgent(BaseDaemonLiveTestCase):
-
     @contextmanager
     def _manager_env(self):
         port = 8756
@@ -86,7 +85,7 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
         new_env = {
             constants.MANAGER_IP_KEY: 'localhost',
             constants.MANAGER_FILE_SERVER_URL_KEY:
-                'http://localhost:{0}'.format(port)
+                'http://localhost:{0}'.format(port),
         }
         with patch.dict(os.environ, new_env):
             try:
@@ -95,8 +94,6 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
                 fs.stop()
 
     @patch('cloudify.manager.get_rest_client', _MockRestclient)
-    @patch('cloudify_agent.api.utils.get_all_private_ips',
-           MagicMock(return_value=['127.0.0.1']))
     @only_ci
     def test_install_new_agent(self):
         agent_name = utils.internal.generate_agent_name()
@@ -211,7 +208,6 @@ class TestCreateAgentAmqp(BaseTest):
            mock_context())
     @patch('cloudify_agent.installer.config.attributes.ctx',
            mock_context())
-    @only_os('posix')
     def test_create_agent_dict(self):
         old_agent = self._create_agent()
         with self._patch_manager_env():
@@ -222,13 +218,11 @@ class TestCreateAgentAmqp(BaseTest):
         for k in equal_keys:
             self.assertEqual(old_agent[k], new_agent[k])
             self.assertEqual(old_agent[k], third_agent[k])
-        nonequal_keys = ['agent_dir', 'workdir', 'envdir', 'name']
+        nonequal_keys = ['agent_dir', 'workdir', 'envdir',
+                         'name', 'manager_ip']
         for k in nonequal_keys:
             self.assertNotEqual(old_agent[k], new_agent[k])
             self.assertNotEqual(old_agent[k], third_agent[k])
-        self.assertIn('manager_ips', new_agent)
-        self.assertIn('manager_ips', third_agent)
-        self.assertIn('manager_ip', old_agent)
         old_name = old_agent['name']
         new_name = new_agent['name']
         third_name = third_agent['name']
@@ -244,7 +238,6 @@ class TestCreateAgentAmqp(BaseTest):
     @patch('cloudify_agent.operations.app', MagicMock())
     @patch('cloudify_agent.api.utils.get_agent_registered',
            MagicMock(return_value={'cloudify.dispatch.dispatch': {}}))
-    @only_os('posix')
     def test_create_agent_from_old_agent(self):
         context = self._create_node_instance_context()
         old_context = ctx
