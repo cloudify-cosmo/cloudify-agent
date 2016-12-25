@@ -202,8 +202,7 @@ class Daemon(object):
         # Optional parameters
         self.validate_optional()
         self.user = params.get('user') or getpass.getuser()
-        self.broker_ip = params.get(
-            'broker_ip') or self.manager_ip
+        self.broker_ip = params.get('broker_ip') or self.manager_ip
         self.broker_ssl_enabled = params.get('broker_ssl_enabled', False)
         self.broker_ssl_cert = params.get('broker_ssl_cert', '')
         # Port must be determined after SSL enabled has been set in order for

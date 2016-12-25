@@ -22,23 +22,13 @@ from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.shell import env
 from cloudify_agent.shell.decorators import handle_failures
 
-from .manager_ip import get_manager_ip
-
 
 @click.command(context_settings=dict(ignore_unknown_options=True))
-@click.option('--manager-ips',
-              help="A comma separated list of the manager's IPs [env {0}]"
-              .format(env.CLOUDIFY_MANAGER_IPS),
+@click.option('--manager-ip',
+              help="The IP of the Cloudify manager [env {0}]"
+              .format(env.CLOUDIFY_MANAGER_IP),
               required=True,
-              envvar=env.CLOUDIFY_MANAGER_IPS)
-@click.option('--agent-ip',
-              help="The agent IP by which the manager communicates with the "
-                   "current host [env {0}]".format(env.CLOUDIFY_AGENT_IP),
-              envvar=env.CLOUDIFY_AGENT_IP)
-@click.option('--connection-timeout',
-              help="The timeout to use when trying to get the correct manager "
-                   "IP [env {0}]".format(env.CLOUDIFY_CONNECTION_TIMEOUT),
-              envvar=env.CLOUDIFY_CONNECTION_TIMEOUT)
+              envvar=env.CLOUDIFY_MANAGER_IP)
 @click.option('--process-management',
               help='The process management system to use '
                    'when creating the daemon. [env {0}]'
@@ -164,11 +154,6 @@ def create(**params):
     attributes = dict(**params)
     custom_arg = attributes.pop('custom_options', ())
     attributes.update(_parse_custom_options(custom_arg))
-    click.echo('Creating...')
-    manager_ip = get_manager_ip(attributes)
-    click.echo('Calculated manager IP: {0}'.format(manager_ip))
-    attributes['manager_ip'] = manager_ip
-    attributes['broker_ip'] = manager_ip
 
     from cloudify_agent.shell.main import get_logger
 

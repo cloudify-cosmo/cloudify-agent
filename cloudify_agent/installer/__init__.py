@@ -18,10 +18,17 @@ import tempfile
 import shutil
 import urllib
 import copy
+import socket
+from urllib2 import URLError
+from urlparse import urlparse, urlunparse
 
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
+from cloudify.constants import MANAGER_IP_KEY
 from cloudify.utils import get_is_bypass_maintenance
+from cloudify.exceptions import (CommandExecutionError,
+                                 CommandExecutionException,
+                                 NonRecoverableError)
 
 from cloudify_agent.api import utils
 from cloudify_agent.shell import env
@@ -59,6 +66,7 @@ class AgentInstaller(object):
             execution_env=execution_env)
 
     def create_agent(self):
+        self._update_manager_ip()
         if 'source_url' in self.cloudify_agent:
             self.logger.info('Creating agent from source')
             self._from_source()
@@ -69,6 +77,76 @@ class AgentInstaller(object):
             command='create {0}'
             .format(self._create_process_management_options()),
             execution_env=self._create_agent_env())
+
+    def _update_manager_ip(self):
+        """Calculate the correct manager IP and update the new IP and the
+        agent package URL in the agent dict
+        """
+        url, port = self._get_url_and_port()
+        manager_ip = self._calculate_manager_ip(port)
+        self.logger.info('Calculated manager IP: {0}'.format(manager_ip))
+        if url:
+            self._update_package_url(manager_ip, url)
+        self.cloudify_agent['manager_ip'] = manager_ip
+
+    def _get_url_and_port(self):
+        """Get the package URL and the file server port if available
+        """
+        if 'package_url' in self.cloudify_agent:
+            url = urlparse(self.cloudify_agent['package_url'])
+            port = url.port
+        else:
+            url = None
+            port = 53229
+        return url, port
+
+    def _update_package_url(self, manager_ip, url):
+        """Update the agent package URL with the correct manager IP
+        """
+        url_list = list(url)
+        url_list[1] = '{0}:{1}'.format(manager_ip, url.port)
+        self.cloudify_agent['package_url'] = urlunparse(url_list)
+        self.logger.info('Updated package url is: "{0}"'.format(
+            self.cloudify_agent['package_url']
+        ))
+
+    def _calculate_manager_ip(self, file_server_port):
+        ip = os.environ.get(MANAGER_IP_KEY)
+        if ip:
+            self.logger.info(
+                'Using IP from the `{0}` envvar: '
+                '{1}'.format(MANAGER_IP_KEY, ip))
+            return ip
+        agent_ip = self.cloudify_agent.get('ip')  # Used for sorting the IPs
+        ips = utils.get_all_private_ips(sort_ip=agent_ip)
+
+        self.logger.info('Calculating manager IP from possible IPs: '
+                         '{0}'.format(ips))
+        timeout = self.cloudify_agent.get('connection_timeout', 1)
+        retries = self.cloudify_agent.get('connection_retries', 3)
+        for _ in range(retries):
+            for ip in ips:
+                if self._check_connectivity(ip, file_server_port, timeout):
+                    return ip
+        raise NonRecoverableError(
+            'Connection between the agent and the '
+            'manager could not be established'
+        )
+
+    def _check_connectivity(self, ip, file_server_port, timeout):
+        command = "import urllib2; urllib2.urlopen('http://{0}:{1}', " \
+                  "timeout={2})".format(ip, file_server_port, timeout)
+        command = 'python -c "{0}"'.format(command)
+        try:
+            self.logger.debug('Running command: {0}'.format(command))
+            self.runner.run(command)
+            return True
+        except (socket.error,
+                URLError,
+                CommandExecutionError,
+                CommandExecutionException), e:
+            self.logger.debug('Could not reach {0}. Error:\n{1}'.format(ip, e))
+            return False
 
     def configure_agent(self):
         self.run_daemon_command('configure')
@@ -169,17 +247,15 @@ class AgentInstaller(object):
     def _create_agent_env(self):
 
         execution_env = {
-
             # mandatory values calculated before the agent
             # is actually created
-            env.CLOUDIFY_MANAGER_IPS: self.cloudify_agent['manager_ips'],
+            env.CLOUDIFY_MANAGER_IP: self.cloudify_agent['manager_ip'],
             env.CLOUDIFY_DAEMON_QUEUE: self.cloudify_agent['queue'],
             env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
 
             # these are variables that have default values that will be set
             # by the agent on the remote host if not set here
             env.CLOUDIFY_DAEMON_USER: self.cloudify_agent.get('user'),
-            env.CLOUDIFY_BROKER_IP: self.cloudify_agent.get('broker_ip'),
             env.CLOUDIFY_BROKER_PORT: self.cloudify_agent.get('broker_port'),
             env.CLOUDIFY_MANAGER_PORT: self.cloudify_agent.get('manager_port'),
             env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(
@@ -193,9 +269,6 @@ class AgentInstaller(object):
             self.create_custom_env_file_on_target(
                 self.cloudify_agent.get('env', {})),
             env.CLOUDIFY_BYPASS_MAINTENANCE_MODE: get_is_bypass_maintenance(),
-            env.CLOUDIFY_AGENT_IP: self.cloudify_agent.get('ip'),
-            env.CLOUDIFY_CONNECTION_TIMEOUT:
-                self.cloudify_agent.get('connection_timeout')
         }
 
         execution_env = utils.purge_none_values(execution_env)
