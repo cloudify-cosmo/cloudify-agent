@@ -6,6 +6,7 @@ echo Installing the agent as a windows service...
 --events -Q {{ queue }} ^
 --hostname={{ name }} ^
 --concurrency={{ max_workers }} ^
+--maxtasksperchild=10 ^
 --without-gossip ^
 --without-mingle ^
 --loglevel={{ log_level }} ^
