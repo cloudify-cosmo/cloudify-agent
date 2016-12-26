@@ -107,7 +107,7 @@ class AgentInstallerTest(testenv.TestCase):
             blueprint='reboot-vm-blueprint/reboot-winrm-vm-blueprint.yaml',
             inputs={
                 'image': self.env.windows_image_name,
-                'flavor': self.env.small_flavor_id
+                'flavor': self.env.medium_flavor_id
             })
 
     def test_winrm_agent(self):
