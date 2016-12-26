@@ -25,7 +25,7 @@ function download_resources() {
 }
 
 # VERSION/PRERELEASE/BUILD must be exported as they is being read as an env var by the install wizard
-CORE_TAG_NAME="4.0m9"
+export CORE_TAG_NAME="4.0m9"
 
 GITHUB_USERNAME=$1
 GITHUB_PASSWORD=$2
