@@ -16,13 +16,11 @@
 import shutil
 import tempfile
 import uuid
-import os
 
 from mock import patch
 
 from cloudify.workflows import local
 from cloudify.utils import setup_logger
-from cloudify.constants import MANAGER_IP_KEY
 
 from cloudify_agent.tests import resources
 from cloudify_agent.tests.utils import (
@@ -64,7 +62,6 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
         self.addCleanup(self.fs.stop)
         self.addCleanup(shutil.rmtree, self.resource_base)
-        os.environ[MANAGER_IP_KEY] = '127.0.0.1'
 
     @patch.dict('agent_packager.logger.LOGGER',
                 disable_existing_loggers=False)

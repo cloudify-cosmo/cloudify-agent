@@ -65,6 +65,9 @@ AGENT_ATTRIBUTES = {
     'connection_retries': {
         'group': 'connection'
     },
+    'fixed_manager_ip': {
+        'group': 'connection'
+    },
     'windows': {
         'group': 'connection'
     },

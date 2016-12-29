@@ -97,7 +97,8 @@ class TestConfiguration(BaseTest):
            mock_context(
                agent_runtime_properties={'extra': {
                    'connection_timeout': 10,
-                   'connection_retries': 10
+                   'connection_retries': 10,
+                   'fixed_manager_ip': '127.0.0.1'
                }}
            ))
     def test_connection_params_propagation(self):
@@ -107,3 +108,4 @@ class TestConfiguration(BaseTest):
         configuration.prepare_connection(cloudify_agent)
         self.assertEqual(cloudify_agent['connection_timeout'], 10)
         self.assertEqual(cloudify_agent['connection_retries'], 10)
+        self.assertEqual(cloudify_agent['fixed_manager_ip'], '127.0.0.1')

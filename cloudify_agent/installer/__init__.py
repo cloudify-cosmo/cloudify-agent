@@ -24,7 +24,6 @@ from urlparse import urlparse, urlunparse
 
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
-from cloudify.constants import MANAGER_IP_KEY
 from cloudify.utils import get_is_bypass_maintenance
 from cloudify.exceptions import (CommandExecutionError,
                                  CommandExecutionException,
@@ -111,11 +110,9 @@ class AgentInstaller(object):
         ))
 
     def _calculate_manager_ip(self, file_server_port):
-        ip = os.environ.get(MANAGER_IP_KEY)
+        ip = self.cloudify_agent.get('fixed_manager_ip')
         if ip:
-            self.logger.info(
-                'Using IP from the `{0}` envvar: '
-                '{1}'.format(MANAGER_IP_KEY, ip))
+            self.logger.info('Using fixed manager IP: {0}'.format(ip))
             return ip
         agent_ip = self.cloudify_agent.get('ip')  # Used for sorting the IPs
         ips = utils.get_all_private_ips(sort_ip=agent_ip)

@@ -60,6 +60,8 @@ node_templates:
               local: true
               package_url: { get_attribute: [ agent_package, package_url ] }
               broker_get_settings_from_manager: false
+              extra:
+                fixed_manager_ip: 127.0.0.1
 
 
     relationships:
