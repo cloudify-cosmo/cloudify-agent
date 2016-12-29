@@ -187,7 +187,10 @@ class AgentInstaller(object):
             # is actually created
             env.CLOUDIFY_DAEMON_QUEUE: self.cloudify_agent['queue'],
             env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
-            env.CLOUDIFY_MANAGER_IPS: self.cloudify_agent['manager_ips'],
+            env.CLOUDIFY_FILE_SERVER_HOST:
+                self.cloudify_agent['file_server_host'],
+            env.CLOUDIFY_REST_HOST: self.cloudify_agent['rest_host'],
+            env.CLOUDIFY_BROKER_IP: self.cloudify_agent['broker_ip'],
 
             # these are variables that have default values that will be set
             # by the agent on the remote host if not set here

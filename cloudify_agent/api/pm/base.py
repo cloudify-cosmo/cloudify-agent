@@ -351,10 +351,7 @@ class Daemon(object):
         to be called before self.broker_port has been set and after
         self.broker_ssl_cert has been set.
         """
-        broker_port = self._params.get('broker_port')
-        if broker_port:
-            return broker_port
-        elif self.broker_ssl_enabled:
+        if self.broker_ssl_enabled:
             return constants.BROKER_PORT_SSL
         else:
             return constants.BROKER_PORT_NO_SSL

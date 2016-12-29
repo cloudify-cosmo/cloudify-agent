@@ -21,7 +21,7 @@ import uuid
 import shutil
 
 from celery import Celery
-from mock import patch, MagicMock
+from mock import patch
 
 from cloudify.utils import LocalCommandRunner
 from cloudify_agent.tests import BaseTest, agent_package
@@ -31,8 +31,6 @@ from cloudify_agent.installer.config import configuration
 from cloudify_agent.tests.installer.config import mock_context
 
 
-@patch('cloudify_agent.api.utils.get_all_private_ips',
-       MagicMock(return_value=['127.0.0.1']))
 class TestInstaller(BaseTest):
     @classmethod
     def setUpClass(cls):
