@@ -16,12 +16,8 @@
 import click
 import json
 import os
-import socket
-
-from cloudify.constants import BROKER_PORT_SSL, BROKER_PORT_NO_SSL
 
 from cloudify_agent.api import defaults
-from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils as api_utils
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.shell import env
@@ -36,11 +32,10 @@ from cloudify_agent.shell.decorators import handle_failures
               type=click.Choice(['init.d', 'nssm', 'detach']),
               required=True,
               envvar=env.CLOUDIFY_DAEMON_PROCESS_MANAGEMENT)
-@click.option('--manager-ips',
-              help='A comma separated list of  IPs the manager '
-                   '[env {0}]'.format(env.CLOUDIFY_MANAGER_IPS),
-              required=True,
-              envvar=env.CLOUDIFY_MANAGER_IPS)
+@click.option('--file-server-host',
+              help='The IP or host name of the file server [env {0}]'
+              .format(env.CLOUDIFY_FILE_SERVER_HOST),
+              envvar=env.CLOUDIFY_FILE_SERVER_HOST)
 @click.option('--file-server-port',
               help='The port of the file server [env {0}]'
               .format(env.CLOUDIFY_FILE_SERVER_PORT),
@@ -51,6 +46,11 @@ from cloudify_agent.shell.decorators import handle_failures
               .format(env.CLOUDIFY_FILE_SERVER_PROTOCOL),
               required=True,
               envvar=env.CLOUDIFY_FILE_SERVER_PROTOCOL)
+@click.option('--rest-host',
+              help='The IP or host name of the REST service [env {0}]'
+              .format(env.CLOUDIFY_REST_HOST),
+              required=True,
+              envvar=env.CLOUDIFY_REST_HOST)
 @click.option('--rest-port',
               help='The manager REST port to connect to. [env {0}]'
               .format(env.CLOUDIFY_REST_PORT),
@@ -116,6 +116,10 @@ from cloudify_agent.shell.decorators import handle_failures
                    'Defaults to current working directory. [env {0}]'
                    .format(env.CLOUDIFY_DAEMON_WORKDIR),
               envvar=env.CLOUDIFY_DAEMON_WORKDIR)
+@click.option('--broker-ip',
+              help='The broker host name or ip to connect to. [env {0}]'
+                   .format(env.CLOUDIFY_BROKER_IP),
+              envvar=env.CLOUDIFY_BROKER_IP)
 @click.option('--broker-port',
               help='The broker port to connect to. If not set, this will be '
                    'determined based on whether SSL is enabled. It will be '
@@ -214,11 +218,6 @@ def create(**params):
     attributes.update(_parse_custom_options(custom_arg))
 
     click.echo('Creating...')
-
-    manager_ip = _get_manager_ip(attributes)
-    attributes['rest_host'] = manager_ip
-    attributes['broker_ip'] = manager_ip
-    attributes['file_server_host'] = manager_ip
 
     _create_rest_ssl_cert(attributes)
     # _create_rest_ssl_cert called before get_broker_configuration because it
@@ -500,39 +499,3 @@ def _create_broker_ssl_cert(agent):
         api_utils.safe_create_dir(os.path.dirname(broker_ssl_cert_path))
         with open(broker_ssl_cert_path, 'w') as broker_cert_file:
             broker_cert_file.write(broker_ssl_cert_content)
-
-
-def _get_manager_ip(attributes):
-    """Calculate the correct manager IP from a list of available IPs
-    """
-    click.echo('Attempting to calculate manager IP')
-    broker_port = _get_broker_port(attributes)
-    # The manager ips var is a comma delimited string of IPs (as it passes
-    # through env variables) representing a list - so we split
-    manager_ips = attributes.pop('manager_ips')
-    manager_ips = manager_ips.split(',')
-    if not manager_ips:
-        raise exceptions.DaemonMissingMandatoryPropertyError(
-            'Passed empty list of manager IPs'
-        )
-    for host in manager_ips:
-        sock = socket.socket()
-        try:
-            # Try to connect to the host, and return it if successful
-            sock.connect((host, broker_port))
-            return host
-        except socket.error:
-            continue
-        finally:
-            sock.close()
-    raise exceptions.DaemonError('No connection could be established '
-                                 'between the agent and the manager')
-
-
-def _get_broker_port(attributes):
-    """Calculate the broker port and update the params dict accordingly
-    """
-    broker_ssl_enabled = attributes.setdefault('broker_ssl_enabled', False)
-    broker_port = BROKER_PORT_SSL if broker_ssl_enabled else BROKER_PORT_NO_SSL
-    attributes['broker_port'] = broker_port
-    return broker_port

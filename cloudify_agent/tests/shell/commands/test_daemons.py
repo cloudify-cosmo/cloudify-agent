@@ -37,7 +37,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
     def test_create(self, *factory_methods):
         self._run('cfy-agent daemons create --name=name '
                   '--process-management=init.d --user=user '
-                  '--queue=queue --manager-ips=127.0.0.1')
+                  '--queue=queue  --rest-host=127.0.0.1 '
+                  '--file-server-host=127.0.0.1 ')
 
         factory_new = factory_methods[4]
         factory_new.assert_called_once_with(
@@ -47,14 +48,14 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             rest_host='127.0.0.1',
             file_server_host='127.0.0.1',
             process_management='init.d',
-            broker_ip='127.0.0.1',
+            broker_ip=None,
             workdir=None,
             log_level=None,
             pid_file=None,
             log_file=None,
             max_workers=None,
             min_workers=None,
-            broker_port=5672,
+            broker_port=None,
             rest_port='80',
             host=None,
             deployment_id=None,
@@ -86,7 +87,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
 
     def test_create_with_custom_options(self, *factory_methods):
         self._run('cfy-agent daemons create --name=name '
-                  '--queue=queue --manager-ips=127.0.0.1 --user=user '
+                  '--queue=queue --rest-host=127.0.0.1 --broker-ip=127.0.0.1 '
+                  '--file-server-host=127.0.0.1 --user=user '
                   '--process-management=init.d '
                   '--key=value --complex-key=complex-value')
 
@@ -102,7 +104,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             workdir=None,
             max_workers=None,
             min_workers=None,
-            broker_port=5672,
+            broker_port=None,
             host=None,
             deployment_id=None,
             log_level=None,
@@ -219,7 +221,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
         daemon.status.assert_called_once_with()
 
     def test_required(self, *_):
-        self._run('cfy-agent daemons create --manager-ips=127.0.0.1 '
+        self._run('cfy-agent daemons create --rest-host=manager '
+                  '--broker-ip=manager --file-server-host=manager '
                   '--process-management=init.d', raise_system_exit=True)
 
 
@@ -237,10 +240,12 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
     def test_list(self):
         self._run('cfy-agent daemons create '
                   '--process-management=init.d '
-                  '--queue=queue --name=test-name --manager-ips=127.0.0.1 '
+                  '--queue=queue --name=test-name --rest-host=127.0.0.1 '
+                  '--broker-ip=127.0.0.1 --file-server-host=127.0.0.1 '
                   '--user=user ')
         self._run('cfy-agent daemons create '
                   '--process-management=init.d '
-                  '--queue=queue --name=test-name2 --manager-ips=127.0.0.1 '
+                  '--queue=queue --name=test-name2 --rest-host=127.0.0.1 '
+                  '--broker-ip=127.0.0.1 --file-server-host=127.0.0.1 '
                   '--user=user ')
         self._run('cfy-agent daemons list')
