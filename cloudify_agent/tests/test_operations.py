@@ -38,7 +38,7 @@ from cloudify_agent.tests.installer.config import mock_context
 from cloudify_agent.tests.utils import FileServer
 
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
-from cloudify_agent.tests.api.pm import only_ci
+from cloudify_agent.tests.api.pm import only_ci, only_os
 
 
 _INSTALL_SCRIPT_URL = ('https://raw.githubusercontent.com/cloudify-cosmo/'
@@ -230,6 +230,7 @@ class TestCreateAgentAmqp(BaseTest):
     @patch('cloudify_agent.installer.config.attributes.ctx',
            mock_context())
     @patch('cloudify.utils.ctx', mock_context())
+    @only_os('posix')
     def test_create_agent_dict(self):
         old_agent = self._create_agent()
         with self._patch_manager_env():
@@ -262,6 +263,7 @@ class TestCreateAgentAmqp(BaseTest):
     @patch('cloudify_agent.operations.app', MagicMock())
     @patch('cloudify_agent.api.utils.get_agent_registered',
            MagicMock(return_value={'cloudify.dispatch.dispatch': {}}))
+    @only_os('posix')
     def test_create_agent_from_old_agent(self):
         context = self._create_node_instance_context()
         old_context = ctx

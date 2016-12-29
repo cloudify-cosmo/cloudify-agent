@@ -26,7 +26,6 @@ import sys
 import socket
 import struct
 import array
-import fcntl
 
 import pkg_resources
 from jinja2 import Template
@@ -627,6 +626,10 @@ class IPExtractor(object):
         :param buff: The buffer into which to read the bytes
         :return: Number of bytes read
         """
+        # Importing here, because fcntl is only supported on linux, and this
+        # piece of code will only ever run on the manager, so there shouldn't
+        # be a problem
+        import fcntl
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         return struct.unpack('iL', fcntl.ioctl(
             s.fileno(),

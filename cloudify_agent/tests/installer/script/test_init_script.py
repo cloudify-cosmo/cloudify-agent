@@ -15,6 +15,8 @@
 
 import os
 
+from mock import patch, MagicMock
+
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
 from cloudify import utils as cloudify_utils
@@ -130,6 +132,8 @@ class TestLinuxInitScript(BaseInitScriptTest):
 
 
 @only_os('nt')
+@patch('cloudify_agent.api.utils.get_all_private_ips',
+       MagicMock(return_value=['127.0.0.1']))
 class TestWindowsInitScript(BaseInitScriptTest):
 
     def setUp(self):

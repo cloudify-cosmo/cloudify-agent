@@ -16,16 +16,14 @@
 import click
 import json
 import os
-import socket
-
-from cloudify.constants import BROKER_PORT_SSL, BROKER_PORT_NO_SSL
 
 from cloudify_agent.api import defaults
-from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils as api_utils
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.shell import env
 from cloudify_agent.shell.decorators import handle_failures
+
+from .manager_ip import get_manager_ip
 
 
 @click.command(context_settings=dict(ignore_unknown_options=True))
@@ -41,6 +39,14 @@ from cloudify_agent.shell.decorators import handle_failures
                    '[env {0}]'.format(env.CLOUDIFY_MANAGER_IPS),
               required=True,
               envvar=env.CLOUDIFY_MANAGER_IPS)
+@click.option('--agent-ip',
+              help="The agent IP by which the manager communicates with the "
+                   "current host [env {0}]".format(env.CLOUDIFY_AGENT_IP),
+              envvar=env.CLOUDIFY_AGENT_IP)
+@click.option('--connection-timeout',
+              help="The timeout to use when trying to get the correct manager "
+                   "IP [env {0}]".format(env.CLOUDIFY_CONNECTION_TIMEOUT),
+              envvar=env.CLOUDIFY_CONNECTION_TIMEOUT)
 @click.option('--file-server-port',
               help='The port of the file server [env {0}]'
               .format(env.CLOUDIFY_FILE_SERVER_PORT),
@@ -214,8 +220,8 @@ def create(**params):
     attributes.update(_parse_custom_options(custom_arg))
 
     click.echo('Creating...')
-
-    manager_ip = _get_manager_ip(attributes)
+    manager_ip = get_manager_ip(attributes)
+    click.echo('Calculated manager IP: {0}'.format(manager_ip))
     attributes['rest_host'] = manager_ip
     attributes['broker_ip'] = manager_ip
     attributes['file_server_host'] = manager_ip
@@ -500,39 +506,3 @@ def _create_broker_ssl_cert(agent):
         api_utils.safe_create_dir(os.path.dirname(broker_ssl_cert_path))
         with open(broker_ssl_cert_path, 'w') as broker_cert_file:
             broker_cert_file.write(broker_ssl_cert_content)
-
-
-def _get_manager_ip(attributes):
-    """Calculate the correct manager IP from a list of available IPs
-    """
-    click.echo('Attempting to calculate manager IP')
-    broker_port = _get_broker_port(attributes)
-    # The manager ips var is a comma delimited string of IPs (as it passes
-    # through env variables) representing a list - so we split
-    manager_ips = attributes.pop('manager_ips')
-    manager_ips = manager_ips.split(',')
-    if not manager_ips:
-        raise exceptions.DaemonMissingMandatoryPropertyError(
-            'Passed empty list of manager IPs'
-        )
-    for host in manager_ips:
-        sock = socket.socket()
-        try:
-            # Try to connect to the host, and return it if successful
-            sock.connect((host, broker_port))
-            return host
-        except socket.error:
-            continue
-        finally:
-            sock.close()
-    raise exceptions.DaemonError('No connection could be established '
-                                 'between the agent and the manager')
-
-
-def _get_broker_port(attributes):
-    """Calculate the broker port and update the params dict accordingly
-    """
-    broker_ssl_enabled = attributes.setdefault('broker_ssl_enabled', False)
-    broker_port = BROKER_PORT_SSL if broker_ssl_enabled else BROKER_PORT_NO_SSL
-    attributes['broker_port'] = broker_port
-    return broker_port
