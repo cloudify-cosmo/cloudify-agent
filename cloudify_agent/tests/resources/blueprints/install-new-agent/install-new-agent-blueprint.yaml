@@ -27,6 +27,8 @@ node_templates:
                 broker_ip: 127.0.0.1
                 broker_port: 5672
                 broker_ssl_enable: true
+              extra:
+                fixed_manager_ip: 127.0.0.1
 
   validator:
     type: cloudify.nodes.Root

@@ -61,8 +61,7 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
     @contextmanager
     def _manager_env(self):
         port = 8756
-        fs = FileServer(
-            root_path=self.temp_folder, port=port)
+        fs = FileServer(root_path=self.temp_folder, port=port)
         fs.start()
         if os.name == 'nt':
             package_name = 'cloudify-windows-agent.exe'
@@ -223,6 +222,10 @@ class TestCreateAgentAmqp(BaseTest):
         for k in nonequal_keys:
             self.assertNotEqual(old_agent[k], new_agent[k])
             self.assertNotEqual(old_agent[k], third_agent[k])
+        self.assertEqual(old_agent['manager_ip'],
+                         new_agent['fixed_manager_ip'])
+        self.assertEqual(new_agent['manager_ip'],
+                         third_agent['fixed_manager_ip'])
         old_name = old_agent['name']
         new_name = new_agent['name']
         third_name = third_agent['name']
@@ -249,6 +252,8 @@ class TestCreateAgentAmqp(BaseTest):
                 'cloudify_agent']['agent_dir']
             old_queue = ctx.instance.runtime_properties[
                 'cloudify_agent']['queue']
+            old_manager_ip = ctx.instance.runtime_properties[
+                'cloudify_agent']['manager_ip']
 
             with self._patch_manager_env():
                 operations.create_agent_from_old_agent()
@@ -261,5 +266,7 @@ class TestCreateAgentAmqp(BaseTest):
             self.assertNotEquals(old_name, new_name)
             self.assertNotEquals(old_agent_dir, new_agent_dir)
             self.assertNotEquals(old_queue, new_queue)
+            self.assertEqual(ctx.instance.runtime_properties[
+                'cloudify_agent']['fixed_manager_ip'], old_manager_ip)
         finally:
             current_ctx.set(old_context)

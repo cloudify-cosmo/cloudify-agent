@@ -24,7 +24,6 @@ from celery import Celery
 from mock import patch
 
 from cloudify.utils import LocalCommandRunner
-from cloudify.constants import MANAGER_IP_KEY
 from cloudify_agent.tests import BaseTest, agent_package
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.installer.config import configuration
@@ -37,10 +36,6 @@ class TestInstaller(BaseTest):
     @classmethod
     def setUpClass(cls):
         cls._package_url = agent_package.get_package_url()
-
-    def setUp(self):
-        super(TestInstaller, self).setUp()
-        os.environ[MANAGER_IP_KEY] = '127.0.0.1'
 
     @patch('cloudify_agent.installer.config.configuration.ctx',
            mock_context())
@@ -95,7 +90,8 @@ class TestInstaller(BaseTest):
             'basedir': base_dir,
             'windows': os.name == 'nt',
             'local': False,
-            'broker_get_settings_from_manager': False
+            'broker_get_settings_from_manager': False,
+            'fixed_manager_ip': '127.0.0.1'
         }
         try:
             self._prepare_configuration(agent)
@@ -111,7 +107,8 @@ class TestInstaller(BaseTest):
             'manager_ip': 'localhost',
             'windows': os.name == 'nt',
             'local': False,
-            'broker_get_settings_from_manager': False
+            'broker_get_settings_from_manager': False,
+            'fixed_manager_ip': '127.0.0.1'
         }
         self._prepare_configuration(agent)
         self.assertNotIn('basedir', agent)
