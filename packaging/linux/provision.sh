@@ -39,11 +39,9 @@ AWS_ACCESS_KEY=$4
 export REPO=$5
 
 if [ $REPO == "cloudify-versions" ];then
-    #REPO_TAG="new-versioning"
-    REPO_TAG="new-versioning"
+    REPO_TAG="master"
 else
-    #REPO_TAG=$CORE_TAG_NAME
-    REPO_TAG="new-versioning"
+    REPO_TAG=$CORE_TAG_NAME
 fi
 curl -u $GITHUB_USERNAME:$GITHUB_PASSWORD https://raw.githubusercontent.com/cloudify-cosmo/${REPO}/${REPO_TAG}/packages-urls/common_build_env.sh -o ./common_build_env.sh &&
 source common_build_env.sh &&
