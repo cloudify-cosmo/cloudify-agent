@@ -39,7 +39,7 @@ AWS_ACCESS_KEY=$4
 export REPO=$5
 
 if [ $REPO == "cloudify-versions" ];then
-    REPO_TAG="master"
+    REPO_TAG="new-versioning"
 else
     REPO_TAG=$CORE_TAG_NAME
 fi
