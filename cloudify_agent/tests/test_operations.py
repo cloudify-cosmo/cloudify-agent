@@ -103,8 +103,6 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
                 fs.stop()
 
     @patch('cloudify.manager.get_rest_client', _MockRestclient)
-    @patch('cloudify_agent.api.utils.get_all_private_ips',
-           MagicMock(return_value=['127.0.0.1']))
     @only_ci
     def test_install_new_agent(self):
         agent_name = utils.internal.generate_agent_name()
@@ -240,13 +238,10 @@ class TestCreateAgentAmqp(BaseTest):
         for k in equal_keys:
             self.assertEqual(old_agent[k], new_agent[k])
             self.assertEqual(old_agent[k], third_agent[k])
-        nonequal_keys = ['agent_dir', 'workdir', 'envdir', 'name']
+        nonequal_keys = ['agent_dir', 'workdir', 'envdir', 'name', 'rest_host']
         for k in nonequal_keys:
             self.assertNotEqual(old_agent[k], new_agent[k])
             self.assertNotEqual(old_agent[k], third_agent[k])
-        self.assertIn('manager_ips', new_agent)
-        self.assertIn('manager_ips', third_agent)
-        self.assertIn('rest_host', old_agent)
         old_name = old_agent['name']
         new_name = new_agent['name']
         third_name = third_agent['name']
