@@ -20,7 +20,7 @@ AWS_ACCESS_KEY_ID = ENV['AWS_ACCESS_KEY_ID']
 AWS_ACCESS_KEY = ENV['AWS_ACCESS_KEY']
 AWS_ACCESS_KEY_ID_UPLOAD_TEMP = ENV['AWS_ACCESS_KEY_ID_UPLOAD_TEMP']
 AWS_ACCESS_KEY_UPLOAD_TEMP = ENV['AWS_ACCESS_KEY_UPLOAD_TEMP']
-
+REPO = ENV['REPO']
 GITHUB_USERNAME = ENV['GITHUB_USERNAME']
 GITHUB_PASSWORD = ENV['GITHUB_PASSWORD']
 
@@ -51,7 +51,7 @@ Vagrant.configure('2') do |config|
     end
     debian_jessie.vm.provision "shell" do |s|
       s.path = "linux/provision.sh"
-      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP}"
+      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP} #{REPO}"
       s.privileged = false
     end
   end
@@ -76,7 +76,7 @@ Vagrant.configure('2') do |config|
     end
     ubuntu_trusty.vm.provision "shell" do |s|
       s.path = "linux/provision.sh"
-      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP}"
+      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP} #{REPO}"
       s.privileged = false
     end
   end
@@ -101,7 +101,7 @@ Vagrant.configure('2') do |config|
     end
     ubuntu_precise.vm.provision "shell" do |s|
       s.path = "linux/provision.sh"
-      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP}"
+      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP} #{REPO}"
       s.privileged = false
     end
   end
@@ -127,7 +127,7 @@ Vagrant.configure('2') do |config|
     #need to sync folders
     centos_final.vm.provision "shell" do |s|
       s.path = "linux/provision.sh"
-      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP}"
+      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP} #{REPO}"
       s.privileged = false
     end
   end
@@ -152,7 +152,7 @@ Vagrant.configure('2') do |config|
     end
     centos_core.vm.provision "shell" do |s|
       s.path = "linux/provision.sh"
-      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP}"
+      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP} #{REPO}"
       s.privileged = false
     end
   end
@@ -178,7 +178,7 @@ Vagrant.configure('2') do |config|
     end
     redhat7.vm.provision "shell" do |s|
       s.path = "linux/provision.sh"
-      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP}"
+      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP} #{REPO}"
       s.privileged = false
     end
   end
@@ -203,7 +203,7 @@ Vagrant.configure('2') do |config|
     end
     redhat6.vm.provision "shell" do |s|
       s.path = "linux/provision.sh"
-      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP}"
+      s.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID_UPLOAD_TEMP} #{AWS_ACCESS_KEY_UPLOAD_TEMP} #{REPO}"
       s.privileged = false
     end
   end
@@ -231,7 +231,7 @@ Vagrant.configure('2') do |config|
     # shell provisioning uses bash, so use cmd to run batch script
     windows.vm.provision "shell" do |shell|
       shell.path = 'windows/provision.sh'
-      shell.args = "#{AWS_ACCESS_KEY_ID} #{AWS_ACCESS_KEY}"
+      shell.args = "#{GITHUB_USERNAME} #{GITHUB_PASSWORD} #{AWS_ACCESS_KEY_ID} #{AWS_ACCESS_KEY}  #{REPO}"
       shell.privileged = false
     end
   end
