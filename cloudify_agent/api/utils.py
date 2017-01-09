@@ -560,6 +560,7 @@ def get_rest_client(security_enabled,
     headers = {}
     if bypass_maintenance_mode:
         headers['X-BYPASS-MAINTENANCE'] = 'true'
+    headers['tenant'] = 'default_tenant'
 
     if not security_enabled:
         return CloudifyClient(host=rest_host,
