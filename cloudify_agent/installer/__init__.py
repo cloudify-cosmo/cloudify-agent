@@ -110,30 +110,49 @@ class AgentInstaller(object):
         ))
 
     def _calculate_manager_ip(self, file_server_port):
-        ip = self.cloudify_agent.get('fixed_manager_ip')
-        if ip:
-            self.logger.info('Using fixed manager IP: {0}'.format(ip))
-            return ip
+        fixed_ip = self.cloudify_agent.get('fixed_manager_ip')
+        if fixed_ip:
+            self.logger.info('Using fixed manager IP: {0}'.format(fixed_ip))
+            return fixed_ip
+
         agent_ip = self.cloudify_agent.get('ip')  # Used for sorting the IPs
         ips = utils.get_all_private_ips(sort_ip=agent_ip)
 
+        cmd = self._get_connectivity_command(file_server_port)
+        retries = self.cloudify_agent.get('connection_retries', 3)
+
         self.logger.info('Calculating manager IP from possible IPs: '
                          '{0}'.format(ips))
-        timeout = self.cloudify_agent.get('connection_timeout', 1)
-        retries = self.cloudify_agent.get('connection_retries', 3)
         for _ in range(retries):
             for ip in ips:
-                if self._check_connectivity(ip, file_server_port, timeout):
+                if self._check_connectivity(ip, cmd):
                     return ip
         raise NonRecoverableError(
             'Connection between the agent and the '
             'manager could not be established'
         )
 
-    def _check_connectivity(self, ip, file_server_port, timeout):
-        command = "import urllib2; urllib2.urlopen('http://{0}:{1}', " \
-                  "timeout={2})".format(ip, file_server_port, timeout)
-        command = 'python -c "{0}"'.format(command)
+    def _get_connectivity_command(self, port):
+        timeout = self.cloudify_agent.get('connection_timeout', 1)
+        is_windows = self.cloudify_agent.get('windows', False)
+        # We're leaving the ip blank for now - it will be filled in later
+        ip = '{0}'
+        if is_windows:
+            timeout *= 1000  # Convert to ms
+            cmd = "$socket = New-Object Net.Sockets.TcpClient; " \
+                  "$connect = $socket.BeginConnect" \
+                  "('{0}', {1}, $null, $null); " \
+                  "return $connect.AsyncWaitHandle.WaitOne({2}, $false)"\
+                .format(ip, port, timeout)
+            cmd = 'powershell "{0}"'.format(cmd)
+        else:
+            cmd = "import urllib2; urllib2.urlopen('http://{0}:{1}', " \
+                  "timeout={2})".format(ip, port, timeout)
+            cmd = 'python -c "{0}"'.format(cmd)
+        return cmd
+
+    def _check_connectivity(self, ip, command):
+        command = command.format(ip)
         try:
             self.logger.debug('Running command: {0}'.format(command))
             self.runner.run(command)
