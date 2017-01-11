@@ -39,6 +39,9 @@ from cloudify_agent.api import defaults
 
 logger = setup_logger('cloudify_agent.api.utils')
 
+CLOUDIFY_AUTH_TOKEN_HEADER = 'Authentication-Token'
+CLOUDIFY_TENANT_HEADER = 'Tenant'
+
 
 class _Internal(object):
 
@@ -173,6 +176,7 @@ class _Internal(object):
             rest_protocol=agent['rest_protocol'],
             rest_port=agent['rest_port'],
             rest_token=agent['rest_token'],
+            rest_tenant=agent['rest_tenant'],
             verify_rest_certificate=agent['verify_rest_certificate'],
             ssl_cert_path=agent['local_rest_cert_file'],
             bypass_maintenance_mode=agent['bypass_maintenance_mode'])
@@ -552,7 +556,8 @@ def get_rest_client(security_enabled,
                     rest_host,
                     rest_protocol,
                     rest_port,
-                    rest_token=None,
+                    rest_token,
+                    rest_tenant,
                     verify_rest_certificate=False,
                     ssl_cert_path=None,
                     bypass_maintenance_mode=False):
@@ -560,7 +565,6 @@ def get_rest_client(security_enabled,
     headers = {}
     if bypass_maintenance_mode:
         headers['X-BYPASS-MAINTENANCE'] = 'true'
-    headers['tenant'] = 'default_tenant'
 
     if not security_enabled:
         return CloudifyClient(host=rest_host,
@@ -568,12 +572,16 @@ def get_rest_client(security_enabled,
                               port=rest_port,
                               headers=headers)
 
-    if not rest_token:
-        raise ValueError('REST auth token is missing! It is required to '
-                         'create a REST client for a secured manager [{0}]'
-                         .format(rest_host))
+    if not rest_token or not rest_tenant:
+        msg = 'REST {0} is missing! It is required to create a REST ' \
+              'client for a secured manager [{1}]'.format(
+                rest_host,
+                'auth token' if not rest_token else 'tenant'
+              )
+        raise ValueError(msg)
 
-    headers['Authentication-Token'] = rest_token
+    headers[CLOUDIFY_AUTH_TOKEN_HEADER] = rest_token
+    headers[CLOUDIFY_TENANT_HEADER] = rest_tenant
 
     if verify_rest_certificate:
         if not ssl_cert_path:

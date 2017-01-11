@@ -190,6 +190,10 @@ def _cfy_agent_attributes_no_defaults(cloudify_agent):
         cloudify_agent['rest_token'] = \
             cloudify_utils.get_rest_token()
 
+    if not cloudify_agent.get('rest_tenant'):
+        cloudify_agent['rest_tenant'] = \
+            cloudify_utils.get_tenant_name()
+
     if not cloudify_agent.get('rest_cert_content'):
         cloudify_agent['rest_cert_content'] = \
             cloudify_utils.get_rest_cert_content()

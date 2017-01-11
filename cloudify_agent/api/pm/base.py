@@ -251,6 +251,7 @@ class Daemon(object):
         # REST token needs to be prefixed with _ so it's not stored
         # when the daemon is serialized
         self._rest_token = params.get('rest_token')
+        self._rest_tenant = params.get('rest_tenant')
 
         # Optional parameters
         self.name = params.get(
@@ -710,6 +711,7 @@ class Daemon(object):
             rest_protocol=self.rest_protocol,
             rest_port=self.rest_port,
             rest_token=self._rest_token,
+            rest_tenant=self._rest_tenant,
             verify_rest_certificate=self.verify_rest_certificate,
             ssl_cert_path=self.local_rest_cert_file
         )

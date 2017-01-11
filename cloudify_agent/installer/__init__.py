@@ -210,6 +210,8 @@ class AgentInstaller(object):
                 self.cloudify_agent.get('security_enabled'),
             env.CLOUDIFY_REST_TOKEN:
                 self.cloudify_agent.get('rest_token'),
+            env.CLOUDIFY_REST_TENANT:
+                self.cloudify_agent.get('rest_tenant'),
             env.CLOUDIFY_VERIFY_REST_CERTIFICATE:
                 self.cloudify_agent.get('verify_rest_certificate'),
             env.CLOUDIFY_REST_CERT_CONTENT:
