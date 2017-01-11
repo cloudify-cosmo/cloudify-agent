@@ -68,6 +68,10 @@ from cloudify_agent.shell.decorators import handle_failures
                    'precedence over username/password. [env {0}]'
               .format(env.CLOUDIFY_REST_TOKEN),
               envvar=env.CLOUDIFY_REST_TOKEN)
+@click.option('--rest-tenant',
+              help='The tenant to use when sending REST calls. [env {0}]'
+              .format(env.CLOUDIFY_REST_TENANT),
+              envvar=env.CLOUDIFY_REST_TENANT)
 @click.option('--rest-protocol',
               help='The protocol to use when sending REST calls to the '
                    'manager. [env {0}]'.format(env.CLOUDIFY_REST_PROTOCOL),

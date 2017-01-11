@@ -85,6 +85,9 @@ AGENT_ATTRIBUTES = {
     'rest_token': {
         'group': 'cfy-agent'
     },
+    'rest_tenant': {
+        'group': 'cfy-agent'
+    },
     'verify_rest_certificate': {
         'group': 'cfy-agent'
     },

@@ -79,7 +79,8 @@ class TestConfiguration(BaseTest):
             'rest_cert_content': '',
             'verify_rest_certificate': False,
             'bypass_maintenance_mode': False,
-            'rest_token': None
+            'rest_token': None,
+            'rest_tenant': None
         }
         if os.name == 'posix':
             distro = platform.dist()[0].lower()
@@ -152,7 +153,8 @@ class TestConfiguration(BaseTest):
             'rest_cert_content': '--this_is-my-certificate--',
             'verify_rest_certificate': True,
             'bypass_maintenance_mode': False,
-            'rest_token': None
+            'rest_token': None,
+            'rest_tenant': None
         }
         if os.name == 'posix':
             distro = platform.dist()[0].lower()

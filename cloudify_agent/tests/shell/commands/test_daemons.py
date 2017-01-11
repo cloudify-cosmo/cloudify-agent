@@ -73,6 +73,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             rest_username=None,
             rest_password=None,
             rest_token=None,
+            rest_tenant=None,
             broker_ssl_cert_path=os.environ[
                 env_constants.CLOUDIFY_BROKER_SSL_CERT_PATH],
             verify_rest_certificate=False,
@@ -89,7 +90,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
         self._run('cfy-agent daemons create --name=name '
                   '--queue=queue --rest-host=127.0.0.1 --broker-ip=127.0.0.1 '
                   '--file-server-host=127.0.0.1 --user=user '
-                  '--process-management=init.d '
+                  '--process-management=init.d --rest-tenant=tenant '
                   '--key=value --complex-key=complex-value')
 
         factory_new = factory_methods[4]
@@ -129,6 +130,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             rest_username=None,
             rest_password=None,
             rest_token=None,
+            rest_tenant='tenant',
             verify_rest_certificate=False,
             local_rest_cert_file=os.environ[
                 env_constants.CLOUDIFY_AGENT_REST_CERT_PATH],
