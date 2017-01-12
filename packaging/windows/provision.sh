@@ -12,15 +12,15 @@ function download_wheels() {
 function download_resources() {
     mkdir -p packaging/source/{pip,python,virtualenv}
     pushd packaging/source/pip
-    curl -O https://dl.dropboxusercontent.com/u/407576/cfy-win-cli-package-resources/pip/get-pip.py
-    curl -O https://dl.dropboxusercontent.com/u/407576/cfy-win-cli-package-resources/pip/pip-6.1.1-py2.py3-none-any.whl
-    curl -O https://dl.dropboxusercontent.com/u/407576/cfy-win-cli-package-resources/pip/setuptools-15.2-py2.py3-none-any.whl
+    curl -O http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/get-pip.py
+    curl -O http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/pip-6.1.1-py2.py3-none-any.whl
+    curl -O http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/setuptools-15.2-py2.py3-none-any.whl
     popd
     pushd packaging/source/python
-    curl -O https://dl.dropboxusercontent.com/u/407576/cfy-win-cli-package-resources/python/python.msi
+    curl -O http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/python.msi
     popd
     pushd packaging/source/virtualenv
-    curl -O https://pypi.python.org/packages/py2.py3/v/virtualenv/virtualenv-14.0.5-py2.py3-none-any.whl
+    curl -O http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/virtualenv-14.0.5-py2.py3-none-any.whl
     popd
 }
 
