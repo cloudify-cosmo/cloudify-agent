@@ -301,7 +301,7 @@ class PluginInstaller(object):
     @staticmethod
     def _full_dst_dir(dst_dir):
         plugins_dir = os.path.join(VIRTUALENV, 'plugins')
-        return os.path.join(plugins_dir, dst_dir)
+        return os.path.join(plugins_dir, ctx.tenant_name, dst_dir)
 
     @staticmethod
     def _lock(path):

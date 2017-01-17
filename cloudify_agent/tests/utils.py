@@ -293,11 +293,13 @@ def op_context(task_name,
                plugin_name=None,
                package_name=None,
                package_version=None,
-               execution_env=None):
+               execution_env=None,
+               tenant_name='default_tenant'):
     result = {
         'type': 'operation',
         'task_name': task_name,
         'task_target': task_target,
+        'tenant_name': tenant_name,
         'execution_env': execution_env,
         'plugin': {
             'name': plugin_name,

@@ -22,7 +22,8 @@ import shutil
 
 import unittest2 as unittest
 
-from cloudify import constants
+from cloudify import constants, mocks
+from cloudify.state import current_ctx
 from cloudify.utils import setup_logger
 import cloudify_agent.shell.env as env_constants
 
@@ -88,6 +89,16 @@ class BaseTest(unittest.TestCase):
 
         self.username = getpass.getuser()
         self.logger.info('Working directory: {0}'.format(self.temp_folder))
+
+        self.mock_ctx_with_tenant()
+
+    def mock_ctx_with_tenant(self):
+        self.original_ctx = current_ctx
+        current_ctx.set(mocks.MockContext({'tenant_name': 'default_tenant'}))
+        self.addCleanup(self._restore_ctx)
+
+    def _restore_ctx(self):
+        current_ctx.set(self.original_ctx)
 
 
 class _AgentPackageGenerator(object):
