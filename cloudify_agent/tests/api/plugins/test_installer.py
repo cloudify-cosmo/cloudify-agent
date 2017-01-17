@@ -84,6 +84,7 @@ class PluginInstallerTest(BaseTest):
 
     def setUp(self):
         self.installer = installer.PluginInstaller(logger=self.logger)
+        self.mock_ctx_with_tenant()
 
     def tearDown(self):
         self.installer.uninstall(plugin=self._plugin_struct(''))
