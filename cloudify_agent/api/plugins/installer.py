@@ -13,29 +13,28 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import errno
 import os
 import sys
+import errno
 import shutil
+import logging
 import tempfile
 import platform
-import logging
 
+import wagon
 import fasteners
-from wagon import wagon
-from wagon import utils as wagon_utils
 
 from cloudify import ctx
+from cloudify.utils import setup_logger
+from cloudify.manager import get_rest_client
+from cloudify.utils import LocalCommandRunner
 from cloudify.exceptions import NonRecoverableError
 from cloudify.exceptions import CommandExecutionException
-from cloudify.utils import setup_logger
-from cloudify.utils import LocalCommandRunner
-from cloudify.manager import get_rest_client
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import plugins
-from cloudify_agent.api.utils import get_pip_path
 from cloudify_agent.api import exceptions
+from cloudify_agent.api.utils import get_pip_path
 
 
 SYSTEM_DEPLOYMENT = '__system__'
@@ -73,7 +72,7 @@ class PluginInstaller(object):
         with open(constraint, 'w') as f:
             f.write(self._pip_freeze())
         args = '{0} --prefix="{1}" --constraint="{2}"'.format(
-                args, tmp_plugin_dir, constraint).strip()
+            args, tmp_plugin_dir, constraint).strip()
         self._create_plugins_dir_if_missing()
 
         (current_platform,
@@ -198,10 +197,11 @@ class PluginInstaller(object):
                                     output_file=wagon_path)
             self.logger.debug('Installing plugin {0} using wagon'
                               .format(plugin.id))
-            w = wagon.Wagon(source=wagon_path)
-            w.install(ignore_platform=True,
-                      install_args=args,
-                      virtualenv=VIRTUALENV)
+            wagon.install(
+                source=wagon_path,
+                ignore_platform=True,
+                install_args=args,
+                venv=VIRTUALENV)
         finally:
             self.logger.debug('Removing directory: {0}'
                               .format(wagon_dir))
@@ -273,7 +273,8 @@ class PluginInstaller(object):
 
     def uninstall(self, plugin, deployment_id=None):
         """Uninstall a previously installed plugin (only supports source
-        plugins) """
+        plugins)
+        """
         deployment_id = deployment_id or SYSTEM_DEPLOYMENT
         self.logger.info('Uninstalling plugin from source')
         dst_dir = '{0}-{1}'.format(deployment_id, plugin['name'])
@@ -314,13 +315,12 @@ class PluginInstaller(object):
 
 def extract_package_to_dir(package_url):
     """
-    Extracts a pip package to a temporary directory.
+    Extract a pip package to a temporary directory.
 
     :param package_url: the URL to the package source.
 
     :return: the directory the package was extracted to.
     """
-
     # 1) Plugin installation during deployment creation occurs not in the main
     # thread, but rather in the local task thread pool.
     # When installing source based plugins, pip will install an
@@ -391,7 +391,7 @@ def extract_package_to_dir(package_url):
 
 def extract_package_name(package_dir):
     """
-    Detects the package name of the package located at 'package_dir' as
+    Detect the package name of the package located at 'package_dir' as
     specified in the package setup.py file.
 
     :param package_dir: the directory the package was extracted to.
@@ -466,7 +466,7 @@ def get_managed_plugin(plugin, logger=None):
 
 
 def _extract_platform_and_distro_info():
-    current_platform = wagon_utils.get_platform()
+    current_platform = wagon.get_platform()
     distribution, _, distribution_release = platform.linux_distribution(
         full_distribution_name=False)
     return current_platform, distribution.lower(), distribution_release.lower()

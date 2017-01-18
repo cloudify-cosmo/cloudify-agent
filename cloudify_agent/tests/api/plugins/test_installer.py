@@ -13,31 +13,31 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import tempfile
-import logging
 import os
-import platform
 import shutil
+import logging
+import tempfile
+import platform
 import multiprocessing
 from contextlib import contextmanager
 
-from wagon import utils as wagon_utils
+import wagon
 from mock import patch
 
 from cloudify import dispatch
-from cloudify import exceptions as cloudify_exceptions
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
-from cloudify.exceptions import NonRecoverableError
 from cloudify_rest_client.plugins import Plugin
+from cloudify.exceptions import NonRecoverableError
+from cloudify import exceptions as cloudify_exceptions
 
 from cloudify_agent.api import exceptions
 from cloudify_agent.api.plugins import installer
 
-from cloudify_agent.tests import resources
-from cloudify_agent.tests import utils as test_utils
 from cloudify_agent.tests import BaseTest
+from cloudify_agent.tests import resources
 from cloudify_agent.tests.api.pm import only_os
+from cloudify_agent.tests import utils as test_utils
 
 
 PLUGIN_NAME = 'plugin'
@@ -324,16 +324,16 @@ class PluginInstallerTest(BaseTest):
                     return requests_version
             raise AssertionError('Expected requests to be installed.')
         requests_plugin = test_utils.create_mock_plugin(
-                basedir=self.plugins_work_dir,
-                install_requires=['requests==2.6.0'])
+            basedir=self.plugins_work_dir,
+            install_requires=['requests==2.6.0'])
         requests_tar = test_utils.create_plugin_tar(
-                basedir=self.plugins_work_dir,
-                plugin_dir_name=requests_plugin,
-                target_directory=self.file_server_resource_base)
+            basedir=self.plugins_work_dir,
+            plugin_dir_name=requests_plugin,
+            target_directory=self.file_server_resource_base)
         requests_wagon = test_utils.create_plugin_wagon(
-                basedir=self.plugins_work_dir,
-                plugin_dir_name=requests_plugin,
-                target_directory=self.file_server_resource_base)
+            basedir=self.plugins_work_dir,
+            plugin_dir_name=requests_plugin,
+            target_directory=self.file_server_resource_base)
         before_requests_version = extract_requests_version()
         plugin_struct = self._plugin_struct(source=requests_tar,
                                             name=requests_plugin)
@@ -408,7 +408,7 @@ class TestGetManagedPlugin(BaseTest):
             {'id': '1'},
             {'id': '2'},
             {'id': '3',
-             'supported_platform': wagon_utils.get_platform()},
+             'supported_platform': wagon.get_platform()},
             {'id': '4'},
             {'id': '5'},
         ]
