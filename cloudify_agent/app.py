@@ -87,19 +87,12 @@ def reset_worker_tasks_state(sender, *args, **kwargs):
     sender.hub.call_soon(callback=callback)
 
 
-class HeartbeatCelery(Celery):
-    """A Celery app that sends AMQP heartbeats."""
-    def connection(self, *args, **kwargs):
-        kwargs['heartbeat'] = 5
-        return super(HeartbeatCelery, self).connection(*args, **kwargs)
-
-
 # This attribute is used as the celery App instance.
 # it is referenced in two ways:
 #   1. Celery command line --app options.
 #   2. cloudify.dispatch.dispatch uses it as the 'task' decorator.
 # For app configuration, see cloudify.broker_config.
-app = HeartbeatCelery()
+app = Celery()
 gate_keeper.configure_app(app)
 logging_server.configure_app(app)
 
