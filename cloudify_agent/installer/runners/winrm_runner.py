@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import winrm
+import ntpath
 
 from cloudify import ctx
 from cloudify.exceptions import CommandExecutionException
@@ -168,8 +169,6 @@ class WinRMRunner(object):
         :param skip_verification: If False, SSL certificates sent by the server
                will be verified; otherwise certificates will be trusted without
                verification. Defaults to False.
-        :param certificate_file: a local cert file to use for SSL certificate
-               verification.
 
         :return the destination path the url was downloaded to.
         """
@@ -186,15 +185,17 @@ class WinRMRunner(object):
             self.run('''@powershell -Command "[System.Net.ServicePointManager]\
 ::ServerCertificateValidationCallback = {$true}"''')
 
+        cmd = "$webClient = New-Object System.Net.WebClient; " \
+              "$webClient.Headers['{0}'] = '{1}'; " \
+              "$webClient.Downloadfile('{2}', '{3}')".format(
+                api_utils.CLOUDIFY_AUTH_TOKEN_HEADER,
+                ctx.rest_token,
+                url,
+                output_path
+              )
+
         # downloading agent package from the manager
-        self.run('''@powershell -Command "
-        $webClient = New-Object System.Net.WebClient;
-        $webClient.Headers.add({0}, {1});
-        $webClient.Downloadfile('{2}', '{3}')"'''.format(
-            api_utils.CLOUDIFY_AUTH_TOKEN_HEADER,
-            ctx.rest_token,
-            url,
-            output_path))
+        self.run('@powershell -Command "{0}"'.format(cmd))
 
         if skip_verification:
             # cancelling the skip of cert verification, to make future requests
@@ -295,8 +296,8 @@ class WinRMRunner(object):
         """
 
         return self.run(
-            '''@powershell -Command "New-Item {0} -type directory"'''
-            .format(path))
+            '''@powershell -Command "mkdir {0} -Force"'''.format(path)
+        )
 
     def new_file(self, path):
 
@@ -460,7 +461,10 @@ class WinRMRunner(object):
         with open(src) as f:
             content = f.read()
 
-        if not dst:
+        if dst:
+            # Make sure the destination folder exists
+            self.new_dir(ntpath.dirname(dst))
+        else:
             dst = self.mktemp()
         self.put(contents=content, path=dst)
         return dst

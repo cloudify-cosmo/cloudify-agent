@@ -32,3 +32,6 @@ DAEMON_FORCE_DELETE = False
 CLOUDIFY_AGENT_PREFIX = 'cfy-agent'
 LOG_LEVEL = 'debug'
 CELERY_TASK_RESULT_EXPIRES = 600
+SSL_CERTS_BASE_DIR = '/root'
+SSL_CERTS_TARGET_DIR = 'cloudify/ssl'
+AGENT_SSL_CERT_FILENAME = 'cloudify-agent-cert.pem'

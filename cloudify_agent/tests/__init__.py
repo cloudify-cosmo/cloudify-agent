@@ -27,6 +27,8 @@ from cloudify.state import current_ctx
 from cloudify.utils import setup_logger
 import cloudify_agent.shell.env as env_constants
 
+from cloudify_agent.api import defaults
+
 
 try:
     win_error = WindowsError
@@ -142,7 +144,39 @@ class _AgentPackageGenerator(object):
             self.initialized = False
 
 
+class _AgentSSLCert(object):
+    LOCAL_CERT_FILE = None
+    DUMMY_CERT = '-----BEGIN RSA PRIVATE KEY-----\n' \
+                 'Fn0TToW05rmMrO0XT092R/JqFZBX9ygpaBy8y14o0bX9jA6neFT8sUgDCd' \
+                 'mTmGoq\nQSeUzP4gEUxuJZ373+7HK565FohtWUUvBshgCA/o+WIH/szN/x' \
+                 'W0f+m4lshT6hXB\nz86ktJFvgaBe9f1rBFG4Q1vGDSmylHfGxn7yYljJ5K' \
+                 'tKRdngpnEeWr0VQ3wJ+ri8\n' \
+                 '-----END RSA PRIVATE KEY-----'
+
+    @staticmethod
+    def get_local_cert_path():
+        if not _AgentSSLCert.LOCAL_CERT_FILE:
+            _, _AgentSSLCert.LOCAL_CERT_FILE = tempfile.mkstemp()
+            with open(_AgentSSLCert.LOCAL_CERT_FILE, 'w') as f:
+                f.write(_AgentSSLCert.DUMMY_CERT)
+
+        return _AgentSSLCert.LOCAL_CERT_FILE
+
+    @staticmethod
+    def verify_remote_cert(agent_dir):
+        agent_cert_path = os.path.join(
+            os.path.expanduser(agent_dir),
+            os.path.normpath(defaults.SSL_CERTS_TARGET_DIR),
+            defaults.AGENT_SSL_CERT_FILENAME
+        )
+        with open(agent_cert_path, 'r') as f:
+            cert_content = f.read().strip()
+
+        assert cert_content == _AgentSSLCert.DUMMY_CERT
+
+
 agent_package = _AgentPackageGenerator()
+agent_ssl_cert = _AgentSSLCert()
 
 
 def tearDown():

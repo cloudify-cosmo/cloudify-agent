@@ -236,7 +236,9 @@ class FabricRunner(object):
         :return: the destination path
         """
 
-        if not dst:
+        if dst:
+            self.verify_dir_exists(os.path.dirname(dst))
+        else:
             basename = os.path.basename(src)
             tempdir = self.mkdtemp()
             dst = os.path.join(tempdir, basename)
@@ -429,6 +431,9 @@ class FabricRunner(object):
             imports_line='import pwd',
             command='pwd.getpwnam(\'{0}\').pw_dir'
             .format(username))
+
+    def verify_dir_exists(self, dirname):
+        self.run('mkdir -p {0}'.format(dirname))
 
     def python(self, imports_line, command, **attributes):
 

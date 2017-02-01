@@ -13,6 +13,8 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import os
+import shutil
 import tempfile
 
 from cloudify.exceptions import HttpException
@@ -43,3 +45,13 @@ class LocalCommandRunner(_UtilsLocalCommandRunner):
                 destination_file.write(chunk)
 
         return destination
+
+    def put_file(self, src, dst=None, *_):
+        if dst:
+            # Create any directories that don't already exist
+            os.makedirs(os.path.dirname(dst))
+        else:
+            basename = os.path.basename(src)
+            tempdir = tempfile.mkdtemp()
+            dst = os.path.join(tempdir, basename)
+        shutil.copy2(src, dst)

@@ -24,25 +24,22 @@ from celery import Celery
 from mock import patch
 
 from cloudify.utils import LocalCommandRunner
-from cloudify_agent.tests import BaseTest, agent_package
+from cloudify_agent.tests import BaseTest, agent_package, agent_ssl_cert
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.installer.config import configuration
 
 from cloudify_agent.tests.installer.config import mock_context
 
 
+@patch('cloudify_agent.installer.config.configuration.ctx', mock_context())
+@patch('cloudify_agent.installer.config.decorators.ctx', mock_context())
+@patch('cloudify_agent.installer.config.attributes.ctx', mock_context())
+@patch('cloudify.utils.ctx', mock_context())
 class TestInstaller(BaseTest):
     @classmethod
     def setUpClass(cls):
         cls._package_url = agent_package.get_package_url()
 
-    @patch('cloudify_agent.installer.config.configuration.ctx',
-           mock_context())
-    @patch('cloudify_agent.installer.config.decorators.ctx',
-           mock_context())
-    @patch('cloudify_agent.installer.config.attributes.ctx',
-           mock_context())
-    @patch('cloudify.utils.ctx', mock_context())
     def _test_agent_installation(self, agent):
         if 'user' not in agent:
             agent['user'] = getpass.getuser()
@@ -63,18 +60,12 @@ class TestInstaller(BaseTest):
         command_format = 'cfy-agent daemons {0} --name {1}'.format(
             '{0}',
             new_agent['name'])
+        agent_ssl_cert.verify_remote_cert(new_agent['agent_dir'])
         runner.run(command_format.format('stop'))
         runner.run(command_format.format('delete'))
         self.assertFalse(inspect.active())
         return new_agent
 
-    @patch('cloudify_agent.installer.config.configuration.ctx',
-           mock_context())
-    @patch('cloudify_agent.installer.config.decorators.ctx',
-           mock_context())
-    @patch('cloudify_agent.installer.config.attributes.ctx',
-           mock_context())
-    @patch('cloudify.utils.ctx', mock_context())
     def _prepare_configuration(self, agent):
         agent['name'] = '{0}_{1}'.format(
             agent.get('name', 'agent_'),
@@ -93,7 +84,8 @@ class TestInstaller(BaseTest):
             'basedir': base_dir,
             'windows': os.name == 'nt',
             'local': False,
-            'broker_get_settings_from_manager': False
+            'broker_get_settings_from_manager': False,
+            'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
         }
         try:
             self._prepare_configuration(agent)
@@ -111,7 +103,8 @@ class TestInstaller(BaseTest):
             'broker_ip': 'localhost',
             'windows': os.name == 'nt',
             'local': False,
-            'broker_get_settings_from_manager': False
+            'broker_get_settings_from_manager': False,
+            'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
         }
         self._prepare_configuration(agent)
         self.assertNotIn('basedir', agent)

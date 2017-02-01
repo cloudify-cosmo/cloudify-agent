@@ -168,6 +168,11 @@ class BaseDaemonLiveTestCase(BaseTest):
         raise RuntimeError('Failed waiting for daemon {0} to stop. Waited '
                            'for {1} seconds'.format(name, timeout))
 
+    def get_agent_dict(self, env, name='host'):
+        node_instances = env.storage.get_node_instances()
+        agent_host = [n for n in node_instances if n['name'] == name][0]
+        return agent_host['runtime_properties']['cloudify_agent']
+
 
 def patch_get_source(fn):
     return patch('cloudify_agent.api.plugins.installer.get_plugin_source',

@@ -32,6 +32,14 @@ download_and_extract_agent_package()
 }
 export -f download_and_extract_agent_package
 
+add_ssl_cert()
+{
+    # Create all the directories in the path to the cert file
+    mkdir -p $(dirname {{ ssl_cert_path }})
+    echo "{{ ssl_cert_content }}" > {{ ssl_cert_path }}
+}
+export -f add_ssl_cert
+
 export_daemon_env()
 {
     local agent_env_bin={{ conf.envdir }}/bin
@@ -88,6 +96,7 @@ export -f start_daemon
 
 install_agent()
 {
+    su {{ conf.user }} --shell /bin/bash -c "set -e; add_ssl_cert"
     su {{ conf.user }} --shell /bin/bash -c "set -e; download_and_extract_agent_package"
     su {{ conf.user }} --shell /bin/bash -c "set -e; configure_virtualenv"
     disable_requiretty
