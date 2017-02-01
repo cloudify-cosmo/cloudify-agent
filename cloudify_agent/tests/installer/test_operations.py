@@ -22,7 +22,7 @@ from mock import patch
 from cloudify.workflows import local
 from cloudify.utils import setup_logger
 
-from cloudify_agent.tests import resources
+from cloudify_agent.tests import resources, agent_ssl_cert
 from cloudify_agent.tests.utils import (
     FileServer,
     get_source_uri,
@@ -58,8 +58,7 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
         self.resource_base = tempfile.mkdtemp(
             prefix='file-server-resource-base')
-        self.fs = FileServer(
-            root_path=self.resource_base)
+        self.fs = FileServer(root_path=self.resource_base)
         self.fs.start()
 
         self.addCleanup(self.fs.stop)
@@ -83,7 +82,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
             'requirements_file': self.requirements_file,
             'name': agent_name,
             'queue': agent_queue,
-            'file_server_port': self.fs.port
+            'file_server_port': self.fs.port,
+            'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
         }
 
         env = local.init_env(name=self._testMethodName,
@@ -92,6 +92,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
         env.execute('install', task_retries=0)
         self.assert_daemon_alive(name=agent_name)
+        agent_dict = self.get_agent_dict(env)
+        agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
 
         env.execute('uninstall', task_retries=1)
         self.wait_for_daemon_dead(name=agent_name)
@@ -117,7 +119,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
             'requirements_file': self.requirements_file,
             'name': agent_name,
             'queue': agent_queue,
-            'file_server_port': self.fs.port
+            'file_server_port': self.fs.port,
+            'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
         }
 
         env = local.init_env(name=self._testMethodName,
@@ -126,6 +129,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
         env.execute('install', task_retries=0)
         self.assert_daemon_alive(name=agent_name)
+        agent_dict = self.get_agent_dict(env)
+        agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
 
         env.execute('uninstall', task_retries=1)
         self.wait_for_daemon_dead(name=agent_name)
@@ -143,7 +148,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
             'source_url': self.source_url,
             'requirements_file': self.requirements_file,
             'name': agent_name,
-            'queue': agent_queue
+            'queue': agent_queue,
+            'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
         }
 
         blueprint_path = resources.get_resource(
@@ -155,6 +161,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
         env.execute('install', task_retries=0)
         self.assert_daemon_alive(name=agent_name)
+        agent_dict = self.get_agent_dict(env)
+        agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
 
         env.execute('uninstall', task_retries=1)
         self.wait_for_daemon_dead(name=agent_name)
@@ -172,7 +180,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
             'source_url': self.source_url,
             'requirements_file': self.requirements_file,
             'name': agent_name,
-            'queue': agent_queue
+            'queue': agent_queue,
+            'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
         }
 
         blueprint_path = resources.get_resource(
@@ -184,6 +193,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
         env.execute('install', task_retries=0)
         self.assert_daemon_alive(name=agent_name)
+        agent_dict = self.get_agent_dict(env)
+        agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
 
         env.execute('uninstall', task_retries=1)
         self.wait_for_daemon_dead(name=agent_name)
@@ -205,7 +216,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
             'source_url': self.source_url,
             'requirements_file': self.requirements_file,
             'name': agent_name,
-            'queue': agent_queue
+            'queue': agent_queue,
+            'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
         }
 
         blueprint_path = resources.get_resource(
@@ -217,6 +229,8 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
 
         env.execute('install', task_retries=0)
         self.assert_daemon_alive(name=agent_name)
+        agent_dict = self.get_agent_dict(env)
+        agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
 
         env.execute('uninstall', task_retries=1)
         self.wait_for_daemon_dead(name=agent_name)

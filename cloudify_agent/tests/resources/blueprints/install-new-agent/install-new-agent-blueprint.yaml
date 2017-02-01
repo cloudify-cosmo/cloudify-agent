@@ -7,6 +7,8 @@ inputs:
 
   name:
     description: Desired name for the agent
+  ssl_cert_path:
+    description: The location of the SSL certificate on the manager
 
 node_templates:
 
@@ -28,6 +30,8 @@ node_templates:
                 broker_ip: 127.0.0.1
                 broker_port: 5672
                 broker_ssl_enable: true
+              extra:
+                ssl_cert_path: { get_input: ssl_cert_path}
 
   validator:
     type: cloudify.nodes.Root

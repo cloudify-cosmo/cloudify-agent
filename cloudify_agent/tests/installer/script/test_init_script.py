@@ -21,8 +21,7 @@ from cloudify import utils as cloudify_utils
 from cloudify import exceptions
 
 from cloudify_agent.installer import script
-from cloudify_agent.tests import BaseTest
-from cloudify_agent.tests import utils
+from cloudify_agent.tests import BaseTest, utils, agent_ssl_cert
 from cloudify_agent.tests.api.pm import only_os
 
 
@@ -50,7 +49,10 @@ class BaseInitScriptTest(BaseTest):
         current_ctx.set(ctx)
 
         self.addCleanup(lambda: current_ctx.clear())
-        self.input_cloudify_agent = {'broker_ip': 'localhost'}
+        self.input_cloudify_agent = {
+            'broker_ip': 'localhost',
+            'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
+        }
 
     def _run(self, *commands):
         init_script = script.init_script(
@@ -111,15 +113,15 @@ class TestLinuxInitScript(BaseInitScriptTest):
         self.assertIn('-agent.tar.gz', output)
 
     def test_package_url_explicit(self):
-        self.input_cloudify_agent = {'distro': 'one',
-                                     'distro_codename': 'two',
-                                     'broker_ip': 'localhost'}
+        self.input_cloudify_agent.update({
+            'distro': 'one',
+            'distro_codename': 'two'
+        })
         output = self._run('package_url')
         self.assertIn('one-two-agent.tar.gz', output)
 
     def test_create_custom_env_file(self):
-        self.input_cloudify_agent = {'env': {'one': 'one'},
-                                     'broker_ip': 'localhost'}
+        self.input_cloudify_agent.update({'env': {'one': 'one'}})
         self._run('create_custom_env_file')
         with open('custom_agent_env.sh') as f:
             self.assertIn('export one=one', f.read())
@@ -127,6 +129,12 @@ class TestLinuxInitScript(BaseInitScriptTest):
     def test_no_create_custom_env_file(self):
         self._run('create_custom_env_file')
         self.assertFalse(os.path.isfile('custom_agent_env.sh'))
+
+    def test_create_ssl_cert(self):
+        self._run('add_ssl_cert')
+        agent_ssl_cert.verify_remote_cert(
+            self.input_cloudify_agent['agent_dir']
+        )
 
 
 @only_os('nt')
@@ -137,8 +145,7 @@ class TestWindowsInitScript(BaseInitScriptTest):
         super(TestWindowsInitScript, self).setUp()
 
     def test_create_custom_env_file(self):
-        self.input_cloudify_agent = {'env': {'one': 'one'},
-                                     'broker_ip': 'localhost'}
+        self.input_cloudify_agent.update({'env': {'one': 'one'}})
         self._run('CreateCustomEnvFile')
         with open('custom_agent_env.bat') as f:
             self.assertIn('set one=one', f.read())
@@ -146,3 +153,9 @@ class TestWindowsInitScript(BaseInitScriptTest):
     def test_no_create_custom_env_file(self):
         self._run('CreateCustomEnvFile')
         self.assertFalse(os.path.isfile('custom_agent_env.bat'))
+
+    def test_create_ssl_cert(self):
+        self._run('AddSSLCert')
+        agent_ssl_cert.verify_remote_cert(
+            self.input_cloudify_agent['agent_dir']
+        )

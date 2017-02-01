@@ -25,6 +25,9 @@ inputs:
   file_server_port:
     description: port of the file server
 
+  ssl_cert_path:
+    description: The location of the SSL certificate on the manager
+
 node_types:
 
   nodes.CloudifyAgentPackage:
@@ -61,6 +64,8 @@ node_templates:
               package_url: { get_attribute: [ agent_package, package_url ] }
               broker_get_settings_from_manager: false
               broker_ip: 127.0.0.1
+              extra:
+                ssl_cert_path: { get_input: ssl_cert_path}
 
 
     relationships:

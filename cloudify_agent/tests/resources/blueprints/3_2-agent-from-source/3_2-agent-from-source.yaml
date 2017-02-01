@@ -17,6 +17,9 @@ inputs:
   queue:
     description: Desired queue for the agent
 
+  ssl_cert_path:
+    description: The location of the SSL certificate on the manager
+
 node_templates:
 
   host:
@@ -37,3 +40,5 @@ node_templates:
               broker_ip: 127.0.0.1
               agent_config:
                 ip: 127.0.0.1
+              extra:
+                ssl_cert_path: { get_input: ssl_cert_path}

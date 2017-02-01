@@ -33,6 +33,7 @@ from cloudify_agent import operations
 from cloudify_agent.api import utils
 from cloudify_agent.installer.config import configuration
 
+from cloudify_agent.tests import agent_ssl_cert
 from cloudify_agent.tests import BaseTest, resources, agent_package
 from cloudify_agent.tests.installer.config import mock_context
 from cloudify_agent.tests.utils import FileServer
@@ -62,8 +63,7 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
     @contextmanager
     def _manager_env(self):
         port = 8756
-        fs = FileServer(
-            root_path=self.temp_folder, port=port)
+        fs = FileServer(root_path=self.temp_folder, port=port)
         fs.start()
         if os.name == 'nt':
             package_name = 'cloudify-windows-agent.exe'
@@ -112,6 +112,7 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
         self.logger.info('Initiating local env')
         inputs = {
             'name': agent_name,
+            'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
         }
         with self._manager_env():
             env = local.init_env(name=self._testMethodName,
@@ -119,11 +120,9 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
                                  inputs=inputs)
             env.execute('install', task_retries=0)
             self.assert_daemon_alive(name=agent_name)
-            node_instances = env.storage.get_node_instances()
-            new_agent_host = [n for n in node_instances
-                              if n['name'] == 'new_agent_host'][0]
-            new_agent_name = new_agent_host['runtime_properties'][
-                'cloudify_agent']['name']
+            agent_dict = self.get_agent_dict(env, 'new_agent_host')
+            agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
+            new_agent_name = agent_dict['name']
             self.assertNotEqual(new_agent_name, agent_name)
             self.assert_daemon_alive(name=new_agent_name)
             env.execute('uninstall', task_retries=1)

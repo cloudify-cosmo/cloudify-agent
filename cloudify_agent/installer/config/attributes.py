@@ -70,6 +70,9 @@ AGENT_ATTRIBUTES = {
     'windows': {
         'group': 'connection'
     },
+    'ssl_cert_path': {
+        'group': 'connection'
+    },
     'rest_host': {
         'group': 'cfy-agent'
     },

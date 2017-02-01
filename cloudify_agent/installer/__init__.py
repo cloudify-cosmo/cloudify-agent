@@ -16,14 +16,15 @@
 import os
 import tempfile
 import shutil
+import ntpath
 import copy
 
 from cloudify.utils import setup_logger
 from cloudify_agent.installer.runners.local_runner import LocalCommandRunner
 from cloudify.utils import get_is_bypass_maintenance
 
-from cloudify_agent.api import utils
 from cloudify_agent.shell import env
+from cloudify_agent.api import utils, defaults
 
 
 class AgentInstaller(object):
@@ -58,10 +59,7 @@ class AgentInstaller(object):
             execution_env=execution_env)
 
     def create_agent(self):
-        if self.cloudify_agent.get('verify_rest_certificate') and \
-                self.rest_cert_content:
-            self.upload_certificate()
-
+        self.upload_broker_certificate()
         if 'source_url' in self.cloudify_agent:
             self.logger.info('Creating agent from source')
             self._from_source()
@@ -72,6 +70,37 @@ class AgentInstaller(object):
             command='create {0}'
             .format(self._create_process_management_options()),
             execution_env=self._create_agent_env())
+
+    def upload_broker_certificate(self):
+        local_cert_path = self._get_local_agent_cert_path()
+        remote_cert_path = self._get_remote_agent_cert_path()
+        self.logger.info(
+            'Uploading certificate from {0} to {1}'.format(
+                local_cert_path, remote_cert_path
+            )
+        )
+        self.runner.put_file(src=local_cert_path, dst=remote_cert_path)
+
+    def _get_local_agent_cert_path(self):
+        default_path = os.path.join(
+            defaults.SSL_CERTS_BASE_DIR,
+            defaults.SSL_CERTS_TARGET_DIR,
+            defaults.AGENT_SSL_CERT_FILENAME
+        )
+        return self.cloudify_agent.setdefault('ssl_cert_path', default_path)
+
+    def _get_remote_agent_cert_path(self):
+        agent_dir = os.path.expanduser(self.cloudify_agent['agent_dir'])
+        cert_filename = defaults.AGENT_SSL_CERT_FILENAME
+        if self.cloudify_agent['windows']:
+            path_join = ntpath.join
+            ssl_target_dir = defaults.SSL_CERTS_TARGET_DIR.replace('/', '\\')
+        else:
+            path_join = os.path.join
+            ssl_target_dir = defaults.SSL_CERTS_TARGET_DIR
+
+        path = path_join(agent_dir, ssl_target_dir, cert_filename)
+        return path
 
     def configure_agent(self):
         self.run_daemon_command('configure')
@@ -127,8 +156,7 @@ class AgentInstaller(object):
         self.logger.info('Downloading Agent Package from {0}'.format(
             self.cloudify_agent['package_url']
         ))
-        package_path = self.download(
-            url=self.cloudify_agent['package_url'])
+        package_path = self.download(url=self.cloudify_agent['package_url'])
         self.logger.info('Untaring Agent package...')
         self.extract(archive=package_path,
                      destination=self.cloudify_agent['agent_dir'])

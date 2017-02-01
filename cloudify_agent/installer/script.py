@@ -13,6 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import os
 import jinja2
 
 from cloudify import utils as cloudify_utils
@@ -45,7 +46,16 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             custom_env=self.custom_env,
             custom_env_path=self.custom_env_path,
             file_server_url=cloudify_utils.get_manager_file_server_url(),
-            configure_flags=self._configure_flags())
+            configure_flags=self._configure_flags(),
+            ssl_cert_content=self._get_local_cert_content(),
+            ssl_cert_path=self._get_remote_agent_cert_path()
+        )
+
+    def _get_local_cert_content(self):
+        local_cert_path = os.path.expanduser(self._get_local_agent_cert_path())
+        with open(local_cert_path, 'r') as f:
+            cert_content = f.read().strip()
+        return cert_content
 
     def create_custom_env_file_on_target(self, environment):
         if not environment:
