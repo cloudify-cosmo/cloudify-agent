@@ -24,6 +24,7 @@ from fabric.context_managers import hide
 from fabric.context_managers import shell_env
 from fabric.contrib.files import exists
 
+from cloudify import ctx
 from cloudify.utils import CommandExecutionResponse
 from cloudify.utils import setup_logger
 from cloudify.exceptions import CommandExecutionException
@@ -387,7 +388,8 @@ class FabricRunner(object):
             self.logger.debug('Attempting to locate wget on the host '
                               'machine')
             self.run('which wget', **attributes)
-            args = '-T 30'
+            args = '-T 30 --header="{0}: {1}"'.format(
+                api_utils.CLOUDIFY_AUTH_TOKEN_HEADER, ctx.rest_token)
             if skip_verification:
                 args += ' --no-check-certificate'
             if certificate_file:
@@ -399,7 +401,8 @@ class FabricRunner(object):
                     'wget not found. Attempting to locate cURL on the host '
                     'machine')
                 self.run('which curl', **attributes)
-                args = ''
+                args = '-H "{0}: {1}"'.format(
+                    api_utils.CLOUDIFY_AUTH_TOKEN_HEADER, ctx.rest_token)
                 if skip_verification:
                     args += ' -k'
                 if certificate_file:

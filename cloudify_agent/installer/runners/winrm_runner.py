@@ -15,6 +15,7 @@
 
 import winrm
 
+from cloudify import ctx
 from cloudify.exceptions import CommandExecutionException
 from cloudify.exceptions import CommandExecutionError
 from cloudify.utils import CommandExecutionResponse
@@ -186,8 +187,14 @@ class WinRMRunner(object):
 ::ServerCertificateValidationCallback = {$true}"''')
 
         # downloading agent package from the manager
-        self.run('''@powershell -Command "(new-object System.Net.WebClient)\
-.Downloadfile('{0}','{1}')"'''.format(url, output_path))
+        self.run('''@powershell -Command "
+        $webClient = New-Object System.Net.WebClient;
+        $webClient.Headers.add({0}, {1});
+        $webClient.Downloadfile('{2}', '{3}')"'''.format(
+            api_utils.CLOUDIFY_AUTH_TOKEN_HEADER,
+            ctx.rest_token,
+            url,
+            output_path))
 
         if skip_verification:
             # cancelling the skip of cert verification, to make future requests
