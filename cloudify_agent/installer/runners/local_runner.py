@@ -27,6 +27,7 @@ class LocalCommandRunner(_UtilsLocalCommandRunner):
         verify = not skip_verification
         if certificate_file:
             verify = certificate_file
+
         response = requests.get(url, stream=True, verify=verify)
         if not response.ok:
             raise HttpException(url, response.status_code, response.reason)
