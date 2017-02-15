@@ -4,7 +4,9 @@ $ErrorActionPreference = "Stop"
 
 function Download($Url, $OutputPath)
 {
-    (New-Object System.Net.WebClient).DownloadFile("$Url", "$OutputPath")
+    $WebClient = New-Object System.Net.WebClient
+    $WebClient.Headers.add('{{ auth_token_header }}', '{{ auth_token_value }}')
+    $WebClient.DownloadFile("$Url", "$OutputPath")
 }
 
 function PatchCloudifyAgent($Branch)
