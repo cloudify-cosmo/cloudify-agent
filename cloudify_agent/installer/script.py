@@ -16,7 +16,7 @@
 import os
 import jinja2
 
-from cloudify import utils as cloudify_utils
+from cloudify import ctx, utils as cloudify_utils
 
 from cloudify_agent.api import utils
 from cloudify_agent.installer.operations import init_agent_installer
@@ -48,7 +48,9 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             file_server_url=cloudify_utils.get_manager_file_server_url(),
             configure_flags=self._configure_flags(),
             ssl_cert_content=self._get_local_cert_content(),
-            ssl_cert_path=self._get_remote_agent_cert_path()
+            ssl_cert_path=self._get_remote_agent_cert_path(),
+            auth_token_header=utils.CLOUDIFY_AUTH_TOKEN_HEADER,
+            auth_token_value=ctx.rest_token
         )
 
     def _get_local_cert_content(self):
