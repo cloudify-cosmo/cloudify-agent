@@ -17,10 +17,13 @@ import os
 import shutil
 import tempfile
 
+import requests
+
+from cloudify.state import ctx
 from cloudify.exceptions import HttpException
 from cloudify.utils import LocalCommandRunner as _UtilsLocalCommandRunner
 
-import requests
+from cloudify_agent.api.utils import CLOUDIFY_AUTH_TOKEN_HEADER
 
 
 class LocalCommandRunner(_UtilsLocalCommandRunner):
@@ -29,7 +32,9 @@ class LocalCommandRunner(_UtilsLocalCommandRunner):
         verify = not skip_verification
         if certificate_file:
             verify = certificate_file
-        response = requests.get(url, stream=True, verify=verify)
+        headers = {CLOUDIFY_AUTH_TOKEN_HEADER: ctx.rest_token}
+        response = requests.get(
+            url, stream=True, verify=verify, headers=headers)
         if not response.ok:
             raise HttpException(url, response.status_code, response.reason)
 

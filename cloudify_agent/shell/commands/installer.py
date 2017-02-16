@@ -13,13 +13,14 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import click
-import json
 import os
+import json
+import click
 
+from cloudify import state, context
 from cloudify_agent.api import utils, defaults
-from cloudify_agent.shell.decorators import handle_failures
 from cloudify_agent.installer.config import configuration
+from cloudify_agent.shell.decorators import handle_failures
 from cloudify_agent.installer.operations import prepare_local_installer
 
 
@@ -34,6 +35,7 @@ def install_local(agent_file, output_agent_file):
     if agent_file is None:
         raise click.ClickException('--agent-file should be specified.')
     cloudify_agent = json.load(agent_file)
+    state.current_ctx.set(context.CloudifyContext, {})
     if not cloudify_agent.get('rest_protocol'):
         cloudify_agent['rest_protocol'] = \
             defaults.REST_PROTOCOL
