@@ -169,7 +169,7 @@ def create_new_agent_dict(old_agent):
     new_agent['remote_execution'] = True
     # TODO: broker_ip should be handled as part of fixing agent migration
     fields_to_copy = ['windows', 'ip', 'basedir', 'user',
-                      'broker_ip', 'ssl_cert_path']
+                      'broker_ip', 'ssl_cert_path', 'agent_rest_cert_path']
     for field in fields_to_copy:
         if field in old_agent:
             new_agent[field] = old_agent[field]

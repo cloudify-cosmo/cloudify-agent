@@ -55,7 +55,6 @@ class TestConfiguration(BaseTest):
             'name': 'test_deployment',
             'rest_host': 'localhost',
             'rest_port': 80,
-            'rest_protocol': 'http',
             'file_server_host': 'localhost',
             'file_server_port': 53229,
             'file_server_protocol': 'http',
@@ -69,15 +68,11 @@ class TestConfiguration(BaseTest):
             'max_workers': 5,
             'min_workers': 0,
             'workdir': workdir,
-            'agent_rest_cert_path': os.environ[constants.AGENT_REST_CERT_PATH],
             'broker_ssl_cert_path': os.environ[constants.BROKER_SSL_CERT_PATH],
             'windows': os.name == 'nt',
             'system_python': 'python',
             'remote_execution': True,
             'broker_get_settings_from_manager': True,
-            'security_enabled': False,
-            'rest_cert_content': '',
-            'verify_rest_certificate': False,
             'bypass_maintenance_mode': False,
             'rest_token': None,
             'rest_tenant': None
@@ -106,11 +101,9 @@ class TestConfiguration(BaseTest):
     @patch('cloudify.utils.ctx', mock_context())
     def test_prepare_secured(self):
 
-        cloudify_agent = {'local': True, 'security_enabled': True,
-                          'rest_protocol': 'https', 'rest_port': '443',
-                          'file_server_protocol': 'https',
-                          'verify_rest_certificate': True,
-                          'rest_cert_content': '--this_is-my-certificate--'}
+        cloudify_agent = {'local': True,
+                          'rest_port': '443',
+                          'file_server_protocol': 'https'}
         configuration.prepare_connection(cloudify_agent)
         configuration.prepare_agent(cloudify_agent, None)
 
@@ -128,7 +121,6 @@ class TestConfiguration(BaseTest):
             'basedir': basedir,
             'name': 'test_deployment',
             'rest_port': '443',
-            'rest_protocol': 'https',
             'rest_host': 'localhost',
             'file_server_host': 'localhost',
             'file_server_port': 53229,
@@ -143,15 +135,11 @@ class TestConfiguration(BaseTest):
             'max_workers': 5,
             'min_workers': 0,
             'workdir': workdir,
-            'agent_rest_cert_path': os.environ[constants.AGENT_REST_CERT_PATH],
             'broker_ssl_cert_path': os.environ[constants.BROKER_SSL_CERT_PATH],
             'windows': os.name == 'nt',
             'system_python': 'python',
             'remote_execution': True,
             'broker_get_settings_from_manager': True,
-            'security_enabled': True,
-            'rest_cert_content': '--this_is-my-certificate--',
-            'verify_rest_certificate': True,
             'bypass_maintenance_mode': False,
             'rest_token': None,
             'rest_tenant': None

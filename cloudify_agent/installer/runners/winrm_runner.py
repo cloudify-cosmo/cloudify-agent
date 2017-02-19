@@ -21,6 +21,7 @@ from cloudify.exceptions import CommandExecutionException
 from cloudify.exceptions import CommandExecutionError
 from cloudify.utils import CommandExecutionResponse
 from cloudify.utils import setup_logger
+from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
 
 from cloudify_agent.installer import utils
 from cloudify_agent.api import utils as api_utils
@@ -161,14 +162,11 @@ class WinRMRunner(object):
 
         return self.run('echo')
 
-    def download(self, url, output_path=None, skip_verification=False):
+    def download(self, url, output_path=None):
 
         """
         :param url: URL to the resource to download.
         :param output_path: Local path the resource will be saved as.
-        :param skip_verification: If False, SSL certificates sent by the server
-               will be verified; otherwise certificates will be trusted without
-               verification. Defaults to False.
 
         :return the destination path the url was downloaded to.
         """
@@ -180,15 +178,11 @@ class WinRMRunner(object):
         # TODO: check args for https and cert use
         # see: https://blogs.technet.microsoft.com/bshukla/2010/04/12/
         # ignoring-ssl-trust-in-powershell-system-net-webclient/
-        if skip_verification:
-            # making the client skip cert verification
-            self.run('''@powershell -Command "[System.Net.ServicePointManager]\
-::ServerCertificateValidationCallback = {$true}"''')
 
         cmd = "$webClient = New-Object System.Net.WebClient; " \
               "$webClient.Headers['{0}'] = '{1}'; " \
               "$webClient.Downloadfile('{2}', '{3}')".format(
-                api_utils.CLOUDIFY_AUTH_TOKEN_HEADER,
+                CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
                 ctx.rest_token,
                 url,
                 output_path
@@ -196,12 +190,6 @@ class WinRMRunner(object):
 
         # downloading agent package from the manager
         self.run('@powershell -Command "{0}"'.format(cmd))
-
-        if skip_verification:
-            # cancelling the skip of cert verification, to make future requests
-            # more secure
-            self.run('''@powershell -Command "[System.Net.ServicePointManager]\
-::ServerCertificateValidationCallback = {$null}"''')
 
         return output_path
 

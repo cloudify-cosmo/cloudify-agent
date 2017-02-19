@@ -174,14 +174,6 @@ def _cfy_agent_attributes_no_defaults(cloudify_agent):
         cloudify_agent['rest_host'] = \
             cloudify_utils.get_manager_rest_service_host()
 
-    if not cloudify_agent.get('security_enabled'):
-        cloudify_agent['security_enabled'] = \
-            cloudify_utils.is_security_enabled()
-
-    if not cloudify_agent.get('rest_protocol'):
-        cloudify_agent['rest_protocol'] = \
-            cloudify_utils.get_manager_rest_service_protocol()
-
     if not cloudify_agent.get('rest_port'):
         cloudify_agent['rest_port'] = \
             cloudify_utils.get_manager_rest_service_port()
@@ -193,14 +185,6 @@ def _cfy_agent_attributes_no_defaults(cloudify_agent):
     if not cloudify_agent.get('rest_tenant'):
         cloudify_agent['rest_tenant'] = \
             cloudify_utils.get_tenant_name()
-
-    if not cloudify_agent.get('rest_cert_content'):
-        cloudify_agent['rest_cert_content'] = \
-            cloudify_utils.get_rest_cert_content()
-
-    if not cloudify_agent.get('verify_rest_certificate'):
-        cloudify_agent['verify_rest_certificate'] = \
-            cloudify_utils.is_verify_rest_certificate()
 
     if not cloudify_agent.get('bypass_maintenance'):
         cloudify_agent['bypass_maintenance_mode'] = \
@@ -232,10 +216,6 @@ def directory_attributes(cloudify_agent):
         else:
             envdir = os.path.join(agent_dir, 'env')
         cloudify_agent['envdir'] = envdir
-
-    if not cloudify_agent.get('agent_rest_cert_path'):
-        cloudify_agent['agent_rest_cert_path'] = \
-            cloudify_utils.get_agent_rest_cert_path()
 
     if not cloudify_agent.get('broker_ssl_cert_path'):
         cloudify_agent['broker_ssl_cert_path'] = \

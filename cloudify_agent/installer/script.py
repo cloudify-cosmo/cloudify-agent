@@ -17,6 +17,7 @@ import os
 import jinja2
 
 from cloudify import ctx, utils as cloudify_utils
+from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
 
 from cloudify_agent.api import utils
 from cloudify_agent.installer.operations import init_agent_installer
@@ -36,8 +37,10 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         else:
             resource = 'script/linux.sh.template'
         template = jinja2.Template(utils.get_resource(resource))
-        # called before so that custom_env and custom_env_path
-        # get populated
+        # Called before creating the agent env to populate all the variables
+        local_rest_content = self._get_local_cert_content()
+        remote_ssl_cert_path = self._get_remote_ssl_cert_path()
+        # Called before rendering the template to populate all the variables
         daemon_env = self._create_agent_env()
         return template.render(
             conf=self.cloudify_agent,
@@ -47,14 +50,14 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             custom_env_path=self.custom_env_path,
             file_server_url=cloudify_utils.get_manager_file_server_url(),
             configure_flags=self._configure_flags(),
-            ssl_cert_content=self._get_local_cert_content(),
-            ssl_cert_path=self._get_remote_agent_cert_path(),
-            auth_token_header=utils.CLOUDIFY_AUTH_TOKEN_HEADER,
+            ssl_cert_content=local_rest_content,
+            ssl_cert_path=remote_ssl_cert_path,
+            auth_token_header=CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
             auth_token_value=ctx.rest_token
         )
 
     def _get_local_cert_content(self):
-        local_cert_path = os.path.expanduser(self._get_local_agent_cert_path())
+        local_cert_path = os.path.expanduser(self._get_local_ssl_cert_path())
         with open(local_cert_path, 'r') as f:
             cert_content = f.read().strip()
         return cert_content

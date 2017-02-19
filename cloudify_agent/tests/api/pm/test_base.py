@@ -20,7 +20,7 @@ from cloudify_agent.api.pm.base import Daemon
 from cloudify_agent.api import exceptions
 
 from cloudify_agent.tests import BaseTest
-from cloudify_agent.tests import get_storage_directory
+from cloudify_agent.tests import get_storage_directory, agent_ssl_cert
 
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
@@ -37,16 +37,14 @@ class TestDaemonDefaults(BaseTest):
             name='name',
             broker_user='guest',
             broker_pass='guest',
+            local_rest_cert_file=agent_ssl_cert.get_local_cert_path()
         )
 
     def test_default_workdir(self):
         self.assertEqual(self.temp_folder, self.daemon.workdir)
 
-    def test_default_rest_protocol(self):
-        self.assertEqual('http', self.daemon.rest_protocol)
-
     def test_default_rest_port(self):
-        self.assertEqual(80, self.daemon.rest_port)
+        self.assertEqual(53333, self.daemon.rest_port)
 
     def test_default_min_workers(self):
         self.assertEqual(0, self.daemon.min_workers)
@@ -75,6 +73,7 @@ class TestDaemonValidations(BaseTest):
                 user='user',
                 broker_user='guest',
                 broker_pass='guest',
+                local_rest_cert_file=agent_ssl_cert.get_local_cert_path()
             )
             self.fail('Expected ValueError due to missing rest_host')
         except exceptions.DaemonMissingMandatoryPropertyError as e:
@@ -93,6 +92,7 @@ class TestDaemonValidations(BaseTest):
                 min_workers='bad',
                 broker_user='guest',
                 broker_pass='guest',
+                local_rest_cert_file=agent_ssl_cert.get_local_cert_path()
             )
         except exceptions.DaemonPropertiesError as e:
             self.assertTrue('min_workers is supposed to be a number' in
@@ -111,6 +111,7 @@ class TestDaemonValidations(BaseTest):
                 max_workers='bad',
                 broker_user='guest',
                 broker_pass='guest',
+                local_rest_cert_file=agent_ssl_cert.get_local_cert_path()
             )
         except exceptions.DaemonPropertiesError as e:
             self.assertTrue('max_workers is supposed to be a number' in
@@ -130,6 +131,7 @@ class TestDaemonValidations(BaseTest):
                 min_workers=5,
                 broker_user='guest',
                 broker_pass='guest',
+                local_rest_cert_file=agent_ssl_cert.get_local_cert_path()
             )
         except exceptions.DaemonPropertiesError as e:
             self.assertTrue('min_workers cannot be greater than max_workers'
@@ -150,6 +152,7 @@ class TestNotImplemented(BaseTest):
             queue='queue',
             broker_user='guest',
             broker_pass='guest',
+            local_rest_cert_file=agent_ssl_cert.get_local_cert_path()
         )
 
     def test_start_command(self):

@@ -72,29 +72,12 @@ from cloudify_agent.shell.decorators import handle_failures
               help='The tenant to use when sending REST calls. [env {0}]'
               .format(env.CLOUDIFY_REST_TENANT),
               envvar=env.CLOUDIFY_REST_TENANT)
-@click.option('--rest-protocol',
-              help='The protocol to use when sending REST calls to the '
-                   'manager. [env {0}]'.format(env.CLOUDIFY_REST_PROTOCOL),
-              envvar=env.CLOUDIFY_REST_PROTOCOL)
-@click.option('--security-enabled',
-              help='True if REST service security is enabled, False otherwise.'
-                   ' [env {0}]'.format(env.CLOUDIFY_SECURITY_ENABLED),
-              envvar=env.CLOUDIFY_SECURITY_ENABLED)
-@click.option('--verify-rest-certificate',
-              help='True to verify the REST server\' SSl certificate, False '
-                   'otherwise. [env {0}]'
-              .format(env.CLOUDIFY_VERIFY_REST_CERTIFICATE),
-              envvar=env.CLOUDIFY_VERIFY_REST_CERTIFICATE)
 @click.option('--local-rest-cert-file',
               help='The path to a local copy of the REST public cert, used for'
                    ' cert verification, if required [env {0}]'
-              .format(env.CLOUDIFY_AGENT_REST_CERT_PATH),
-              type=click.Path(exists=False, readable=False, file_okay=True),
-              envvar=env.CLOUDIFY_AGENT_REST_CERT_PATH)
-@click.option('--rest-cert-content',
-              help='The string content of the REST SSL certificate [env {0}]'
-              .format(env.CLOUDIFY_REST_CERT_CONTENT),
-              envvar=env.CLOUDIFY_REST_CERT_CONTENT)
+              .format(env.CLOUDIFY_LOCAL_REST_CERT_PATH),
+              type=click.Path(exists=True, readable=True, file_okay=True),
+              envvar=env.CLOUDIFY_LOCAL_REST_CERT_PATH)
 @click.option('--name',
               help='The name of the daemon. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_NAME),
@@ -217,15 +200,11 @@ def create(**params):
 
     """
     attributes = dict(**params)
-    attributes.update(_parse_security_settings(attributes))
     custom_arg = attributes.pop('custom_options', ())
     attributes.update(_parse_custom_options(custom_arg))
 
     click.echo('Creating...')
 
-    _create_rest_ssl_cert(attributes)
-    # _create_rest_ssl_cert called before get_broker_configuration because it
-    # might be required for the rest call to succeed
     if attributes['broker_get_settings_from_manager']:
         broker = api_utils.internal.get_broker_configuration(attributes)
         attributes.update(broker)
@@ -453,40 +432,6 @@ def _parse_custom_options(options):
         parsed[key] = value
 
     return parsed
-
-
-def _parse_security_settings(attributes):
-    updated_values = {}
-
-    attributes['security_enabled'] = api_utils.get_bool_or_default(
-        attributes.get('security_enabled'), defaults.SECURITY_ENABLED)
-
-    attributes['verify_rest_certificate'] = api_utils.get_bool_or_default(
-        attributes.get('verify_rest_certificate'),
-        defaults.VERIFY_REST_CERTIFICATE
-    )
-
-    raw_rest_cert_content = attributes.get('rest_cert_content') or ''
-    updated_values['rest_cert_content'] = \
-        raw_rest_cert_content.replace("\\n", "\n")
-
-    return updated_values
-
-
-def _create_rest_ssl_cert(agent):
-    """
-    put the REST SSL cert into a file for clients to use,
-    if rest_cert_content is set.
-    """
-    click.echo('Deploying REST SSL certificate (if defined).')
-    rest_cert_content = agent['rest_cert_content']
-    if rest_cert_content and agent['verify_rest_certificate']:
-        local_rest_cert_file = \
-            os.path.expanduser(agent['local_rest_cert_file'])
-        agent['local_rest_cert_file'] = local_rest_cert_file
-        api_utils.safe_create_dir(os.path.dirname(local_rest_cert_file))
-        with open(local_rest_cert_file, 'w') as rest_cert_file:
-            rest_cert_file.write(rest_cert_content)
 
 
 def _create_broker_ssl_cert(agent):
