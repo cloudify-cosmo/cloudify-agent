@@ -79,28 +79,16 @@ AGENT_ATTRIBUTES = {
     'rest_port': {
         'group': 'cfy-agent'
     },
-    'rest_protocol': {
-        'group': 'cfy-agent'
-    },
-    'security_enabled': {
-        'group': 'cfy-agent'
-    },
     'rest_token': {
         'group': 'cfy-agent'
     },
     'rest_tenant': {
         'group': 'cfy-agent'
     },
-    'verify_rest_certificate': {
-        'group': 'cfy-agent'
-    },
     'agent_rest_cert_path': {
         'group': 'cfy-agent'
     },
     'broker_ssl_cert_path': {
-        'group': 'cfy-agent'
-    },
-    'rest_cert_content': {
         'group': 'cfy-agent'
     },
     'queue': {

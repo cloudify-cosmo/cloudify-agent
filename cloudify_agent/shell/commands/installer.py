@@ -36,11 +36,8 @@ def install_local(agent_file, output_agent_file):
         raise click.ClickException('--agent-file should be specified.')
     cloudify_agent = json.load(agent_file)
     state.current_ctx.set(context.CloudifyContext, {})
-    if not cloudify_agent.get('rest_protocol'):
-        cloudify_agent['rest_protocol'] = \
-            defaults.REST_PROTOCOL
     if not cloudify_agent.get('rest_port'):
-        cloudify_agent['rest_port'] = defaults.REST_PORT
+        cloudify_agent['rest_port'] = defaults.INTERNAL_REST_PORT
     os.environ[utils.internal.CLOUDIFY_DAEMON_USER_KEY] = str(
         cloudify_agent['user'])
     if 'basedir' not in cloudify_agent:

@@ -29,6 +29,7 @@ import pkg_resources
 from jinja2 import Template
 
 from cloudify.context import BootstrapContext
+from cloudify.constants import SECURED_PROTOCOL
 from cloudify.workflows import tasks as workflows_tasks
 
 from cloudify.utils import setup_logger
@@ -40,9 +41,6 @@ from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
 
 logger = setup_logger('cloudify_agent.api.utils')
-
-CLOUDIFY_AUTH_TOKEN_HEADER = 'Authentication-Token'
-CLOUDIFY_TENANT_HEADER = 'Tenant'
 
 
 class _Internal(object):
@@ -177,13 +175,10 @@ class _Internal(object):
     def get_broker_configuration(agent):
 
         client = get_rest_client(
-            security_enabled=agent['security_enabled'],
             rest_host=agent['rest_host'],
-            rest_protocol=agent['rest_protocol'],
             rest_port=agent['rest_port'],
             rest_token=agent['rest_token'],
             rest_tenant=agent['rest_tenant'],
-            verify_rest_certificate=agent['verify_rest_certificate'],
             ssl_cert_path=agent['local_rest_cert_file'],
             bypass_maintenance_mode=agent['bypass_maintenance_mode'])
 
@@ -562,52 +557,30 @@ def safe_create_dir(path):
             raise
 
 
-def get_rest_client(security_enabled,
-                    rest_host,
-                    rest_protocol,
+def get_rest_client(rest_host,
                     rest_port,
                     rest_token,
                     rest_tenant,
-                    verify_rest_certificate=False,
-                    ssl_cert_path=None,
+                    ssl_cert_path,
                     bypass_maintenance_mode=False):
 
     headers = {}
     if bypass_maintenance_mode:
         headers['X-BYPASS-MAINTENANCE'] = 'true'
 
-    if not security_enabled:
-        return CloudifyClient(host=rest_host,
-                              protocol=rest_protocol,
-                              port=rest_port,
-                              headers=headers)
+    for value, name in [(rest_token, 'auth token'),
+                        (rest_tenant, 'tenant'),
+                        (ssl_cert_path, 'SSL Cert path')]:
+        assert value, 'REST {0} is missing! It is required to ' \
+                      'create a REST client for a secured ' \
+                      'manager [{1}]'.format(name, rest_host)
 
-    if not rest_token or not rest_tenant:
-        msg = 'REST {0} is missing! It is required to create a REST ' \
-              'client for a secured manager [{1}]'.format(
-                rest_host,
-                'auth token' if not rest_token else 'tenant'
-              )
-        raise ValueError(msg)
-
-    headers[CLOUDIFY_AUTH_TOKEN_HEADER] = rest_token
-    headers[CLOUDIFY_TENANT_HEADER] = rest_tenant
-
-    if verify_rest_certificate:
-        if not ssl_cert_path:
-            raise ValueError('missing ssl_cert_path, verifying REST '
-                             'certificate cannot be performed'.
-                             format(rest_host))
-        trust_all = False
-    else:
-        trust_all = True
-        ssl_cert_path = None
-
-    rest_client = CloudifyClient(host=rest_host,
-                                 protocol=rest_protocol,
-                                 port=rest_port,
-                                 headers=headers,
-                                 trust_all=trust_all,
-                                 cert=ssl_cert_path)
-
-    return rest_client
+    return CloudifyClient(
+        host=rest_host,
+        protocol=SECURED_PROTOCOL,
+        port=rest_port,
+        headers=headers,
+        token=rest_token,
+        tenant=rest_tenant,
+        cert=ssl_cert_path
+    )

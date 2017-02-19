@@ -102,7 +102,7 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
     @patch('cloudify.workflows.local._validate_node')
     @only_ci
     def test_local_agent_from_package_long_name(self, _):
-        """Agent still works with a filepath longer than 128 bytes
+        """Agent still works with a filepath longer than 128 bytes (package)
 
         Paths longer than 128 bytes break shebangs on linux.
         """
@@ -203,7 +203,7 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
     @only_ci
     @patch('cloudify.workflows.local._validate_node')
     def test_local_agent_from_source_long_name(self, _):
-        """Agent still works with a filepath longer than 128 bytes
+        """Agent still works with a filepath longer than 128 bytes (source)
 
         This test won't pass on windows because some files within the
         virtualenv exceed 256 bytes, and windows doesn't support paths

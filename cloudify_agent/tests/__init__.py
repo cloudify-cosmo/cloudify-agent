@@ -40,7 +40,42 @@ def get_storage_directory(_=None):
     return os.path.join(tempfile.gettempdir(), 'cfy-agent-tests-daemons')
 
 
+class _AgentSSLCert(object):
+    LOCAL_CERT_FILE = None
+    DUMMY_CERT = '-----BEGIN RSA PRIVATE KEY-----\n' \
+                 'Fn0TToW05rmMrO0XT092R/JqFZBX9ygpaBy8y14o0bX9jA6neFT8sUgDCd' \
+                 'mTmGoq\nQSeUzP4gEUxuJZ373+7HK565FohtWUUvBshgCA/o+WIH/szN/x' \
+                 'W0f+m4lshT6hXB\nz86ktJFvgaBe9f1rBFG4Q1vGDSmylHfGxn7yYljJ5K' \
+                 'tKRdngpnEeWr0VQ3wJ+ri8\n' \
+                 '-----END RSA PRIVATE KEY-----'
+
+    @staticmethod
+    def get_local_cert_path():
+        if not _AgentSSLCert.LOCAL_CERT_FILE:
+            _, _AgentSSLCert.LOCAL_CERT_FILE = tempfile.mkstemp()
+            with open(_AgentSSLCert.LOCAL_CERT_FILE, 'w') as f:
+                f.write(_AgentSSLCert.DUMMY_CERT)
+
+        return _AgentSSLCert.LOCAL_CERT_FILE
+
+    @staticmethod
+    def verify_remote_cert(agent_dir):
+        agent_cert_path = os.path.join(
+            os.path.expanduser(agent_dir),
+            os.path.normpath(defaults.SSL_CERTS_TARGET_DIR),
+            defaults.AGENT_SSL_CERT_FILENAME
+        )
+        with open(agent_cert_path, 'r') as f:
+            cert_content = f.read().strip()
+
+        assert cert_content == _AgentSSLCert.DUMMY_CERT
+
+
+agent_ssl_cert = _AgentSSLCert()
+
+
 class BaseTest(unittest.TestCase):
+    tmp_rest_cert_path = agent_ssl_cert.get_local_cert_path()
 
     agent_env_vars = {
         constants.MANAGER_FILE_SERVER_URL_KEY: 'localhost',
@@ -53,14 +88,12 @@ class BaseTest(unittest.TestCase):
         constants.REST_PORT_KEY: '80',
         constants.REST_CERT_CONTENT_KEY: '',
         constants.VERIFY_REST_CERTIFICATE_KEY: '',
-        constants.AGENT_REST_CERT_PATH: 'rest/cert/path',
         constants.BROKER_SSL_CERT_PATH: 'broker/cert/path',
-        env_constants.CLOUDIFY_AGENT_REST_CERT_PATH: 'rest/cert/path',
+        env_constants.CLOUDIFY_LOCAL_REST_CERT_PATH: tmp_rest_cert_path,
         env_constants.CLOUDIFY_BROKER_SSL_CERT_PATH: 'broker/cert/path'
     }
 
     def setUp(self):
-
         # change levels to 'DEBUG' to troubleshoot.
         self.logger = setup_logger(
             'cloudify-agent.tests',
@@ -144,39 +177,7 @@ class _AgentPackageGenerator(object):
             self.initialized = False
 
 
-class _AgentSSLCert(object):
-    LOCAL_CERT_FILE = None
-    DUMMY_CERT = '-----BEGIN RSA PRIVATE KEY-----\n' \
-                 'Fn0TToW05rmMrO0XT092R/JqFZBX9ygpaBy8y14o0bX9jA6neFT8sUgDCd' \
-                 'mTmGoq\nQSeUzP4gEUxuJZ373+7HK565FohtWUUvBshgCA/o+WIH/szN/x' \
-                 'W0f+m4lshT6hXB\nz86ktJFvgaBe9f1rBFG4Q1vGDSmylHfGxn7yYljJ5K' \
-                 'tKRdngpnEeWr0VQ3wJ+ri8\n' \
-                 '-----END RSA PRIVATE KEY-----'
-
-    @staticmethod
-    def get_local_cert_path():
-        if not _AgentSSLCert.LOCAL_CERT_FILE:
-            _, _AgentSSLCert.LOCAL_CERT_FILE = tempfile.mkstemp()
-            with open(_AgentSSLCert.LOCAL_CERT_FILE, 'w') as f:
-                f.write(_AgentSSLCert.DUMMY_CERT)
-
-        return _AgentSSLCert.LOCAL_CERT_FILE
-
-    @staticmethod
-    def verify_remote_cert(agent_dir):
-        agent_cert_path = os.path.join(
-            os.path.expanduser(agent_dir),
-            os.path.normpath(defaults.SSL_CERTS_TARGET_DIR),
-            defaults.AGENT_SSL_CERT_FILENAME
-        )
-        with open(agent_cert_path, 'r') as f:
-            cert_content = f.read().strip()
-
-        assert cert_content == _AgentSSLCert.DUMMY_CERT
-
-
 agent_package = _AgentPackageGenerator()
-agent_ssl_cert = _AgentSSLCert()
 
 
 def tearDown():

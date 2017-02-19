@@ -29,6 +29,7 @@ from cloudify.utils import CommandExecutionResponse
 from cloudify.utils import setup_logger
 from cloudify.exceptions import CommandExecutionException
 from cloudify.exceptions import CommandExecutionError
+from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
 
 from cloudify_agent.installer import exceptions
 from cloudify_agent.api import utils as api_utils
@@ -358,8 +359,8 @@ class FabricRunner(object):
 
         return self.mktemp(create=create, directory=True, **attributes)
 
-    def download(self, url, output_path=None, skip_verification=False,
-                 certificate_file=None, **attributes):
+    def download(self, url, output_path=None, certificate_file=None,
+                 **attributes):
 
         """
         Downloads the contents of the url.
@@ -372,9 +373,6 @@ class FabricRunner(object):
         :param url: URL to the resource.
         :param output_path: Path where the resource will be downloaded to.
                If not specified, a temporary file will be used.
-        :param skip_verification: If False, SSL certificates sent by the server
-               will be verified; otherwise certificates will be trusted without
-               verification. Defaults to False.
         :param certificate_file: a local cert file to use for SSL certificate
                verification.
         :param attributes: custom attributes passed directly to fabric's
@@ -391,11 +389,8 @@ class FabricRunner(object):
                               'machine')
             self.run('which wget', **attributes)
             args = '-T 30 --header="{0}: {1}"'.format(
-                api_utils.CLOUDIFY_AUTH_TOKEN_HEADER, ctx.rest_token)
-            if skip_verification:
-                args += ' --no-check-certificate'
-            if certificate_file:
-                args += ' --ca-certificate {0}'.format(certificate_file)
+                CLOUDIFY_TOKEN_AUTHENTICATION_HEADER, ctx.rest_token)
+            args += ' --ca-certificate {0}'.format(certificate_file)
             command = 'wget {0} {1} -O {2}'.format(args, url, output_path)
         except CommandExecutionException:
             try:
@@ -404,11 +399,8 @@ class FabricRunner(object):
                     'machine')
                 self.run('which curl', **attributes)
                 args = '-H "{0}: {1}"'.format(
-                    api_utils.CLOUDIFY_AUTH_TOKEN_HEADER, ctx.rest_token)
-                if skip_verification:
-                    args += ' -k'
-                if certificate_file:
-                    args += ' --cacert {0}'.format(certificate_file)
+                    CLOUDIFY_TOKEN_AUTHENTICATION_HEADER, ctx.rest_token)
+                args += ' --cacert {0}'.format(certificate_file)
                 command = 'curl {0} {1} -o {2}'.format(args, url, output_path)
             except CommandExecutionException:
                 raise exceptions.AgentInstallerConfigurationError(

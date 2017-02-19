@@ -21,20 +21,16 @@ import requests
 
 from cloudify.state import ctx
 from cloudify.exceptions import HttpException
+from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
 from cloudify.utils import LocalCommandRunner as _UtilsLocalCommandRunner
-
-from cloudify_agent.api.utils import CLOUDIFY_AUTH_TOKEN_HEADER
 
 
 class LocalCommandRunner(_UtilsLocalCommandRunner):
-    def download(self, url, output_path=None, skip_verification=False,
-                 certificate_file=None, **attributes):
-        verify = not skip_verification
-        if certificate_file:
-            verify = certificate_file
-        headers = {CLOUDIFY_AUTH_TOKEN_HEADER: ctx.rest_token}
+    def download(self, url, output_path=None, certificate_file=None,
+                 **attributes):
+        headers = {CLOUDIFY_TOKEN_AUTHENTICATION_HEADER: ctx.rest_token}
         response = requests.get(
-            url, stream=True, verify=verify, headers=headers)
+            url, stream=True, verify=certificate_file, headers=headers)
         if not response.ok:
             raise HttpException(url, response.status_code, response.reason)
 

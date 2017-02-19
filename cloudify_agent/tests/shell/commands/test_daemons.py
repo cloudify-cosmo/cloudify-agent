@@ -66,20 +66,16 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             broker_ssl_cert=None,
             broker_ssl_enabled=False,
             broker_get_settings_from_manager=False,
-            security_enabled=False,
             file_server_protocol='http',
             file_server_port='53229',
-            rest_protocol='http',
             rest_username=None,
             rest_password=None,
             rest_token=None,
             rest_tenant=None,
             broker_ssl_cert_path=os.environ[
                 env_constants.CLOUDIFY_BROKER_SSL_CERT_PATH],
-            verify_rest_certificate=False,
             local_rest_cert_file=os.environ[
-                env_constants.CLOUDIFY_AGENT_REST_CERT_PATH],
-            rest_cert_content='',
+                env_constants.CLOUDIFY_LOCAL_REST_CERT_PATH],
             bypass_maintenance_mode=None,
         )
 
@@ -87,6 +83,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
         daemon.create.assert_called_once_with()
 
     def test_create_with_custom_options(self, *factory_methods):
+
         self._run('cfy-agent daemons create --name=name '
                   '--queue=queue --rest-host=127.0.0.1 --broker-ip=127.0.0.1 '
                   '--file-server-host=127.0.0.1 --user=user '
@@ -123,18 +120,14 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
                 env_constants.CLOUDIFY_BROKER_SSL_CERT_PATH],
             broker_ssl_enabled=False,
             broker_get_settings_from_manager=False,
-            security_enabled=False,
             file_server_protocol='http',
             file_server_port='53229',
-            rest_protocol='http',
             rest_username=None,
             rest_password=None,
             rest_token=None,
             rest_tenant='tenant',
-            verify_rest_certificate=False,
             local_rest_cert_file=os.environ[
-                env_constants.CLOUDIFY_AGENT_REST_CERT_PATH],
-            rest_cert_content='',
+                env_constants.CLOUDIFY_LOCAL_REST_CERT_PATH],
             bypass_maintenance_mode=None,
         )
 

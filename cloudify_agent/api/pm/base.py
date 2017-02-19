@@ -118,35 +118,18 @@ class Daemon(object):
         the ip address/host name of the manager, running the
         REST service. (Required)
 
-    ``rest_protocol``:
-
-        the protocol to use in REST call. defaults to HTTP.
-
     ``rest_port``:
 
         the manager REST gateway port to connect to. defaults to 80.
-
-    ``security_enabled``:
-
-        True if REST security is enabled, False otherwise
 
     ``rest_token``:
 
         the token to use in REST calls. No default.
 
-    ``verify_rest_certificate``:
-
-        indicates whether agents should verify the REST server's SSL
-        certificate or not
-
     ``local_rest_cert_file``:
 
         A path to a local copy of the manager's SSL certificate, to be used
-        for certificate verification if SSL is enabled.
-
-    ``rest_ssl_cert_content``:
-        The content of the REST SSL certificate, to be written to
-        local_rest_cert_file
+        for certificate verification
 
     ``min_workers``:
 
@@ -188,7 +171,10 @@ class Daemon(object):
 
     # add specific mandatory parameters for different implementations.
     # they will be validated upon daemon creation
-    MANDATORY_PARAMS = ['rest_host', 'broker_ip', 'file_server_host']
+    MANDATORY_PARAMS = ['rest_host',
+                        'broker_ip',
+                        'file_server_host',
+                        'local_rest_cert_file']
 
     def __init__(self, logger=None, **params):
 
@@ -234,29 +220,23 @@ class Daemon(object):
         self.file_server_host = params['file_server_host']
         self.rest_host = params['rest_host']
         self.broker_ip = params['broker_ip']
+        self.local_rest_cert_file = params['local_rest_cert_file']
         self.cluster = params.get('cluster', [])
 
         # Optional parameters - REST client
         self.validate_optional()
-        self.rest_port = params.get('rest_port') or defaults.REST_PORT
-        self.rest_protocol = params.get(
-            'rest_protocol') or defaults.REST_PROTOCOL
+        self.rest_port = params.get('rest_port', defaults.INTERNAL_REST_PORT)
         self.file_server_port = params.get(
             'file_server_port') or defaults.FILE_SERVER_PORT
         self.file_server_protocol = params.get(
             'file_server_protocol') or defaults.FILE_SERVER_PROTOCOL
-        self.verify_rest_certificate = params.get('verify_rest_certificate')
-        self.local_rest_cert_file = params.get('local_rest_cert_file', '')
-        self.rest_cert_content = params.get('rest_ssl_cert_content', '')
-        self.security_enabled = params.get('security_enabled')
         # REST token needs to be prefixed with _ so it's not stored
         # when the daemon is serialized
         self._rest_token = params.get('rest_token')
         self._rest_tenant = params.get('rest_tenant')
 
         # Optional parameters
-        self.name = params.get(
-            'name') or self._get_name_from_manager()
+        self.name = params.get('name') or self._get_name_from_manager()
         self.user = params.get('user') or getpass.getuser()
         self.broker_ssl_enabled = params.get('broker_ssl_enabled', False)
         self.broker_ssl_cert_content = params.get('broker_ssl_cert', '')
@@ -268,10 +248,6 @@ class Daemon(object):
         self.broker_pass = params.get('broker_pass', 'guest')
         self.host = params.get('host')
         self.deployment_id = params.get('deployment_id')
-        self.security_enabled = params.get('security_enabled')
-        self.verify_rest_certificate = params.get('verify_rest_certificate')
-        self.local_rest_cert_file = params.get('local_rest_cert_file', '')
-        self.rest_cert_content = params.get('rest_ssl_cert_content', '')
         self.queue = params.get('queue') or self._get_queue_from_manager()
 
         # This is not retrieved by param as an option any more as it then
@@ -727,13 +703,10 @@ class Daemon(object):
 
     def _get_runtime_properties(self):
         client = utils.get_rest_client(
-            security_enabled=self.security_enabled,
             rest_host=self.rest_host,
-            rest_protocol=self.rest_protocol,
             rest_port=self.rest_port,
             rest_token=self._rest_token,
             rest_tenant=self._rest_tenant,
-            verify_rest_certificate=self.verify_rest_certificate,
             ssl_cert_path=self.local_rest_cert_file
         )
         node_instances = client.node_instances.list(

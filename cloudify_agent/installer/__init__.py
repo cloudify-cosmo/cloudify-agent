@@ -14,7 +14,6 @@
 #  * limitations under the License.
 
 import os
-import tempfile
 import shutil
 import ntpath
 import copy
@@ -59,7 +58,7 @@ class AgentInstaller(object):
             execution_env=execution_env)
 
     def create_agent(self):
-        self.upload_broker_certificate()
+        self.upload_rest_certificate()
         if 'source_url' in self.cloudify_agent:
             self.logger.info('Creating agent from source')
             self._from_source()
@@ -71,25 +70,21 @@ class AgentInstaller(object):
             .format(self._create_process_management_options()),
             execution_env=self._create_agent_env())
 
-    def upload_broker_certificate(self):
-        local_cert_path = self._get_local_agent_cert_path()
-        remote_cert_path = self._get_remote_agent_cert_path()
+    def upload_rest_certificate(self):
+        local_cert_path = self._get_local_ssl_cert_path()
+        remote_cert_path = self._get_remote_ssl_cert_path()
         self.logger.info(
-            'Uploading certificate from {0} to {1}'.format(
+            'Uploading SSL certificate from {0} to {1}'.format(
                 local_cert_path, remote_cert_path
             )
         )
         self.runner.put_file(src=local_cert_path, dst=remote_cert_path)
 
-    def _get_local_agent_cert_path(self):
-        default_path = os.path.join(
-            defaults.SSL_CERTS_BASE_DIR,
-            defaults.SSL_CERTS_TARGET_DIR,
-            defaults.AGENT_SSL_CERT_FILENAME
-        )
+    def _get_local_ssl_cert_path(self):
+        default_path = os.environ[env.CLOUDIFY_LOCAL_REST_CERT_PATH]
         return self.cloudify_agent.setdefault('ssl_cert_path', default_path)
 
-    def _get_remote_agent_cert_path(self):
+    def _get_remote_ssl_cert_path(self):
         agent_dir = os.path.expanduser(self.cloudify_agent['agent_dir'])
         cert_filename = defaults.AGENT_SSL_CERT_FILENAME
         if self.cloudify_agent['windows']:
@@ -100,6 +95,7 @@ class AgentInstaller(object):
             ssl_target_dir = defaults.SSL_CERTS_TARGET_DIR
 
         path = path_join(agent_dir, ssl_target_dir, cert_filename)
+        self.cloudify_agent['agent_rest_cert_path'] = path
         return path
 
     def configure_agent(self):
@@ -189,17 +185,6 @@ class AgentInstaller(object):
     def create_custom_env_file_on_target(self, environment):
         raise NotImplementedError('Must be implemented by sub-class')
 
-    def upload_certificate(self):
-        raise NotImplementedError('Must be implemented by sub-class')
-
-    @property
-    def rest_cert_content(self):
-        cert_content = self.cloudify_agent.get('rest_cert_content')
-        if not cert_content:
-            return None
-
-        return cert_content.decode('string-escape')
-
     @property
     def runner(self):
         raise NotImplementedError('Must be implemented by sub-class')
@@ -228,22 +213,12 @@ class AgentInstaller(object):
             env.CLOUDIFY_BROKER_PORT: self.cloudify_agent.get('broker_port'),
             env.CLOUDIFY_REST_PORT:
                 self.cloudify_agent.get('rest_port'),
-            env.CLOUDIFY_REST_PROTOCOL: self.cloudify_agent.get(
-                'rest_protocol'),
             env.CLOUDIFY_FILE_SERVER_PORT:
                 self.cloudify_agent.get('file_server_port'),
             env.CLOUDIFY_FILE_SERVER_PROTOCOL:
                 self.cloudify_agent.get('file_server_protocol'),
-            env.CLOUDIFY_SECURITY_ENABLED:
-                self.cloudify_agent.get('security_enabled'),
-            env.CLOUDIFY_REST_TOKEN:
-                self.cloudify_agent.get('rest_token'),
-            env.CLOUDIFY_REST_TENANT:
-                self.cloudify_agent.get('rest_tenant'),
-            env.CLOUDIFY_VERIFY_REST_CERTIFICATE:
-                self.cloudify_agent.get('verify_rest_certificate'),
-            env.CLOUDIFY_REST_CERT_CONTENT:
-                self.cloudify_agent.get('rest_cert_content'),
+            env.CLOUDIFY_REST_TOKEN: self.cloudify_agent.get('rest_token'),
+            env.CLOUDIFY_REST_TENANT: self.cloudify_agent.get('rest_tenant'),
             env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(
                 'max_workers'),
             env.CLOUDIFY_DAEMON_MIN_WORKERS: self.cloudify_agent.get(
@@ -255,7 +230,7 @@ class AgentInstaller(object):
             self.create_custom_env_file_on_target(
                 self.cloudify_agent.get('env', {})),
             env.CLOUDIFY_BYPASS_MAINTENANCE_MODE: get_is_bypass_maintenance(),
-            env.CLOUDIFY_AGENT_REST_CERT_PATH:
+            env.CLOUDIFY_LOCAL_REST_CERT_PATH:
                 self.cloudify_agent['agent_rest_cert_path'],
             env.CLOUDIFY_BROKER_SSL_CERT_PATH:
                 self.cloudify_agent['broker_ssl_cert_path']
@@ -349,16 +324,12 @@ class LocalInstallerMixin(AgentInstaller):
         return LocalCommandRunner(logger=self.logger)
 
     def download(self, url, destination=None):
-        verify_cert = self.cloudify_agent['verify_rest_certificate']
-
-        local_cert_file = self.cloudify_agent.get('agent_rest_cert_path')
-        if local_cert_file:
-            local_cert_file = os.path.expanduser(local_cert_file)
+        local_cert_file = self.cloudify_agent['agent_rest_cert_path']
+        local_cert_file = os.path.expanduser(local_cert_file)
 
         return self.runner.download(
             url,
             output_path=destination,
-            skip_verification=not verify_cert,
             certificate_file=local_cert_file)
 
     def delete_agent(self):
@@ -374,18 +345,6 @@ class LocalInstallerMixin(AgentInstaller):
     def move(self, source, target):
         shutil.move(source, target)
 
-    def upload_certificate(self):
-        cert_file = os.path.expanduser(
-            self.cloudify_agent['agent_rest_cert_path'])
-        cert_content = self.rest_cert_content
-
-        if not os.path.exists(cert_file):
-            cert_dir = os.path.dirname(cert_file)
-            if not os.path.exists(cert_dir):
-                utils.safe_create_dir(cert_dir)
-            with open(cert_file, 'wb') as f:
-                f.write(cert_content)
-
 
 class RemoteInstallerMixin(AgentInstaller):
 
@@ -399,34 +358,16 @@ class RemoteInstallerMixin(AgentInstaller):
 
     def download(self, url, destination=None):
         agent_rest_cert_path = self.cloudify_agent['agent_rest_cert_path']
-        verify_cert = self.cloudify_agent['verify_rest_certificate']
         if self.cloudify_agent['windows']:
-            return self.runner.download(
-                url,
-                output_path=destination,
-                skip_verification=not verify_cert)
+            return self.runner.download(url, output_path=destination)
         else:
             return self.runner.download(
                 url,
                 output_path=destination,
-                skip_verification=not verify_cert,
                 certificate_file=agent_rest_cert_path)
 
     def move(self, source, target):
         self.runner.move(source, target)
-
-    def upload_certificate(self):
-        cert_file = self.cloudify_agent['agent_rest_cert_path']
-        cert_content = self.rest_cert_content
-
-        if not self.runner.exists(cert_file):
-            self._create_cert_dir(cert_file)
-            with tempfile.NamedTemporaryFile(delete=False) as f:
-                f.write(cert_content)
-            try:
-                self.runner.put_file(f.name, cert_file)
-            finally:
-                os.unlink(f.name)
 
     def _create_cert_dir(self, cert_file):
         """Create the directory containing the manager certificate.

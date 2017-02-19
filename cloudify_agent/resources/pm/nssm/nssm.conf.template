@@ -26,14 +26,10 @@ echo Setting service environment
 {{ nssm_path }} set {{ name }} AppEnvironmentExtra ^
 REST_HOST={{ rest_host }} ^
 REST_PORT={{ rest_port }} ^
-REST_PROTOCOL={{ rest_protocol }} ^
 FILE_SERVER_HOST={{ file_server_host }} ^
 FILE_SERVER_PORT={{ file_server_port }} ^
 FILE_SERVER_PROTOCOL={{ file_server_protocol }} ^
-SECURITY_ENABLED={{ security_enabled }} ^
-VERIFY_REST_CERTIFICATE={{ verify_rest_certificate }} ^
 LOCAL_REST_CERT_FILE={{ local_rest_cert_file }} ^
-REST_CERT_CONTENT={{ rest_cert_content }} ^
 MANAGER_FILE_SERVER_URL={{ file_server_protocol }}://{{ file_server_host }}:{{ file_server_port }} ^
 MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL={{ file_server_protocol }}://{{ file_server_host }}:{{ file_server_port }}/blueprints ^
 MANAGER_FILE_SERVER_DEPLOYMENTS_ROOT_URL={{ file_server_protocol }}://{{ file_server_host }}:{{ file_server_port }}/deployments ^
