@@ -122,7 +122,7 @@ class TestLinuxInitScript(BaseInitScriptTest):
         self.input_cloudify_agent = {'env': {'one': 'one'}}
         self._run('create_custom_env_file')
         with open('custom_agent_env.sh') as f:
-            self.assertIn('export one=one', f.read())
+            self.assertIn('export one="one"', f.read())
 
     def test_no_create_custom_env_file(self):
         self._run('create_custom_env_file')
