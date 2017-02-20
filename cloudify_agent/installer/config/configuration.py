@@ -253,7 +253,7 @@ def installation_attributes(cloudify_agent, runner):
             if cloudify_agent['windows']:
                 # TODO: Get the program files directory from the machine iself
                 # instead of hardcoding it an assuming it's in C:\
-                basedir = 'C:\\Program Files'
+                basedir = 'C:\\Program Files\\Cloudify Agents'
             elif cloudify_agent['remote_execution']:
                 basedir = runner.home_dir(cloudify_agent['user'])
             else:
