@@ -4,6 +4,8 @@ $ErrorActionPreference = "Stop"
 
 function Download($Url, $OutputPath)
 {
+    New-Item -ItemType directory -Path (Split-Path $OutputPath)
+
     $WebClient = New-Object System.Net.WebClient
     $WebClient.Headers.add('{{ auth_token_header }}', '{{ auth_token_value }}')
     $WebClient.DownloadFile("$Url", "$OutputPath")
