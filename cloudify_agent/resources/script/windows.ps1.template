@@ -4,6 +4,7 @@ $ErrorActionPreference = "Stop"
 
 function Download($Url, $OutputPath)
 {
+    New-Item -ItemType directory -Path (Split-Path $OutputPath)
     (New-Object System.Net.WebClient).DownloadFile("$Url", "$OutputPath")
 }
 
