@@ -127,3 +127,21 @@ class TestLinuxInitScript(BaseInitScriptTest):
     def test_no_create_custom_env_file(self):
         self._run('create_custom_env_file')
         self.assertFalse(os.path.isfile('custom_agent_env.sh'))
+
+
+@only_os('nt')
+class TestWindowsInitScript(BaseInitScriptTest):
+
+    def setUp(self):
+        self.windows = True
+        super(TestWindowsInitScript, self).setUp()
+
+    def test_create_custom_env_file(self):
+        self.input_cloudify_agent.update({'env': {'one': 'one'}})
+        self._run('CreateCustomEnvFile')
+        with open('custom_agent_env.bat') as f:
+            self.assertIn('set one="one"', f.read())
+
+    def test_no_create_custom_env_file(self):
+        self._run('CreateCustomEnvFile')
+        self.assertFalse(os.path.isfile('custom_agent_env.bat'))
