@@ -10,14 +10,14 @@ echo Installing the agent as a windows service...
 --without-gossip ^
 --without-mingle ^
 --loglevel={{ log_level }} ^
---logfile={{ log_file }} ^
+--logfile="""{{ log_file }}""" ^
 --include=cloudify.dispatch ^
 --config=cloudify.broker_config ^
 -Ofair ^
 --with-gate-keeper ^
 --gate-keeper-bucket-size={{ max_workers }} ^
 --with-logging-server ^
---logging-server-logdir={{ workdir }}\logs
+--logging-server-logdir="""{{ workdir }}\logs"""
 
 if %errorlevel% neq 0 exit /b %errorlevel%
 
