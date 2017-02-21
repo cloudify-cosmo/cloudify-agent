@@ -4,6 +4,8 @@ $ErrorActionPreference = "Stop"
 
 function Download($Url, $OutputPath)
 {
+    New-Item -ItemType directory -Path (Split-Path $OutputPath)
+
     $WebClient = New-Object System.Net.WebClient
     $WebClient.Headers.add('{{ auth_token_header }}', '{{ auth_token_value }}')
     $WebClient.DownloadFile("$Url", "$OutputPath")
@@ -29,9 +31,9 @@ function AddSSLCert()
 function DownloadAndExtractAgentPackage()
 {
     AddSSLCert
-    Download {{ conf.package_url }} {{ conf.basedir }}\cloudify-windows-agent.exe
+    Download {{ conf.package_url }} "{{ conf.basedir }}\cloudify-windows-agent.exe"
     # This call is not blocking so we pipe the output to null to make it blocking
-    {{ conf.basedir }}\cloudify-windows-agent.exe /SILENT /VERYSILENT /SUPPRESSMSGBOXES /DIR={{ conf.agent_dir }} | Out-Null
+    & "{{ conf.basedir }}\cloudify-windows-agent.exe" /SILENT /VERYSILENT /SUPPRESSMSGBOXES /DIR="{{ conf.agent_dir }}" | Out-Null
 }
 
 function ExportDaemonEnv()
@@ -45,9 +47,9 @@ function ExportDaemonEnv()
 function CreateCustomEnvFile()
 {
     {% if custom_env is not none %}
-        Set-Content {{ custom_env_path }} ""
+        Set-Content "{{ custom_env_path }}" ""
         {% for env_key, env_value in custom_env.iteritems() %}
-             Add-Content {{ custom_env_path }} "set {{ env_key }}={{ env_value }}"
+             Add-Content "{{ custom_env_path }}" 'set {{ env_key }}="{{ env_value }}"'
         {% endfor %}
     {% else %}
         Write-Host "No custom env configured"
