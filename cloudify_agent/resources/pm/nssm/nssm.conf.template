@@ -38,6 +38,7 @@ CELERY_TASK_SERIALIZER=json ^
 CELERY_RESULT_SERIALIZER=json ^ {{ custom_environment }}
 
 {{ nssm_path }} set {{ name }} DisplayName "Cloudify Agent - {{ name }}"
+{{ nssm_path }} set {{ name }} Description "Cloudify Agent Service"
 
 if %errorlevel% neq 0 exit /b %errorlevel%
 
