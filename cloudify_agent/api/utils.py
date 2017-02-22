@@ -23,7 +23,9 @@ import getpass
 import types
 import urllib
 
+import appdirs
 import pkg_resources
+
 from jinja2 import Template
 
 from cloudify.context import BootstrapContext
@@ -97,7 +99,7 @@ class _Internal(object):
             return cls.get_daemon_storage_dir()
         if username is None and cls.CLOUDIFY_DAEMON_USER_KEY in os.environ:
             username = cls.get_daemon_user()
-        return os.path.join(get_home_dir(username), '.cfy-agent')
+        return appdirs.user_data_dir('cloudify-agent', 'Cloudify')
 
     @staticmethod
     def generate_agent_name():
