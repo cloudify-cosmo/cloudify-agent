@@ -45,6 +45,8 @@ CELERY_APP=cloudify_agent.app.app ^
 CELERY_TASK_SERIALIZER=json ^
 CELERY_RESULT_SERIALIZER=json ^ {{ custom_environment }}
 
+{{ nssm_path }} set {{ name }} DisplayName "Cloudify Agent - {{ name }}"
+
 if %errorlevel% neq 0 exit /b %errorlevel%
 
 echo Configuring startup policy...
