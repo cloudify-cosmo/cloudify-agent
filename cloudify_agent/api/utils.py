@@ -98,7 +98,7 @@ class _Internal(object):
             return cls.get_daemon_storage_dir()
         if username is None and cls.CLOUDIFY_DAEMON_USER_KEY in os.environ:
             username = cls.get_daemon_user()
-        return appdirs.user_data_dir('cloudify-agent', 'Cloudify')
+        return appdirs.site_data_dir('cloudify-agent', 'Cloudify')
 
     @staticmethod
     def generate_agent_name():
