@@ -19,6 +19,15 @@ dependencies:
   override:
     - pip install -U pip
     - pip install tox
+    - |
+      case $CIRCLE_NODE_INDEX in
+      0)
+        tox -e py26 --notest
+        tox -e py27 --notest
+        ;;
+      esac
+  cache_directories:
+    - .tox
 
 test:
   override:
