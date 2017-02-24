@@ -2,6 +2,9 @@ environment:
 
   TOX_ENV: pywin
 
+  rabbitmq_download_url: https://www.rabbitmq.com/releases/rabbitmq-server/v3.5.2/rabbitmq-server-3.5.2.exe
+  rabbitmq_installer_path: C:\Users\appveyor\rabbitmq.exe
+
   matrix:
     - PYTHON: C:\Python27
       PYTHON_VERSION: 2.7.8
@@ -33,9 +36,9 @@ install:
   #################################
 
   - echo Downloading Rabbit...
-  - ps: (new-object System.Net.WebClient).Downloadfile('https://www.rabbitmq.com/releases/rabbitmq-server/v3.5.2/rabbitmq-server-3.5.2.exe', 'C:\Users\appveyor\rabbit.exe')
+  - ps: (new-object System.Net.WebClient).Downloadfile("$env.rabbitmq_download_url", "$env.rabbitmq_installer_path")
   - echo Installing Rabbit...
-  - start /B /WAIT C:\Users\appveyor\rabbit.exe /S
+  - start /B /WAIT %rabbitmq_installer_path% /S
   - ps: (Get-Service -Name RabbitMQ).Status
 
   - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
