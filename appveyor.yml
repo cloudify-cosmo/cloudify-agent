@@ -7,6 +7,11 @@ environment:
       PYTHON_VERSION: 2.7.8
       PYTHON_ARCH: 32
 
+cache:
+  # Cache Inno Setup download
+  - C:\Users\appveyor\AppData\Local\Temp\chocolatey
+
+
 install:
 
   #################################
