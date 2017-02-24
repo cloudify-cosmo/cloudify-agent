@@ -11,8 +11,7 @@ environment:
       PYTHON_ARCH: 32
 
 cache:
-  # Cache Inno Setup download
-  - C:\Users\appveyor\AppData\Local\Temp\chocolatey
+  - C:\Temp\choco
   - "%rabbitmq_installer_path%"
   - C:\Users\appveyor\.tox
 
@@ -30,6 +29,7 @@ install:
   # Installing Inno Setup
   #################################
 
+  - choco config set cacheLocation C:\Temp\choco
   - choco install -y InnoSetup
   - set PATH="C:\\Program Files (x86)\\Inno Setup 5";%PATH%
 
