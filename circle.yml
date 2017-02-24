@@ -35,19 +35,10 @@ test:
         case $CIRCLE_NODE_INDEX in
         0)
           tox -e py27
-          ;;
-        1)
-          tox -e py26
-          ;;
-        esac
-      :
-        parallel: true
-    - ? |
-        case $CIRCLE_NODE_INDEX in
-        0)
           tox -e docs
           ;;
         1)
+          tox -e py26
           tox -e flake8
           ;;
         esac
