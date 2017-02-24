@@ -8,21 +8,17 @@ environment:
 
   matrix:
     - PYTHON: C:\Python27
-      PYTHON_VERSION: 2.7.8
-      PYTHON_ARCH: 32
 
 cache:
   - "%choco_cache_location%"
   - "%rabbitmq_installer_path%"
   - C:\Users\appveyor\.tox
 
-
 install:
 
   #################################
   # Installing Inno Setup
   #################################
-
   - choco config set cacheLocation %choco_cache_location%
   - choco install -y InnoSetup
   - set PATH="C:\Program Files (x86)\Inno Setup 5";%PATH%
@@ -30,7 +26,6 @@ install:
   #################################
   # Download and install RabbitMQ
   #################################
-
   - echo Downloading Rabbit...
   - ps: |
         $webclient = New-Object System.Net.WebClient
@@ -43,8 +38,12 @@ install:
   - start /B /WAIT %rabbitmq_installer_path% /S
   - ps: (Get-Service -Name RabbitMQ).Status
 
+  #################################
+  # Configure python
+  #################################
   - SET PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
-
+  - python --version
+  - python -c "import struct; print(struct.calcsize('P') * 8)"
   - echo Upgrading pip...
   - pip install -U pip
   - pip --version
