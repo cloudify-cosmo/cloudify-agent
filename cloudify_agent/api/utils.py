@@ -97,9 +97,13 @@ class _Internal(object):
         """
         if cls.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY in os.environ:
             return cls.get_daemon_storage_dir()
+
+        if os.name == 'nt':
+            return appdirs.site_data_dir('cloudify-agent', 'Cloudify')
+
         if username is None and cls.CLOUDIFY_DAEMON_USER_KEY in os.environ:
             username = cls.get_daemon_user()
-        return appdirs.site_data_dir('cloudify-agent', 'Cloudify')
+        return os.path.join(get_home_dir(username), '.cfy-agent')
 
     @staticmethod
     def generate_agent_name():
