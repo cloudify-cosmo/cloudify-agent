@@ -14,6 +14,7 @@ cache:
   # Cache Inno Setup download
   - C:\Users\appveyor\AppData\Local\Temp\chocolatey
   - "%rabbitmq_installer_path%"
+  - C:\Users\appveyor\.tox
 
 
 install:
