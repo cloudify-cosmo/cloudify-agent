@@ -32,8 +32,8 @@ install:
   #################################
 
   - echo Downloading Rabbit...
-  - ps: $webclient = New-Object System.Net.WebClient
-  - ps: >
+  - ps: |
+        $webclient = New-Object System.Net.WebClient
         if (-Not (Test-Path "$env:rabbitmq_installer_path")) {
           $webclient.DownloadFile("$env:rabbitmq_download_url", "$env:rabbitmq_installer_path")
         } else {
