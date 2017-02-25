@@ -25,7 +25,7 @@ install:
 
   - choco config set cacheLocation %choco_cache_location%
   - choco install -y InnoSetup
-  - set PATH="C:\\Program Files (x86)\\Inno Setup 5";%PATH%
+  - set PATH="C:\Program Files (x86)\Inno Setup 5";%PATH%
 
   #################################
   # Download and install RabbitMQ
@@ -43,7 +43,7 @@ install:
   - start /B /WAIT %rabbitmq_installer_path% /S
   - ps: (Get-Service -Name RabbitMQ).Status
 
-  - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
+  - SET PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
 
   - echo Upgrading pip...
   - pip install -U pip
