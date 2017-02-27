@@ -2,61 +2,55 @@ environment:
 
   TOX_ENV: pywin
 
+  choco_cache_location: C:\Temp\choco
+  rabbitmq_download_url: https://www.rabbitmq.com/releases/rabbitmq-server/v3.5.2/rabbitmq-server-3.5.2.exe
+  rabbitmq_installer_path: C:\Users\appveyor\rabbitmq.exe
+
   matrix:
     - PYTHON: C:\Python27
-      PYTHON_VERSION: 2.7.8
-      PYTHON_ARCH: 32
+
+cache:
+  - "%choco_cache_location%"
+  - "%rabbitmq_installer_path%"
+  - C:\Users\appveyor\.tox
 
 install:
 
   #################################
-  # Change Python Registry
-  #################################
-
-  - reg ADD HKCU\Software\Python\PythonCore\2.7\InstallPath /ve /d "C:\Python27" /t REG_SZ /f
-  - reg ADD HKLM\Software\Python\PythonCore\2.7\InstallPath /ve /d "C:\Python27" /t REG_SZ /f
-
-  #################################
   # Installing Inno Setup
   #################################
-
+  - choco config set cacheLocation %choco_cache_location%
   - choco install -y InnoSetup
-  - set PATH="C:\\Program Files (x86)\\Inno Setup 5";%PATH%
-
-  #################################
-  # Download and install Erlang
-  #################################
-
-  - echo Downloading Erlang...
-  - ps: (new-object System.Net.WebClient).Downloadfile('http://www.erlang.org/download/otp_win32_17.5.exe', 'C:\Users\appveyor\erlang.exe')
-  - echo Installing Erlang...
-  - start /B /WAIT C:\Users\appveyor\erlang.exe /S /D=C:\Users\appveyor\erlang
-  - set ERLANG_HOME=C:\Users\appveyor\erlang
+  - set PATH="C:\Program Files (x86)\Inno Setup 5";%PATH%
 
   #################################
   # Download and install RabbitMQ
   #################################
-
   - echo Downloading Rabbit...
-  - ps: (new-object System.Net.WebClient).Downloadfile('https://www.rabbitmq.com/releases/rabbitmq-server/v3.5.2/rabbitmq-server-3.5.2.exe', 'C:\Users\appveyor\rabbit.exe')
+  - ps: |
+        $webclient = New-Object System.Net.WebClient
+        if (-Not (Test-Path "$env:rabbitmq_installer_path")) {
+          $webclient.DownloadFile("$env:rabbitmq_download_url", "$env:rabbitmq_installer_path")
+        } else {
+          Write-Host "Found" $env:rabbitmq_installer_path "in cache."
+        }
   - echo Installing Rabbit...
-  - start /B /WAIT C:\Users\appveyor\rabbit.exe /S
+  - start /B /WAIT %rabbitmq_installer_path% /S
   - ps: (Get-Service -Name RabbitMQ).Status
 
-  - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
-
+  #################################
+  # Configure python
+  #################################
+  - SET PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
+  - python --version
+  - python -c "import struct; print(struct.calcsize('P') * 8)"
   - echo Upgrading pip...
-  - ps: (new-object System.Net.WebClient).Downloadfile('https://bootstrap.pypa.io/get-pip.py', 'C:\Users\appveyor\get-pip.py')
-  - ps: Start-Process -FilePath "C:\Python27\python.exe" -ArgumentList "C:\Users\appveyor\get-pip.py" -Wait -Passthru
+  - pip install -U pip
   - pip --version
 
 build: false # Not a C# project, build stuff at the test step instead.
 
 before_test:
-  - pip install virtualenv --upgrade
-  - virtualenv --version
-  - virtualenv env
-  - 'env\Scripts\activate.bat'
   - echo Installing tox
   - pip install tox
 
