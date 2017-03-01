@@ -32,20 +32,6 @@ from cloudify_agent.shell.decorators import handle_failures
               type=click.Choice(['init.d', 'nssm', 'detach']),
               required=True,
               envvar=env.CLOUDIFY_DAEMON_PROCESS_MANAGEMENT)
-@click.option('--file-server-host',
-              help='The IP or host name of the file server [env {0}]'
-              .format(env.CLOUDIFY_FILE_SERVER_HOST),
-              envvar=env.CLOUDIFY_FILE_SERVER_HOST)
-@click.option('--file-server-port',
-              help='The port of the file server [env {0}]'
-              .format(env.CLOUDIFY_FILE_SERVER_PORT),
-              required=True,
-              envvar=env.CLOUDIFY_FILE_SERVER_PORT)
-@click.option('--file-server-protocol',
-              help='The protocol of the file server [env {0}]'
-              .format(env.CLOUDIFY_FILE_SERVER_PROTOCOL),
-              required=True,
-              envvar=env.CLOUDIFY_FILE_SERVER_PROTOCOL)
 @click.option('--rest-host',
               help='The IP or host name of the REST service [env {0}]'
               .format(env.CLOUDIFY_REST_HOST),

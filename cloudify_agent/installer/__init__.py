@@ -200,8 +200,6 @@ class AgentInstaller(object):
             # is actually created
             env.CLOUDIFY_DAEMON_QUEUE: self.cloudify_agent['queue'],
             env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
-            env.CLOUDIFY_FILE_SERVER_HOST:
-                self.cloudify_agent['file_server_host'],
             env.CLOUDIFY_REST_HOST: self.cloudify_agent['rest_host'],
             env.CLOUDIFY_BROKER_IP: self.cloudify_agent['broker_ip'],
 
@@ -213,10 +211,6 @@ class AgentInstaller(object):
             env.CLOUDIFY_BROKER_PORT: self.cloudify_agent.get('broker_port'),
             env.CLOUDIFY_REST_PORT:
                 self.cloudify_agent.get('rest_port'),
-            env.CLOUDIFY_FILE_SERVER_PORT:
-                self.cloudify_agent.get('file_server_port'),
-            env.CLOUDIFY_FILE_SERVER_PROTOCOL:
-                self.cloudify_agent.get('file_server_protocol'),
             env.CLOUDIFY_REST_TOKEN: self.cloudify_agent.get('rest_token'),
             env.CLOUDIFY_REST_TENANT: self.cloudify_agent.get('rest_tenant'),
             env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(

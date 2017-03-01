@@ -85,16 +85,9 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
                            os.path.join(resources_dir, 'install_agent.py'))
         new_env = {
             constants.REST_HOST_KEY: 'localhost',
-            constants.FILE_SERVER_HOST_KEY: 'localhost',
-            constants.FILE_SERVER_PROTOCOL_KEY: 'http',
-            constants.FILE_SERVER_PORT_KEY: '53229',
             constants.MANAGER_FILE_SERVER_URL_KEY:
                 'http://localhost:{0}'.format(port),
-            constants.SECURITY_ENABLED_KEY: 'True',
-            constants.REST_PROTOCOL_KEY: 'http',
             constants.REST_PORT_KEY: '80',
-            constants.VERIFY_REST_CERTIFICATE_KEY: '',
-            constants.REST_CERT_CONTENT_KEY: ''
         }
         with patch.dict(os.environ, new_env):
             try:
@@ -168,7 +161,6 @@ class TestCreateAgentAmqp(BaseTest):
             'remote_execution': False,
             'ip': '10.0.4.47',
             'rest_host': '10.0.4.46',
-            'file_server_host': '10.0.4.46',
             'distro': 'ubuntu',
             'distro_codename': 'trusty',
             'basedir': '/home/vagrant',
@@ -214,9 +206,7 @@ class TestCreateAgentAmqp(BaseTest):
     def _patch_manager_env(self):
         new_env = {
             constants.REST_HOST_KEY: '10.0.4.48',
-            constants.FILE_SERVER_HOST_KEY: '10.0.4.48',
             constants.MANAGER_FILE_SERVER_URL_KEY: 'http://10.0.4.48:53229',
-            constants.SECURITY_ENABLED_KEY: 'True'
         }
         return patch.dict(os.environ, new_env)
 

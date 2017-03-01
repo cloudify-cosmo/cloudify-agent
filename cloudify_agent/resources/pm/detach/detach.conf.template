@@ -6,13 +6,8 @@ export CLOUDIFY_DAEMON_STORAGE_DIRECTORY={{ storage_dir }}
 export CLOUDIFY_DAEMON_USER={{ user }}
 export REST_HOST={{ rest_host }}
 export REST_PORT={{ rest_port }}
-export FILE_SERVER_HOST={{ file_server_host }}
-export FILE_SERVER_PORT={{ file_server_port }}
-export FILE_SERVER_PROTOCOL={{ file_server_protocol }}
 export LOCAL_REST_CERT_FILE={{ local_rest_cert_file }}
-export MANAGER_FILE_SERVER_URL={{ file_server_protocol }}://{{ file_server_host }}:{{ file_server_port }}
-export MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL={{ file_server_protocol }}://{{ file_server_host }}:{{ file_server_port }}/blueprints
-export MANAGER_FILE_SERVER_DEPLOYMENTS_ROOT_URL={{ file_server_protocol }}://{{ file_server_host }}:{{ file_server_port }}/deployments
+export MANAGER_FILE_SERVER_URL=https://${REST_HOST}:${REST_PORT}/resources
 export VIRTUALENV={{ virtualenv_path }}
 export PATH="${VIRTUALENV}/bin:${PATH}"
 

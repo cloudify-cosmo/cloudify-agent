@@ -39,7 +39,6 @@ class TestDaemonFactory(BaseShellTest):
             queue='queue',
             rest_host='127.0.0.1',
             broker_ip='127.0.0.1',
-            file_server_host='127.0.0.1',
             user='user',
             broker_url='127.0.0.1',
             local_rest_cert_file=self.local_rest_cert_file
@@ -66,7 +65,6 @@ class TestDaemonFactory(BaseShellTest):
             queue='queue',
             rest_host='127.0.0.1',
             broker_ip='127.0.0.1',
-            file_server_host='127.0.0.1',
             user='user',
             broker_url='127.0.0.1',
             local_rest_cert_file=self.local_rest_cert_file
@@ -99,7 +97,6 @@ class TestDaemonFactory(BaseShellTest):
                 queue='queue',
                 rest_host='127.0.0.1',
                 broker_ip='127.0.0.1',
-                file_server_host='127.0.0.1',
                 user='user',
                 broker_url='127.0.0.1',
                 local_rest_cert_file=self.local_rest_cert_file
@@ -127,7 +124,6 @@ class TestDaemonFactory(BaseShellTest):
             queue='queue',
             rest_host='127.0.0.1',
             broker_ip='127.0.0.1',
-            file_server_host='127.0.0.1',
             user='user',
             broker_url='127.0.0.1',
             local_rest_cert_file=self.local_rest_cert_file
@@ -142,7 +138,6 @@ class TestDaemonFactory(BaseShellTest):
                           queue='queue',
                           rest_host='127.0.0.1',
                           broker_ip='127.0.0.1',
-                          file_server_host='127.0.0.1',
                           user='user',
                           broker_url='127.0.0.1',
                           local_rest_cert_file=self.local_rest_cert_file)
