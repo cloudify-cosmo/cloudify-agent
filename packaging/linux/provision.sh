@@ -9,7 +9,7 @@ function install_deps() {
 		sudo apt-get install -y software-properties-common ||
 		# precise
 		sudo apt-get install -y python-software-properties && sudo add-apt-repository -y ppa:git-core/ppa
-		sudo apt-get install -y curl python-dev git make gcc g++ libyaml-dev zlib1g-dev
+		sudo apt-get install -y curl python-dev git make gcc g++ libyaml-dev zlib1g-dev openssl libffi-dev libssl-dev
 	elif which yum; then
 		# centos/REHL
 		sudo yum -y update &&
