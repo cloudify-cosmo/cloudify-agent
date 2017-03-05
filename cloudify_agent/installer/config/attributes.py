@@ -84,6 +84,9 @@ AGENT_ATTRIBUTES = {
     'name': {
         'group': 'cfy-agent'
     },
+    'service_name': {
+        'group': 'cfy-agent'
+    },
     'process_management': {
         'group': 'cfy-agent'
     },
