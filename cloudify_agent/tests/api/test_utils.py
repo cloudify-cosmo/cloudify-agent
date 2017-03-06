@@ -36,8 +36,7 @@ class TestUtils(BaseTest):
         cls.logger = setup_logger('cloudify_agent.tests.api.test_utils')
         cls.file_server_resource_base = tempfile.mkdtemp(
             prefix='file-server-resource-base')
-        cls.fs = test_utils.FileServer(
-            root_path=cls.file_server_resource_base)
+        cls.fs = test_utils.FileServer(root_path=cls.file_server_resource_base)
         cls.fs.start()
         cls.file_server_url = 'http://localhost:{0}'.format(cls.fs.port)
 
@@ -60,12 +59,10 @@ class TestUtils(BaseTest):
         local_rest_cert_file = agent_ssl_cert.get_local_cert_path()
         daemon = Daemon(rest_host='127.0.0.1', name='name',
                         queue='queue', broker_ip='127.0.0.1',
-                        file_server_host='127.0.0.1',
                         local_rest_cert_file=local_rest_cert_file)
         daemon_json = utils.internal.daemon_to_dict(daemon)
         self.assertEqual(daemon_json['rest_host'], '127.0.0.1')
         self.assertEqual(daemon_json['broker_ip'], '127.0.0.1')
-        self.assertEqual(daemon_json['file_server_host'], '127.0.0.1')
         self.assertEqual(daemon_json['name'], 'name')
         self.assertEqual(daemon_json['queue'], 'queue')
 

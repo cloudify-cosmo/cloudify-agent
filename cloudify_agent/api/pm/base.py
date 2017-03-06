@@ -101,18 +101,6 @@ class Daemon(object):
         the password for the broker connection
         defaults to 'guest'
 
-    ``file_server_host``:
-
-        the IP or hostname of the file server (Required)
-
-    ``file_server_port``:
-
-        the port of the file server (Required)
-
-    ``file_server_protocol``:
-
-        the protocol of the file server. defaults to HTTP.
-
     ``rest_host``:
 
         the ip address/host name of the manager, running the
@@ -171,10 +159,7 @@ class Daemon(object):
 
     # add specific mandatory parameters for different implementations.
     # they will be validated upon daemon creation
-    MANDATORY_PARAMS = ['rest_host',
-                        'broker_ip',
-                        'file_server_host',
-                        'local_rest_cert_file']
+    MANDATORY_PARAMS = ['rest_host', 'broker_ip', 'local_rest_cert_file']
 
     def __init__(self, logger=None, **params):
 
@@ -217,7 +202,6 @@ class Daemon(object):
 
         # Mandatory parameters
         self.validate_mandatory()
-        self.file_server_host = params['file_server_host']
         self.rest_host = params['rest_host']
         self.broker_ip = params['broker_ip']
         self.local_rest_cert_file = params['local_rest_cert_file']
@@ -226,10 +210,6 @@ class Daemon(object):
         # Optional parameters - REST client
         self.validate_optional()
         self.rest_port = params.get('rest_port', defaults.INTERNAL_REST_PORT)
-        self.file_server_port = params.get(
-            'file_server_port') or defaults.FILE_SERVER_PORT
-        self.file_server_protocol = params.get(
-            'file_server_protocol') or defaults.FILE_SERVER_PROTOCOL
         # REST token needs to be prefixed with _ so it's not stored
         # when the daemon is serialized
         self._rest_token = params.get('rest_token')

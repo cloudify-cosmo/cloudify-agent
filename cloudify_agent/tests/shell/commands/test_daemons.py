@@ -37,8 +37,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
     def test_create(self, *factory_methods):
         self._run('cfy-agent daemons create --name=name '
                   '--process-management=init.d --user=user '
-                  '--queue=queue  --rest-host=127.0.0.1 '
-                  '--file-server-host=127.0.0.1 ')
+                  '--queue=queue  --rest-host=127.0.0.1')
 
         factory_new = factory_methods[4]
         factory_new.assert_called_once_with(
@@ -46,7 +45,6 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             queue='queue',
             user='user',
             rest_host='127.0.0.1',
-            file_server_host='127.0.0.1',
             process_management='init.d',
             broker_ip=None,
             workdir=None,
@@ -66,8 +64,6 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             broker_ssl_cert=None,
             broker_ssl_enabled=False,
             broker_get_settings_from_manager=False,
-            file_server_protocol='http',
-            file_server_port='53229',
             rest_username=None,
             rest_password=None,
             rest_token=None,
@@ -84,9 +80,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
 
     def test_create_with_custom_options(self, *factory_methods):
 
-        self._run('cfy-agent daemons create --name=name '
-                  '--queue=queue --rest-host=127.0.0.1 --broker-ip=127.0.0.1 '
-                  '--file-server-host=127.0.0.1 --user=user '
+        self._run('cfy-agent daemons create --name=name --queue=queue '
+                  '--rest-host=127.0.0.1 --broker-ip=127.0.0.1 --user=user '
                   '--process-management=init.d --rest-tenant=tenant '
                   '--key=value --complex-key=complex-value')
 
@@ -96,7 +91,6 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             queue='queue',
             user='user',
             rest_host='127.0.0.1',
-            file_server_host='127.0.0.1',
             process_management='init.d',
             broker_ip='127.0.0.1',
             workdir=None,
@@ -120,8 +114,6 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
                 env_constants.CLOUDIFY_BROKER_SSL_CERT_PATH],
             broker_ssl_enabled=False,
             broker_get_settings_from_manager=False,
-            file_server_protocol='http',
-            file_server_port='53229',
             rest_username=None,
             rest_password=None,
             rest_token=None,
@@ -217,7 +209,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
 
     def test_required(self, *_):
         self._run('cfy-agent daemons create --rest-host=manager '
-                  '--broker-ip=manager --file-server-host=manager '
+                  '--broker-ip=manager '
                   '--process-management=init.d', raise_system_exit=True)
 
 
@@ -236,11 +228,9 @@ class TestDaemonCommandLine(BaseCommandLineTestCase):
         self._run('cfy-agent daemons create '
                   '--process-management=init.d '
                   '--queue=queue --name=test-name --rest-host=127.0.0.1 '
-                  '--broker-ip=127.0.0.1 --file-server-host=127.0.0.1 '
-                  '--user=user ')
+                  '--broker-ip=127.0.0.1 --user=user ')
         self._run('cfy-agent daemons create '
                   '--process-management=init.d '
                   '--queue=queue --name=test-name2 --rest-host=127.0.0.1 '
-                  '--broker-ip=127.0.0.1 --file-server-host=127.0.0.1 '
-                  '--user=user ')
+                  '--broker-ip=127.0.0.1 --user=user ')
         self._run('cfy-agent daemons list')

@@ -55,9 +55,6 @@ class TestConfiguration(BaseTest):
             'name': 'test_deployment',
             'rest_host': 'localhost',
             'rest_port': 80,
-            'file_server_host': 'localhost',
-            'file_server_port': 53229,
-            'file_server_protocol': 'http',
             'queue': 'test_deployment',
             'envdir': envdir,
             'user': user,
@@ -101,9 +98,7 @@ class TestConfiguration(BaseTest):
     @patch('cloudify.utils.ctx', mock_context())
     def test_prepare_secured(self):
 
-        cloudify_agent = {'local': True,
-                          'rest_port': '443',
-                          'file_server_protocol': 'https'}
+        cloudify_agent = {'local': True, 'rest_port': '443'}
         configuration.prepare_connection(cloudify_agent)
         configuration.prepare_agent(cloudify_agent, None)
 
@@ -122,9 +117,6 @@ class TestConfiguration(BaseTest):
             'name': 'test_deployment',
             'rest_port': '443',
             'rest_host': 'localhost',
-            'file_server_host': 'localhost',
-            'file_server_port': 53229,
-            'file_server_protocol': 'https',
             'queue': 'test_deployment',
             'envdir': envdir,
             'user': user,

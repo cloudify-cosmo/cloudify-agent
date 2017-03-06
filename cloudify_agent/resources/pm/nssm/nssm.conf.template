@@ -26,13 +26,8 @@ echo Setting service environment
 {{ nssm_path }} set {{ name }} AppEnvironmentExtra ^
 REST_HOST={{ rest_host }} ^
 REST_PORT={{ rest_port }} ^
-FILE_SERVER_HOST={{ file_server_host }} ^
-FILE_SERVER_PORT={{ file_server_port }} ^
-FILE_SERVER_PROTOCOL={{ file_server_protocol }} ^
 LOCAL_REST_CERT_FILE={{ local_rest_cert_file }} ^
-MANAGER_FILE_SERVER_URL={{ file_server_protocol }}://{{ file_server_host }}:{{ file_server_port }} ^
-MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL={{ file_server_protocol }}://{{ file_server_host }}:{{ file_server_port }}/blueprints ^
-MANAGER_FILE_SERVER_DEPLOYMENTS_ROOT_URL={{ file_server_protocol }}://{{ file_server_host }}:{{ file_server_port }}/deployments ^
+MANAGER_FILE_SERVER_URL=https://{{ rest_host }}:{{ rest_port }}/resources ^
 CLOUDIFY_DAEMON_NAME="{{ name }}" ^
 CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}" ^
 CLOUDIFY_DAEMON_USER={{ user }} ^

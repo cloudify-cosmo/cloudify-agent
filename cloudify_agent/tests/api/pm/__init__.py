@@ -203,7 +203,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         params = {
             'rest_host': '127.0.0.1',
             'broker_ip': '127.0.0.1',
-            'file_server_host': '127.0.0.1',
             'user': self.username,
             'workdir': self.temp_folder,
             'logger': self.logger,
@@ -333,22 +332,11 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         expected = {
             constants.REST_HOST_KEY: str(daemon.rest_host),
             constants.REST_PORT_KEY: str(daemon.rest_port),
-            constants.FILE_SERVER_HOST_KEY: str(daemon.file_server_host),
-            constants.FILE_SERVER_PORT_KEY: str(daemon.file_server_port),
-            constants.FILE_SERVER_PROTOCOL_KEY:
-                str(daemon.file_server_protocol),
             constants.MANAGER_FILE_SERVER_URL_KEY:
-                '{0}://{1}:{2}'.format(daemon.file_server_protocol,
-                                       daemon.file_server_host,
-                                       daemon.file_server_port),
-            constants.MANAGER_FILE_SERVER_BLUEPRINTS_ROOT_URL_KEY:
-                '{0}://{1}:{2}/blueprints'.format(daemon.file_server_protocol,
-                                                  daemon.file_server_host,
-                                                  daemon.file_server_port),
-            constants.MANAGER_FILE_SERVER_DEPLOYMENTS_ROOT_URL_KEY:
-                '{0}://{1}:{2}/deployments'.format(daemon.file_server_protocol,
-                                                   daemon.file_server_host,
-                                                   daemon.file_server_port),
+                'https://{0}:{1}/resources'.format(
+                    daemon.rest_host,
+                    daemon.rest_port
+                ),
             constants.CELERY_WORK_DIR_KEY: daemon.workdir,
             utils.internal.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY:
                 utils.internal.get_storage_directory(),

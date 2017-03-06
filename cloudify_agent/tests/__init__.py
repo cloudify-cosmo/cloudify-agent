@@ -25,10 +25,10 @@ import unittest2 as unittest
 from cloudify import constants, mocks
 from cloudify.state import current_ctx
 from cloudify.utils import setup_logger
+
 import cloudify_agent.shell.env as env_constants
-
-from cloudify_agent.api import defaults
-
+from cloudify_agent.api.defaults import (SSL_CERTS_TARGET_DIR,
+                                         AGENT_SSL_CERT_FILENAME)
 
 try:
     win_error = WindowsError
@@ -62,8 +62,8 @@ class _AgentSSLCert(object):
     def verify_remote_cert(agent_dir):
         agent_cert_path = os.path.join(
             os.path.expanduser(agent_dir),
-            os.path.normpath(defaults.SSL_CERTS_TARGET_DIR),
-            defaults.AGENT_SSL_CERT_FILENAME
+            os.path.normpath(SSL_CERTS_TARGET_DIR),
+            AGENT_SSL_CERT_FILENAME
         )
         with open(agent_cert_path, 'r') as f:
             cert_content = f.read().strip()
@@ -80,14 +80,7 @@ class BaseTest(unittest.TestCase):
     agent_env_vars = {
         constants.MANAGER_FILE_SERVER_URL_KEY: 'localhost',
         constants.REST_HOST_KEY: 'localhost',
-        constants.FILE_SERVER_HOST_KEY: 'localhost',
-        constants.FILE_SERVER_PROTOCOL_KEY: 'http',
-        constants.FILE_SERVER_PORT_KEY: '53229',
-        constants.SECURITY_ENABLED_KEY: 'False',
-        constants.REST_PROTOCOL_KEY: 'http',
         constants.REST_PORT_KEY: '80',
-        constants.REST_CERT_CONTENT_KEY: '',
-        constants.VERIFY_REST_CERTIFICATE_KEY: '',
         constants.BROKER_SSL_CERT_PATH: 'broker/cert/path',
         env_constants.CLOUDIFY_LOCAL_REST_CERT_PATH: tmp_rest_cert_path,
         env_constants.CLOUDIFY_BROKER_SSL_CERT_PATH: 'broker/cert/path'
