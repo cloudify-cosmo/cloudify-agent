@@ -103,6 +103,7 @@ def _set_master(daemon_name, node):
     daemon.broker_ip = node['broker_ip']
     daemon.broker_user = node['broker_user']
     daemon.broker_pass = node['broker_pass']
+    daemon.broker_ssl_enabled = node.get('broker_ssl_enabled', False)
     factory.save(daemon)
     cluster.set_cluster_active(node)
 
@@ -116,10 +117,17 @@ def _make_failover_strategy(daemon_name):
                 nodes = cluster.get_cluster_nodes()
                 for node in nodes:
                     _set_master(daemon_name, node)
-                    broker_url = 'amqp://{0}:{1}@{2}:5672//'.format(
+                    if 'broker_port' in node:
+                        port = node['broker_port']
+                    else:
+                        ssl_enabled = node.get('broker_ssl_enabled', False)
+                        port = 5671 if ssl_enabled else 5672
+
+                    broker_url = 'amqp://{0}:{1}@{2}:{3}//'.format(
                         node['broker_user'],
                         node['broker_pass'],
-                        node['broker_ip'])
+                        node['broker_ip'],
+                        port)
                     logger.debug('Trying broker at {0}'
                                  .format(broker_url))
                     yield broker_url

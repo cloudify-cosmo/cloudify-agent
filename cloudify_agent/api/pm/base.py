@@ -602,7 +602,8 @@ class Daemon(object):
         celery_client = utils.get_celery_client(
             broker_url=self.broker_url,
             broker_ssl_enabled=self.broker_ssl_enabled,
-            broker_ssl_cert_path=self.broker_ssl_cert_path)
+            broker_ssl_cert_path=self.broker_ssl_cert_path,
+            ssl_verify=not self.cluster)
         celery_connection = celery_client.pool.connection
         ssl_enabled = bool(celery_connection.ssl)
         cert_path = celery_connection.ssl['ca_certs'] if ssl_enabled else None
