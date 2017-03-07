@@ -41,9 +41,10 @@ from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import only_ci
 
 
-_INSTALL_SCRIPT_URL = ('https://raw.githubusercontent.com/cloudify-cosmo/'
-                       'cloudify-manager/master/resources/'
-                       'rest-service/cloudify/install_agent.py')
+_INSTALL_SCRIPT_URL = (
+    'https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/'
+    '3.4.2-build/resources/rest-service/cloudify/install_agent.py'
+)
 
 
 class _MockManagerClient(object):
