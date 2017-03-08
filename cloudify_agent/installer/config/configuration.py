@@ -154,6 +154,11 @@ def _cfy_agent_attributes_no_defaults(cloudify_agent):
             name = ctx.instance.id
         cloudify_agent['name'] = name
 
+    service_name = cloudify_agent.get('service_name')
+    if service_name:
+        # service_name takes precedence over name (which is deprecated)
+        cloudify_agent['name'] = service_name
+
     if not cloudify_agent.get('queue'):
         # by default, queue of the agent is the same as the name
         cloudify_agent['queue'] = cloudify_agent['name']
