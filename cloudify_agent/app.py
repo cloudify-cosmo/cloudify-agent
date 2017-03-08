@@ -33,7 +33,7 @@ from cloudify import cluster
 from cloudify.celery import gate_keeper
 from cloudify.celery import logging_server
 
-from cloudify_agent.api import utils
+from cloudify_agent.api import exceptions, utils
 from cloudify_agent.api.factory import DaemonFactory
 
 
@@ -99,10 +99,14 @@ logging_server.configure_app(app)
 
 def _set_master(daemon_name, node):
     factory = DaemonFactory()
-    daemon = factory.load(daemon_name)
+    try:
+        daemon = factory.load(daemon_name)
+    except exceptions.DaemonNotFoundError:
+        return
     daemon.broker_ip = node['broker_ip']
     daemon.broker_user = node['broker_user']
     daemon.broker_pass = node['broker_pass']
+    daemon.broker_ssl_cert_path = node.get('broker_ssl_cert_path')
     factory.save(daemon)
     cluster.set_cluster_active(node)
 
@@ -116,10 +120,27 @@ def _make_failover_strategy(daemon_name):
                 nodes = cluster.get_cluster_nodes()
                 for node in nodes:
                     _set_master(daemon_name, node)
-                    broker_url = 'amqp://{0}:{1}@{2}:5672//'.format(
+
+                    ssl_enabled = node.get('broker_ssl_enabled', False)
+                    if 'broker_port' in node:
+                        port = node['broker_port']
+                    else:
+                        port = 5671 if ssl_enabled else 5672
+
+                    broker_url = 'amqp://{0}:{1}@{2}:{3}//'.format(
                         node['broker_user'],
                         node['broker_pass'],
-                        node['broker_ip'])
+                        node['broker_ip'],
+                        port)
+
+                    if ssl_enabled:
+                        # use a different cert for each node in the cluster -
+                        # can't pass that in the amqp url
+                        broker_ssl_cert_path = node.get('broker_ssl_cert_path')
+                        if broker_ssl_cert_path:
+                            app.conf['BROKER_USE_SSL']['ca_certs'] =\
+                                broker_ssl_cert_path
+
                     logger.debug('Trying broker at {0}'
                                  .format(broker_url))
                     yield broker_url
@@ -178,3 +199,7 @@ if daemon_name:
     @app.task(name='cluster-update')
     def cluster_update(nodes):
         cluster.set_cluster_nodes(nodes)
+        factory = DaemonFactory()
+        daemon = factory.load(daemon_name)
+        daemon.cluster = nodes
+        factory.save(daemon)
