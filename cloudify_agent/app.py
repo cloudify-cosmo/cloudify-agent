@@ -114,6 +114,7 @@ def _set_master(daemon_name, node):
 def _make_failover_strategy(daemon_name):
     def _strategy(initial_brokers):
         logger.debug('Failover strategy: searching for a new rabbitmq server')
+        initial_brokers = [broker for broker in initial_brokers if broker]
         brokers = itertools.cycle(initial_brokers)
         while True:
             if cluster.is_cluster_configured():
