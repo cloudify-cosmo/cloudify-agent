@@ -15,7 +15,6 @@
 
 import click
 import json
-import os
 
 from cloudify_agent.api import defaults
 from cloudify_agent.api import utils as api_utils
@@ -194,9 +193,6 @@ def create(**params):
     if attributes['broker_get_settings_from_manager']:
         broker = api_utils.internal.get_broker_configuration(attributes)
         attributes.update(broker)
-    # _create_broker_ssl_cert called after get_broker_configuration because the
-    # cert might be retrieved there
-    _create_broker_ssl_cert(attributes)
 
     from cloudify_agent.shell.main import get_logger
     daemon = DaemonFactory().new(
@@ -418,19 +414,3 @@ def _parse_custom_options(options):
         parsed[key] = value
 
     return parsed
-
-
-def _create_broker_ssl_cert(agent):
-    """
-    Put the broker SSL cert into a file for AMQP clients to use,
-    if broker_ssl_cert is set.
-    """
-    click.echo('Deploying broker SSL certificate (if defined).')
-    broker_ssl_cert_content = agent['broker_ssl_cert']
-    if broker_ssl_cert_content:
-        broker_ssl_cert_path = \
-            os.path.expanduser(agent['broker_ssl_cert_path'])
-        agent['broker_ssl_cert_path'] = broker_ssl_cert_path
-        api_utils.safe_create_dir(os.path.dirname(broker_ssl_cert_path))
-        with open(broker_ssl_cert_path, 'w') as broker_cert_file:
-            broker_cert_file.write(broker_ssl_cert_content)
