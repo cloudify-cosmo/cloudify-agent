@@ -49,7 +49,7 @@ class AgentInstaller(object):
         if execution_env is None:
             execution_env = {}
         response = self.runner.run(
-            command='{0} {1}'.format(self.cfy_agent_path, command),
+            command='"{0}" {1}'.format(self.cfy_agent_path, command),
             execution_env=execution_env)
         output = response.std_out
         if output:
