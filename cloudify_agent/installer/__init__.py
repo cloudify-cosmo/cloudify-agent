@@ -79,6 +79,10 @@ class AgentInstaller(object):
             )
         )
         self.runner.put_file(src=local_cert_path, dst=remote_cert_path)
+        self.logger.info(
+            'Passing broker SSL certificate from {0}'.format(local_cert_path))
+        with open(local_cert_path) as cert_file:
+            self.cloudify_agent['broker_ssl_cert'] = cert_file.read()
 
     def _get_local_ssl_cert_path(self):
         default_path = os.environ[env.CLOUDIFY_LOCAL_REST_CERT_PATH]
@@ -96,6 +100,8 @@ class AgentInstaller(object):
 
         path = path_join(agent_dir, ssl_target_dir, cert_filename)
         self.cloudify_agent['agent_rest_cert_path'] = path
+        self.cloudify_agent['broker_ssl_cert_path'] = path
+        self.cloudify_agent['broker_ssl_enabled'] = True
         return path
 
     def configure_agent(self):
