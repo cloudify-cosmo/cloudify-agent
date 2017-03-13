@@ -28,7 +28,7 @@ from cloudify.utils import LocalCommandRunner as _UtilsLocalCommandRunner
 class LocalCommandRunner(_UtilsLocalCommandRunner):
     def download(self, url, output_path=None, certificate_file=None,
                  **attributes):
-        headers = {CLOUDIFY_TOKEN_AUTHENTICATION_HEADER: ctx.rest_token}
+        headers = {CLOUDIFY_TOKEN_AUTHENTICATION_HEADER: str(ctx.rest_token)}
         response = requests.get(
             url, stream=True, verify=certificate_file, headers=headers)
         if not response.ok:
