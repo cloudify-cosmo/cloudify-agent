@@ -35,11 +35,9 @@ from cloudify_agent.api import utils
 
 def prepare_local_installer(cloudify_agent, logger=None):
     if os.name == 'nt':
-        installer = LocalWindowsAgentInstaller(
-            cloudify_agent, logger)
+        installer = LocalWindowsAgentInstaller(cloudify_agent, logger)
     else:
-        installer = LocalLinuxAgentInstaller(
-            cloudify_agent, logger)
+        installer = LocalLinuxAgentInstaller(cloudify_agent, logger)
     return installer
 
 
