@@ -48,8 +48,14 @@ class AgentInstaller(object):
     def run_agent_command(self, command, execution_env=None):
         if execution_env is None:
             execution_env = {}
+
+        # TBD: Investigate why adding quotes don't work on linux
+        if self.cloudify_agent.get('windows', False):
+            full_command = '"{0}" {1}'
+        else:
+            full_command = '{0} {1}'
         response = self.runner.run(
-            command='{0} {1}'.format(self.cfy_agent_path, command),
+            command=full_command.format(self.cfy_agent_path, command),
             execution_env=execution_env)
         output = response.std_out
         if output:
