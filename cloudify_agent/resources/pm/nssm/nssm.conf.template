@@ -27,6 +27,7 @@ echo Setting service environment
 REST_HOST={{ rest_host }} ^
 REST_PORT={{ rest_port }} ^
 LOCAL_REST_CERT_FILE={{ local_rest_cert_file }} ^
+CLOUDIFY_CLUSTER_SETTINGS_PATH="{{ cluster_settings_path|default('') }}" ^
 MANAGER_FILE_SERVER_URL=https://{{ rest_host }}:{{ rest_port }}/resources ^
 CLOUDIFY_DAEMON_NAME="{{ name }}" ^
 CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}" ^

@@ -138,7 +138,8 @@ class GenericLinuxDaemon(CronRespawnDaemon):
             pid_file=self.pid_file,
             cron_respawn=str(self.cron_respawn).lower(),
             enable_cron_script=self.create_enable_cron_script(),
-            disable_cron_script=self.create_disable_cron_script()
+            disable_cron_script=self.create_disable_cron_script(),
+            cluster_settings_path=self.cluster_settings_path
         )
         self._runner.run('sudo mkdir -p {0}'.format(
             os.path.dirname(self.config_path)))
