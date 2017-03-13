@@ -18,6 +18,7 @@ import json
 import os
 import time
 
+from pika.exceptions import AMQPConnectionError
 from cloudify.utils import (LocalCommandRunner,
                             setup_logger)
 from cloudify import amqp_client
@@ -276,6 +277,7 @@ class Daemon(object):
         # we will make use of these values when loading agents by name.
         self.process_management = self.PROCESS_MANAGEMENT
         self.virtualenv = VIRTUALENV
+        self.cluster_settings_path = params.get('cluster_settings_path')
 
     def _get_celery_conf_path(self):
         return os.path.join(self.workdir, 'broker_config.json')
@@ -330,10 +332,16 @@ class Daemon(object):
             return constants.BROKER_PORT_NO_SSL
 
     def _is_agent_registered(self):
-        celery_client = utils.get_celery_client(
-            broker_url=self.broker_url,
-            broker_ssl_enabled=self.broker_ssl_enabled,
-            broker_ssl_cert_path=self.broker_ssl_cert_path)
+        if self.cluster:
+            # only used for manager failures during installation - see
+            # detailed comment in the ._get_amqp_client method
+            celery_client = utils.get_cluster_celery_client(
+                self.broker_url, self.cluster)
+        else:
+            celery_client = utils.get_celery_client(
+                broker_url=self.broker_url,
+                broker_ssl_enabled=self.broker_ssl_enabled,
+                broker_ssl_cert_path=self.broker_ssl_cert_path)
         try:
             self._logger.debug('Retrieving daemon registered tasks')
             return utils.get_agent_registered(
@@ -601,24 +609,7 @@ class Daemon(object):
             raise exceptions.DaemonError(error)
 
     def _delete_amqp_queues(self):
-        # don't use self.broker_* - if we're connected to a cluster, we need
-        # to figure out the current cluster master; for that, examine a celery
-        # client to see which broker was chosen
-        celery_client = utils.get_celery_client(
-            broker_url=self.broker_url,
-            broker_ssl_enabled=self.broker_ssl_enabled,
-            broker_ssl_cert_path=self.broker_ssl_cert_path)
-        celery_connection = celery_client.pool.connection
-        ssl_enabled = bool(celery_connection.ssl)
-        cert_path = celery_connection.ssl['ca_certs'] if ssl_enabled else None
-        client = amqp_client.create_client(
-            amqp_host=celery_connection.hostname,
-            amqp_user=celery_connection.userid,
-            amqp_pass=celery_connection.password,
-            ssl_enabled=ssl_enabled,
-            ssl_cert_path=cert_path
-        )
-
+        client = self._get_amqp_client()
         try:
             channel = client.connection.channel()
             self._logger.debug('Deleting queue: {0}'.format(self.queue))
@@ -633,6 +624,35 @@ class Daemon(object):
             except Exception as e:
                 self._logger.warning('Failed closing amqp client: {0}'
                                      .format(e))
+
+    def _get_amqp_client(self):
+        if self.cluster:
+            # if the active manager dies during agent installation, only then
+            # we will need to look for the new active here; in most cases, the
+            # first one from the self.cluster list will be online, and that
+            # is equal to just using self.broker_url/self.broker_ip
+            err = None
+            for node in self.cluster:
+                try:
+                    return amqp_client.create_client(
+                        amqp_host=node['broker_ip'],
+                        amqp_user=node['broker_user'],
+                        amqp_pass=node['broker_pass'],
+                        ssl_enabled=node['broker_ssl_enabled'],
+                        ssl_cert_path=node['broker_ssl_cert_path']
+                    )
+                except AMQPConnectionError as err:
+                    continue
+            if err:
+                raise err
+        else:
+            return amqp_client.create_client(
+                amqp_host=self.broker_ip,
+                amqp_user=self.broker_user,
+                amqp_pass=self.broker_pass,
+                ssl_enabled=self.broker_ssl_enabled,
+                ssl_cert_path=self.broker_ssl_cert_path
+            )
 
     def _validate_autoscale(self):
         min_workers = self._params.get('min_workers')

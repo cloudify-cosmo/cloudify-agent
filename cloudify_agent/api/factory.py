@@ -16,8 +16,8 @@
 import os
 import json
 
-from cloudify.cluster import set_cluster_nodes
 from cloudify.utils import setup_logger
+from cloudify import cluster as cluster_settings
 
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
@@ -192,20 +192,29 @@ class DaemonFactory(object):
         """
         if not os.path.exists(self.storage):
             os.makedirs(self.storage)
-
         daemon_path = os.path.join(
             self.storage, '{0}.json'.format(
                 daemon.name)
         )
+
+        if getattr(daemon, 'cluster'):
+            cluster_path = os.path.join(
+                self.storage, 'cluster-{0}.json'.format(
+                    daemon.name)
+            )
+            # .set_cluster_nodes will normalize the nodes representation,
+            # so let's store the normalized version
+            nodes = cluster_settings.set_cluster_nodes(daemon.cluster,
+                                                       filename=cluster_path)
+            daemon.cluster = nodes
+            daemon.cluster_settings_path = cluster_path
+
         self.logger.debug('Saving daemon configuration at: {0}'
                           .format(daemon_path))
         with open(daemon_path, 'w') as f:
             props = utils.internal.daemon_to_dict(daemon)
             json.dump(props, f, indent=2)
             f.write(os.linesep)
-
-        if getattr(daemon, 'cluster'):
-            set_cluster_nodes(daemon.cluster)
 
     def delete(self, name):
 
@@ -219,3 +228,7 @@ class DaemonFactory(object):
             self.storage, '{0}.json'.format(name))
         if os.path.exists(daemon_path):
             os.remove(daemon_path)
+
+        cluster_path = os.path.join(
+            self.storage, 'cluster-{0}.json'.format(name))
+        cluster_settings.delete_cluster_settings(filename=cluster_path)

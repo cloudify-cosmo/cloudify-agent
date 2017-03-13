@@ -10,6 +10,7 @@ export LOCAL_REST_CERT_FILE={{ local_rest_cert_file }}
 export MANAGER_FILE_SERVER_URL=https://${REST_HOST}:${REST_PORT}/resources
 export VIRTUALENV={{ virtualenv_path }}
 export PATH="${VIRTUALENV}/bin:${PATH}"
+export CLOUDIFY_CLUSTER_SETTINGS_PATH={{ cluster_settings_path|default('') }}
 
 # Celery worker environment variables
 export CELERY_WORK_DIR={{ workdir }}

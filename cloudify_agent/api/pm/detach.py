@@ -142,4 +142,5 @@ class DetachedDaemon(CronRespawnDaemon):
             extra_env_path=self.extra_env_path,
             storage_dir=utils.internal.get_storage_directory(self.user),
             workdir=self.workdir,
+            cluster_settings_path=self.cluster_settings_path
         )
