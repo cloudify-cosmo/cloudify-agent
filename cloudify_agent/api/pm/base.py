@@ -218,9 +218,14 @@ class Daemon(object):
         # Optional parameters
         self.name = params.get('name') or self._get_name_from_manager()
         self.user = params.get('user') or getpass.getuser()
-        self.broker_ssl_enabled = params.get('broker_ssl_enabled', False)
-        self.broker_ssl_cert_content = params.get('broker_ssl_cert', '')
-        self.broker_ssl_cert_path = params.get('broker_ssl_cert_path', '')
+        self.broker_ssl_enabled = params.get('broker_ssl_enabled', True)
+        if self.broker_ssl_enabled:
+            self.broker_ssl_cert_path = params['local_rest_cert_file']
+            with open(self.broker_ssl_cert_path) as cert_file:
+                self.broker_ssl_cert_content = cert_file.read()
+        else:
+            self.broker_ssl_cert_path = ''
+            self.broker_ssl_cert_content = ''
         # Port must be determined after SSL enabled has been set in order for
         # intelligent port selection to work properly
         self.broker_port = self._get_broker_port()
