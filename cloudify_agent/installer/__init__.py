@@ -42,7 +42,7 @@ class AgentInstaller(object):
         if execution_env is None:
             execution_env = {}
 
-        # TBD: Investigate why adding quotes don't work on linux
+        # TBD: Investigate why adding quotes doesn't work on linux
         if self.cloudify_agent.get('windows', False):
             full_command = '"{0}" {1}'
         else:
