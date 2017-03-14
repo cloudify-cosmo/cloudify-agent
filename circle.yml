@@ -28,6 +28,7 @@ dependencies:
         ;;
       esac
   cache_directories:
+    - ~/.cache/pip
     - .tox
 
 test:
