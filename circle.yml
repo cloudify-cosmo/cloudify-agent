@@ -26,6 +26,8 @@ dependencies:
         tox -e py26 --notest
         tox -e py27 --notest
         ;;
+      *)
+        echo "Not running in first node. Skipping."
       esac
   cache_directories:
     - ~/.cache/pip
