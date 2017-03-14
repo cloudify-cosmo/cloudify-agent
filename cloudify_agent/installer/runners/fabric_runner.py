@@ -35,6 +35,7 @@ from cloudify_agent.installer import exceptions
 from cloudify_agent.api import utils as api_utils
 
 DEFAULT_REMOTE_EXECUTION_PORT = 22
+RSA_PRIVATE_KEY_PREFIX = '-----BEGIN RSA PRIVATE KEY-----'
 
 COMMON_ENV = {
     'warn_only': True,
@@ -95,7 +96,10 @@ class FabricRunner(object):
             'user': self.user
         }
         if self.key:
-            env['key_filename'] = self.key
+            if self.key.startswith(RSA_PRIVATE_KEY_PREFIX):
+                env['key'] = self.key
+            else:
+                env['key_filename'] = self.key
         if self.password:
             env['password'] = self.password
 

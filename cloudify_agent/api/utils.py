@@ -105,15 +105,9 @@ class _Internal(object):
 
     @staticmethod
     def generate_agent_name():
-
+        """Generates a unique name with a pre-defined prefix
         """
-        Generates a unique name with a pre-defined prefix
-
-        """
-
-        return '{0}-{1}'.format(
-            defaults.CLOUDIFY_AGENT_PREFIX,
-            uuid.uuid4())
+        return '{0}-{1}'.format(defaults.CLOUDIFY_AGENT_PREFIX, uuid.uuid4())
 
     @staticmethod
     def generate_new_agent_name(old_agent_name):
