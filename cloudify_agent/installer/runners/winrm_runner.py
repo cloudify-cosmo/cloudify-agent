@@ -257,7 +257,7 @@ class WinRMRunner(object):
         """
 
         return self.run(
-            '''@powershell -Command "Remove-Item -Recurse -Force {0}"'''
+            """@powershell -Command 'Remove-Item -Recurse -Force "{0}"'"""
             .format(path), raise_on_failure=not ignore_missing)
 
     def mktemp(self):
