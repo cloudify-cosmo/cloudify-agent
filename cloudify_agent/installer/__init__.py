@@ -273,7 +273,7 @@ class WindowsInstallerMixin(AgentInstaller):
 
     @property
     def cfy_agent_path(self):
-        return '{0}\\Scripts\\cfy-agent'.format(
+        return '"{0}\\Scripts\\cfy-agent"'.format(
             self.cloudify_agent['envdir'])
 
     def install_pip(self):
@@ -307,7 +307,7 @@ class LinuxInstallerMixin(AgentInstaller):
 
     @property
     def cfy_agent_path(self):
-        return '{0}/bin/python {0}/bin/cfy-agent'.format(
+        return '"{0}/bin/python" "{0}/bin/cfy-agent"'.format(
             self.cloudify_agent['envdir'])
 
     def install_pip(self):
