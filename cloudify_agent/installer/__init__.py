@@ -298,7 +298,7 @@ class WindowsInstallerMixin(AgentInstaller):
         self.logger.debug('Extracting {0} to {1}'
                           .format(archive, destination))
         cmd = '{0} /SILENT /VERYSILENT' \
-              ' /SUPPRESSMSGBOXES /DIR={1}'.format(archive, destination)
+              ' /SUPPRESSMSGBOXES /DIR="{1}"'.format(archive, destination)
         self.runner.run(cmd)
         return destination
 
