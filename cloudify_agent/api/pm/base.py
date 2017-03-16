@@ -639,7 +639,7 @@ class Daemon(object):
                         amqp_user=node['broker_user'],
                         amqp_pass=node['broker_pass'],
                         ssl_enabled=node['broker_ssl_enabled'],
-                        ssl_cert_path=node['broker_ssl_cert_path']
+                        ssl_cert_path=node.get('internal_cert_path')
                     )
                 except AMQPConnectionError as err:
                     continue

@@ -106,7 +106,7 @@ def _set_master(daemon_name, node):
     daemon.broker_ip = node['broker_ip']
     daemon.broker_user = node['broker_user']
     daemon.broker_pass = node['broker_pass']
-    daemon.broker_ssl_cert_path = node.get('broker_ssl_cert_path')
+    daemon.broker_ssl_cert_path = node.get('internal_cert_path')
     factory.save(daemon)
     cluster.set_cluster_active(node)
 
@@ -137,7 +137,7 @@ def _make_failover_strategy(daemon_name):
                     if ssl_enabled:
                         # use a different cert for each node in the cluster -
                         # can't pass that in the amqp url
-                        broker_ssl_cert_path = node.get('broker_ssl_cert_path')
+                        broker_ssl_cert_path = node.get('internal_cert_path')
                         if broker_ssl_cert_path:
                             app.conf['BROKER_USE_SSL']['ca_certs'] =\
                                 broker_ssl_cert_path
