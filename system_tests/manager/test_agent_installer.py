@@ -171,7 +171,7 @@ class AgentInstallerTest(testenv.TestCase):
                                     install_method='init_script',
                                     name=None,
                                     install_userdata=None):
-        user = 'Administrator'
+        user = 'Admin'
         file_path = 'C:\\Users\\{0}\\test_file'.format(user)
         userdata = '#ps1_sysnative \nSet-Content {1} "{0}"'.format(
             self.expected_file_content, file_path)
