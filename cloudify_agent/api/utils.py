@@ -236,7 +236,7 @@ def get_cluster_celery_client(broker_urls, cluster):
             return get_celery_client(
                 broker_url=broker_url,
                 broker_ssl_enabled=node.get('broker_ssl_enabled'),
-                broker_ssl_cert_path=node.get('broker_ssl_cert_path'),
+                broker_ssl_cert_path=node.get('internal_cert_path'),
                 max_retries=1)
         except Exception as err:
             continue
