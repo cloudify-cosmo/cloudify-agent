@@ -196,7 +196,7 @@ def _celery_client(ctx, agent):
         'BROKER_URL': broker_url,
         'CELERY_RESULT_BACKEND': broker_url
     }
-    if not ManagerVersion(agent['version']).equals(ManagerVersion('3.2')):
+    if ManagerVersion(agent['version']) != ManagerVersion('3.2'):
         config['CELERY_TASK_RESULT_EXPIRES'] = \
             defaults.CELERY_TASK_RESULT_EXPIRES
     fd, cert_path = tempfile.mkstemp()
@@ -219,8 +219,7 @@ def _celery_client(ctx, agent):
 
 
 def _celery_task_name(version):
-    if not version or ManagerVersion(version).greater_than(
-            ManagerVersion('3.3.1')):
+    if not version or ManagerVersion(version) > ManagerVersion('3.3.1'):
         return 'cloudify.dispatch.dispatch'
     else:
         return 'script_runner.tasks.run'
