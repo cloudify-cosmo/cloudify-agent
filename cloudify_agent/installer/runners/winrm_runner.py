@@ -93,7 +93,8 @@ class WinRMRunner(object):
             auth=(self.session_config['user'],
                   self.session_config['password']))
 
-    def run(self, command, raise_on_failure=True, execution_env=None):
+    def run(self, command, raise_on_failure=True, execution_env=None,
+            powershell=False):
 
         """
         :param command: The command to execute.
@@ -143,7 +144,10 @@ class WinRMRunner(object):
         if remote_env_file:
             command = 'call {0} & {1}'.format(remote_env_file, command)
         try:
-            response = self.session.run_cmd(command)
+            if powershell:
+                response = self.session.run_ps(command)
+            else:
+                response = self.session.run_cmd(command)
         except BaseException as e:
             raise WinRMCommandExecutionError(
                 command=command,
@@ -283,9 +287,7 @@ class WinRMRunner(object):
         :rtype WinRMCommandExecutionResponse.
         """
 
-        return self.run(
-            '''@powershell -Command "mkdir \"{0}\" -Force"'''.format(path)
-        )
+        return self.run('mkdir \"{0}\" -Force'.format(path))
 
     def new_file(self, path):
 
