@@ -16,7 +16,7 @@ import os
 import platform
 import shutil
 import urllib
-
+from posixpath import join as urljoin
 from contextlib import contextmanager
 
 from mock import patch, MagicMock
@@ -42,9 +42,12 @@ from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import only_ci
 
 
+_AGENT_SCRIPT_NAME = 'install_agent_template.py'
+# TODO: Change back to master
 _INSTALL_SCRIPT_URL = ('https://raw.githubusercontent.com/cloudify-cosmo/'
-                       'cloudify-manager/master/resources/'
-                       'rest-service/cloudify/install_agent.py')
+                       'cloudify-manager/'
+                       'CFY-6577-fix-agents-upgrade/resources/'
+                       'rest-service/cloudify/{0}'.format(_AGENT_SCRIPT_NAME))
 
 
 class _MockManagerClient(object):
@@ -76,17 +79,22 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
         agent_path = os.path.join(agent_dir, package_name)
         shutil.copyfile(agent_package.get_package_path(), agent_path)
         resources_dir = os.path.join(self.temp_folder, 'cloudify')
+        agent_script_dir = os.path.join(self.temp_folder, 'cloudify_agent')
         os.makedirs(resources_dir)
+        os.makedirs(agent_script_dir)
         if os.getenv('AGENT_INSTALL_SCRIPT'):
             install_script_url = os.getenv('AGENT_INSTALL_SCRIPT')
         else:
             install_script_url = _INSTALL_SCRIPT_URL
-        urllib.urlretrieve(install_script_url,
-                           os.path.join(resources_dir, 'install_agent.py'))
+        urllib.urlretrieve(
+            install_script_url,
+            os.path.join(resources_dir, _AGENT_SCRIPT_NAME)
+        )
         new_env = {
             constants.REST_HOST_KEY: 'localhost',
             constants.MANAGER_FILE_SERVER_URL_KEY:
                 'http://localhost:{0}'.format(port),
+            constants.MANAGER_FILE_SERVER_ROOT_KEY: self.temp_folder,
             constants.REST_PORT_KEY: '80',
         }
         with patch.dict(os.environ, new_env):
@@ -107,11 +115,22 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
             'name': agent_name,
             'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
         }
+
+        # Necessary to patch this method, because by default port 80 is used
+        def get_script_url(agent_self):
+            return urljoin(
+                os.environ[constants.MANAGER_FILE_SERVER_URL_KEY],
+                'cloudify_agent',
+                agent_self._script_filename
+            )
+
         with self._manager_env():
             env = local.init_env(name=self._testMethodName,
                                  blueprint_path=blueprint_path,
                                  inputs=inputs)
-            env.execute('install', task_retries=0)
+            with patch('cloudify_agent.operations.'
+                       'AgentFilesGenerator._get_script_url', get_script_url):
+                env.execute('install', task_retries=0)
             self.assert_daemon_alive(name=agent_name)
             agent_dict = self.get_agent_dict(env, 'new_agent_host')
             agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
@@ -207,6 +226,7 @@ class TestCreateAgentAmqp(BaseTest):
         new_env = {
             constants.REST_HOST_KEY: '10.0.4.48',
             constants.MANAGER_FILE_SERVER_URL_KEY: 'http://10.0.4.48:53229',
+            constants.MANAGER_FILE_SERVER_ROOT_KEY: self.temp_folder
         }
         return patch.dict(os.environ, new_env)
 
@@ -250,6 +270,7 @@ class TestCreateAgentAmqp(BaseTest):
         context = self._create_node_instance_context()
         old_context = ctx
         current_ctx.set(context)
+        self._get_install_agent_template()
         try:
             old_name = ctx.instance.runtime_properties[
                 'cloudify_agent']['name']
@@ -271,3 +292,13 @@ class TestCreateAgentAmqp(BaseTest):
             self.assertNotEquals(old_queue, new_queue)
         finally:
             current_ctx.set(old_context)
+
+    def _get_install_agent_template(self):
+        resources_dir = os.path.join(self.temp_folder, 'cloudify')
+        agent_script_dir = os.path.join(self.temp_folder, 'cloudify_agent')
+        os.makedirs(resources_dir)
+        os.makedirs(agent_script_dir)
+        agent_template_path = os.path.join(resources_dir, _AGENT_SCRIPT_NAME)
+        # Write the minimal possible template
+        with open(agent_template_path, 'w') as f:
+            f.write('{{ creds_url }}')

@@ -83,7 +83,8 @@ class BaseTest(unittest.TestCase):
         constants.REST_PORT_KEY: '80',
         constants.BROKER_SSL_CERT_PATH: 'broker/cert/path',
         env_constants.CLOUDIFY_LOCAL_REST_CERT_PATH: tmp_rest_cert_path,
-        env_constants.CLOUDIFY_BROKER_SSL_CERT_PATH: 'broker/cert/path'
+        env_constants.CLOUDIFY_BROKER_SSL_CERT_PATH: 'broker/cert/path',
+        constants.MANAGER_FILE_SERVER_ROOT_KEY: 'localhost/resources'
     }
 
     def setUp(self):
