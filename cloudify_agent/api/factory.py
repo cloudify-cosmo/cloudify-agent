@@ -196,18 +196,18 @@ class DaemonFactory(object):
             self.storage, '{0}.json'.format(
                 daemon.name)
         )
+        cluster_path = os.path.join(
+            self.storage, 'cluster-{0}.json'.format(
+                daemon.name)
+        )
+        daemon.cluster_settings_path = cluster_path
 
-        if getattr(daemon, 'cluster'):
-            cluster_path = os.path.join(
-                self.storage, 'cluster-{0}.json'.format(
-                    daemon.name)
-            )
+        if getattr(daemon, 'cluster', None):
             # .set_cluster_nodes will normalize the nodes representation,
             # so let's store the normalized version
             nodes = cluster_settings.set_cluster_nodes(daemon.cluster,
                                                        filename=cluster_path)
             daemon.cluster = nodes
-            daemon.cluster_settings_path = cluster_path
 
         self.logger.debug('Saving daemon configuration at: {0}'
                           .format(daemon_path))
