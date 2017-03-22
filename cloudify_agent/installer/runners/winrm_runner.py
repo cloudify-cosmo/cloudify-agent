@@ -284,7 +284,7 @@ class WinRMRunner(object):
         """
 
         return self.run(
-            '''@powershell -Command "mkdir {0} -Force"'''.format(path)
+            '''@powershell -Command "mkdir \"{0}\" -Force"'''.format(path)
         )
 
     def new_file(self, path):
