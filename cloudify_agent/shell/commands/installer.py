@@ -30,12 +30,15 @@ from cloudify_agent.installer.operations import prepare_local_installer
               type=click.File())
 @click.option('--output-agent-file',
               help='Path to output agent configuration')
+@click.option('--rest-token',
+              help='The rest token with which to download the package')
 @handle_failures
-def install_local(agent_file, output_agent_file):
+def install_local(agent_file, output_agent_file, rest_token):
     if agent_file is None:
         raise click.ClickException('--agent-file should be specified.')
     cloudify_agent = json.load(agent_file)
-    state.current_ctx.set(context.CloudifyContext, {})
+    ctx = context.CloudifyContext({'rest_token': rest_token})
+    state.current_ctx.set(ctx, {})
     if not cloudify_agent.get('rest_port'):
         cloudify_agent['rest_port'] = defaults.INTERNAL_REST_PORT
     os.environ[utils.internal.CLOUDIFY_DAEMON_USER_KEY] = str(
