@@ -19,8 +19,10 @@ used outside the scope of an @operation.
 """
 import os
 import sys
+import getpass
 import itertools
 import traceback
+import tempfile
 import logging
 import logging.handlers
 import kombu.connection
@@ -28,6 +30,7 @@ import kombu.connection
 from celery import Celery, signals
 from celery.utils.log import ColorFormatter, get_logger
 from celery.worker.loops import asynloop
+from fasteners import InterProcessLock
 
 from cloudify import cluster
 from cloudify.celery import gate_keeper
@@ -87,6 +90,13 @@ def reset_worker_tasks_state(sender, *args, **kwargs):
     sender.hub.call_soon(callback=callback)
 
 
+def _cluster_settings_lock(daemon_name):
+    return InterProcessLock(
+        os.path.join(
+            tempfile.gettempdir(),
+            'cluster-{0}-{1}.lock'.format(getpass.getuser(), daemon_name)))
+
+
 # This attribute is used as the celery App instance.
 # it is referenced in two ways:
 #   1. Celery command line --app options.
@@ -107,8 +117,9 @@ def _set_master(daemon_name, node):
     daemon.broker_user = node['broker_user']
     daemon.broker_pass = node['broker_pass']
     daemon.broker_ssl_cert_path = node.get('internal_cert_path')
-    factory.save(daemon)
-    cluster.set_cluster_active(node)
+    with _cluster_settings_lock(daemon_name):
+        factory.save(daemon)
+        cluster.set_cluster_active(node)
 
 
 def _make_failover_strategy(daemon_name):
@@ -120,7 +131,8 @@ def _make_failover_strategy(daemon_name):
             if cluster.is_cluster_configured():
                 nodes = cluster.get_cluster_nodes()
                 for node in nodes:
-                    _set_master(daemon_name, node)
+                    with _cluster_settings_lock(daemon_name):
+                        _set_master(daemon_name, node)
 
                     ssl_enabled = node.get('broker_ssl_enabled', False)
                     if 'broker_port' in node:
@@ -150,9 +162,10 @@ def _make_failover_strategy(daemon_name):
                 broker_url = next(brokers)
                 if len(initial_brokers) > 1:
                     logger.debug('writing config file')
-                    cluster.config_from_broker_urls(broker_url,
-                                                    initial_brokers)
-                    _set_master(daemon_name, cluster.get_cluster_active())
+                    with _cluster_settings_lock(daemon_name):
+                        cluster.config_from_broker_urls(broker_url,
+                                                        initial_brokers)
+                        _set_master(daemon_name, cluster.get_cluster_active())
                 logger.debug('Trying broker at {0}'
                              .format(broker_url))
                 yield broker_url
