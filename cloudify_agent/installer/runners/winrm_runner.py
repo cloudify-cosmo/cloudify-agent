@@ -93,7 +93,8 @@ class WinRMRunner(object):
             auth=(self.session_config['user'],
                   self.session_config['password']))
 
-    def run(self, command, raise_on_failure=True, execution_env=None):
+    def run(self, command, raise_on_failure=True, execution_env=None,
+            powershell=False):
 
         """
         :param command: The command to execute.
@@ -103,6 +104,8 @@ class WinRMRunner(object):
                                  error and not raise an exception.
         :param execution_env: environment variables to be applied before
                               running the command
+        :param powershell: Determines where to run command as a powershell
+                           script.
 
         :return a response object with information about the execution
         :rtype WinRMCommandExecutionResponse.
@@ -143,7 +146,10 @@ class WinRMRunner(object):
         if remote_env_file:
             command = 'call {0} & {1}'.format(remote_env_file, command)
         try:
-            response = self.session.run_cmd(command)
+            if powershell:
+                response = self.session.run_ps(command)
+            else:
+                response = self.session.run_cmd(command)
         except BaseException as e:
             raise WinRMCommandExecutionError(
                 command=command,
@@ -179,17 +185,19 @@ class WinRMRunner(object):
         # see: https://blogs.technet.microsoft.com/bshukla/2010/04/12/
         # ignoring-ssl-trust-in-powershell-system-net-webclient/
 
-        cmd = "$webClient = New-Object System.Net.WebClient; " \
-              "$webClient.Headers['{0}'] = '{1}'; " \
-              "$webClient.Downloadfile('{2}', '{3}')".format(
-                CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
-                ctx.rest_token,
-                url,
-                output_path
-              )
+        cmd = """
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {4}
+$webClient = New-Object System.Net.WebClient
+$webClient.Headers['{0}'] = '{1}'
+$webClient.Downloadfile('{2}', '{3}')""".format(
+            CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
+            ctx.rest_token,
+            url,
+            output_path,
+            '{$true}')
 
         # downloading agent package from the manager
-        self.run('@powershell -Command "{0}"'.format(cmd))
+        self.run(cmd, powershell=True)
 
         return output_path
 
@@ -283,9 +291,7 @@ class WinRMRunner(object):
         :rtype WinRMCommandExecutionResponse.
         """
 
-        return self.run(
-            '''@powershell -Command "mkdir {0} -Force"'''.format(path)
-        )
+        return self.run('mkdir \"{0}\" -Force'.format(path))
 
     def new_file(self, path):
 
@@ -394,9 +400,8 @@ class WinRMRunner(object):
             "'",  "`'").replace(
             '"',  '`"').replace(
             '\t', '`t')
-        return self.run(
-            '@powershell -Command "Set-Content {0} "{1}""'
-            .format(path, contents))
+        return self.run('Set-Content "{0}" "{1}"'.format(
+                path, contents), powershell=True)
 
     def get(self, path):
 
