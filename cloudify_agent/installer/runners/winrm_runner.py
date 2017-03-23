@@ -291,7 +291,7 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         :rtype WinRMCommandExecutionResponse.
         """
 
-        return self.run('mkdir \"{0}\" -Force'.format(path))
+        return self.run('mkdir \"{0}\" -Force'.format(path), powershell=True)
 
     def new_file(self, path):
 
