@@ -104,6 +104,8 @@ class WinRMRunner(object):
                                  error and not raise an exception.
         :param execution_env: environment variables to be applied before
                               running the command
+        :param powershell: Determines where to run command as a powershell
+                           script.
 
         :return a response object with information about the execution
         :rtype WinRMCommandExecutionResponse.
