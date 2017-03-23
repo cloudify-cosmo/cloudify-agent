@@ -183,17 +183,19 @@ class WinRMRunner(object):
         # see: https://blogs.technet.microsoft.com/bshukla/2010/04/12/
         # ignoring-ssl-trust-in-powershell-system-net-webclient/
 
-        cmd = "$webClient = New-Object System.Net.WebClient; " \
-              "$webClient.Headers['{0}'] = '{1}'; " \
-              "$webClient.Downloadfile('{2}', '{3}')".format(
-                CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
-                ctx.rest_token,
-                url,
-                output_path
-              )
+        cmd = """
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {4}
+$webClient = New-Object System.Net.WebClient
+$webClient.Headers['{0}'] = '{1}'
+$webClient.Downloadfile('{2}', '{3}')""".format(
+            CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
+            ctx.rest_token,
+            url,
+            output_path,
+            '{$true}')
 
         # downloading agent package from the manager
-        self.run('@powershell -Command "{0}"'.format(cmd))
+        self.run(cmd, powershell=True)
 
         return output_path
 
@@ -396,9 +398,8 @@ class WinRMRunner(object):
             "'",  "`'").replace(
             '"',  '`"').replace(
             '\t', '`t')
-        return self.run(
-            '@powershell -Command "Set-Content {0} "{1}""'
-            .format(path, contents))
+        return self.run('Set-Content "{0}" "{1}"'.format(
+                path, contents), powershell=True)
 
     def get(self, path):
 
