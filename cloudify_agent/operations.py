@@ -20,16 +20,22 @@ import ssl
 import sys
 import os
 import copy
+import json
+from uuid import uuid4
+from posixpath import join as urljoin
 from contextlib import contextmanager
 
 import celery
+from jinja2 import Environment, FileSystemLoader
 
 import cloudify.manager
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
-
-from cloudify.utils import ManagerVersion
-from cloudify.utils import get_manager_file_server_url
+from cloudify.utils import (ManagerVersion,
+                            get_local_rest_certificate,
+                            get_manager_file_server_url,
+                            get_manager_file_server_root,
+                            get_manager_rest_service_host)
 from cloudify.decorators import operation
 
 from cloudify_agent.api.plugins.installer import PluginInstaller
@@ -169,7 +175,7 @@ def create_new_agent_dict(old_agent):
     new_agent['remote_execution'] = True
     # TODO: broker_ip should be handled as part of fixing agent migration
     fields_to_copy = ['windows', 'ip', 'basedir', 'user',
-                      'broker_ip', 'ssl_cert_path', 'agent_rest_cert_path']
+                      'ssl_cert_path', 'agent_rest_cert_path']
     for field in fields_to_copy:
         if field in old_agent:
             new_agent[field] = old_agent[field]
@@ -196,7 +202,7 @@ def _celery_client(ctx, agent):
         'BROKER_URL': broker_url,
         'CELERY_RESULT_BACKEND': broker_url
     }
-    if not ManagerVersion(agent['version']).equals(ManagerVersion('3.2')):
+    if ManagerVersion(agent['version']) != ManagerVersion('3.2'):
         config['CELERY_TASK_RESULT_EXPIRES'] = \
             defaults.CELERY_TASK_RESULT_EXPIRES
     fd, cert_path = tempfile.mkstemp()
@@ -219,8 +225,7 @@ def _celery_client(ctx, agent):
 
 
 def _celery_task_name(version):
-    if not version or ManagerVersion(version).greater_than(
-            ManagerVersion('3.3.1')):
+    if not version or ManagerVersion(version) > ManagerVersion('3.3.1'):
         return 'cloudify.dispatch.dispatch'
     else:
         return 'script_runner.tasks.run'
@@ -242,8 +247,7 @@ def _get_manager_version():
     return ManagerVersion(version_json['version'])
 
 
-def _run_install_script(old_agent, timeout, validate_only=False,
-                        install_script=None):
+def _run_install_script(old_agent, timeout, validate_only=False):
     # Assuming that if there is no version info in the agent then
     # this agent was installed by current manager.
     old_agent = copy.deepcopy(old_agent)
@@ -251,30 +255,31 @@ def _run_install_script(old_agent, timeout, validate_only=False,
         old_agent['version'] = str(_get_manager_version())
     new_agent = create_new_agent_dict(old_agent)
     old_agent_version = new_agent['old_agent_version']
+
     with _celery_client(ctx, old_agent) as celery_client:
         old_agent_name = old_agent['name']
         _assert_agent_alive(old_agent_name, celery_client, old_agent_version)
-        if install_script is None:
-            script_format = '{0}/cloudify/install_agent.py'
-            install_script = script_format.format(
-                get_manager_file_server_url())
+
         script_runner_task = 'script_runner.tasks.run'
         cloudify_context = {
             'type': 'operation',
             'task_name': script_runner_task,
             'task_target': old_agent['queue']
         }
-        kwargs = {'script_path': install_script,
-                  'cloudify_agent': new_agent,
-                  'validate_only': validate_only,
-                  '__cloudify_context': cloudify_context}
-        task = _celery_task_name(old_agent_version)
-        result = celery_client.send_task(
-            task,
-            kwargs=kwargs,
-            queue=old_agent['queue']
-        )
-        returned_agent = result.get(timeout=timeout)
+        # Using a context manager to delete the files after sending the task
+        with AgentFilesGenerator() as agent_files:
+            kwargs = {'script_path': agent_files.script_url,
+                      'cloudify_agent': new_agent,
+                      'validate_only': validate_only,
+                      '__cloudify_context': cloudify_context}
+            task = _celery_task_name(old_agent_version)
+            result = celery_client.send_task(
+                task,
+                kwargs=kwargs,
+                queue=old_agent['queue']
+            )
+            returned_agent = result.get(timeout=timeout)
+
     if returned_agent['name'] != new_agent['name']:
         raise NonRecoverableError(
             'Expected agent name {0}, received {1}'.format(
@@ -287,7 +292,7 @@ def _run_install_script(old_agent, timeout, validate_only=False,
     }
 
 
-def create_agent_from_old_agent(operation_timeout=300, install_script=None):
+def create_agent_from_old_agent(operation_timeout=300):
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
@@ -303,8 +308,7 @@ def create_agent_from_old_agent(operation_timeout=300, install_script=None):
     old_agent = ctx.instance.runtime_properties['cloudify_agent']
     agents = _run_install_script(old_agent,
                                  operation_timeout,
-                                 validate_only=False,
-                                 install_script=install_script)
+                                 validate_only=False)
     # Make sure that new celery agent was started:
     returned_agent = agents['new']
     ctx.logger.info('Installed agent {0}'.format(returned_agent['name']))
@@ -315,15 +319,13 @@ def create_agent_from_old_agent(operation_timeout=300, install_script=None):
 
 
 @operation
-def create_agent_amqp(install_agent_timeout, install_script=None, **_):
-    create_agent_from_old_agent(install_agent_timeout,
-                                install_script=install_script)
+def create_agent_amqp(install_agent_timeout, **_):
+    create_agent_from_old_agent(install_agent_timeout)
 
 
 @operation
 def validate_agent_amqp(validate_agent_timeout, fail_on_agent_dead=False,
-                        fail_on_agent_not_installable=False,
-                        install_script=None, **_):
+                        fail_on_agent_not_installable=False, **_):
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
@@ -343,8 +345,7 @@ def validate_agent_amqp(validate_agent_timeout, fail_on_agent_dead=False,
     ctx.logger.info(('Checking if agent can be accessed through '
                      'different rabbitmq'))
     try:
-        _run_install_script(agent, validate_agent_timeout, validate_only=True,
-                            install_script=install_script)
+        _run_install_script(agent, validate_agent_timeout, validate_only=True)
     except Exception as e:
         result['agent_alive_crossbroker'] = False
         result['agent_alive_crossbroker_error'] = str(e)
@@ -358,3 +359,84 @@ def validate_agent_amqp(validate_agent_timeout, fail_on_agent_dead=False,
     if fail_on_agent_not_installable and not result[
             'agent_alive_crossbroker']:
         raise NonRecoverableError(result['agent_alive_crossbroker_error'])
+
+
+class AgentFilesGenerator(object):
+    def __init__(self):
+        self._unique_id = uuid4()
+        self._script_filename = '{0}_install_agent.py'.format(self._unique_id)
+        self._creds_filename = '{0}_creds.json'.format(self._unique_id)
+        self._file_server_root = get_manager_file_server_root()
+        self._script_path = self._get_file_path(self._script_filename)
+        self._creds_path = self._get_file_path(self._creds_filename)
+        self.script_url = self._get_script_url()
+        self._creds_url = self._get_creds_url()
+
+    def __enter__(self):
+        self._generate_files()
+        return self
+
+    def _generate_files(self):
+        creds_json_content = self._get_creds_json_content()
+        script_content = self._get_rendered_script()
+
+        self._write_file(self._script_path, script_content)
+        self._write_file(self._creds_path, creds_json_content)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._delete_file(self._script_path)
+        self._delete_file(self._creds_path)
+
+    @staticmethod
+    def _delete_file(file_path):
+        try:
+            os.remove(file_path)
+        except IOError:
+            pass
+
+    @staticmethod
+    def _write_file(file_path, content):
+        with open(file_path, 'w') as f:
+            f.write(content)
+
+    def _get_file_path(self, filename):
+        return os.path.join(
+            self._file_server_root,
+            'cloudify_agent',
+            filename
+        )
+
+    def _get_script_url(self):
+        # We specifically need a non-HTTPS URL in order to download the script
+        rest_host = 'http://{0}/'.format(get_manager_rest_service_host())
+        return urljoin(
+            rest_host,
+            'resources',
+            'cloudify_agent',
+            self._script_filename
+        )
+
+    def _get_rendered_script(self):
+        """Render the install_agent script with the credentials file URL
+        """
+        cloudify_dir_path = os.path.join(self._file_server_root, 'cloudify')
+        template_env = Environment(loader=FileSystemLoader(cloudify_dir_path))
+        template = template_env.get_template('install_agent_template.py')
+        return template.render(creds_url=self._creds_url)
+
+    def _get_creds_url(self):
+        return urljoin(
+            get_manager_file_server_url(),
+            'cloudify_agent',
+            self._creds_filename
+        )
+
+    @staticmethod
+    def _get_creds_json_content():
+        with open(get_local_rest_certificate(), 'r') as cert_file:
+            ssl_cert_content = cert_file.read()
+
+        return json.dumps({
+            'ssl_cert_content': ssl_cert_content,
+            'rest_token': ctx.rest_token
+        })

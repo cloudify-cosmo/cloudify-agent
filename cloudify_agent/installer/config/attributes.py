@@ -82,6 +82,9 @@ AGENT_ATTRIBUTES = {
     'broker_ssl_cert_path': {
         'group': 'cfy-agent'
     },
+    'broker_ssl_cert': {
+        'group': 'cfy-agent'
+    },
     'queue': {
         'group': 'cfy-agent'
     },
