@@ -43,11 +43,9 @@ from cloudify_agent.tests.api.pm import only_ci
 
 
 _AGENT_SCRIPT_NAME = 'install_agent_template.py'
-# TODO: Change back to master
 _INSTALL_SCRIPT_URL = ('https://raw.githubusercontent.com/cloudify-cosmo/'
-                       'cloudify-manager/'
-                       'CFY-6577-fix-agents-upgrade/resources/'
-                       'rest-service/cloudify/{0}'.format(_AGENT_SCRIPT_NAME))
+                       'cloudify-manager/4.0/resources/rest-service/'
+                       'cloudify/{0}'.format(_AGENT_SCRIPT_NAME))
 
 
 class _MockManagerClient(object):
