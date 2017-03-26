@@ -4,28 +4,20 @@ $ErrorActionPreference = "Stop"
 
 function Download($Url, $OutputPath)
 {
-    New-Item -ItemType directory -Path (Split-Path $OutputPath)
+    # Make sure the output directory exists
+    New-Item -ItemType directory -Force -Path (Split-Path $OutputPath)
+
+    # Add the certificate to the root cert store
+    Import-Certificate -FilePath "{{ ssl_cert_path }}" -CertStoreLocation Cert:\LocalMachine\Root
 
     $WebClient = New-Object System.Net.WebClient
     $WebClient.Headers.add('{{ auth_token_header }}', '{{ auth_token_value }}')
     $WebClient.DownloadFile("$Url", "$OutputPath")
 }
 
-function PatchCloudifyAgent($Branch)
-{
-    $DownloadUrl = "https://github.com/cloudify-cosmo/cloudify-agent/archive/$Branch.zip"
-    $DownloadOutputPath = "{{ conf.basedir }}\cloudify-agent.zip"
-    $ExtractedTo = "{{ conf.basedir }}\cloudify-agent-git"
-    Download $DownloadUrl $DownloadOutputPath
-    New-Item -ItemType directory -Path $ExtractedTo
-    Add-Type -Assembly "System.IO.Compression.FileSystem"
-    [IO.Compression.ZipFile]::ExtractToDirectory($DownloadOutputPath, $ExtractedTo)
-    Copy-Item "$ExtractedTo\cloudify-agent-$Branch\cloudify_agent" "{{ conf.agent_dir }}\Lib\site-packages" -Recurse -Force
-}
-
 function AddSSLCert()
 {
-    New-Item {{ ssl_cert_path }} -type file -force -value "{{ ssl_cert_content }}"
+    New-Item "{{ ssl_cert_path }}" -type file -force -value "{{ ssl_cert_content }}"
 }
 
 function DownloadAndExtractAgentPackage()
