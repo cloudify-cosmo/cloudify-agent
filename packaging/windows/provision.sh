@@ -1,6 +1,9 @@
 #!/bin/bash -e
 
 function install_requirements() {
+    # python -m is a workaround for pip uninstall access denied error
+    python -m pip install pip --upgrade
+    pip --version
     pip install wheel==0.24.0
 }
 
