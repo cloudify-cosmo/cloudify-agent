@@ -170,7 +170,13 @@ class AgentInstaller(object):
         return flags
 
     def download(self, url, destination=None):
-        raise NotImplementedError('Must be implemented by sub-class')
+        local_cert_file = self.cloudify_agent['agent_rest_cert_path']
+        local_cert_file = os.path.expanduser(local_cert_file)
+
+        return self.runner.download(
+            url,
+            output_path=destination,
+            certificate_file=local_cert_file)
 
     def move(self, source, target):
         raise NotImplementedError('Must be implemented by sub-class')
@@ -319,15 +325,6 @@ class LocalInstallerMixin(AgentInstaller):
     def runner(self):
         return LocalCommandRunner(logger=self.logger)
 
-    def download(self, url, destination=None):
-        local_cert_file = self.cloudify_agent['agent_rest_cert_path']
-        local_cert_file = os.path.expanduser(local_cert_file)
-
-        return self.runner.download(
-            url,
-            output_path=destination,
-            certificate_file=local_cert_file)
-
     def delete_agent(self):
         self.run_daemon_command('delete')
         shutil.rmtree(self.cloudify_agent['agent_dir'])
@@ -351,16 +348,6 @@ class RemoteInstallerMixin(AgentInstaller):
             return self.runner.put_file(src=env_file)
         else:
             return None
-
-    def download(self, url, destination=None):
-        agent_rest_cert_path = self.cloudify_agent['agent_rest_cert_path']
-        if self.cloudify_agent['windows']:
-            return self.runner.download(url, output_path=destination)
-        else:
-            return self.runner.download(
-                url,
-                output_path=destination,
-                certificate_file=agent_rest_cert_path)
 
     def move(self, source, target):
         self.runner.move(source, target)

@@ -183,11 +183,11 @@ class WinRMRunner(object):
             output_path = self.mktemp()
 
         if certificate_file:
-            self.logger.info('Adding certificate to cert root: {0}'.format(
+            self.logger.info('Adding certificate to cert root: "{0}"'.format(
                 certificate_file))
             cmd = """
-Import-Certificate -FilePath '{0}' 
--CertStoreLocation Cert:\LocalMachine\Root""".format(certificate_file)
+Import-Certificate -FilePath "{0}" -CertStoreLocation Cert:\LocalMachine\Root
+""".format(certificate_file)
             self.run(cmd, powershell=True)
 
         self.logger.info('Downloading {0}'.format(url))
