@@ -168,11 +168,13 @@ class WinRMRunner(object):
 
         return self.run('echo')
 
-    def download(self, url, output_path=None):
+    def download(self, url, output_path=None, certificate_file=None):
 
         """
         :param url: URL to the resource to download.
         :param output_path: Local path the resource will be saved as.
+        :param certificate_file: a local cert file to use for SSL certificate
+               verification.
 
         :return the destination path the url was downloaded to.
         """
@@ -180,21 +182,23 @@ class WinRMRunner(object):
         if output_path is None:
             output_path = self.mktemp()
 
-        self.logger.info('Downloading {0}'.format(url))
-        # TODO: check args for https and cert use
-        # see: https://blogs.technet.microsoft.com/bshukla/2010/04/12/
-        # ignoring-ssl-trust-in-powershell-system-net-webclient/
+        if certificate_file:
+            self.logger.info('Adding certificate to cert root: {0}'.format(
+                certificate_file))
+            cmd = """
+Import-Certificate -FilePath '{0}' 
+-CertStoreLocation Cert:\LocalMachine\Root""".format(certificate_file)
+            self.run(cmd, powershell=True)
 
+        self.logger.info('Downloading {0}'.format(url))
         cmd = """
-[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {4}
 $webClient = New-Object System.Net.WebClient
 $webClient.Headers['{0}'] = '{1}'
 $webClient.Downloadfile('{2}', '{3}')""".format(
             CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
             ctx.rest_token,
             url,
-            output_path,
-            '{$true}')
+            output_path)
 
         # downloading agent package from the manager
         self.run(cmd, powershell=True)
