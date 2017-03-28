@@ -43,8 +43,10 @@ from cloudify_agent.tests.api.pm import only_ci
 
 
 _AGENT_SCRIPT_NAME = 'install_agent_template.py'
+# TODO: Change branch to 4.0 before merge
 _INSTALL_SCRIPT_URL = ('https://raw.githubusercontent.com/cloudify-cosmo/'
-                       'cloudify-manager/4.0/resources/rest-service/'
+                       'cloudify-manager/CFY-6577-fix-agents-install-3.4/'
+                       'resources/rest-service/'
                        'cloudify/{0}'.format(_AGENT_SCRIPT_NAME))
 
 
@@ -111,7 +113,7 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
         self.logger.info('Initiating local env')
         inputs = {
             'name': agent_name,
-            'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
+            'ssl_cert_path': self._rest_cert_path
         }
 
         # Necessary to patch this method, because by default port 80 is used

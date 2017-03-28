@@ -51,7 +51,7 @@ class BaseInitScriptTest(BaseTest):
         self.addCleanup(lambda: current_ctx.clear())
         self.input_cloudify_agent = {
             'broker_ip': 'localhost',
-            'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
+            'ssl_cert_path': self._rest_cert_path
         }
 
     def _run(self, *commands):

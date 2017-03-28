@@ -52,8 +52,14 @@ class TestInstaller(BaseTest):
             agent_file.write(json.dumps(agent))
         _, output_path = tempfile.mkstemp()
         runner = LocalCommandRunner()
-        runner.run('cfy-agent install-local --agent-file {0} '
-                   '--output-agent-file {1}'.format(path, output_path))
+        runner.run(
+            'cfy-agent install-local --agent-file {0} '
+            '--output-agent-file {1} --rest-cert-path {2} '
+            '--rest-token TOKEN'.format(
+                path,
+                output_path,
+                self._rest_cert_path
+            ))
         self.assertTrue(inspect.active())
         with open(output_path) as new_agent_file:
             new_agent = json.loads(new_agent_file.read())
@@ -84,7 +90,7 @@ class TestInstaller(BaseTest):
             'windows': os.name == 'nt',
             'local': False,
             'broker_get_settings_from_manager': False,
-            'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
+            'ssl_cert_path': self._rest_cert_path
         }
         try:
             self._prepare_configuration(agent)
@@ -102,7 +108,7 @@ class TestInstaller(BaseTest):
             'windows': os.name == 'nt',
             'local': False,
             'broker_get_settings_from_manager': False,
-            'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
+            'ssl_cert_path': self._rest_cert_path
         }
         self._prepare_configuration(agent)
         self.assertNotIn('basedir', agent)

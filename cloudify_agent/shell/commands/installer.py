@@ -21,6 +21,7 @@ from cloudify import state, context
 from cloudify_agent.api import utils, defaults
 from cloudify_agent.installer.config import configuration
 from cloudify_agent.shell.decorators import handle_failures
+from cloudify_agent.shell.env import CLOUDIFY_LOCAL_REST_CERT_PATH
 from cloudify_agent.installer.operations import prepare_local_installer
 
 
@@ -32,8 +33,10 @@ from cloudify_agent.installer.operations import prepare_local_installer
               help='Path to output agent configuration')
 @click.option('--rest-token',
               help='The rest token with which to download the package')
+@click.option('--rest-cert-path',
+              help='The temporary path to the rest certificate')
 @handle_failures
-def install_local(agent_file, output_agent_file, rest_token):
+def install_local(agent_file, output_agent_file, rest_token, rest_cert_path):
     if agent_file is None:
         raise click.ClickException('--agent-file should be specified.')
     cloudify_agent = json.load(agent_file)
@@ -43,6 +46,7 @@ def install_local(agent_file, output_agent_file, rest_token):
         cloudify_agent['rest_port'] = defaults.INTERNAL_REST_PORT
     os.environ[utils.internal.CLOUDIFY_DAEMON_USER_KEY] = str(
         cloudify_agent['user'])
+    os.environ[CLOUDIFY_LOCAL_REST_CERT_PATH] = str(rest_cert_path)
     if 'basedir' not in cloudify_agent:
         cloudify_agent['basedir'] = utils.get_home_dir(cloudify_agent['user'])
     configuration.directory_attributes(cloudify_agent)
@@ -53,3 +57,6 @@ def install_local(agent_file, output_agent_file, rest_token):
     if output_agent_file is not None:
         with open(output_agent_file, 'w') as out:
             out.write(json.dumps(cloudify_agent))
+
+    # Remove the temporary cert file, as it was copied to the agent's dir
+    os.remove(rest_cert_path)

@@ -23,8 +23,8 @@ from cloudify_agent.api import utils
 from cloudify_agent.api import defaults
 from cloudify_agent.api.pm.base import Daemon
 
+from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests import utils as test_utils
-from cloudify_agent.tests import BaseTest, agent_ssl_cert
 
 
 class TestUtils(BaseTest):
@@ -56,10 +56,9 @@ class TestUtils(BaseTest):
         self.assertEqual(expected, full_path)
 
     def test_daemon_to_dict(self):
-        local_rest_cert_file = agent_ssl_cert.get_local_cert_path()
         daemon = Daemon(rest_host='127.0.0.1', name='name',
                         queue='queue', broker_ip='127.0.0.1',
-                        local_rest_cert_file=local_rest_cert_file)
+                        local_rest_cert_file=self._rest_cert_path)
         daemon_json = utils.internal.daemon_to_dict(daemon)
         self.assertEqual(daemon_json['rest_host'], '127.0.0.1')
         self.assertEqual(daemon_json['broker_ip'], '127.0.0.1')

@@ -27,6 +27,9 @@ class BaseShellTest(BaseTest):
 
     def setUp(self):
         super(BaseShellTest, self).setUp()
+        # Clear old handlers to avoid logging twice
+        for handler in self.logger.handlers:
+            self.logger.removeHandler(handler)
         self.logger = setup_logger(
             'cloudify-agent.tests.shell',
             logger_level=logging.DEBUG)
