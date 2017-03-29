@@ -26,7 +26,6 @@ from cloudify import constants, mocks
 from cloudify.state import current_ctx
 from cloudify.utils import setup_logger
 
-import cloudify_agent.shell.env as env_constants
 from cloudify_agent.api.defaults import (SSL_CERTS_TARGET_DIR,
                                          AGENT_SSL_CERT_FILENAME)
 
@@ -41,7 +40,6 @@ def get_storage_directory(_=None):
 
 
 class _AgentSSLCert(object):
-    LOCAL_CERT_FILE = None
     DUMMY_CERT = '-----BEGIN RSA PRIVATE KEY-----\n' \
                  'Fn0TToW05rmMrO0XT092R/JqFZBX9ygpaBy8y14o0bX9jA6neFT8sUgDCd' \
                  'mTmGoq\nQSeUzP4gEUxuJZ373+7HK565FohtWUUvBshgCA/o+WIH/szN/x' \
@@ -50,13 +48,10 @@ class _AgentSSLCert(object):
                  '-----END RSA PRIVATE KEY-----'
 
     @staticmethod
-    def get_local_cert_path():
-        if not _AgentSSLCert.LOCAL_CERT_FILE:
-            _, _AgentSSLCert.LOCAL_CERT_FILE = tempfile.mkstemp()
-            with open(_AgentSSLCert.LOCAL_CERT_FILE, 'w') as f:
-                f.write(_AgentSSLCert.DUMMY_CERT)
-
-        return _AgentSSLCert.LOCAL_CERT_FILE
+    def get_local_cert_path(temp_folder):
+        with tempfile.NamedTemporaryFile(delete=False, dir=temp_folder) as f:
+            f.write(_AgentSSLCert.DUMMY_CERT)
+        return f.name
 
     @staticmethod
     def verify_remote_cert(agent_dir):
@@ -75,19 +70,20 @@ agent_ssl_cert = _AgentSSLCert()
 
 
 class BaseTest(unittest.TestCase):
-    tmp_rest_cert_path = agent_ssl_cert.get_local_cert_path()
-
-    agent_env_vars = {
-        constants.MANAGER_FILE_SERVER_URL_KEY: 'localhost',
-        constants.REST_HOST_KEY: 'localhost',
-        constants.REST_PORT_KEY: '80',
-        constants.BROKER_SSL_CERT_PATH: 'broker/cert/path',
-        env_constants.CLOUDIFY_LOCAL_REST_CERT_PATH: tmp_rest_cert_path,
-        env_constants.CLOUDIFY_BROKER_SSL_CERT_PATH: 'broker/cert/path',
-        constants.MANAGER_FILE_SERVER_ROOT_KEY: 'localhost/resources'
-    }
-
     def setUp(self):
+        self.temp_folder = tempfile.mkdtemp(prefix='cfy-agent-tests-')
+        self._rest_cert_path = agent_ssl_cert.get_local_cert_path(
+            self.temp_folder)
+
+        agent_env_vars = {
+            constants.MANAGER_FILE_SERVER_URL_KEY: 'localhost',
+            constants.REST_HOST_KEY: 'localhost',
+            constants.REST_PORT_KEY: '80',
+            constants.BROKER_SSL_CERT_PATH: self._rest_cert_path,
+            constants.LOCAL_REST_CERT_FILE_KEY: self._rest_cert_path,
+            constants.MANAGER_FILE_SERVER_ROOT_KEY: 'localhost/resources'
+        }
+
         # change levels to 'DEBUG' to troubleshoot.
         self.logger = setup_logger(
             'cloudify-agent.tests',
@@ -96,22 +92,26 @@ class BaseTest(unittest.TestCase):
         utils.logger.setLevel(logging.INFO)
 
         self.curr_dir = os.getcwd()
-        self.temp_folder = tempfile.mkdtemp(prefix='cfy-agent-tests-')
-        for key, value in self.agent_env_vars.iteritems():
+        for key, value in agent_env_vars.iteritems():
             os.environ[key] = value
 
-        def clean_temp_folder():
+        def clean_folder(folder_name):
             try:
-                shutil.rmtree(self.temp_folder)
+                shutil.rmtree(folder_name)
             except win_error:
                 # no hard feeling if file is locked.
                 pass
 
+        def clean_storage_dir():
+            if os.path.exists(get_storage_directory()):
+                clean_folder(get_storage_directory())
+
         def clean_env():
-            for var in self.agent_env_vars.iterkeys():
+            for var in agent_env_vars.iterkeys():
                 del os.environ[var]
 
-        self.addCleanup(clean_temp_folder)
+        self.addCleanup(clean_folder, folder_name=self.temp_folder)
+        self.addCleanup(clean_storage_dir)
         self.addCleanup(clean_env)
         os.chdir(self.temp_folder)
         self.addCleanup(lambda: os.chdir(self.curr_dir))

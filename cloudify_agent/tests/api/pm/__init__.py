@@ -31,9 +31,9 @@ from cloudify_agent.api import utils, defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api.plugins.installer import PluginInstaller
 
+from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests import resources
 from cloudify_agent.tests import utils as test_utils
-from cloudify_agent.tests import BaseTest, agent_ssl_cert
 
 
 BUILT_IN_TASKS = [
@@ -198,7 +198,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
 
     def create_daemon(self, **attributes):
         name = utils.internal.generate_agent_name()
-        local_rest_cert_file = agent_ssl_cert.get_local_cert_path()
 
         params = {
             'rest_host': '127.0.0.1',
@@ -208,7 +207,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             'logger': self.logger,
             'name': name,
             'queue': '{0}-queue'.format(name),
-            'local_rest_cert_file': local_rest_cert_file,
+            'local_rest_cert_file': self._rest_cert_path,
             'broker_ssl_enabled': False
         }
         params.update(attributes)

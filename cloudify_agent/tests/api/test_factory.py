@@ -20,17 +20,15 @@ import shutil
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
-from cloudify_agent.tests.shell import BaseShellTest
-from cloudify_agent.tests import get_storage_directory, agent_ssl_cert
+from cloudify_agent.tests import get_storage_directory, BaseTest
 
 
-class TestDaemonFactory(BaseShellTest):
+class TestDaemonFactory(BaseTest):
 
     def setUp(self):
         super(TestDaemonFactory, self).setUp()
         self.daemon_name = 'test-daemon-{0}'.format(uuid.uuid4())
         self.factory = DaemonFactory(storage=get_storage_directory())
-        self.local_rest_cert_file = agent_ssl_cert.get_local_cert_path()
 
     def test_new_initd(self):
         daemon = self.factory.new(
@@ -41,7 +39,7 @@ class TestDaemonFactory(BaseShellTest):
             broker_ip='127.0.0.1',
             user='user',
             broker_url='127.0.0.1',
-            local_rest_cert_file=self.local_rest_cert_file
+            local_rest_cert_file=self._rest_cert_path
         )
         self.assertEqual(self.daemon_name, daemon.name)
         self.assertEqual('queue', daemon.queue)
@@ -49,7 +47,7 @@ class TestDaemonFactory(BaseShellTest):
         self.assertEqual('amqp://guest:guest@127.0.0.1:5671//',
                          daemon.broker_url)
         self.assertEqual('user', daemon.user)
-        self.assertEqual(self.local_rest_cert_file,
+        self.assertEqual(self._rest_cert_path,
                          daemon.local_rest_cert_file)
 
     def test_new_no_implementation(self):
@@ -67,7 +65,7 @@ class TestDaemonFactory(BaseShellTest):
             broker_ip='127.0.0.1',
             user='user',
             broker_url='127.0.0.1',
-            local_rest_cert_file=self.local_rest_cert_file
+            local_rest_cert_file=self._rest_cert_path
         )
 
         self.factory.save(daemon)
@@ -99,7 +97,7 @@ class TestDaemonFactory(BaseShellTest):
                 broker_ip='127.0.0.1',
                 user='user',
                 broker_url='127.0.0.1',
-                local_rest_cert_file=self.local_rest_cert_file
+                local_rest_cert_file=self._rest_cert_path
             )
             self.factory.save(daemon)
 
@@ -126,7 +124,7 @@ class TestDaemonFactory(BaseShellTest):
             broker_ip='127.0.0.1',
             user='user',
             broker_url='127.0.0.1',
-            local_rest_cert_file=self.local_rest_cert_file
+            local_rest_cert_file=self._rest_cert_path
         )
 
         self.factory.save(daemon)
@@ -140,4 +138,4 @@ class TestDaemonFactory(BaseShellTest):
                           broker_ip='127.0.0.1',
                           user='user',
                           broker_url='127.0.0.1',
-                          local_rest_cert_file=self.local_rest_cert_file)
+                          local_rest_cert_file=self._rest_cert_path)

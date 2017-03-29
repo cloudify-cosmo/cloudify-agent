@@ -111,7 +111,7 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
         self.logger.info('Initiating local env')
         inputs = {
             'name': agent_name,
-            'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
+            'ssl_cert_path': self._rest_cert_path
         }
 
         # Necessary to patch this method, because by default port 80 is used
