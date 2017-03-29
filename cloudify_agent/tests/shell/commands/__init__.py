@@ -16,15 +16,15 @@
 import sys
 
 from cloudify_agent.shell import main as cli
-from cloudify_agent.tests.shell import BaseShellTest
+from cloudify_agent.tests import BaseTest
 
 
-class BaseCommandLineTestCase(BaseShellTest):
+class BaseCommandLineTestCase(BaseTest):
 
     def _run(self, command, raise_system_exit=False):
         sys.argv = command.split()
-        self.logger.info('Running cfy-agent command with sys.argv={'
-                         '0}'.format(sys.argv))
+        self.logger.info('Running cfy-agent command with '
+                         'sys.argv={0}'.format(sys.argv))
         try:
             cli.main()
         except SystemExit as e:

@@ -12,36 +12,3 @@
 #  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
-
-import logging
-import tempfile
-import os
-
-from cloudify.utils import setup_logger
-
-from cloudify_agent.api import utils
-from cloudify_agent.tests import BaseTest
-
-
-class BaseShellTest(BaseTest):
-
-    def setUp(self):
-        super(BaseShellTest, self).setUp()
-        # Clear old handlers to avoid logging twice
-        for handler in self.logger.handlers:
-            self.logger.removeHandler(handler)
-        self.logger = setup_logger(
-            'cloudify-agent.tests.shell',
-            logger_level=logging.DEBUG)
-
-        utils.logger.setLevel(logging.DEBUG)
-
-        self.currdir = os.getcwd()
-        self.workdir = tempfile.mkdtemp(
-            prefix='cfy-agent-shell-tests-')
-        self.logger.info('Working directory: {0}'.format(self.workdir))
-        os.chdir(self.workdir)
-
-    def tearDown(self):
-        super(BaseShellTest, self).tearDown()
-        os.chdir(self.currdir)

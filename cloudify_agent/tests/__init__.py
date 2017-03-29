@@ -26,7 +26,6 @@ from cloudify import constants, mocks
 from cloudify.state import current_ctx
 from cloudify.utils import setup_logger
 
-import cloudify_agent.shell.env as env_constants
 from cloudify_agent.api.defaults import (SSL_CERTS_TARGET_DIR,
                                          AGENT_SSL_CERT_FILENAME)
 
@@ -81,7 +80,7 @@ class BaseTest(unittest.TestCase):
             constants.REST_HOST_KEY: 'localhost',
             constants.REST_PORT_KEY: '80',
             constants.BROKER_SSL_CERT_PATH: self._rest_cert_path,
-            env_constants.CLOUDIFY_LOCAL_REST_CERT_PATH: self._rest_cert_path,
+            constants.LOCAL_REST_CERT_FILE_KEY: self._rest_cert_path,
             constants.MANAGER_FILE_SERVER_ROOT_KEY: 'localhost/resources'
         }
 
@@ -96,18 +95,23 @@ class BaseTest(unittest.TestCase):
         for key, value in agent_env_vars.iteritems():
             os.environ[key] = value
 
-        def clean_temp_folder():
+        def clean_folder(folder_name):
             try:
-                shutil.rmtree(self.temp_folder)
+                shutil.rmtree(folder_name)
             except win_error:
                 # no hard feeling if file is locked.
                 pass
+
+        def clean_storage_dir():
+            if os.path.exists(get_storage_directory()):
+                clean_folder(get_storage_directory())
 
         def clean_env():
             for var in agent_env_vars.iterkeys():
                 del os.environ[var]
 
-        self.addCleanup(clean_temp_folder)
+        self.addCleanup(clean_folder, folder_name=self.temp_folder)
+        self.addCleanup(clean_storage_dir)
         self.addCleanup(clean_env)
         os.chdir(self.temp_folder)
         self.addCleanup(lambda: os.chdir(self.curr_dir))

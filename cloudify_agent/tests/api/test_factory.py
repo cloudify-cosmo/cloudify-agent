@@ -20,11 +20,10 @@ import shutil
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
-from cloudify_agent.tests.shell import BaseShellTest
-from cloudify_agent.tests import get_storage_directory
+from cloudify_agent.tests import get_storage_directory, BaseTest
 
 
-class TestDaemonFactory(BaseShellTest):
+class TestDaemonFactory(BaseTest):
 
     def setUp(self):
         super(TestDaemonFactory, self).setUp()
