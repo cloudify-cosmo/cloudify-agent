@@ -13,6 +13,7 @@ function install_deps() {
 	elif which yum; then
 		# centos/REHL
 		sudo yum -y update &&
+		sudo yum -y downgrade libyaml &&
 		sudo yum install curl python-devel make gcc gcc-c++ git libyaml-devel yum-utils libffi-devel openssl-devel -y
 	else
 		echo 'unsupported package manager, exiting'
