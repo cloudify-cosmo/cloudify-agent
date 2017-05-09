@@ -107,7 +107,8 @@ class GenericLinuxDaemon(CronRespawnDaemon):
         rendered = utils.render_template_to_file(
             template_path='pm/initd/initd.template',
             daemon_name=self.name,
-            config_path=self.config_path
+            config_path=self.config_path,
+            service_name=self.service_name
         )
         self._runner.run('sudo mkdir -p {0}'.format(
             os.path.dirname(self.script_path)))
