@@ -188,9 +188,11 @@ class _Internal(object):
         broker_port = agent.get('broker_port', defaults.BROKER_PORT)
         broker_user = agent.get('broker_user', 'guest')
         broker_pass = agent.get('broker_pass', 'guest')
+        broker_vhost = agent.get('broker_vhost', '/')
         return defaults.BROKER_URL.format(username=urllib.quote(broker_user),
                                           password=urllib.quote(broker_pass),
                                           host=broker_ip,
+                                          vhost=broker_vhost,
                                           port=broker_port)
 
 

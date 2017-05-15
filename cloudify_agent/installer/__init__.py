@@ -214,8 +214,6 @@ class AgentInstaller(object):
             # these are variables that have default values that will be set
             # by the agent on the remote host if not set here
             env.CLOUDIFY_DAEMON_USER: self.cloudify_agent.get('user'),
-            # broker_ip might not be set yet, and retrieved from the manager
-
             env.CLOUDIFY_BROKER_PORT: self.cloudify_agent.get('broker_port'),
             env.CLOUDIFY_REST_PORT:
                 self.cloudify_agent.get('rest_port'),

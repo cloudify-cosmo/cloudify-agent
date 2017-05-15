@@ -92,6 +92,10 @@ from cloudify_agent.shell.decorators import handle_failures
               help='The broker host name or ip to connect to. [env {0}]'
                    .format(env.CLOUDIFY_BROKER_IP),
               envvar=env.CLOUDIFY_BROKER_IP)
+@click.option('--broker-vhost',
+              help='The broker virtual host to connect to. [env {0}]'
+                   .format(env.CLOUDIFY_BROKER_VHOST),
+              envvar=env.CLOUDIFY_BROKER_VHOST)
 @click.option('--broker-port',
               help='The broker port to connect to. If not set, this will be '
                    'determined based on whether SSL is enabled. It will be '

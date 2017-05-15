@@ -232,6 +232,7 @@ class Daemon(object):
         self.broker_port = self._get_broker_port()
         self.broker_user = params.get('broker_user', 'guest')
         self.broker_pass = params.get('broker_pass', 'guest')
+        self.broker_vhost = params.get('broker_vhost', '/')
         self.host = params.get('host')
         self.deployment_id = params.get('deployment_id')
         self.queue = params.get('queue') or self._get_queue_from_manager()
@@ -247,6 +248,7 @@ class Daemon(object):
                 port=self.broker_port,  # not set in provider context
                 username=node['broker_user'],
                 password=node['broker_pass'],
+                vhost=self.broker_vhost
             ) for node in self.cluster]
         else:
             self.broker_url = defaults.BROKER_URL.format(
@@ -254,6 +256,7 @@ class Daemon(object):
                 port=self.broker_port,
                 username=self.broker_user,
                 password=self.broker_pass,
+                vhost=self.broker_vhost
             )
         self.min_workers = params.get('min_workers') or defaults.MIN_WORKERS
         self.max_workers = params.get('max_workers') or defaults.MAX_WORKERS
@@ -290,6 +293,7 @@ class Daemon(object):
             'broker_username': self.broker_user,
             'broker_password': self.broker_pass,
             'broker_hostname': self.broker_ip,
+            'broker_vhost': self.broker_vhost,
             'cluster': self.cluster
         }
         with open(self._get_celery_conf_path(), 'w') as conf_handle:
