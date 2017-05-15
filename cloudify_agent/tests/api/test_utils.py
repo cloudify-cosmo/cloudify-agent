@@ -102,7 +102,9 @@ class TestUtils(BaseTest):
         self.assertIn(defaults.CLOUDIFY_AGENT_PREFIX, name)
 
     def test_get_broker_url(self):
-        config = dict(broker_ip='10.50.50.3', broker_port=4567,
-                      broker_user='us#er', broker_pass='pa$$word')
-        self.assertEqual('amqp://us%23er:pa%24%24word@10.50.50.3:4567//',
+        config = dict(broker_ip='10.50.50.3',
+                      broker_user='us#er',
+                      broker_pass='pa$$word',
+                      broker_vhost='vh0$t')
+        self.assertEqual('amqp://us%23er:pa%24%24word@10.50.50.3:5671/vh0$t',
                          utils.internal.get_broker_url(config))

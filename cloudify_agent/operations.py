@@ -208,16 +208,12 @@ def _celery_client(ctx, agent):
     fd, cert_path = tempfile.mkstemp()
     os.close(fd)
     try:
-        if broker_config.get('broker_ssl_enabled'):
-            with open(cert_path, 'w') as cert_file:
-                cert_file.write(broker_config.get('broker_ssl_cert', ''))
-            broker_ssl = {
-                'ca_certs': cert_path,
-                'cert_reqs': ssl.CERT_REQUIRED
-            }
-        else:
-            broker_ssl = False
-        config['BROKER_USE_SSL'] = broker_ssl
+        with open(cert_path, 'w') as cert_file:
+            cert_file.write(broker_config.get('broker_ssl_cert', ''))
+        config['BROKER_USE_SSL'] = {
+            'ca_certs': cert_path,
+            'cert_reqs': ssl.CERT_REQUIRED
+        }
         celery_client.conf.update(**config)
         yield celery_client
     finally:

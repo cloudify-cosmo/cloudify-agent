@@ -92,12 +92,10 @@ from cloudify_agent.shell.decorators import handle_failures
               help='The broker host name or ip to connect to. [env {0}]'
                    .format(env.CLOUDIFY_BROKER_IP),
               envvar=env.CLOUDIFY_BROKER_IP)
-@click.option('--broker-port',
-              help='The broker port to connect to. If not set, this will be '
-                   'determined based on whether SSL is enabled. It will be '
-                   'set to 5671 with SSL, or 5672 without. [env {0}]'
-                   .format(env.CLOUDIFY_BROKER_PORT),
-              envvar=env.CLOUDIFY_BROKER_PORT)
+@click.option('--broker-vhost',
+              help='The broker virtual host to connect to. [env {0}]'
+                   .format(env.CLOUDIFY_BROKER_VHOST),
+              envvar=env.CLOUDIFY_BROKER_VHOST)
 @click.option('--broker-user',
               help='The broker username to use. [env {0}]'
                    .format(env.CLOUDIFY_BROKER_USER),
@@ -108,13 +106,6 @@ from cloudify_agent.shell.decorators import handle_failures
                    .format(env.CLOUDIFY_BROKER_PASS),
               default='guest',
               envvar=env.CLOUDIFY_BROKER_PASS)
-@click.option('--broker-ssl-enabled/--broker-ssl-disabled',
-              help='Set to "true" to enabled SSL for the broker, or "false" '
-                   'to disable SSL for the broker. If this is set, '
-                   'broker-ssl-cert-path must also be set. [env {0}]'
-                   .format(env.CLOUDIFY_BROKER_SSL_ENABLED),
-              default=False,
-              envvar=env.CLOUDIFY_BROKER_SSL_ENABLED)
 @click.option('--broker-ssl-cert',
               help='The path to the SSL cert for the broker to use.'
                    'Only used when broker-ssl-enable is "true" [env {0}]'
@@ -134,9 +125,8 @@ from cloudify_agent.shell.decorators import handle_failures
               default=False,
               help='Whether to retrieve the broker settings from the '
                    'manager. If this is true, broker_user, broker_pass, '
-                   'broker_ssl_enabled, and broker_ssl_cert arguments will '
-                   'be ignored as these will be obtained from the manager. '
-                   '[env {0}]'
+                   'broker_ssl_cert arguments will be ignored as these '
+                   'will be obtained from the manager. [env {0}]'
                    .format(env.CLOUDIFY_BROKER_GET_SETTINGS_FROM_MANAGER),
               envvar=env.CLOUDIFY_BROKER_GET_SETTINGS_FROM_MANAGER)
 @click.option('--min-workers',
@@ -191,8 +181,8 @@ def create(**params):
     click.echo('Creating...')
 
     if attributes['broker_get_settings_from_manager']:
-        broker = api_utils.internal.get_broker_configuration(attributes)
-        attributes.update(broker)
+        broker_config = api_utils.internal.get_broker_configuration(attributes)
+        attributes.update(broker_config)
 
     from cloudify_agent.shell.main import get_logger
     daemon = DaemonFactory().new(

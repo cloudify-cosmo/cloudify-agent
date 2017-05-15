@@ -18,6 +18,7 @@ import json
 import copy
 import tempfile
 import os
+import ssl
 import errno
 import getpass
 import types
@@ -29,8 +30,8 @@ import pkg_resources
 from jinja2 import Template
 
 from cloudify.context import BootstrapContext
-from cloudify.constants import SECURED_PROTOCOL
 from cloudify.workflows import tasks as workflows_tasks
+from cloudify.constants import SECURED_PROTOCOL, BROKER_PORT_SSL
 
 from cloudify.utils import setup_logger
 
@@ -185,20 +186,20 @@ class _Internal(object):
     @staticmethod
     def get_broker_url(agent):
         broker_ip = agent['broker_ip']
-        broker_port = agent.get('broker_port', defaults.BROKER_PORT)
         broker_user = agent.get('broker_user', 'guest')
         broker_pass = agent.get('broker_pass', 'guest')
+        broker_vhost = agent.get('broker_vhost', '/')
         return defaults.BROKER_URL.format(username=urllib.quote(broker_user),
                                           password=urllib.quote(broker_pass),
                                           host=broker_ip,
-                                          port=broker_port)
+                                          vhost=broker_vhost,
+                                          port=BROKER_PORT_SSL)
 
 
 internal = _Internal()
 
 
 def get_celery_client(broker_url,
-                      broker_ssl_enabled=False,
                       broker_ssl_cert_path=None,
                       max_retries=None):
 
@@ -211,13 +212,10 @@ def get_celery_client(broker_url,
     celery_client.conf.update(
         CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES)
 
-    if broker_ssl_enabled:
-        # import always?
-        import ssl
-        celery_client.conf.BROKER_USE_SSL = {
-            'ca_certs': broker_ssl_cert_path,
-            'cert_reqs': ssl.CERT_REQUIRED,
-        }
+    celery_client.conf.BROKER_USE_SSL = {
+        'ca_certs': broker_ssl_cert_path,
+        'cert_reqs': ssl.CERT_REQUIRED,
+    }
 
     # Connect eagerly to error out as early as possible, and to force choosing
     # the broker if multiple urls were passed.
@@ -235,7 +233,6 @@ def get_cluster_celery_client(broker_urls, cluster):
         try:
             return get_celery_client(
                 broker_url=broker_url,
-                broker_ssl_enabled=node.get('broker_ssl_enabled'),
                 broker_ssl_cert_path=node.get('internal_cert_path'),
                 max_retries=1)
         except Exception as err:

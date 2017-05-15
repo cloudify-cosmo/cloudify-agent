@@ -191,8 +191,6 @@ class TestCreateAgentAmqp(BaseTest):
                 'broker_ip': '10.0.4.46',
                 'broker_pass': 'test_pass',
                 'broker_user': 'test_user',
-                'broker_port': '5672',
-                'broker_ssl_enable': False,
                 'broker_ssl_cert': ''
             }
         }

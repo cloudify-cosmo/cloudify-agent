@@ -208,7 +208,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             'name': name,
             'queue': '{0}-queue'.format(name),
             'local_rest_cert_file': self._rest_cert_path,
-            'broker_ssl_enabled': False
         }
         params.update(attributes)
 
