@@ -689,7 +689,7 @@ class Daemon(object):
             rest_host=self.rest_host,
             rest_port=self.rest_port,
             rest_token=self._rest_token,
-            rest_tenant=self._rest_tenant,
+            rest_tenant=self._rest_tenant['name'],
             ssl_cert_path=self.local_rest_cert_file
         )
         node_instances = client.node_instances.list(

@@ -167,23 +167,6 @@ class _Internal(object):
         return result
 
     @staticmethod
-    def get_broker_configuration(agent):
-
-        client = get_rest_client(
-            rest_host=agent['rest_host'],
-            rest_port=agent['rest_port'],
-            rest_token=agent['rest_token'],
-            rest_tenant=agent['rest_tenant'],
-            ssl_cert_path=agent['local_rest_cert_file'],
-            bypass_maintenance_mode=agent['bypass_maintenance_mode'])
-
-        bootstrap_context_dict = client.manager.get_context()
-        bootstrap_context_dict = bootstrap_context_dict['context']['cloudify']
-        bootstrap_context = BootstrapContext(bootstrap_context_dict)
-        attributes = bootstrap_context.broker_config()
-        return attributes
-
-    @staticmethod
     def get_broker_url(agent):
         broker_ip = agent['broker_ip']
         broker_user = agent.get('broker_user', 'guest')

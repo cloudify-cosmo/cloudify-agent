@@ -299,7 +299,7 @@ def op_context(task_name,
         'type': 'operation',
         'task_name': task_name,
         'task_target': task_target,
-        'tenant_name': tenant_name,
+        'tenant': {'name': tenant_name},
         'execution_env': execution_env,
         'plugin': {
             'name': plugin_name,

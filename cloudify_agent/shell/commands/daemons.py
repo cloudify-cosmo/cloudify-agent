@@ -120,15 +120,6 @@ from cloudify_agent.shell.decorators import handle_failures
               type=click.Path(exists=False, readable=False, file_okay=True),
               envvar=env.CLOUDIFY_BROKER_SSL_CERT_PATH
               )
-@click.option('--broker-get-settings-from-manager/'
-              '--broker-do-not-get-settings-from-manager',
-              default=False,
-              help='Whether to retrieve the broker settings from the '
-                   'manager. If this is true, broker_user, broker_pass, '
-                   'broker_ssl_cert arguments will be ignored as these '
-                   'will be obtained from the manager. [env {0}]'
-                   .format(env.CLOUDIFY_BROKER_GET_SETTINGS_FROM_MANAGER),
-              envvar=env.CLOUDIFY_BROKER_GET_SETTINGS_FROM_MANAGER)
 @click.option('--min-workers',
               help='Minimum number of workers for '
                    'the autoscale configuration. [env {0}]'
@@ -179,10 +170,6 @@ def create(**params):
     attributes.update(_parse_custom_options(custom_arg))
 
     click.echo('Creating...')
-
-    if attributes['broker_get_settings_from_manager']:
-        broker_config = api_utils.internal.get_broker_configuration(attributes)
-        attributes.update(broker_config)
 
     from cloudify_agent.shell.main import get_logger
     daemon = DaemonFactory().new(

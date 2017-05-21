@@ -202,6 +202,8 @@ class AgentInstaller(object):
 
     def _create_agent_env(self):
 
+        tenant = self.cloudify_agent.get('rest_tenant')
+
         execution_env = {
             # mandatory values calculated before the agent
             # is actually created
@@ -209,6 +211,9 @@ class AgentInstaller(object):
             env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
             env.CLOUDIFY_REST_HOST: self.cloudify_agent['rest_host'],
             env.CLOUDIFY_BROKER_IP: self.cloudify_agent['broker_ip'],
+            env.CLOUDIFY_BROKER_USER: tenant['rabbitmq_username'],
+            env.CLOUDIFY_BROKER_PASS: tenant['rabbitmq_password'],
+            env.CLOUDIFY_BROKER_VHOST: tenant['rabbitmq_vhost'],
 
             # these are variables that have default values that will be set
             # by the agent on the remote host if not set here
@@ -216,7 +221,7 @@ class AgentInstaller(object):
             env.CLOUDIFY_REST_PORT:
                 self.cloudify_agent.get('rest_port'),
             env.CLOUDIFY_REST_TOKEN: self.cloudify_agent.get('rest_token'),
-            env.CLOUDIFY_REST_TENANT: self.cloudify_agent.get('rest_tenant'),
+            env.CLOUDIFY_REST_TENANT: tenant['name'],
             env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(
                 'max_workers'),
             env.CLOUDIFY_DAEMON_MIN_WORKERS: self.cloudify_agent.get(
