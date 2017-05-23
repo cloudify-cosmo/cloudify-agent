@@ -106,6 +106,11 @@ from cloudify_agent.shell.decorators import handle_failures
                    .format(env.CLOUDIFY_BROKER_PASS),
               default='guest',
               envvar=env.CLOUDIFY_BROKER_PASS)
+@click.option('--broker-ssl-enabled',
+              help='Should AMQP SSL be enabled (Defaults to "True"). [env {0}]'
+                   .format(env.CLOUDIFY_BROKER_SSL_ENABLED),
+              default=True,
+              envvar=env.CLOUDIFY_BROKER_SSL_ENABLED)
 @click.option('--broker-ssl-cert',
               help='The path to the SSL cert for the broker to use.'
                    'Only used when broker-ssl-enable is "true" [env {0}]'

@@ -18,7 +18,6 @@ import json
 import copy
 import tempfile
 import os
-import ssl
 import errno
 import getpass
 import types
@@ -29,7 +28,6 @@ import pkg_resources
 
 from jinja2 import Template
 
-from cloudify.context import BootstrapContext
 from cloudify.workflows import tasks as workflows_tasks
 from cloudify.constants import SECURED_PROTOCOL, BROKER_PORT_SSL
 
@@ -180,48 +178,6 @@ class _Internal(object):
 
 
 internal = _Internal()
-
-
-def get_celery_client(broker_url,
-                      broker_ssl_cert_path=None,
-                      max_retries=None):
-
-    # celery is imported locally since it's not used by any other method, and
-    # we want this utils module to be usable even if celery is not available
-    from celery import Celery
-
-    celery_client = Celery(broker=broker_url,
-                           backend=broker_url)
-    celery_client.conf.update(
-        CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES)
-
-    celery_client.conf.BROKER_USE_SSL = {
-        'ca_certs': broker_ssl_cert_path,
-        'cert_reqs': ssl.CERT_REQUIRED,
-    }
-
-    # Connect eagerly to error out as early as possible, and to force choosing
-    # the broker if multiple urls were passed.
-    # If max_retries is provided and >0, we will raise an exception if we
-    # can't connect; otherwise we'll keep retrying forever.
-    # Need to raise an exception in the case of a cluster, so that the
-    # next node can be tried
-    celery_client.pool.connection.ensure_connection(max_retries=max_retries)
-    return celery_client
-
-
-def get_cluster_celery_client(broker_urls, cluster):
-    err = None
-    for broker_url, node in zip(broker_urls, cluster):
-        try:
-            return get_celery_client(
-                broker_url=broker_url,
-                broker_ssl_cert_path=node.get('internal_cert_path'),
-                max_retries=1)
-        except Exception as err:
-            continue
-    if err is not None:
-        raise err
 
 
 def get_agent_registered(name,

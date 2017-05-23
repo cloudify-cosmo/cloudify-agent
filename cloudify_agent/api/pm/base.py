@@ -23,6 +23,7 @@ from cloudify.utils import (LocalCommandRunner,
                             setup_logger)
 from cloudify import amqp_client
 from cloudify import constants
+from cloudify.celery.app import get_celery_app, get_cluster_celery_app
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
@@ -215,13 +216,13 @@ class Daemon(object):
         # Optional parameters
         self.name = params.get('name') or self._get_name_from_manager()
         self.user = params.get('user') or getpass.getuser()
-        self.broker_ssl_cert_path = params['local_rest_cert_file']
-        with open(self.broker_ssl_cert_path) as cert_file:
-            self.broker_ssl_cert_content = cert_file.read()
 
         self.broker_user = params.get('broker_user', 'guest')
         self.broker_pass = params.get('broker_pass', 'guest')
         self.broker_vhost = params.get('broker_vhost', '/')
+        self.broker_ssl_enabled = params.get('broker_ssl_enabled', True)
+        self.broker_ssl_cert_path = params['local_rest_cert_file']
+
         self.host = params.get('host')
         self.deployment_id = params.get('deployment_id')
         self.queue = params.get('queue') or self._get_queue_from_manager()
@@ -316,12 +317,14 @@ class Daemon(object):
         if self.cluster:
             # only used for manager failures during installation - see
             # detailed comment in the ._get_amqp_client method
-            celery_client = utils.get_cluster_celery_client(
+            celery_client = get_cluster_celery_app(
                 self.broker_url, self.cluster)
         else:
-            celery_client = utils.get_celery_client(
+            celery_client = get_celery_app(
                 broker_url=self.broker_url,
-                broker_ssl_cert_path=self.broker_ssl_cert_path)
+                broker_ssl_cert_path=self.broker_ssl_cert_path,
+                broker_ssl_enabled=self.broker_ssl_enabled
+            )
         try:
             self._logger.debug('Retrieving daemon registered tasks')
             return utils.get_agent_registered(

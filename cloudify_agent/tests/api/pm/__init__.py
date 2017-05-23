@@ -207,6 +207,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             'logger': self.logger,
             'name': name,
             'queue': '{0}-queue'.format(name),
+            'broker_ssl_enabled': False,  # No SSL on the CI machines
             'local_rest_cert_file': self._rest_cert_path,
         }
         params.update(attributes)
