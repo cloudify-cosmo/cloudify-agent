@@ -62,7 +62,6 @@ node_templates:
               rest_host: 127.0.0.1
               local: true
               package_url: { get_attribute: [ agent_package, package_url ] }
-              broker_get_settings_from_manager: false
               broker_ip: 127.0.0.1
               extra:
                 ssl_cert_path: { get_input: ssl_cert_path}

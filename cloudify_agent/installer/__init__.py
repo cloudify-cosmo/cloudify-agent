@@ -33,10 +33,6 @@ class AgentInstaller(object):
                  logger=None):
         self.cloudify_agent = cloudify_agent
         self.logger = logger or setup_logger(self.__class__.__name__)
-        self.broker_get_settings_from_manager = cloudify_agent.get(
-            'broker_get_settings_from_manager',
-            True,
-        )
 
     def run_agent_command(self, command, execution_env=None):
         if execution_env is None:
@@ -258,10 +254,6 @@ class AgentInstaller(object):
         process_management.pop('name')
         for key, value in process_management.iteritems():
             options.append('--{0}={1}'.format(key, value))
-
-        if self.broker_get_settings_from_manager:
-            # Use broker settings from the manager
-            options.append('--broker-get-settings-from-manager')
 
         return ' '.join(options)
 

@@ -24,7 +24,6 @@ node_templates:
               ip: 127.0.0.1
               rest_host: 127.0.0.1
               local: true
-              broker_get_settings_from_manager: false
               broker_ip: 127.0.0.1
               broker_config:
                 broker_ip: 127.0.0.1

@@ -95,6 +95,7 @@ from cloudify_agent.shell.decorators import handle_failures
 @click.option('--broker-vhost',
               help='The broker virtual host to connect to. [env {0}]'
                    .format(env.CLOUDIFY_BROKER_VHOST),
+              default='/',
               envvar=env.CLOUDIFY_BROKER_VHOST)
 @click.option('--broker-user',
               help='The broker username to use. [env {0}]'

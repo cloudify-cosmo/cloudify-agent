@@ -69,7 +69,6 @@ class TestConfiguration(BaseTest):
             'windows': os.name == 'nt',
             'system_python': 'python',
             'remote_execution': True,
-            'broker_get_settings_from_manager': True,
             'bypass_maintenance_mode': False,
             'rest_token': None,
             'rest_tenant': None
@@ -131,7 +130,6 @@ class TestConfiguration(BaseTest):
             'windows': os.name == 'nt',
             'system_python': 'python',
             'remote_execution': True,
-            'broker_get_settings_from_manager': True,
             'bypass_maintenance_mode': False,
             'rest_token': None,
             'rest_tenant': None
