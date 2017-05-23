@@ -144,12 +144,13 @@ def _make_failover_strategy(daemon_name):
                         node['broker_vhost']
                     )
 
-                    # use a different cert for each node in the cluster -
-                    # can't pass that in the amqp url
-                    broker_ssl_cert_path = node.get('internal_cert_path')
-                    if broker_ssl_cert_path:
-                        app.conf['BROKER_USE_SSL']['ca_certs'] =\
-                            broker_ssl_cert_path
+                    if node.get('broker_ssl_enabled', True):
+                        # use a different cert for each node in the cluster -
+                        # can't pass that in the amqp url
+                        broker_ssl_cert_path = node.get('internal_cert_path')
+                        if broker_ssl_cert_path:
+                            app.conf['BROKER_USE_SSL']['ca_certs'] =\
+                                broker_ssl_cert_path
 
                     logger.debug('Trying broker at {0}'
                                  .format(broker_url))

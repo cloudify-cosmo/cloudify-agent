@@ -83,6 +83,10 @@ class Daemon(object):
 
         the host name or ip address of the broker to connect to.
 
+    ``broker_ssl_enabled``:
+
+        Whether SSL is enabled for the broker.
+
     ``broker_ssl_cert``:
 
         The SSL public certificate for the broker, if SSL is enabled on the
@@ -278,6 +282,7 @@ class Daemon(object):
     def create_celery_conf(self):
         self._logger.info('Deploying celery configuration.')
         config = {
+            'broker_ssl_enabled': self.broker_ssl_enabled,
             'broker_cert_path': self.broker_ssl_cert_path,
             'broker_username': self.broker_user,
             'broker_password': self.broker_pass,
@@ -322,9 +327,8 @@ class Daemon(object):
         else:
             celery_client = get_celery_app(
                 broker_url=self.broker_url,
-                broker_ssl_cert_path=self.broker_ssl_cert_path,
-                broker_ssl_enabled=self.broker_ssl_enabled
-            )
+                broker_ssl_enabled=self.broker_ssl_enabled,
+                broker_ssl_cert_path=self.broker_ssl_cert_path)
         try:
             self._logger.debug('Retrieving daemon registered tasks')
             return utils.get_agent_registered(
@@ -621,6 +625,7 @@ class Daemon(object):
                         amqp_host=node['broker_ip'],
                         amqp_user=node['broker_user'],
                         amqp_pass=node['broker_pass'],
+                        ssl_enabled=node['broker_ssl_enabled'],
                         ssl_cert_path=node.get('internal_cert_path')
                     )
                 except AMQPConnectionError as err:
@@ -632,6 +637,7 @@ class Daemon(object):
                 amqp_host=self.broker_ip,
                 amqp_user=self.broker_user,
                 amqp_pass=self.broker_pass,
+                ssl_enabled=self.broker_ssl_enabled,
                 ssl_cert_path=self.broker_ssl_cert_path
             )
 
@@ -692,7 +698,7 @@ class Daemon(object):
             rest_host=self.rest_host,
             rest_port=self.rest_port,
             rest_token=self._rest_token,
-            rest_tenant=self._rest_tenant['name'],
+            rest_tenant=self._rest_tenant,
             ssl_cert_path=self.local_rest_cert_file
         )
         node_instances = client.node_instances.list(

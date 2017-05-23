@@ -25,6 +25,8 @@ from cloudify.utils import get_is_bypass_maintenance
 from cloudify_agent.shell import env
 from cloudify_agent.api import utils, defaults
 
+from cloudify import broker_config
+
 
 class AgentInstaller(object):
 
@@ -197,8 +199,16 @@ class AgentInstaller(object):
         raise NotImplementedError('Must be implemented by sub-class')
 
     def _create_agent_env(self):
-
-        tenant = self.cloudify_agent.get('rest_tenant')
+        # Try to get broker credentials from the tenant. If they aren't set
+        # get them from the broker_config module
+        tenant = self.cloudify_agent.get('rest_tenant', {})
+        tenant_name = tenant.get('name', defaults.DEFAULT_TENANT_NAME)
+        broker_user = tenant.get('rabbitmq_username',
+                                 broker_config.broker_username)
+        broker_pass = tenant.get('rabbitmq_password',
+                                 broker_config.broker_password)
+        broker_vhost = tenant.get('rabbitmq_vhost',
+                                  broker_config.broker_vhost)
 
         execution_env = {
             # mandatory values calculated before the agent
@@ -207,9 +217,13 @@ class AgentInstaller(object):
             env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
             env.CLOUDIFY_REST_HOST: self.cloudify_agent['rest_host'],
             env.CLOUDIFY_BROKER_IP: self.cloudify_agent['broker_ip'],
-            env.CLOUDIFY_BROKER_USER: tenant['rabbitmq_username'],
-            env.CLOUDIFY_BROKER_PASS: tenant['rabbitmq_password'],
-            env.CLOUDIFY_BROKER_VHOST: tenant['rabbitmq_vhost'],
+
+            # Optional broker values
+            env.CLOUDIFY_BROKER_USER: broker_user,
+            env.CLOUDIFY_BROKER_PASS: broker_pass,
+            env.CLOUDIFY_BROKER_VHOST: broker_vhost,
+            env.CLOUDIFY_BROKER_SSL_CERT_PATH:
+                self.cloudify_agent['broker_ssl_cert_path'],
 
             # these are variables that have default values that will be set
             # by the agent on the remote host if not set here
@@ -217,7 +231,7 @@ class AgentInstaller(object):
             env.CLOUDIFY_REST_PORT:
                 self.cloudify_agent.get('rest_port'),
             env.CLOUDIFY_REST_TOKEN: self.cloudify_agent.get('rest_token'),
-            env.CLOUDIFY_REST_TENANT: tenant['name'],
+            env.CLOUDIFY_REST_TENANT: tenant_name,
             env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(
                 'max_workers'),
             env.CLOUDIFY_DAEMON_MIN_WORKERS: self.cloudify_agent.get(
@@ -230,9 +244,7 @@ class AgentInstaller(object):
                 self.cloudify_agent.get('env', {})),
             env.CLOUDIFY_BYPASS_MAINTENANCE_MODE: get_is_bypass_maintenance(),
             env.CLOUDIFY_LOCAL_REST_CERT_PATH:
-                self.cloudify_agent['agent_rest_cert_path'],
-            env.CLOUDIFY_BROKER_SSL_CERT_PATH:
-                self.cloudify_agent['broker_ssl_cert_path']
+                self.cloudify_agent['agent_rest_cert_path']
         }
 
         execution_env = utils.purge_none_values(execution_env)

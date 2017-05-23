@@ -29,3 +29,5 @@ CELERY_TASK_RESULT_EXPIRES = 600
 
 SSL_CERTS_TARGET_DIR = 'cloudify/ssl'
 AGENT_SSL_CERT_FILENAME = 'cloudify_internal_cert.pem'
+
+DEFAULT_TENANT_NAME = 'default_tenant'
