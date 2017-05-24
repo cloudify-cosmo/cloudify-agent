@@ -224,8 +224,12 @@ class Daemon(object):
         self.broker_user = params.get('broker_user', 'guest')
         self.broker_pass = params.get('broker_pass', 'guest')
         self.broker_vhost = params.get('broker_vhost', '/')
-        self.broker_ssl_enabled = params.get('broker_ssl_enabled', True)
+        self.broker_ssl_enabled = params.get('broker_ssl_enabled', False)
         self.broker_ssl_cert_path = params['local_rest_cert_file']
+        if self.broker_ssl_enabled:
+            self.broker_port = constants.BROKER_PORT_SSL
+        else:
+            self.broker_port = constants.BROKER_PORT_NO_SSL
 
         self.host = params.get('host')
         self.deployment_id = params.get('deployment_id')
@@ -239,7 +243,7 @@ class Daemon(object):
         if self.cluster:
             self.broker_url = [defaults.BROKER_URL.format(
                 host=node['broker_ip'],
-                port=constants.BROKER_PORT_SSL,
+                port=self.broker_port,
                 username=node['broker_user'],
                 password=node['broker_pass'],
                 vhost=self.broker_vhost
@@ -247,7 +251,7 @@ class Daemon(object):
         else:
             self.broker_url = defaults.BROKER_URL.format(
                 host=self.broker_ip,
-                port=constants.BROKER_PORT_SSL,
+                port=self.broker_port,
                 username=self.broker_user,
                 password=self.broker_pass,
                 vhost=self.broker_vhost
@@ -323,7 +327,7 @@ class Daemon(object):
             # only used for manager failures during installation - see
             # detailed comment in the ._get_amqp_client method
             celery_client = get_cluster_celery_app(
-                self.broker_url, self.cluster)
+                self.broker_url, self.cluster, self.broker_ssl_enabled)
         else:
             celery_client = get_celery_app(
                 broker_url=self.broker_url,

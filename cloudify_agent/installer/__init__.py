@@ -222,14 +222,14 @@ class AgentInstaller(object):
             env.CLOUDIFY_BROKER_USER: broker_user,
             env.CLOUDIFY_BROKER_PASS: broker_pass,
             env.CLOUDIFY_BROKER_VHOST: broker_vhost,
+            env.CLOUDIFY_BROKER_SSL_ENABLED: broker_config.broker_ssl_enabled,
             env.CLOUDIFY_BROKER_SSL_CERT_PATH:
                 self.cloudify_agent['broker_ssl_cert_path'],
 
             # these are variables that have default values that will be set
             # by the agent on the remote host if not set here
             env.CLOUDIFY_DAEMON_USER: self.cloudify_agent.get('user'),
-            env.CLOUDIFY_REST_PORT:
-                self.cloudify_agent.get('rest_port'),
+            env.CLOUDIFY_REST_PORT: self.cloudify_agent.get('rest_port'),
             env.CLOUDIFY_REST_TOKEN: self.cloudify_agent.get('rest_token'),
             env.CLOUDIFY_REST_TENANT: tenant_name,
             env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(

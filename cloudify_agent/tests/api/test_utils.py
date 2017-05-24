@@ -105,6 +105,7 @@ class TestUtils(BaseTest):
         config = dict(broker_ip='10.50.50.3',
                       broker_user='us#er',
                       broker_pass='pa$$word',
-                      broker_vhost='vh0$t')
+                      broker_vhost='vh0$t',
+                      broker_ssl_enabled=True)
         self.assertEqual('amqp://us%23er:pa%24%24word@10.50.50.3:5671/vh0$t',
                          utils.internal.get_broker_url(config))

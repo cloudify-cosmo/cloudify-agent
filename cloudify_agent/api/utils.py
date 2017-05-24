@@ -29,7 +29,9 @@ import pkg_resources
 from jinja2 import Template
 
 from cloudify.workflows import tasks as workflows_tasks
-from cloudify.constants import SECURED_PROTOCOL, BROKER_PORT_SSL
+from cloudify.constants import (SECURED_PROTOCOL,
+                                BROKER_PORT_SSL,
+                                BROKER_PORT_NO_SSL)
 
 from cloudify.utils import setup_logger
 
@@ -170,11 +172,15 @@ class _Internal(object):
         broker_user = agent.get('broker_user', 'guest')
         broker_pass = agent.get('broker_pass', 'guest')
         broker_vhost = agent.get('broker_vhost', '/')
+        if agent.get('broker_ssl_enabled'):
+            broker_port = BROKER_PORT_SSL
+        else:
+            broker_port = BROKER_PORT_NO_SSL
         return defaults.BROKER_URL.format(username=urllib.quote(broker_user),
                                           password=urllib.quote(broker_pass),
                                           host=broker_ip,
                                           vhost=broker_vhost,
-                                          port=BROKER_PORT_SSL)
+                                          port=broker_port)
 
 
 internal = _Internal()

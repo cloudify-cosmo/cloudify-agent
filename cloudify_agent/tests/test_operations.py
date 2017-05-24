@@ -258,7 +258,7 @@ class TestCreateAgentAmqp(BaseTest):
             agent = operations.create_new_agent_dict(new_agent)
             self.assertIn(new_agent['name'], agent['name'])
 
-    @patch('cloudify_agent.operations.celery.Celery', _get_celery_mock())
+    @patch('cloudify_agent.operations.get_celery_app', _get_celery_mock())
     @patch('cloudify_agent.operations.app', MagicMock())
     @patch('cloudify_agent.api.utils.get_agent_registered',
            MagicMock(return_value={'cloudify.dispatch.dispatch': {}}))
