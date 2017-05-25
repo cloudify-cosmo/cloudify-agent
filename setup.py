@@ -17,8 +17,8 @@
 from setuptools import setup
 
 install_requires = [
-    'cloudify-plugins-common==4.1a1',
-    'cloudify-rest-client==4.1a1',
+    'cloudify-plugins-common==4.1a2',
+    'cloudify-rest-client==4.1a2',
     'cloudify-script-plugin==1.4',
     'appdirs==1.4.3',
     'click==4.0',
@@ -34,7 +34,7 @@ install_requires = [
 
 setup(
     name='cloudify-agent',
-    version='4.1a1',
+    version='4.1a2',
     author='Gigaspaces',
     author_email='cloudify@gigaspaces.com',
     packages=[
