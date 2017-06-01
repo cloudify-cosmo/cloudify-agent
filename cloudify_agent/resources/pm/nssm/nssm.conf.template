@@ -35,7 +35,8 @@ CLOUDIFY_DAEMON_USER={{ user }} ^
 CELERY_WORK_DIR="{{ workdir }}" ^
 CELERY_APP=cloudify_agent.app.app ^
 CELERY_TASK_SERIALIZER=json ^
-CELERY_RESULT_SERIALIZER=json ^ {{ custom_environment }}
+CELERY_RESULT_SERIALIZER=json ^ {{ custom_environment }} ^
+CFY_EXEC_TEMP={{ executable_temp_path }}
 
 {{ nssm_path }} set {{ name }} DisplayName "Cloudify Agent - {{ name }}"
 {{ nssm_path }} set {{ name }} Description "Cloudify Agent Service"
