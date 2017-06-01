@@ -20,6 +20,9 @@ export CELERY_RESULT_SERIALIZER=json
 # Needed in case agent user is root
 export C_FORCE_ROOT="true"
 
+# Executable tempfiles directory override
+export CFY_EXEC_TEMP={{ executable_temp_path }}
+
 # Daemon variables, used by the daemonization script
 CELERYD_ENABLE_CRON_SCRIPT={{ enable_cron_script }}
 CELERYD_DISABLE_CRON_SCRIPT={{ disable_cron_script }}

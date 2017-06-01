@@ -33,7 +33,7 @@ from cloudify.constants import (SECURED_PROTOCOL,
                                 BROKER_PORT_SSL,
                                 BROKER_PORT_NO_SSL)
 
-from cloudify.utils import setup_logger
+from cloudify.utils import setup_logger, get_exec_tempdir
 
 from cloudify_rest_client import CloudifyClient
 
@@ -258,7 +258,7 @@ def render_template_to_file(template_path, file_path=None, **values):
     return content_to_file(rendered, file_path)
 
 
-def resource_to_tempfile(resource_path):
+def resource_to_tempfile(resource_path, executable=False):
 
     """
     Copy a resource into a temporary file.
@@ -269,7 +269,7 @@ def resource_to_tempfile(resource_path):
     """
 
     resource = get_resource(resource_path)
-    return content_to_file(resource)
+    return content_to_file(resource, executable=executable)
 
 
 def get_resource(resource_path):
@@ -300,7 +300,7 @@ def get_absolute_resource_path(resource_path):
     )
 
 
-def content_to_file(content, file_path=None):
+def content_to_file(content, file_path=None, executable=False):
 
     """
     Write string to a temporary file.
@@ -310,7 +310,9 @@ def content_to_file(content, file_path=None):
     """
 
     if not file_path:
-        file_path = tempfile.NamedTemporaryFile(mode='w', delete=False).name
+        tempdir = get_exec_tempdir() if executable else tempfile.gettempdir()
+        file_path = tempfile.NamedTemporaryFile(mode='w', delete=False,
+                                                dir=tempdir).name
     with open(file_path, 'w') as f:
         f.write(content)
         f.write(os.linesep)

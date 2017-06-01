@@ -74,7 +74,8 @@ def _disable_requiretty(no_sudo):
     runner = LocalCommandRunner(get_logger())
 
     disable_requiretty_script_path = utils.resource_to_tempfile(
-        resource_path='disable-requiretty.sh'
+        resource_path='disable-requiretty.sh',
+        executable=True
     )
     runner.run('chmod +x {0}'.format(disable_requiretty_script_path))
     maybe_sudo = '' if no_sudo else 'sudo'
