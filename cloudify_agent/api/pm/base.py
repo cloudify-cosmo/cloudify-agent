@@ -23,6 +23,7 @@ from cloudify.utils import (LocalCommandRunner,
                             setup_logger)
 from cloudify import amqp_client
 from cloudify import constants
+from cloudify.celery.app import get_celery_app, get_cluster_celery_app
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
@@ -219,19 +220,17 @@ class Daemon(object):
         # Optional parameters
         self.name = params.get('name') or self._get_name_from_manager()
         self.user = params.get('user') or getpass.getuser()
-        self.broker_ssl_enabled = params.get('broker_ssl_enabled', True)
-        if self.broker_ssl_enabled:
-            self.broker_ssl_cert_path = params['local_rest_cert_file']
-            with open(self.broker_ssl_cert_path) as cert_file:
-                self.broker_ssl_cert_content = cert_file.read()
-        else:
-            self.broker_ssl_cert_path = ''
-            self.broker_ssl_cert_content = ''
-        # Port must be determined after SSL enabled has been set in order for
-        # intelligent port selection to work properly
-        self.broker_port = self._get_broker_port()
+
         self.broker_user = params.get('broker_user', 'guest')
         self.broker_pass = params.get('broker_pass', 'guest')
+        self.broker_vhost = params.get('broker_vhost', '/')
+        self.broker_ssl_enabled = params.get('broker_ssl_enabled', False)
+        self.broker_ssl_cert_path = params['local_rest_cert_file']
+        if self.broker_ssl_enabled:
+            self.broker_port = constants.BROKER_PORT_SSL
+        else:
+            self.broker_port = constants.BROKER_PORT_NO_SSL
+
         self.host = params.get('host')
         self.deployment_id = params.get('deployment_id')
         self.queue = params.get('queue') or self._get_queue_from_manager()
@@ -244,9 +243,10 @@ class Daemon(object):
         if self.cluster:
             self.broker_url = [defaults.BROKER_URL.format(
                 host=node['broker_ip'],
-                port=self.broker_port,  # not set in provider context
+                port=self.broker_port,
                 username=node['broker_user'],
                 password=node['broker_pass'],
+                vhost=self.broker_vhost
             ) for node in self.cluster]
         else:
             self.broker_url = defaults.BROKER_URL.format(
@@ -254,6 +254,7 @@ class Daemon(object):
                 port=self.broker_port,
                 username=self.broker_user,
                 password=self.broker_pass,
+                vhost=self.broker_vhost
             )
         self.min_workers = params.get('min_workers') or defaults.MIN_WORKERS
         self.max_workers = params.get('max_workers') or defaults.MAX_WORKERS
@@ -290,6 +291,7 @@ class Daemon(object):
             'broker_username': self.broker_user,
             'broker_password': self.broker_pass,
             'broker_hostname': self.broker_ip,
+            'broker_vhost': self.broker_vhost,
             'cluster': self.cluster
         }
         with open(self._get_celery_conf_path(), 'w') as conf_handle:
@@ -320,25 +322,14 @@ class Daemon(object):
         self._validate_autoscale()
         self._validate_host()
 
-    def _get_broker_port(self):
-        """
-        Determines the broker port if it has not been provided. Only intended
-        to be called before self.broker_port has been set and after
-        self.broker_ssl_cert has been set.
-        """
-        if self.broker_ssl_enabled:
-            return constants.BROKER_PORT_SSL
-        else:
-            return constants.BROKER_PORT_NO_SSL
-
     def _is_agent_registered(self):
         if self.cluster:
             # only used for manager failures during installation - see
             # detailed comment in the ._get_amqp_client method
-            celery_client = utils.get_cluster_celery_client(
-                self.broker_url, self.cluster)
+            celery_client = get_cluster_celery_app(
+                self.broker_url, self.cluster, self.broker_ssl_enabled)
         else:
-            celery_client = utils.get_celery_client(
+            celery_client = get_celery_app(
                 broker_url=self.broker_url,
                 broker_ssl_enabled=self.broker_ssl_enabled,
                 broker_ssl_cert_path=self.broker_ssl_cert_path)

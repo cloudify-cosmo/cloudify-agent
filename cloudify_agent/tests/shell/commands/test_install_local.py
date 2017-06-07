@@ -89,7 +89,6 @@ class TestInstaller(BaseTest):
             'basedir': base_dir,
             'windows': os.name == 'nt',
             'local': False,
-            'broker_get_settings_from_manager': False,
             'ssl_cert_path': self._rest_cert_path
         }
         try:
@@ -107,7 +106,6 @@ class TestInstaller(BaseTest):
             'broker_ip': 'localhost',
             'windows': os.name == 'nt',
             'local': False,
-            'broker_get_settings_from_manager': False,
             'ssl_cert_path': self._rest_cert_path
         }
         self._prepare_configuration(agent)

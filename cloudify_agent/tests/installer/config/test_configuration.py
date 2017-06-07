@@ -69,10 +69,10 @@ class TestConfiguration(BaseTest):
             'windows': os.name == 'nt',
             'system_python': 'python',
             'remote_execution': True,
-            'broker_get_settings_from_manager': True,
+            'broker_get_settings_from_manager': False,
             'bypass_maintenance_mode': False,
             'rest_token': None,
-            'rest_tenant': None
+            'rest_tenant': {}
         }
         if os.name == 'posix':
             distro = platform.dist()[0].lower()
@@ -131,10 +131,10 @@ class TestConfiguration(BaseTest):
             'windows': os.name == 'nt',
             'system_python': 'python',
             'remote_execution': True,
-            'broker_get_settings_from_manager': True,
+            'broker_get_settings_from_manager': False,
             'bypass_maintenance_mode': False,
             'rest_token': None,
-            'rest_tenant': None
+            'rest_tenant': {}
         }
         if os.name == 'posix':
             distro = platform.dist()[0].lower()

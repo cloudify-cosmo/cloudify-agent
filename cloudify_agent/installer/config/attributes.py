@@ -110,7 +110,7 @@ AGENT_ATTRIBUTES = {
     },
     'broker_get_settings_from_manager': {
         'group': 'cfy-agent',
-        'default': True,
+        'default': False,
     },
     'disable_requiretty': {
         'group': 'cfy-agent',

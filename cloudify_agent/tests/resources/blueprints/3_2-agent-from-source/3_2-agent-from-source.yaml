@@ -36,7 +36,6 @@ node_templates:
               local: true
               source_url: { get_input: source_url }
               requirements: { get_input: requirements_file }
-              broker_get_settings_from_manager: false
               broker_ip: 127.0.0.1
               agent_config:
                 ip: 127.0.0.1

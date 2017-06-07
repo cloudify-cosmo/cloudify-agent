@@ -25,6 +25,8 @@ from cloudify.utils import get_is_bypass_maintenance
 from cloudify_agent.shell import env
 from cloudify_agent.api import utils, defaults
 
+from cloudify import broker_config
+
 
 class AgentInstaller(object):
 
@@ -33,10 +35,6 @@ class AgentInstaller(object):
                  logger=None):
         self.cloudify_agent = cloudify_agent
         self.logger = logger or setup_logger(self.__class__.__name__)
-        self.broker_get_settings_from_manager = cloudify_agent.get(
-            'broker_get_settings_from_manager',
-            True,
-        )
 
     def run_agent_command(self, command, execution_env=None):
         if execution_env is None:
@@ -97,7 +95,6 @@ class AgentInstaller(object):
         path = path_join(agent_dir, ssl_target_dir, cert_filename)
         self.cloudify_agent['agent_rest_cert_path'] = path
         self.cloudify_agent['broker_ssl_cert_path'] = path
-        self.cloudify_agent['broker_ssl_enabled'] = True
         return path
 
     def configure_agent(self):
@@ -202,6 +199,16 @@ class AgentInstaller(object):
         raise NotImplementedError('Must be implemented by sub-class')
 
     def _create_agent_env(self):
+        # Try to get broker credentials from the tenant. If they aren't set
+        # get them from the broker_config module
+        tenant = self.cloudify_agent.get('rest_tenant', {})
+        tenant_name = tenant.get('name', defaults.DEFAULT_TENANT_NAME)
+        broker_user = tenant.get('rabbitmq_username',
+                                 broker_config.broker_username)
+        broker_pass = tenant.get('rabbitmq_password',
+                                 broker_config.broker_password)
+        broker_vhost = tenant.get('rabbitmq_vhost',
+                                  broker_config.broker_vhost)
 
         execution_env = {
             # mandatory values calculated before the agent
@@ -211,16 +218,20 @@ class AgentInstaller(object):
             env.CLOUDIFY_REST_HOST: self.cloudify_agent['rest_host'],
             env.CLOUDIFY_BROKER_IP: self.cloudify_agent['broker_ip'],
 
+            # Optional broker values
+            env.CLOUDIFY_BROKER_USER: broker_user,
+            env.CLOUDIFY_BROKER_PASS: broker_pass,
+            env.CLOUDIFY_BROKER_VHOST: broker_vhost,
+            env.CLOUDIFY_BROKER_SSL_ENABLED: broker_config.broker_ssl_enabled,
+            env.CLOUDIFY_BROKER_SSL_CERT_PATH:
+                self.cloudify_agent['broker_ssl_cert_path'],
+
             # these are variables that have default values that will be set
             # by the agent on the remote host if not set here
             env.CLOUDIFY_DAEMON_USER: self.cloudify_agent.get('user'),
-            # broker_ip might not be set yet, and retrieved from the manager
-
-            env.CLOUDIFY_BROKER_PORT: self.cloudify_agent.get('broker_port'),
-            env.CLOUDIFY_REST_PORT:
-                self.cloudify_agent.get('rest_port'),
+            env.CLOUDIFY_REST_PORT: self.cloudify_agent.get('rest_port'),
             env.CLOUDIFY_REST_TOKEN: self.cloudify_agent.get('rest_token'),
-            env.CLOUDIFY_REST_TENANT: self.cloudify_agent.get('rest_tenant'),
+            env.CLOUDIFY_REST_TENANT: tenant_name,
             env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(
                 'max_workers'),
             env.CLOUDIFY_DAEMON_MIN_WORKERS: self.cloudify_agent.get(
@@ -233,9 +244,7 @@ class AgentInstaller(object):
                 self.cloudify_agent.get('env', {})),
             env.CLOUDIFY_BYPASS_MAINTENANCE_MODE: get_is_bypass_maintenance(),
             env.CLOUDIFY_LOCAL_REST_CERT_PATH:
-                self.cloudify_agent['agent_rest_cert_path'],
-            env.CLOUDIFY_BROKER_SSL_CERT_PATH:
-                self.cloudify_agent['broker_ssl_cert_path']
+                self.cloudify_agent['agent_rest_cert_path']
         }
 
         execution_env = utils.purge_none_values(execution_env)
@@ -257,10 +266,6 @@ class AgentInstaller(object):
         process_management.pop('name')
         for key, value in process_management.iteritems():
             options.append('--{0}={1}'.format(key, value))
-
-        if self.broker_get_settings_from_manager:
-            # Use broker settings from the manager
-            options.append('--broker-get-settings-from-manager')
 
         return ' '.join(options)
 

@@ -16,7 +16,6 @@
 import tempfile
 import time
 import threading
-import ssl
 import sys
 import os
 import copy
@@ -25,7 +24,6 @@ from uuid import uuid4
 from posixpath import join as urljoin
 from contextlib import contextmanager
 
-import celery
 from jinja2 import Environment, FileSystemLoader
 
 import cloudify.manager
@@ -37,6 +35,7 @@ from cloudify.utils import (ManagerVersion,
                             get_manager_file_server_root,
                             get_manager_rest_service_host)
 from cloudify.decorators import operation
+from cloudify.celery.app import get_celery_app
 
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api.factory import DaemonFactory
@@ -195,33 +194,33 @@ def _celery_client(ctx, agent):
         broker_config = ctx.bootstrap_context.broker_config()
     broker_url = utils.internal.get_broker_url(broker_config)
     ctx.logger.info('Connecting to {0}'.format(broker_url))
-    celery_client = celery.Celery()
-    # We can't pass broker_url to Celery constructor because it would
-    # be overriden by the value from broker_config.py.
-    config = {
-        'BROKER_URL': broker_url,
-        'CELERY_RESULT_BACKEND': broker_url
-    }
+
+    ssl_cert_path = _get_ssl_cert_path(broker_config)
+    celery_client = get_celery_app(
+        broker_url=broker_url,
+        broker_ssl_enabled=broker_config.get('broker_ssl_enabled'),
+        broker_ssl_cert_path=ssl_cert_path
+    )
+
     if ManagerVersion(agent['version']) != ManagerVersion('3.2'):
-        config['CELERY_TASK_RESULT_EXPIRES'] = \
+        celery_client.conf['CELERY_TASK_RESULT_EXPIRES'] = \
             defaults.CELERY_TASK_RESULT_EXPIRES
-    fd, cert_path = tempfile.mkstemp()
-    os.close(fd)
     try:
-        if broker_config.get('broker_ssl_enabled'):
-            with open(cert_path, 'w') as cert_file:
-                cert_file.write(broker_config.get('broker_ssl_cert', ''))
-            broker_ssl = {
-                'ca_certs': cert_path,
-                'cert_reqs': ssl.CERT_REQUIRED
-            }
-        else:
-            broker_ssl = False
-        config['BROKER_USE_SSL'] = broker_ssl
-        celery_client.conf.update(**config)
         yield celery_client
     finally:
-        os.remove(cert_path)
+        if ssl_cert_path:
+            os.remove(ssl_cert_path)
+
+
+def _get_ssl_cert_path(broker_config):
+    if broker_config.get('broker_ssl_enabled'):
+        fd, ssl_cert_path = tempfile.mkstemp()
+        os.close(fd)
+        with open(ssl_cert_path, 'w') as cert_file:
+            cert_file.write(broker_config.get('broker_ssl_cert', ''))
+        return ssl_cert_path
+    else:
+        return None
 
 
 def _celery_task_name(version):

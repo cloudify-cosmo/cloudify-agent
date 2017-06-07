@@ -39,6 +39,7 @@ class TestDaemonFactory(BaseTest):
             broker_ip='127.0.0.1',
             user='user',
             broker_url='127.0.0.1',
+            broker_ssl_enabled=True,
             local_rest_cert_file=self._rest_cert_path
         )
         self.assertEqual(self.daemon_name, daemon.name)
@@ -65,6 +66,7 @@ class TestDaemonFactory(BaseTest):
             broker_ip='127.0.0.1',
             user='user',
             broker_url='127.0.0.1',
+            broker_ssl_enabled=True,
             local_rest_cert_file=self._rest_cert_path
         )
 

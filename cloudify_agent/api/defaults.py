@@ -17,11 +17,10 @@ START_TIMEOUT = 60
 START_INTERVAL = 1
 STOP_TIMEOUT = 60
 STOP_INTERVAL = 1
-BROKER_PORT = 5672
 INTERNAL_REST_PORT = 53333
 MIN_WORKERS = 0
 MAX_WORKERS = 5
-BROKER_URL = 'amqp://{username}:{password}@{host}:{port}//'
+BROKER_URL = 'amqp://{username}:{password}@{host}:{port}/{vhost}'
 DELETE_AMQP_QUEUE_BEFORE_START = True
 DAEMON_FORCE_DELETE = False
 CLOUDIFY_AGENT_PREFIX = 'cfy-agent'
@@ -30,3 +29,5 @@ CELERY_TASK_RESULT_EXPIRES = 600
 
 SSL_CERTS_TARGET_DIR = 'cloudify/ssl'
 AGENT_SSL_CERT_FILENAME = 'cloudify_internal_cert.pem'
+
+DEFAULT_TENANT_NAME = 'default_tenant'

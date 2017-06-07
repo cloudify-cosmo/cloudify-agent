@@ -177,7 +177,7 @@ def _cfy_agent_attributes_no_defaults(cloudify_agent):
 
     if not cloudify_agent.get('rest_tenant'):
         cloudify_agent['rest_tenant'] = \
-            cloudify_utils.get_tenant_name()
+            cloudify_utils.get_tenant()
 
     if not cloudify_agent.get('bypass_maintenance'):
         cloudify_agent['bypass_maintenance_mode'] = \
