@@ -67,9 +67,8 @@ def only_ci(func):
     def wrapper(*args, **kwargs):
         if not ci():
             raise RuntimeError('Error! This test cannot be executed '
-                               'outside of the travis or circle CI '
-                               'system since it may corrupt '
-                               'your local system files')
+                               'outside of the circle CI system, since it '
+                               'may corrupt your local system files')
         func(*args, **kwargs)
 
     return wrapper
