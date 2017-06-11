@@ -13,26 +13,25 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import logging
-import platform
-import time
-import socket
-import subprocess
 import os
+import time
+import uuid
+import socket
 import filecmp
 import tarfile
-import uuid
+import logging
+import platform
+import subprocess
 from contextlib import contextmanager
 
-from wagon import wagon
+import wagon
 from agent_packager import packager
 
-from cloudify.exceptions import NonRecoverableError
-from cloudify.utils import LocalCommandRunner
 from cloudify.utils import setup_logger
+from cloudify.utils import LocalCommandRunner
+from cloudify.exceptions import NonRecoverableError
 
 import cloudify_agent
-
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.tests import resources
 
@@ -62,7 +61,6 @@ def create_mock_plugin(basedir, install_requires=None):
 def create_plugin_tar(plugin_dir_name,
                       target_directory,
                       basedir=None):
-
     """
     Create a tar file from the plugin.
 
@@ -76,7 +74,6 @@ def create_plugin_tar(plugin_dir_name,
     the base name, not the full path to the tar.
     :rtype: str
     """
-
     if basedir:
         plugin_source_path = os.path.join(basedir, plugin_dir_name)
     else:
@@ -98,9 +95,8 @@ def create_plugin_tar(plugin_dir_name,
 
 def create_plugin_wagon(plugin_dir_name,
                         target_directory,
-                        requirements=False,
+                        requirements=None,
                         basedir=None):
-
     """
     Create a wagon from a plugin.
 
@@ -120,9 +116,13 @@ def create_plugin_wagon(plugin_dir_name,
     else:
         plugin_source_path = resources.get_resource(os.path.join(
             'plugins', plugin_dir_name))
-    w = wagon.Wagon(plugin_source_path)
-    return w.create(with_requirements=requirements,
-                    archive_destination_dir=target_directory)
+
+    requirements = [requirements] if requirements else []
+    return wagon.create(
+        source=plugin_source_path,
+        archive_destination_dir=target_directory,
+        requirement_files=requirements,
+        archive_format='tar.gz')
 
 
 def get_source_uri():
@@ -184,7 +184,6 @@ def create_agent_package(directory, config, package_logger=None):
 
 
 def are_dir_trees_equal(dir1, dir2):
-
     """
     Compare two directories recursively. Files in each directory are
     assumed to be equal if their names and contents are equal.
@@ -198,8 +197,7 @@ def are_dir_trees_equal(dir1, dir2):
              there were no errors while accessing the directories or files,
              False otherwise.
     :rtype: bool
-   """
-
+    """
     # compare file lists in both dirs. If found different lists
     # or "funny" files (failed to compare) - return false
     dirs_cmp = filecmp.dircmp(dir1, dir2)
