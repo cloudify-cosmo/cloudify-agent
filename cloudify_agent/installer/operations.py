@@ -21,6 +21,7 @@ from cloudify import ctx
 from cloudify.exceptions import CommandExecutionError
 from cloudify.utils import LocalCommandRunner
 from cloudify import context
+from cloudify.celery.app import get_celery_app
 
 from cloudify_agent.installer.linux import LocalLinuxAgentInstaller
 from cloudify_agent.installer.linux import RemoteLinuxAgentInstaller
@@ -170,9 +171,10 @@ def start(cloudify_agent, installer, **_):
             # installing the agent (e.g userdata). All that is left for us
             # to do is wait for the agent to start.
 
-            # celery is imported here since it's only used in this method
-            # and we can't assume it's always available
-            from cloudify_agent.app import app as celery_client
+            celery_client = get_celery_app(
+                tenant=cloudify_agent['rest_tenant'],
+                target=cloudify_agent['queue']
+            )
             registered = utils.get_agent_registered(cloudify_agent['name'],
                                                     celery_client)
             if registered:
