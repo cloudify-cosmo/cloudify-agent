@@ -15,6 +15,7 @@ function install_deps() {
 		sudo yum -y update &&
 		sudo yum -y downgrade libyaml &&
 		sudo yum install curl python-devel make gcc gcc-c++ git libyaml-devel yum-utils openssl-devel -y &&
+		# No package libffi-devel available in RHEL 6 therefore installing from url
 		if [[ $(cat /etc/redhat-release) =~ "(Santiago)" ]];then
 			sudo yum install -y ftp://195.220.108.108/linux/centos/6.9/os/x86_64/Packages/libffi-devel-3.0.5-3.2.el6.x86_64.rpm
 		else
