@@ -629,6 +629,7 @@ class Daemon(object):
                         amqp_host=node['broker_ip'],
                         amqp_user=node['broker_user'],
                         amqp_pass=node['broker_pass'],
+                        amqp_vhost=node['broker_vhost'],
                         ssl_enabled=node['broker_ssl_enabled'],
                         ssl_cert_path=node.get('internal_cert_path')
                     )
@@ -641,6 +642,7 @@ class Daemon(object):
                 amqp_host=self.broker_ip,
                 amqp_user=self.broker_user,
                 amqp_pass=self.broker_pass,
+                amqp_vhost=self.broker_vhost,
                 ssl_enabled=self.broker_ssl_enabled,
                 ssl_cert_path=self.broker_ssl_cert_path
             )
