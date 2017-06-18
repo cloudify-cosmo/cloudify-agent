@@ -28,6 +28,7 @@ from jinja2 import Environment, FileSystemLoader
 
 import cloudify.manager
 from cloudify import ctx
+from cloudify.broker_config import broker_hostname
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import (ManagerVersion,
                             get_local_rest_certificate,
@@ -42,7 +43,6 @@ from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.api import defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
-from cloudify_agent.app import app
 from cloudify_agent.installer.config import configuration
 
 
@@ -99,6 +99,7 @@ def restart(new_name=None, delay_period=5, **_):
     # make the current master stop listening to the current queue
     # to avoid a situation where we have two masters listening on the
     # same queue.
+    app = get_celery_app(tenant=cloudify_agent['rest_tenant'])
     app.control.cancel_consumer(
         queue=daemon.queue,
         destination=['celery@{0}'.format(daemon.name)]
@@ -172,12 +173,14 @@ def create_new_agent_dict(old_agent):
     new_agent['name'] = utils.internal.generate_new_agent_name(
         old_agent['name'])
     new_agent['remote_execution'] = True
-    # TODO: broker_ip should be handled as part of fixing agent migration
     fields_to_copy = ['windows', 'ip', 'basedir', 'user',
-                      'ssl_cert_path', 'agent_rest_cert_path']
+                      'broker_ssl_cert_path', 'agent_rest_cert_path']
     for field in fields_to_copy:
         if field in old_agent:
             new_agent[field] = old_agent[field]
+
+    # Set the broker IP explicitly to the current manager's IP
+    new_agent['broker_ip'] = broker_hostname
     configuration.reinstallation_attributes(new_agent)
     new_agent['manager_file_server_url'] = get_manager_file_server_url()
     new_agent['old_agent_version'] = old_agent['version']
@@ -185,21 +188,23 @@ def create_new_agent_dict(old_agent):
 
 
 @contextmanager
-def _celery_client(ctx, agent):
+def _celery_client(agent):
     # We retrieve broker url from old agent in order to support
     # cases when old agent is not connected to current rabbit server.
-    if 'broker_config' in agent:
-        broker_config = agent['broker_config']
-    else:
-        broker_config = ctx.bootstrap_context.broker_config()
+    broker_config = agent.get('broker_config',
+                              ctx.bootstrap_context.broker_config())
     broker_url = utils.internal.get_broker_url(broker_config)
     ctx.logger.info('Connecting to {0}'.format(broker_url))
 
     ssl_cert_path = _get_ssl_cert_path(broker_config)
+
+    # Setting max_retries to something other than None to avoid a case where
+    # it would hang indefinitely (when validating the already installed agent)
     celery_client = get_celery_app(
         broker_url=broker_url,
         broker_ssl_enabled=broker_config.get('broker_ssl_enabled'),
-        broker_ssl_cert_path=ssl_cert_path
+        broker_ssl_cert_path=ssl_cert_path,
+        max_retries=3
     )
 
     if ManagerVersion(agent['version']) != ManagerVersion('3.2'):
@@ -255,7 +260,7 @@ def _run_install_script(old_agent, timeout, validate_only=False):
     new_agent = create_new_agent_dict(old_agent)
     old_agent_version = new_agent['old_agent_version']
 
-    with _celery_client(ctx, old_agent) as celery_client:
+    with _celery_client(old_agent) as celery_client:
         old_agent_name = old_agent['name']
         _assert_agent_alive(old_agent_name, celery_client, old_agent_version)
 
@@ -311,6 +316,7 @@ def create_agent_from_old_agent(operation_timeout=300):
     # Make sure that new celery agent was started:
     returned_agent = agents['new']
     ctx.logger.info('Installed agent {0}'.format(returned_agent['name']))
+    app = get_celery_app(tenant=returned_agent['rest_tenant'])
     _assert_agent_alive(returned_agent['name'], app)
     # Setting old_cloudify_agent in order to uninstall it later.
     ctx.instance.runtime_properties['old_cloudify_agent'] = agents['old']
@@ -334,6 +340,7 @@ def validate_agent_amqp(validate_agent_timeout, fail_on_agent_dead=False,
     ctx.logger.info(('Checking if agent can be accessed through '
                      'current rabbitmq'))
     try:
+        app = get_celery_app(tenant=agent.get('rest_tenant'))
         _assert_agent_alive(agent_name, app)
     except Exception as e:
         result['agent_alive'] = False
