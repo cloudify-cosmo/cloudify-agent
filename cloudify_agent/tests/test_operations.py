@@ -259,7 +259,6 @@ class TestCreateAgentAmqp(BaseTest):
             self.assertIn(new_agent['name'], agent['name'])
 
     @patch('cloudify_agent.operations.get_celery_app', _get_celery_mock())
-    @patch('cloudify_agent.operations.app', MagicMock())
     @patch('cloudify_agent.api.utils.get_agent_registered',
            MagicMock(return_value={'cloudify.dispatch.dispatch': {}}))
     def test_create_agent_from_old_agent(self):
