@@ -203,8 +203,7 @@ def _celery_client(agent):
     celery_client = get_celery_app(
         broker_url=broker_url,
         broker_ssl_enabled=broker_config.get('broker_ssl_enabled'),
-        broker_ssl_cert_path=ssl_cert_path,
-        max_retries=3
+        broker_ssl_cert_path=ssl_cert_path
     )
 
     if ManagerVersion(agent['version']) != ManagerVersion('3.2'):
