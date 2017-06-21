@@ -21,6 +21,8 @@ import tempfile
 import platform
 import logging
 
+from distutils.version import LooseVersion
+
 import fasteners
 from wagon import wagon
 from wagon import utils as wagon_utils
@@ -64,8 +66,7 @@ class PluginInstaller(object):
         """
         # deployment_id may be empty in some tests.
         deployment_id = deployment_id or SYSTEM_DEPLOYMENT
-        managed_plugin = get_managed_plugin(plugin,
-                                            logger=self.logger)
+        managed_plugin = get_managed_plugin(plugin)
         source = get_plugin_source(plugin, blueprint_id)
         args = get_plugin_args(plugin)
         tmp_plugin_dir = tempfile.mkdtemp(prefix='{0}-'.format(plugin['name']))
@@ -410,25 +411,18 @@ def extract_package_name(package_dir):
     return plugin_name
 
 
-def get_managed_plugin(plugin, logger=None):
+def get_managed_plugin(plugin):
     package_name = plugin.get('package_name')
     package_version = plugin.get('package_version')
     distribution = plugin.get('distribution')
     distribution_version = plugin.get('distribution_version')
     distribution_release = plugin.get('distribution_release')
     supported_platform = plugin.get('supported_platform')
-
-    if not (package_name and package_version):
-        if package_name and logger:
-            logger.warn('package_name {0} is specified but no package_version '
-                        'found, skipping wagon installation.'
-                        .format(package_name))
+    if not package_name:
         return None
-
-    query_parameters = {
-        'package_name': package_name,
-        'package_version': package_version
-    }
+    query_parameters = {'package_name': package_name}
+    if package_version:
+        query_parameters['package_version'] = package_version
     if distribution:
         query_parameters['distribution'] = distribution
     if distribution_version:
@@ -460,8 +454,9 @@ def get_managed_plugin(plugin, logger=None):
     if not plugins:
         return None
 
-    # we return the first one because both package name and version
-    # are required fields. No one pick is better than the other
+    # in case version was not specified, return the latest
+    plugins.sort(key=lambda plugin: LooseVersion(plugin['package_version']),
+                 reverse=True)
     return plugins[0]
 
 

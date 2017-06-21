@@ -405,12 +405,12 @@ class TestGetManagedPlugin(BaseTest):
 
     def test_implicit_supported_platform(self):
         plugins = [
-            {'id': '1'},
-            {'id': '2'},
-            {'id': '3',
+            {'id': '1', 'package_version': '1'},
+            {'id': '2', 'package_version': '1'},
+            {'id': '3', 'package_version': '1',
              'supported_platform': wagon_utils.get_platform()},
-            {'id': '4'},
-            {'id': '5'},
+            {'id': '4', 'package_version': '1'},
+            {'id': '5', 'package_version': '1'},
         ]
         plugin = {'package_name': 'plugin', 'distribution': 'x',
                   'distribution_release': 'x',
@@ -425,12 +425,12 @@ class TestGetManagedPlugin(BaseTest):
             full_distribution_name=False)
         dist, dist_release = dist.lower(), dist_release.lower()
         plugins = [
-            {'id': '1'},
-            {'id': '2'},
-            {'id': '3'},
-            {'id': '4',
+            {'id': '1', 'package_version': '1'},
+            {'id': '2', 'package_version': '1'},
+            {'id': '3', 'package_version': '1'},
+            {'id': '4', 'package_version': '1',
              'distribution': dist, 'distribution_release': dist_release},
-            {'id': '5'},
+            {'id': '5', 'package_version': '1'},
         ]
         plugin = {'package_name': 'plugin', 'supported_platform': 'x',
                   'package_version': '1'}
@@ -461,7 +461,7 @@ def _patch_for_install_wagon(package_name, package_version,
               'id': plugin_id}
     with _patch_client([plugin], download_path=download_path) as client:
         with patch('cloudify_agent.api.plugins.installer.get_managed_plugin',
-                   lambda p, logger: client.plugins.plugins[0]):
+                   lambda p: client.plugins.plugins[0]):
             yield
 
 
