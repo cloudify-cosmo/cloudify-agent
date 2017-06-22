@@ -226,6 +226,7 @@ class PluginInstaller(object):
         self.logger.info('Installing plugin from source')
         self._pip_install(source=source, args=args, constraint=constraint)
         shutil.move(tmp_plugin_dir, dst_dir)
+        self.runner.run('chmod g+rw -R {0}'.format(dst_dir))
 
     def _pip_freeze(self):
         try:
