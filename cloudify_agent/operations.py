@@ -29,12 +29,14 @@ from jinja2 import Environment, FileSystemLoader
 import cloudify.manager
 from cloudify import ctx
 from cloudify.broker_config import broker_hostname
+from cloudify.workflows import ctx as workflow_ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import (ManagerVersion,
                             get_local_rest_certificate,
                             get_manager_file_server_url,
                             get_manager_file_server_root,
                             get_manager_rest_service_host)
+from cloudify.utils import internal as internal_utils
 from cloudify.decorators import operation
 from cloudify.celery.app import get_celery_app
 
@@ -48,17 +50,18 @@ from cloudify_agent.installer.config import configuration
 
 @operation
 def install_plugins(plugins, **_):
-    installer = PluginInstaller(logger=ctx.logger)
-    for plugin in plugins:
-        ctx.logger.info('Installing plugin: {0}'.format(plugin['name']))
-        try:
-            installer.install(plugin=plugin,
-                              deployment_id=ctx.deployment.id,
-                              blueprint_id=ctx.blueprint.id)
-        except exceptions.PluginInstallationError as e:
-            # preserve traceback
-            tpe, value, tb = sys.exc_info()
-            raise NonRecoverableError, NonRecoverableError(str(e)), tb
+    with internal_utils._change_tenant(ctx, workflow_ctx.tenant_name):
+        installer = PluginInstaller(logger=ctx.logger)
+        for plugin in plugins:
+            ctx.logger.info('Installing plugin: {0}'.format(plugin['name']))
+            try:
+                installer.install(plugin=plugin,
+                                  deployment_id=ctx.deployment.id,
+                                  blueprint_id=ctx.blueprint.id)
+            except exceptions.PluginInstallationError as e:
+                # preserve traceback
+                tpe, value, tb = sys.exc_info()
+                raise NonRecoverableError, NonRecoverableError(str(e)), tb
 
 
 @operation
