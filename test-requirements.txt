@@ -2,7 +2,7 @@ testtools
 mock==1.0.1
 unittest2
 FileServer
-https://github.com/cloudify-cosmo/cloudify-dsl-parser/archive/4.3.dev1-build-build.zip
+https://github.com/cloudify-cosmo/cloudify-dsl-parser/archive/4.3.dev1-build.zip
 
 # for creating the agent package in tests
 https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip
