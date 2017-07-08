@@ -34,6 +34,7 @@ def mock_context(agent_properties=None,
         blueprint_id='test_blueprint',
         deployment_id='test_deployment',
         execution_id='test_execution',
+        rest_token='test_token',
         properties={'cloudify_agent': agent_properties},
         runtime_properties={'cloudify_agent': agent_runtime_properties},
         bootstrap_context=BootstrapContext(
