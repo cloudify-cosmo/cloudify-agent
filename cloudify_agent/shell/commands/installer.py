@@ -54,9 +54,9 @@ def install_local(agent_file, output_agent_file, rest_token, rest_cert_path):
     os.environ[CLOUDIFY_LOCAL_REST_CERT_PATH] = str(rest_cert_path)
 
     if os.name == 'nt':
-        installer = LocalWindowsAgentInstaller(cloudify_agent, ctx.logger)
+        installer = LocalWindowsAgentInstaller(cloudify_agent)
     else:
-        installer = LocalLinuxAgentInstaller(cloudify_agent, ctx.logger)
+        installer = LocalLinuxAgentInstaller(cloudify_agent)
 
     installer.create_agent()
     installer.configure_agent()

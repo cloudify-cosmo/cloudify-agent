@@ -19,7 +19,7 @@ import platform
 
 from ntpath import join as nt_join
 from functools import wraps, partial
-from os.path import join as posix_join
+from posixpath import join as posix_join
 
 from cloudify_agent.installer import exceptions
 from cloudify_agent.api import utils as agent_utils
@@ -130,6 +130,7 @@ class CloudifyAgentConfig(dict):
             self._set_ip()
             self._set_password()
             self._validate_user()
+            self._validate_key_or_password()
 
     def set_installation_params(self, runner):
         self._set_basedir(runner)
@@ -207,9 +208,12 @@ class CloudifyAgentConfig(dict):
             raise_missing_attribute('user')
 
     def _validate_key_or_password(self):
-        # a remote linux installation requires either a password or a key file
-        # in order to connect to the remote machine.
-        if self['windows'] or self.get('key') or self.get('password'):
+        """
+        A *remote* *linux* installation requires either a password or a key
+        file in order to connect to the remote machine
+        """
+        if self['windows'] or self.get('key') or self.get('password') \
+                or not self['remote_execution']:
             return
         raise_missing_attributes('key', 'password')
 
