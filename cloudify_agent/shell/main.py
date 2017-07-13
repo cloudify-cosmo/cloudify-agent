@@ -37,8 +37,20 @@ def get_logger():
     return _logger
 
 
+def show_version(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+
+    ver = pkgutil.get_data('cloudify_agent', 'VERSION')
+    logger = get_logger()
+    logger.info('Cloudify Agent {0}'.format(ver))
+    ctx.exit()
+
+
 @click.group()
 @click.option('--debug', default=False, is_flag=True)
+@click.option('--version', is_flag=True, callback=show_version,
+              expose_value=False, is_eager=True, help='Show version and exit')
 def main(debug):
 
     if debug:
