@@ -13,7 +13,9 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import json
 import logging
+import pkgutil
 
 import click
 
@@ -41,7 +43,8 @@ def show_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
 
-    ver = pkgutil.get_data('cloudify_agent', 'VERSION')
+    data = pkgutil.get_data('cloudify_agent', 'VERSION')
+    ver = json.loads(data)['version']
     logger = get_logger()
     logger.info('Cloudify Agent {0}'.format(ver))
     ctx.exit()
