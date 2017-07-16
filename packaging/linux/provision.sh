@@ -38,20 +38,16 @@ function install_requirements() {
 
 # VERSION/PRERELEASE/BUILD must be exported as they is being read as an env var by the cloudify-agent-packager
 export CORE_TAG_NAME="4.1.1"
+export CORE_BRANCH="4.1.1-build"
 GITHUB_USERNAME=$1
 GITHUB_PASSWORD=$2
 AWS_ACCESS_KEY_ID=$3
 AWS_ACCESS_KEY=$4
 export REPO=$5
 
-if [ $REPO == "cloudify-versions" ];then
-    REPO_TAG="master"
-else
-    REPO_TAG=$CORE_TAG_NAME
-fi
-curl -u $GITHUB_USERNAME:$GITHUB_PASSWORD https://raw.githubusercontent.com/cloudify-cosmo/${REPO}/${REPO_TAG}/packages-urls/common_build_env.sh -o ./common_build_env.sh &&
+curl -u $GITHUB_USERNAME:$GITHUB_PASSWORD https://raw.githubusercontent.com/cloudify-cosmo/${REPO}/${CORE_BRANCH}/packages-urls/common_build_env.sh -o ./common_build_env.sh &&
 source common_build_env.sh &&
-curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-packager/${REPO_TAG}/common/provision.sh -o ./common-provision.sh &&
+curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-packager/${CORE_BRANCH}/common/provision.sh -o ./common-provision.sh &&
 source common-provision.sh
 
 install_common_prereqs &&
