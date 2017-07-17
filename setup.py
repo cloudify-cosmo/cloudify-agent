@@ -55,6 +55,7 @@ setup(
     ],
     package_data={
         'cloudify_agent': [
+            'VERSION',
             'resources/disable-requiretty.sh',
             'resources/crontab/disable.sh.template',
             'resources/crontab/enable.sh.template',
