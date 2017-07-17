@@ -132,9 +132,9 @@ class TestLinuxInitScript(BaseInitScriptTest):
 
     def test_create_ssl_cert(self):
         self._run('add_ssl_cert')
-        agent_ssl_cert.verify_remote_cert(
-            self.input_cloudify_agent['agent_dir']
-        )
+        # basedir + node_id
+        agent_dir = os.path.join(self.temp_folder, 'd')
+        agent_ssl_cert.verify_remote_cert(agent_dir)
 
 
 @only_os('nt')
@@ -156,6 +156,6 @@ class TestWindowsInitScript(BaseInitScriptTest):
 
     def test_create_ssl_cert(self):
         self._run('AddSSLCert')
-        agent_ssl_cert.verify_remote_cert(
-            self.input_cloudify_agent['agent_dir']
-        )
+        # basedir + node_id
+        agent_dir = os.path.join(self.temp_folder, 'd')
+        agent_ssl_cert.verify_remote_cert(agent_dir)

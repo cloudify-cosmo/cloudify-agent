@@ -43,7 +43,7 @@ from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.api import defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
-from cloudify_agent.installer.config import configuration
+from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 
 
 @operation
@@ -169,7 +169,7 @@ def _save_daemon(daemon):
 
 
 def create_new_agent_dict(old_agent):
-    new_agent = {}
+    new_agent = CloudifyAgentConfig()
     new_agent['name'] = utils.internal.generate_new_agent_name(
         old_agent['name'])
     new_agent['remote_execution'] = True
@@ -181,9 +181,12 @@ def create_new_agent_dict(old_agent):
 
     # Set the broker IP explicitly to the current manager's IP
     new_agent['broker_ip'] = broker_hostname
-    configuration.reinstallation_attributes(new_agent)
     new_agent['manager_file_server_url'] = get_manager_file_server_url()
     new_agent['old_agent_version'] = old_agent['version']
+
+    new_agent.set_default_values()
+    if new_agent['basedir']:
+        new_agent.set_config_paths()
     return new_agent
 
 
