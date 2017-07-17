@@ -19,10 +19,11 @@ import click
 
 from cloudify import state, context
 from cloudify_agent.api import utils, defaults
-from cloudify_agent.installer.config import configuration
 from cloudify_agent.shell.decorators import handle_failures
 from cloudify_agent.shell.env import CLOUDIFY_LOCAL_REST_CERT_PATH
-from cloudify_agent.installer.operations import prepare_local_installer
+from cloudify_agent.installer.linux import LocalLinuxAgentInstaller
+from cloudify_agent.installer.windows import LocalWindowsAgentInstaller
+from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 
 
 @click.command('install-local')
@@ -39,18 +40,24 @@ from cloudify_agent.installer.operations import prepare_local_installer
 def install_local(agent_file, output_agent_file, rest_token, rest_cert_path):
     if agent_file is None:
         raise click.ClickException('--agent-file should be specified.')
-    cloudify_agent = json.load(agent_file)
+    cloudify_agent = CloudifyAgentConfig(json.load(agent_file))
     ctx = context.CloudifyContext({'rest_token': rest_token})
     state.current_ctx.set(ctx, {})
-    if not cloudify_agent.get('rest_port'):
-        cloudify_agent['rest_port'] = defaults.INTERNAL_REST_PORT
-    os.environ[utils.internal.CLOUDIFY_DAEMON_USER_KEY] = str(
-        cloudify_agent['user'])
+
+    user = cloudify_agent['user']
+
+    cloudify_agent.setdefault('rest_port', defaults.INTERNAL_REST_PORT)
+    cloudify_agent.setdefault('basedir', utils.get_home_dir(user))
+    cloudify_agent.set_config_paths()
+
+    os.environ[utils.internal.CLOUDIFY_DAEMON_USER_KEY] = str(user)
     os.environ[CLOUDIFY_LOCAL_REST_CERT_PATH] = str(rest_cert_path)
-    if 'basedir' not in cloudify_agent:
-        cloudify_agent['basedir'] = utils.get_home_dir(cloudify_agent['user'])
-    configuration.directory_attributes(cloudify_agent)
-    installer = prepare_local_installer(cloudify_agent)
+
+    if os.name == 'nt':
+        installer = LocalWindowsAgentInstaller(cloudify_agent)
+    else:
+        installer = LocalLinuxAgentInstaller(cloudify_agent)
+
     installer.create_agent()
     installer.configure_agent()
     installer.start_agent()

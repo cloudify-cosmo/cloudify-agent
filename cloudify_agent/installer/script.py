@@ -20,8 +20,9 @@ from cloudify import ctx, utils as cloudify_utils
 from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
 
 from cloudify_agent.api import utils
-from cloudify_agent.installer.operations import init_agent_installer
 from cloudify_agent.installer import AgentInstaller
+from cloudify_agent.installer.config.agent_config import \
+    create_agent_config_and_installer
 
 
 class AgentInstallationScriptBuilder(AgentInstaller):
@@ -75,6 +76,6 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         return self.custom_env_path
 
 
-@init_agent_installer(validate_connection=False)
+@create_agent_config_and_installer(validate_connection=False)
 def init_script(cloudify_agent, **_):
     return AgentInstallationScriptBuilder(cloudify_agent).build()

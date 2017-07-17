@@ -31,7 +31,7 @@ from cloudify.workflows import local
 
 from cloudify_agent import operations
 from cloudify_agent.api import utils
-from cloudify_agent.installer.config import configuration
+from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 
 from cloudify_agent.tests import agent_ssl_cert
 from cloudify_agent.tests import BaseTest, resources, agent_package
@@ -44,7 +44,7 @@ from cloudify_agent.tests.api.pm import only_ci
 
 _AGENT_SCRIPT_NAME = 'install_agent_template.py'
 _INSTALL_SCRIPT_URL = ('https://raw.githubusercontent.com/cloudify-cosmo/'
-                       'cloudify-manager/4.0/resources/rest-service/'
+                       'cloudify-manager/master/resources/rest-service/'
                        'cloudify/{0}'.format(_AGENT_SCRIPT_NAME))
 
 
@@ -165,15 +165,11 @@ rest_mock.manager.get_version = lambda: '3.3'
 
 
 class TestCreateAgentAmqp(BaseTest):
-
-    @patch('cloudify_agent.installer.config.configuration.ctx',
-           mock_context())
-    @patch('cloudify_agent.installer.config.decorators.ctx',
-           mock_context())
-    @patch('cloudify_agent.installer.config.attributes.ctx',
-           mock_context())
-    def _create_agent(self):
-        old_agent = {
+    @staticmethod
+    @patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())
+    @patch('cloudify.utils.ctx', mock_context())
+    def _create_agent():
+        old_agent = CloudifyAgentConfig({
             'local': False,
             'remote_execution': False,
             'ip': '10.0.4.47',
@@ -193,16 +189,11 @@ class TestCreateAgentAmqp(BaseTest):
                 'broker_user': 'test_user',
                 'broker_ssl_cert': ''
             }
-        }
-
-        operation_ctx = mocks.MockCloudifyContext(runtime_properties={
-            'rest_token': 'token1234'
         })
-        old_context = ctx
-        configuration.prepare_connection(old_agent)
-        current_ctx.set(operation_ctx)
-        configuration.prepare_agent(old_agent, None)
-        current_ctx.set(old_context)
+
+        old_agent.set_execution_params()
+        old_agent.set_default_values()
+        old_agent.set_installation_params(runner=None)
         return old_agent
 
     def _create_node_instance_context(self):
@@ -226,12 +217,7 @@ class TestCreateAgentAmqp(BaseTest):
         }
         return patch.dict(os.environ, new_env)
 
-    @patch('cloudify_agent.installer.config.configuration.ctx',
-           mock_context())
-    @patch('cloudify_agent.installer.config.decorators.ctx',
-           mock_context())
-    @patch('cloudify_agent.installer.config.attributes.ctx',
-           mock_context())
+    @patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())
     @patch('cloudify.utils.ctx', mock_context())
     def test_create_agent_dict(self):
         old_agent = self._create_agent()

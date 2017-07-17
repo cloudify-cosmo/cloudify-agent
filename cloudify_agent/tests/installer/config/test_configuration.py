@@ -20,25 +20,21 @@ from mock import patch
 
 from cloudify import constants
 from cloudify_agent.api import utils
-from cloudify_agent.installer.config import configuration
+from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests.installer.config import mock_context
 
 
 class TestConfiguration(BaseTest):
 
-    @patch('cloudify_agent.installer.config.configuration.ctx',
-           mock_context())
-    @patch('cloudify_agent.installer.config.decorators.ctx',
-           mock_context())
-    @patch('cloudify_agent.installer.config.attributes.ctx',
-           mock_context())
+    @patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())
     @patch('cloudify.utils.ctx', mock_context())
     def test_prepare(self):
 
-        cloudify_agent = {'local': True}
-        configuration.prepare_connection(cloudify_agent)
-        configuration.prepare_agent(cloudify_agent, None)
+        cloudify_agent = CloudifyAgentConfig({'local': True})
+        cloudify_agent.set_execution_params()
+        cloudify_agent.set_default_values()
+        cloudify_agent.set_installation_params(None)
 
         user = getpass.getuser()
         basedir = utils.get_home_dir(user)
@@ -69,9 +65,8 @@ class TestConfiguration(BaseTest):
             'windows': os.name == 'nt',
             'system_python': 'python',
             'remote_execution': True,
-            'broker_get_settings_from_manager': False,
-            'bypass_maintenance_mode': False,
-            'rest_token': None,
+            'bypass_maintenance': False,
+            'rest_token': 'test_token',
             'rest_tenant': {}
         }
         if os.name == 'posix':
@@ -89,18 +84,15 @@ class TestConfiguration(BaseTest):
         self.maxDiff = None
         self.assertDictEqual(expected, cloudify_agent)
 
-    @patch('cloudify_agent.installer.config.configuration.ctx',
-           mock_context())
-    @patch('cloudify_agent.installer.config.decorators.ctx',
-           mock_context())
-    @patch('cloudify_agent.installer.config.attributes.ctx',
-           mock_context())
+    @patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())
     @patch('cloudify.utils.ctx', mock_context())
     def test_prepare_secured(self):
 
-        cloudify_agent = {'local': True, 'rest_port': '443'}
-        configuration.prepare_connection(cloudify_agent)
-        configuration.prepare_agent(cloudify_agent, None)
+        cloudify_agent = CloudifyAgentConfig({'local': True,
+                                              'rest_port': '443'})
+        cloudify_agent.set_execution_params()
+        cloudify_agent.set_default_values()
+        cloudify_agent.set_installation_params(None)
 
         user = getpass.getuser()
         basedir = utils.get_home_dir(user)
@@ -131,9 +123,8 @@ class TestConfiguration(BaseTest):
             'windows': os.name == 'nt',
             'system_python': 'python',
             'remote_execution': True,
-            'broker_get_settings_from_manager': False,
-            'bypass_maintenance_mode': False,
-            'rest_token': None,
+            'bypass_maintenance': False,
+            'rest_token': 'test_token',
             'rest_tenant': {}
         }
         if os.name == 'posix':
@@ -151,7 +142,7 @@ class TestConfiguration(BaseTest):
         self.maxDiff = None
         self.assertDictEqual(expected, cloudify_agent)
 
-    @patch('cloudify_agent.installer.config.decorators.ctx',
+    @patch('cloudify_agent.installer.config.agent_config.ctx',
            mock_context(
                agent_runtime_properties={'extra': {
                    'ssl_cert_path': '/tmp/blabla',
@@ -160,6 +151,6 @@ class TestConfiguration(BaseTest):
     def test_connection_params_propagation(self):
         # Testing that if a connection timeout is passed as an agent runtime
         # property, it would be propagated to the cloudify agent dict
-        cloudify_agent = {'local': True}
-        configuration.prepare_connection(cloudify_agent)
+        cloudify_agent = CloudifyAgentConfig({'local': True})
+        cloudify_agent.set_initial_values()
         self.assertEqual(cloudify_agent['ssl_cert_path'], '/tmp/blabla')
