@@ -105,9 +105,7 @@ export -f install_agent
 
 install_and_start_agent()
 {
-    {% if conf.install_method == 'init_script' %}
-        install_agent
-    {% endif %}
+    install_agent
     su {{ conf.user }} --shell /bin/bash -c "set -e; create_custom_env_file"
     su {{ conf.user }} --shell /bin/bash -c "set -e; start_daemon"
 }
