@@ -13,13 +13,17 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+from tempfile import NamedTemporaryFile
+
 from cloudify import ctx
 from cloudify import context
 from cloudify.decorators import operation
 from cloudify.celery.app import get_celery_app
+from cloudify.exceptions import CommandExecutionError
 
 from cloudify_agent.api import utils
 
+from cloudify_agent.installer.script import init_script
 from .config.agent_config import create_agent_config_and_installer
 
 
@@ -33,10 +37,20 @@ def create(cloudify_agent, installer, **_):
         ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
         ctx.instance.update()
 
-        if cloudify_agent['remote_execution']:
-            ctx.logger.info('Creating Agent {0}'.format(
-                cloudify_agent['name']))
-            installer.create_agent()
+        script = init_script(cloudify_agent)
+        with NamedTemporaryFile() as f:
+            f.write(script)
+            f.flush()
+
+            if cloudify_agent['remote_execution']:
+                ctx.logger.info('Creating Agent {0}'.format(
+                    cloudify_agent['name']))
+                try:
+                    result = installer.runner.run_script(f.name)
+                    ctx.logger.info(result.std_out)
+                except CommandExecutionError, e:
+                    ctx.logger.error(str(e))
+                    raise
     else:
         ctx.logger.info('Creating Agent {0}'.format(cloudify_agent['name']))
         installer.create_agent()
