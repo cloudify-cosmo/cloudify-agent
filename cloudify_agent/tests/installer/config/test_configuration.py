@@ -152,5 +152,5 @@ class TestConfiguration(BaseTest):
         # Testing that if a connection timeout is passed as an agent runtime
         # property, it would be propagated to the cloudify agent dict
         cloudify_agent = CloudifyAgentConfig({'local': True})
-        cloudify_agent.set_initial_values()
+        cloudify_agent.set_initial_values(True)
         self.assertEqual(cloudify_agent['ssl_cert_path'], '/tmp/blabla')
