@@ -33,22 +33,26 @@ from .installer_config import create_runner, get_installer
 from .config_errors import raise_missing_attribute, raise_missing_attributes
 
 
-def create_agent_config_and_installer(func=None, validate_connection=True):
+def create_agent_config_and_installer(func=None,
+                                      validate_connection=True,
+                                      new_agent=False):
     # This allows the decorator to be used with or without the validate arg
     if not func:
         return partial(
             create_agent_config_and_installer,
-            validate_connection=validate_connection
+            validate_connection=validate_connection,
+            new_agent=new_agent
         )
 
     @wraps(func)
     def wrapper(*args, **kwargs):
         cloudify_agent = CloudifyAgentConfig()
-        cloudify_agent.set_initial_values(**kwargs)
+        cloudify_agent.set_initial_values(new_agent, **kwargs)
 
-        # Set values that need to be inferred from other ones
-        cloudify_agent.set_execution_params()
-        cloudify_agent.set_default_values()
+        if new_agent:
+            # Set values that need to be inferred from other ones
+            cloudify_agent.set_execution_params()
+            cloudify_agent.set_default_values()
 
         runner = create_runner(cloudify_agent, validate_connection)
         cloudify_agent.set_installation_params(runner)
@@ -67,11 +71,17 @@ def create_agent_config_and_installer(func=None, validate_connection=True):
 
 
 class CloudifyAgentConfig(dict):
-    def set_initial_values(self, **kwargs):
-        """Set the dictionary values in reverse precedence order"""
+    def set_initial_values(self, new_agent, **kwargs):
+        """
+        Set the dictionary values in reverse precedence order
+        :param new_agent: if set to True, we get additional values from the BS
+        context and from node properties. Otherwise, only runtime properties
+        and input params are used
+        """
 
-        self.update(_get_bootstrap_agent_config())  # BS context is 4th
-        self.update(_get_node_properties())         # node props are 3rd
+        if new_agent:
+            self.update(_get_bootstrap_agent_config())  # BS context is 4th
+            self.update(_get_node_properties())         # node props are 3rd
         self.update(_get_runtime_properties())      # runtime props are 2nd
         self.update(_get_agent_inputs(kwargs))      # inputs are 1st in order
 
