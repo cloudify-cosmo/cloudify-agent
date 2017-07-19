@@ -56,3 +56,17 @@ class LocalCommandRunner(_UtilsLocalCommandRunner):
             tempdir = tempfile.mkdtemp()
             dst = os.path.join(tempdir, basename)
         shutil.copy2(src, dst)
+        return dst
+
+    def delete(self, path):
+        if os.path.isfile(path):
+            os.remove(path)
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+
+    def run_script(self, script_path):
+        remote_path = self.put_file(script_path)
+        self.run('chmod +x {0}'.format(remote_path))
+        result = self.run(remote_path)
+        self.delete(os.path.dirname(remote_path))
+        return result
