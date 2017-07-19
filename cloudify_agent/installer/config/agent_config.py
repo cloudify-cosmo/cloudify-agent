@@ -335,8 +335,8 @@ def _get_agent_config(params, params_location, allow_both_params=False):
                 '`agent_config` should be used'.format(params_location)
             )
 
-    agent_config = params.get('agent_config', {})
-    cloudify_agent = params.get('cloudify_agent', {})
+    agent_config = params.get('agent_config') or {}
+    cloudify_agent = params.get('cloudify_agent') or {}
 
     final_dict = agent_config.copy()
     final_dict.update(cloudify_agent)
