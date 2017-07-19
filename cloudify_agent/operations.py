@@ -275,7 +275,7 @@ def _run_install_script(old_agent, timeout, validate_only=False):
         # Using a context manager to delete the files after sending the task
         with AgentFilesGenerator() as agent_files:
             kwargs = {'script_path': agent_files.script_url,
-                      'cloudify_agent': new_agent,
+                      'cloudify_agent': dict(new_agent),
                       'validate_only': validate_only,
                       '__cloudify_context': cloudify_context}
             task = _celery_task_name(old_agent_version)
