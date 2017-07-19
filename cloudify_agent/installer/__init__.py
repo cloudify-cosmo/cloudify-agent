@@ -57,12 +57,8 @@ class AgentInstaller(object):
 
     def create_agent(self):
         self.upload_rest_certificate()
-        if 'source_url' in self.cloudify_agent:
-            self.logger.info('Creating agent from source')
-            self._from_source()
-        else:
-            self.logger.info('Creating agent from package')
-            self._from_package()
+        self.logger.info('Creating agent from package')
+        self._install_agent_package()
         self.run_daemon_command(
             command='create {0}'
             .format(self._create_process_management_options()),
@@ -113,40 +109,7 @@ class AgentInstaller(object):
     def restart_agent(self):
         self.run_daemon_command('restart')
 
-    def _from_source(self):
-
-        requirements = self.cloudify_agent.get('requirements')
-        source_url = self.cloudify_agent['source_url']
-
-        self.logger.info('Installing pip...')
-        pip_path = self.install_pip()
-        self.logger.info('Installing virtualenv...')
-        self.install_virtualenv()
-
-        self.logger.info('Creating virtualenv at {0}'.format(
-            self.cloudify_agent['envdir']))
-        self.runner.run('virtualenv {0}'.format(
-            self.cloudify_agent['envdir']))
-
-        if requirements:
-            self.logger.info('Installing requirements file: {0}'
-                             .format(requirements))
-            self.runner.run('{0} install -r {1}'
-                            .format(pip_path, requirements))
-        self.logger.info('Installing Cloudify Agent from {0}'
-                         .format(source_url))
-        self.runner.run('{0} install {1}'
-                        .format(pip_path, source_url))
-
-        # scripts inside the virtualenv will have /path/to/venv/bin/python
-        # as their shebang. If this exceeds 128 bytes, the scripts will
-        # become non-executable, unless make the virtualenv relocatable
-        # Do this after installing the agent, so that the agent script
-        # is also made relocatable
-        self.runner.run('virtualenv --relocatable {0}'.format(
-            self.cloudify_agent['envdir']))
-
-    def _from_package(self):
+    def _install_agent_package(self):
 
         self.logger.info('Downloading Agent Package from {0}'.format(
             self.cloudify_agent['package_url']
@@ -179,12 +142,6 @@ class AgentInstaller(object):
         raise NotImplementedError('Must be implemented by sub-class')
 
     def extract(self, archive, destination):
-        raise NotImplementedError('Must be implemented by sub-class')
-
-    def install_pip(self):
-        raise NotImplementedError('Must be implemented by sub-class')
-
-    def install_virtualenv(self):
         raise NotImplementedError('Must be implemented by sub-class')
 
     def create_custom_env_file_on_target(self, environment):
@@ -277,19 +234,6 @@ class WindowsInstallerMixin(AgentInstaller):
         return '"{0}\\Scripts\\cfy-agent"'.format(
             self.cloudify_agent['envdir'])
 
-    def install_pip(self):
-        get_pip_url = 'https://bootstrap.pypa.io/get-pip.py'
-        self.logger.info('Downloading get-pip from {0}'.format(get_pip_url))
-        destination = '{0}\\get-pip.py'.format(self.cloudify_agent['basedir'])
-        get_pip = self.runner.download(get_pip_url, destination)
-        self.logger.info('Running pip installation script')
-        self.runner.run('{0} {1}'.format(self.cloudify_agent[
-            'system_python'], get_pip))
-        return '{0}\\Scripts\\pip'.format(self.cloudify_agent['envdir'])
-
-    def install_virtualenv(self):
-        self.runner.run('pip install virtualenv')
-
     def extract(self, archive, destination):
         destination = '{0}\\env'.format(destination.rstrip('\\ '))
         if not archive.endswith('.exe'):
@@ -310,18 +254,6 @@ class LinuxInstallerMixin(AgentInstaller):
     def cfy_agent_path(self):
         return '"{0}/bin/python" "{0}/bin/cfy-agent"'.format(
             self.cloudify_agent['envdir'])
-
-    def install_pip(self):
-        get_pip_url = 'https://bootstrap.pypa.io/get-pip.py'
-        self.logger.info('Downloading get-pip from {0}'.format(get_pip_url))
-        get_pip = self.runner.download(get_pip_url)
-        self.logger.info('Running pip installation script')
-        self.runner.run('sudo python {0}'.format(get_pip))
-        return '{0}/bin/python {0}/bin/pip'.format(
-            self.cloudify_agent['envdir'])
-
-    def install_virtualenv(self):
-        self.runner.run('sudo pip install virtualenv')
 
 
 class LocalInstallerMixin(AgentInstaller):
