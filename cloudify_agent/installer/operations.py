@@ -16,7 +16,6 @@
 from tempfile import NamedTemporaryFile
 
 from cloudify import ctx
-from cloudify import context
 from cloudify.decorators import operation
 from cloudify.celery.app import get_celery_app
 from cloudify.exceptions import CommandExecutionError
@@ -30,42 +29,35 @@ from .config.agent_config import create_agent_config_and_installer
 @operation
 @create_agent_config_and_installer
 def create(cloudify_agent, installer, **_):
-    if ctx.type == context.NODE_INSTANCE:
+    # save runtime properties immediately so that they will be available
+    # to other operation even in case the create operation failed.
+    ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
+    ctx.instance.update()
 
-        # save runtime properties immediately so that they will be available
-        # to other operation even in case the create operation failed.
-        ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
-        ctx.instance.update()
+    script = init_script(cloudify_agent)
+    with NamedTemporaryFile() as f:
+        f.write(script)
+        f.flush()
 
-        script = init_script(cloudify_agent)
-        with NamedTemporaryFile() as f:
-            f.write(script)
-            f.flush()
-
-            if cloudify_agent['remote_execution']:
-                ctx.logger.info('Creating Agent {0}'.format(
-                    cloudify_agent['name']))
-                try:
-                    result = installer.runner.run_script(f.name)
-                    ctx.logger.info(result.std_out)
-                except CommandExecutionError, e:
-                    ctx.logger.error(str(e))
-                    raise
-    else:
-        ctx.logger.info('Creating Agent {0}'.format(cloudify_agent['name']))
-        installer.create_agent()
+        if cloudify_agent['remote_execution']:
+            ctx.logger.info('Creating Agent {0}'.format(
+                cloudify_agent['name']))
+            try:
+                response = installer.runner.run_script(f.name)
+                output = response.std_out
+                if output:
+                    installer.logger.warning('Output:\n{0}'.format(output))
+                    for line in output.splitlines():
+                        installer.logger.info(line)
+            except CommandExecutionError, e:
+                ctx.logger.error(str(e))
+                raise
 
 
 @operation
 @create_agent_config_and_installer
 def configure(cloudify_agent, installer, **_):
-
-    if ctx.type == context.NODE_INSTANCE:
-        if cloudify_agent['remote_execution']:
-            ctx.logger.info('Configuring Agent {0}'.format(
-                cloudify_agent['name']))
-            installer.configure_agent()
-    else:
+    if cloudify_agent['remote_execution']:
         ctx.logger.info('Configuring Agent {0}'.format(cloudify_agent['name']))
         installer.configure_agent()
 
@@ -73,38 +65,32 @@ def configure(cloudify_agent, installer, **_):
 @operation
 @create_agent_config_and_installer
 def start(cloudify_agent, installer, **_):
-
-    if ctx.type == context.NODE_INSTANCE:
-        if cloudify_agent['remote_execution']:
-            ctx.logger.info('Starting Agent {0}'.format(
-                cloudify_agent['name']))
-            installer.start_agent()
-        else:
-            # if remote_execution is False, and this operation was invoked
-            # (install_agent is True), it means that some other process is
-            # installing the agent (e.g userdata). All that is left for us
-            # to do is wait for the agent to start.
-
-            celery_client = get_celery_app(
-                tenant=cloudify_agent['rest_tenant'],
-                target=cloudify_agent['queue']
-            )
-            registered = utils.get_agent_registered(cloudify_agent['name'],
-                                                    celery_client)
-            if registered:
-                ctx.logger.info('Agent has started')
-            else:
-                return ctx.operation.retry(
-                    message='Waiting for Agent to start...')
-    else:
-        ctx.logger.info('Starting Agent {0}'.format(cloudify_agent['name']))
+    if cloudify_agent['remote_execution']:
+        ctx.logger.info('Starting Agent {0}'.format(
+            cloudify_agent['name']))
         installer.start_agent()
+    else:
+        # if remote_execution is False, and this operation was invoked
+        # (install_agent is True), it means that some other process is
+        # installing the agent (e.g userdata). All that is left for us
+        # to do is wait for the agent to start.
+
+        celery_client = get_celery_app(
+            tenant=cloudify_agent['rest_tenant'],
+            target=cloudify_agent['queue']
+        )
+        registered = utils.get_agent_registered(cloudify_agent['name'],
+                                                celery_client)
+        if registered:
+            ctx.logger.info('Agent has started')
+        else:
+            return ctx.operation.retry(
+                message='Waiting for Agent to start...')
 
 
 @operation
 @create_agent_config_and_installer(validate_connection=False)
 def stop(cloudify_agent, installer, **_):
-
     # no need to handling remote_execution False because this operation is
     # not invoked in that case
     ctx.logger.info('Stopping Agent {0}'.format(cloudify_agent['name']))
@@ -114,23 +100,17 @@ def stop(cloudify_agent, installer, **_):
 @operation
 @create_agent_config_and_installer(validate_connection=False)
 def delete(cloudify_agent, installer, **_):
-
-    if ctx.type == context.NODE_INSTANCE:
-        # delete the runtime properties set on create
-        ctx.instance.runtime_properties.pop('cloudify_agent', None)
-        if cloudify_agent['remote_execution']:
-            ctx.logger.info('Deleting Agent {0}'.format(
-                cloudify_agent['name']))
-            installer.delete_agent()
-    else:
-        ctx.logger.info('Deleting Agent {0}'.format(cloudify_agent['name']))
+    # delete the runtime properties set on create
+    ctx.instance.runtime_properties.pop('cloudify_agent', None)
+    if cloudify_agent['remote_execution']:
+        ctx.logger.info('Deleting Agent {0}'.format(
+            cloudify_agent['name']))
         installer.delete_agent()
 
 
 @operation
 @create_agent_config_and_installer
 def restart(cloudify_agent, installer, **_):
-
     # no need to handling remote_execution False because this operation is
     # not invoked in that case
     ctx.logger.info('Restarting Agent {0}'.format(cloudify_agent['name']))
