@@ -469,6 +469,12 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
     def close(self):
         pass
 
+    def run_script(self, script_path):
+        remote_path = self.put_file(script_path)
+        result = self.run(remote_path)
+        self.delete(ntpath.dirname(remote_path))
+        return result
+
 
 class WinRMCommandExecutionError(CommandExecutionError):
 
