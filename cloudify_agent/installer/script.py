@@ -15,6 +15,7 @@
 
 import os
 import jinja2
+import uuid
 
 from cloudify import ctx, utils as cloudify_utils
 from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
@@ -24,6 +25,7 @@ from cloudify_agent.installer import AgentInstaller
 from cloudify_agent.installer.config.agent_config import \
     create_agent_config_and_installer
 
+from manager_rest.config import instance as config
 
 
 class AgentInstallationScriptBuilder(AgentInstaller):
@@ -75,6 +77,30 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             self.custom_env_path = '{0}/custom_agent_env.sh'.format(
                 self.cloudify_agent['basedir'])
         return self.custom_env_path
+
+
+def render_agent_installer_script_download_script():
+    """Render a script that downloads the script that will install the agent.
+
+    A script to download the real script is needed, to avoid passing sensitive
+    data through user data.
+
+    """
+    resource = 'script/linux-download.sh.template'
+    template = jinja2.Template(utils.get_resource(resource))
+
+    script_filename = '{}.py'.format(uuid.uuid4())
+    script_relpath = os.path.join('cloudify_agent', script_filename)
+    script_path = os.path.join(config.file_server_root, script_relpath)
+    script_url = (
+        '{}/{}'.
+        format(config.file_server_url, script_relpath)
+    )
+    script_content = get_init_script()
+    with open(script_path, 'w') as script_file:
+        script_file.write(script_content)
+
+    return template.render(link=script_url)
 
 
 @create_agent_config_and_installer(validate_connection=False, new_agent=True)
