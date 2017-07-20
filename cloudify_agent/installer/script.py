@@ -20,12 +20,14 @@ import uuid
 from cloudify import ctx, utils as cloudify_utils
 from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
 
+from cloudify.utils import (
+    get_manager_file_server_root,
+    get_manager_file_server_url,
+)
 from cloudify_agent.api import utils
 from cloudify_agent.installer import AgentInstaller
 from cloudify_agent.installer.config.agent_config import \
     create_agent_config_and_installer
-
-from manager_rest.config import instance as config
 
 
 class AgentInstallationScriptBuilder(AgentInstaller):
@@ -89,12 +91,15 @@ def render_agent_installer_script_download_script():
     resource = 'script/linux-download.sh.template'
     template = jinja2.Template(utils.get_resource(resource))
 
+    file_server_root = get_manager_file_server_root()
+    file_server_url = get_manager_file_server_url()
+
     script_filename = '{}.py'.format(uuid.uuid4())
     script_relpath = os.path.join('cloudify_agent', script_filename)
-    script_path = os.path.join(config.file_server_root, script_relpath)
+    script_path = os.path.join(file_server_root, script_relpath)
     script_url = (
         '{}/{}'.
-        format(config.file_server_url, script_relpath)
+        format(file_server_url, script_relpath)
     )
     script_content = get_init_script()
     with open(script_path, 'w') as script_file:
