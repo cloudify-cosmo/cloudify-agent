@@ -81,7 +81,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         return self.custom_env_path
 
 
-def render_agent_installer_script_download_script():
+def get_installer_script_downloader_script():
     """Render a script that downloads the script that will install the agent.
 
     A script to download the real script is needed, to avoid passing sensitive
