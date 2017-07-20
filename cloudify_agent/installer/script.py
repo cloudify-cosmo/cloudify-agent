@@ -110,7 +110,8 @@ def get_install_script_download_link(cloudify_agent):
     file_server_root = get_manager_file_server_root()
     file_server_url = get_manager_file_server_url()
 
-    script_filename = '{}.py'.format(uuid.uuid4())
+    extension = 'ps1' if cloudify_agent['windows'] else 'sh'
+    script_filename = '{}.{}'.format(uuid.uuid4(), extension)
     # Store under cloudify_agent to avoid authentication
     script_relpath = os.path.join('cloudify_agent', script_filename)
     script_path = os.path.join(file_server_root, script_relpath)
