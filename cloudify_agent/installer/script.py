@@ -81,33 +81,6 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         return self.custom_env_path
 
 
-def get_installer_script_downloader_script():
-    """Render a script that downloads the script that will install the agent.
-
-    A script to download the real script is needed, to avoid passing sensitive
-    data through user data.
-
-    """
-    resource = 'script/linux-download.sh.template'
-    template = jinja2.Template(utils.get_resource(resource))
-
-    file_server_root = get_manager_file_server_root()
-    file_server_url = get_manager_file_server_url()
-
-    script_filename = '{}.py'.format(uuid.uuid4())
-    script_relpath = os.path.join('cloudify_agent', script_filename)
-    script_path = os.path.join(file_server_root, script_relpath)
-    script_url = (
-        '{}/{}'.
-        format(file_server_url, script_relpath)
-    )
-    script_content = get_install_script()
-    with open(script_path, 'w') as script_file:
-        script_file.write(script_content)
-
-    return template.render(link=script_url)
-
-
 @create_agent_config_and_installer(validate_connection=False, new_agent=True)
 def init_script(cloudify_agent, **_):
     return get_install_script(cloudify_agent=cloudify_agent)
