@@ -22,7 +22,7 @@ from cloudify.exceptions import CommandExecutionError
 
 from cloudify_agent.api import utils
 
-from cloudify_agent.installer.script import get_init_script
+from cloudify_agent.installer.script import install_script
 from .config.agent_config import create_agent_config_and_installer
 
 
@@ -34,7 +34,7 @@ def create(cloudify_agent, installer, **_):
     ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
     ctx.instance.update()
 
-    script = get_init_script(cloudify_agent)
+    script = install_script(cloudify_agent)
     with NamedTemporaryFile() as f:
         f.write(script)
         f.flush()
@@ -52,6 +52,9 @@ def create(cloudify_agent, installer, **_):
             except CommandExecutionError, e:
                 ctx.logger.error(str(e))
                 raise
+            ctx.logger.info(
+                'Agent created, configured and started successfully'
+            )
 
 
 @operation

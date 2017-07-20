@@ -1,0 +1,13 @@
+#ps1_sysnative
+
+function Download()
+{
+    # Make sure the output directory exists
+    New-Item -ItemType directory -Force -Path (Split-Path $OutputPath)
+
+    $WebClient = New-Object System.Net.WebClient
+    $WebClient.DownloadFile("{{ link }}", ".\agent_installer.ps1")
+}
+
+Download
+.\agent_installer.ps1
