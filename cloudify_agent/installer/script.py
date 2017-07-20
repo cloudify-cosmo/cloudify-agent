@@ -142,6 +142,9 @@ def get_init_script(cloudify_agent):
 
     """
     script_url = get_install_script_download_link(cloudify_agent)
-    resource = 'script/linux-download.sh.template'
+    if cloudify_agent['windows']:
+        resource = 'script/linux-download.sh.template'
+    else:
+        resource = 'script/windows-download.ps1.template'
     template = jinja2.Template(utils.get_resource(resource))
     return template.render(link=script_url)
