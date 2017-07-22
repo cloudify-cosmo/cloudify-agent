@@ -65,8 +65,8 @@ class LocalCommandRunner(_UtilsLocalCommandRunner):
             shutil.rmtree(path)
 
     def run_script(self, script_path):
-        remote_path = self.put_file(script_path)
-        self.run('chmod +x {0}'.format(remote_path))
-        result = self.run(remote_path)
-        self.delete(os.path.dirname(remote_path))
+        self.run('chmod +x {0}'.format(script_path))
+        append = 'powershell' if os.name == 'nt' else 'sudo'
+        cmd = '{0} {1}'.format(append, script_path)
+        result = self.run(cmd)
         return result

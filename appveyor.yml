@@ -5,6 +5,9 @@ environment:
 
   TOX_ENV: pywin
 
+  # Used to connect to the Appveyor VM using RDP. Username is "appveyor"
+  APPVEYOR_RDP_PASSWORD: v9MF_FWa8KH@t
+
   choco_cache_location: C:\Temp\choco
   rabbitmq_download_url: https://www.rabbitmq.com/releases/rabbitmq-server/v3.5.2/rabbitmq-server-3.5.2.exe
   rabbitmq_installer_path: C:\Users\appveyor\rabbitmq.exe
@@ -59,3 +62,10 @@ before_test:
 
 test_script:
   - tox -e %TOX_ENV%
+
+## Uncomment the following lines to have RDP access to the appveyor VM
+#init:
+#  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+#
+#on_finish:
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
