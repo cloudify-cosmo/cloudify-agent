@@ -19,7 +19,7 @@ from setuptools import setup
 install_requires = [
     'cloudify-plugins-common==4.1.1',
     'cloudify-rest-client==4.1.1',
-    'cloudify-script-plugin==1.5',
+    'cloudify-script-plugin==1.5.1',
     'appdirs==1.4.3',
     'click==4.0',
     'celery==3.1.17',
