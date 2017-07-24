@@ -136,7 +136,8 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         return template.render(link=script_url)
 
 
-@create_agent_config_and_installer(validate_connection=False, new_agent=True)
+@create_agent_config_and_installer(validate_connection=False,
+                                   new_agent_config=True)
 def _get_script_builder(cloudify_agent, **_):
     return AgentInstallationScriptBuilder(cloudify_agent)
 

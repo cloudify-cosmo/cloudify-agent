@@ -58,12 +58,6 @@ class LocalCommandRunner(_UtilsLocalCommandRunner):
         shutil.copy2(src, dst)
         return dst
 
-    def delete(self, path):
-        if os.path.isfile(path):
-            os.remove(path)
-        if os.path.isdir(path):
-            shutil.rmtree(path)
-
     def run_script(self, script_path):
         self.run('chmod +x {0}'.format(script_path))
         append = 'powershell' if os.name == 'nt' else 'sudo'

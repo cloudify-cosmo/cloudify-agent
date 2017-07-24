@@ -35,21 +35,21 @@ from .config_errors import raise_missing_attribute, raise_missing_attributes
 
 def create_agent_config_and_installer(func=None,
                                       validate_connection=True,
-                                      new_agent=False):
+                                      new_agent_config=False):
     # This allows the decorator to be used with or without the validate arg
     if not func:
         return partial(
             create_agent_config_and_installer,
             validate_connection=validate_connection,
-            new_agent=new_agent
+            new_agent_config=new_agent_config
         )
 
     @wraps(func)
     def wrapper(*args, **kwargs):
         cloudify_agent = CloudifyAgentConfig()
-        cloudify_agent.set_initial_values(new_agent, **kwargs)
+        cloudify_agent.set_initial_values(new_agent_config, **kwargs)
 
-        if new_agent:
+        if new_agent_config:
             # Set values that need to be inferred from other ones
             cloudify_agent.set_execution_params()
             cloudify_agent.set_default_values()

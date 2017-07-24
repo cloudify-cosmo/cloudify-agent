@@ -25,7 +25,7 @@ from .config.agent_config import create_agent_config_and_installer
 
 
 @operation
-@create_agent_config_and_installer(new_agent=True)
+@create_agent_config_and_installer(new_agent_config=True)
 def create(cloudify_agent, installer, **_):
     # save runtime properties immediately so that they will be available
     # to other operation even in case the create operation failed.
@@ -64,21 +64,23 @@ def start(cloudify_agent, installer, **_):
     if cloudify_agent['remote_execution']:
         ctx.logger.info('Starting Agent {0}'.format(cloudify_agent['name']))
         installer.start_agent()
-
-
-@operation
-@create_agent_config_and_installer
-def wait_for_agent(cloudify_agent, **_):
-    celery_client = get_celery_app(
-        tenant=cloudify_agent['rest_tenant'],
-        target=cloudify_agent['queue']
-    )
-    registered = utils.get_agent_registered(cloudify_agent['name'],
-                                            celery_client)
-    if registered:
-        ctx.logger.info('Agent has started')
     else:
-        return ctx.operation.retry(message='Waiting for Agent to start...')
+        # if remote_execution is False, and this operation was invoked
+        # (install_agent is True), it means that some other process is
+        # installing the agent (e.g userdata). All that is left for us
+        # to do is wait for the agent to start.
+
+        celery_client = get_celery_app(
+            tenant=cloudify_agent['rest_tenant'],
+            target=cloudify_agent['queue']
+        )
+        registered = utils.get_agent_registered(cloudify_agent['name'],
+                                                celery_client)
+        if registered:
+            ctx.logger.info('Agent has started')
+        else:
+            return ctx.operation.retry(
+                message='Waiting for Agent to start...')
 
 
 @operation
