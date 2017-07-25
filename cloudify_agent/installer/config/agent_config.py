@@ -25,7 +25,6 @@ from cloudify_agent.installer import exceptions
 from cloudify_agent.api import utils as agent_utils
 
 from cloudify import ctx
-from cloudify import context
 from cloudify import constants
 from cloudify import utils as cloudify_utils
 
@@ -126,7 +125,7 @@ class CloudifyAgentConfig(dict):
 
     def set_execution_params(self):
         if 'local' not in self:
-            self['local'] = ctx.type == context.DEPLOYMENT
+            self['local'] = ctx.type == constants.DEPLOYMENT
 
         if self['local']:
             # If installing an agent locally, we auto-detect which os the agent
@@ -313,7 +312,7 @@ def _get_agent_inputs(params):
 
 
 def _get_runtime_properties():
-    if ctx.type == context.NODE_INSTANCE:
+    if ctx.type == constants.NODE_INSTANCE:
         return _get_agent_config(ctx.instance.runtime_properties,
                                  'runtime properties')
 
@@ -321,7 +320,7 @@ def _get_runtime_properties():
 
 
 def _get_node_properties():
-    if ctx.type == context.NODE_INSTANCE:
+    if ctx.type == constants.NODE_INSTANCE:
         return _get_agent_config(
             ctx.node.properties, 'node properties', allow_both_params=True)
 
