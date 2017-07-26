@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import os
+import json
 import shutil
 import ntpath
 import copy
@@ -201,7 +202,9 @@ class AgentInstaller(object):
                 self.cloudify_agent.get('env', {})),
             env.CLOUDIFY_BYPASS_MAINTENANCE_MODE: get_is_bypass_maintenance(),
             env.CLOUDIFY_LOCAL_REST_CERT_PATH:
-                self.cloudify_agent['agent_rest_cert_path']
+                self.cloudify_agent['agent_rest_cert_path'],
+            env.CLOUDIFY_CLUSTER_NODES: json.dumps(
+                self.cloudify_agent.get('cluster', []))
         }
 
         execution_env = utils.purge_none_values(execution_env)

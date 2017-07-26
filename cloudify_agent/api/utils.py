@@ -543,3 +543,9 @@ def get_rest_client(rest_host,
         tenant=rest_tenant,
         cert=ssl_cert_path
     )
+
+
+def _parse_cluster_nodes(ctx, param, value):
+    """Parsing callback for the --cluster option for cfy-agent"""
+    if value:
+        return json_loads(value)
