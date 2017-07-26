@@ -245,8 +245,8 @@ class Daemon(object):
             self.broker_url = [defaults.BROKER_URL.format(
                 host=node['broker_ip'],
                 port=self.broker_port,
-                username=node['broker_user'],
-                password=node['broker_pass'],
+                username=self.broker_user,
+                password=self.broker_pass,
                 vhost=self.broker_vhost
             ) for node in self.cluster]
         else:
@@ -630,8 +630,8 @@ class Daemon(object):
                 try:
                     return amqp_client.create_client(
                         amqp_host=node['broker_ip'],
-                        amqp_user=node['broker_user'],
-                        amqp_pass=node['broker_pass'],
+                        amqp_user=self.broker_user,
+                        amqp_pass=self.broker_pass,
                         amqp_vhost=self.broker_vhost,
                         ssl_enabled=self.broker_ssl_enabled,
                         ssl_cert_path=node.get('internal_cert_path')
