@@ -22,6 +22,7 @@ import errno
 import getpass
 import types
 import urllib
+import base64
 
 import appdirs
 import pkg_resources
@@ -548,4 +549,4 @@ def get_rest_client(rest_host,
 def _parse_cluster_nodes(ctx, param, value):
     """Parsing callback for the --cluster option for cfy-agent"""
     if value:
-        return json_loads(value)
+        return json_loads(base64.b64decode(value))

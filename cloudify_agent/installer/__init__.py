@@ -18,6 +18,7 @@ import json
 import shutil
 import ntpath
 import copy
+import base64
 
 from cloudify.utils import setup_logger
 from cloudify_agent.installer.runners.local_runner import LocalCommandRunner
@@ -203,8 +204,8 @@ class AgentInstaller(object):
             env.CLOUDIFY_BYPASS_MAINTENANCE_MODE: get_is_bypass_maintenance(),
             env.CLOUDIFY_LOCAL_REST_CERT_PATH:
                 self.cloudify_agent['agent_rest_cert_path'],
-            env.CLOUDIFY_CLUSTER_NODES: json.dumps(
-                self.cloudify_agent.get('cluster', []))
+            env.CLOUDIFY_CLUSTER_NODES: base64.b64encode(json.dumps(
+                self.cloudify_agent.get('cluster', [])))
         }
 
         execution_env = utils.purge_none_values(execution_env)
