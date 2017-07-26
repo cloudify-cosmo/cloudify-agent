@@ -1,0 +1,23 @@
+#ps1_sysnative
+
+function Download($URL)
+{
+    [Net.HttpWebRequest] $req = [Net.WebRequest]::create($URL)
+
+    # Downloading without certificate validation, because at this point we
+    # don't have the SSL certificates
+    $req.ServerCertificateValidationCallback = { $true; };
+
+    [Net.HttpWebResponse] $result = $req.GetResponse()
+    [IO.Stream] $stream = $result.GetResponseStream()
+    [IO.StreamReader] $reader = New-Object IO.StreamReader($stream)
+    [string] $output = $reader.readToEnd()
+    $stream.flush()
+    $stream.close()
+
+    # Download into the current directory
+    New-Item -Path . -Name "agent_installer.ps1" -type file -force -value "$output"
+}
+
+Download "{{ link }}"
+.\agent_installer.ps1

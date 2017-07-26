@@ -1,0 +1,21 @@
+#!/bin/bash -e
+
+# Download and execute the script that will take care of the agent installation
+
+download()
+{
+    # Downloading with '--insecure' flags, because at this point we don't have
+    # the SSL certificates
+    if command -v wget > /dev/null 2>&1; then
+        wget {{ link }} -O agent_installer.sh --no-check-certificate
+    elif command -v curl > /dev/null 2>&1; then
+        curl -L -o agent_installer.sh {{ link }} --insecure
+    else
+        echo >&2 "error: wget/curl not found. cannot download agent installation script"
+        return 1
+    fi
+}
+
+download
+chmod +x ./agent_installer.sh
+./agent_installer.sh

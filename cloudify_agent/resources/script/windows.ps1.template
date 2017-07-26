@@ -25,12 +25,12 @@ function DownloadAndExtractAgentPackage()
     AddSSLCert
     Download {{ conf.package_url }} "{{ conf.basedir }}\cloudify-windows-agent.exe"
     # This call is not blocking so we pipe the output to null to make it blocking
-    & "{{ conf.basedir }}\cloudify-windows-agent.exe" /SILENT /VERYSILENT /SUPPRESSMSGBOXES /DIR="{{ conf.agent_dir }}" | Out-Null
+    & "{{ conf.basedir }}\cloudify-windows-agent.exe" /SILENT /VERYSILENT /SUPPRESSMSGBOXES /DIR="{{ conf.envdir }}" | Out-Null
 }
 
 function ExportDaemonEnv()
 {
-    $env:Path = "{{ conf.agent_dir }}\Scripts" + ";" + $env:Path
+    $env:Path = "{{ conf.envdir }}\Scripts" + ";" + $env:Path
     {% for env_key, env_value in daemon_env.iteritems() %}
         $env:{{ env_key }} = "{{ env_value }}"
     {% endfor %}
@@ -62,14 +62,10 @@ function StartDaemon()
 
 function InstallAgent()
 {
-    {% if conf.install_method == 'init_script' %}
-        DownloadAndExtractAgentPackage
-    {% endif %}
+    DownloadAndExtractAgentPackage
     ExportDaemonEnv
     CreateCustomEnvFile
-    {% if conf.install_method == 'init_script' %}
-        ConfigureAgent
-    {% endif %}
+    ConfigureAgent
     StartDaemon
 }
 

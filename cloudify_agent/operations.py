@@ -168,7 +168,7 @@ def _save_daemon(daemon):
     factory.save(daemon)
 
 
-def create_new_agent_dict(old_agent):
+def create_new_agent_config(old_agent):
     new_agent = CloudifyAgentConfig()
     new_agent['name'] = utils.internal.generate_new_agent_name(
         old_agent['name'])
@@ -200,9 +200,6 @@ def _celery_client(agent):
     ctx.logger.info('Connecting to {0}'.format(broker_url))
 
     ssl_cert_path = _get_ssl_cert_path(broker_config)
-
-    # Setting max_retries to something other than None to avoid a case where
-    # it would hang indefinitely (when validating the already installed agent)
     celery_client = get_celery_app(
         broker_url=broker_url,
         broker_ssl_enabled=broker_config.get('broker_ssl_enabled'),
@@ -259,7 +256,7 @@ def _run_install_script(old_agent, timeout, validate_only=False):
     old_agent = copy.deepcopy(old_agent)
     if 'version' not in old_agent:
         old_agent['version'] = str(_get_manager_version())
-    new_agent = create_new_agent_dict(old_agent)
+    new_agent = create_new_agent_config(old_agent)
     old_agent_version = new_agent['old_agent_version']
 
     with _celery_client(old_agent) as celery_client:
