@@ -222,9 +222,9 @@ class TestCreateAgentAmqp(BaseTest):
     def test_create_agent_dict(self):
         old_agent = self._create_agent()
         with self._patch_manager_env():
-            new_agent = operations.create_new_agent_dict(old_agent)
+            new_agent = operations.create_new_agent_config(old_agent)
             new_agent['version'] = '3.4'
-            third_agent = operations.create_new_agent_dict(new_agent)
+            third_agent = operations.create_new_agent_config(new_agent)
         equal_keys = ['ip', 'basedir', 'user']
         for k in equal_keys:
             self.assertEqual(old_agent[k], new_agent[k])
@@ -241,7 +241,7 @@ class TestCreateAgentAmqp(BaseTest):
         self.assertLessEqual(len(third_name), len(new_name))
         new_agent['name'] = '{0}{1}'.format(new_agent['name'], 'not-uuid')
         with self._patch_manager_env():
-            agent = operations.create_new_agent_dict(new_agent)
+            agent = operations.create_new_agent_config(new_agent)
             self.assertIn(new_agent['name'], agent['name'])
 
     @patch('cloudify_agent.operations.get_celery_app', _get_celery_mock())
