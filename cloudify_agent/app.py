@@ -35,7 +35,6 @@ from fasteners import InterProcessLock
 from cloudify import cluster
 from cloudify.celery import gate_keeper
 from cloudify.celery import logging_server
-from cloudify.constants import BROKER_PORT_SSL, BROKER_PORT_NO_SSL
 
 from cloudify_agent.api import exceptions, utils
 from cloudify_agent.api.factory import DaemonFactory
@@ -115,9 +114,6 @@ def _set_master(daemon_name, node):
     except exceptions.DaemonNotFoundError:
         return
     daemon.broker_ip = node['broker_ip']
-    daemon.broker_user = node['broker_user']
-    daemon.broker_pass = node['broker_pass']
-    daemon.broker_vhost = node['broker_vhost']
     daemon.broker_ssl_cert_path = node.get('internal_cert_path')
     with _cluster_settings_lock(daemon_name):
         factory.save(daemon)
@@ -136,21 +132,17 @@ def _make_failover_strategy(daemon_name):
                     with _cluster_settings_lock(daemon_name):
                         _set_master(daemon_name, node)
 
-                    broker_ssl_enabled = node.get('broker_ssl_enabled', True)
-                    if broker_ssl_enabled:
-                        broker_port = BROKER_PORT_SSL
-                    else:
-                        broker_port = BROKER_PORT_NO_SSL
+                    daemon = DaemonFactory().load(daemon_name)
 
                     broker_url = 'amqp://{0}:{1}@{2}:{3}/{4}'.format(
-                        node['broker_user'],
-                        node['broker_pass'],
+                        daemon.broker_user,
+                        daemon.broker_pass,
                         node['broker_ip'],
-                        broker_port,
-                        node['broker_vhost']
+                        daemon.broker_port,
+                        daemon.broker_vhost
                     )
 
-                    if broker_ssl_enabled:
+                    if daemon.broker_ssl_enabled:
                         # use a different cert for each node in the cluster -
                         # can't pass that in the amqp url
                         broker_ssl_cert_path = node.get('internal_cert_path')
