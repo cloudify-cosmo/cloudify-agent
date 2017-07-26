@@ -35,7 +35,7 @@ from .config_errors import raise_missing_attribute, raise_missing_attributes
 def create_agent_config_and_installer(func=None,
                                       validate_connection=True,
                                       new_agent_config=False):
-    # This allows the decorator to be used with or without the validate arg
+    # This allows the decorator to be used with or without arguments
     if not func:
         return partial(
             create_agent_config_and_installer,
@@ -59,6 +59,9 @@ def create_agent_config_and_installer(func=None,
         installer = get_installer(cloudify_agent, runner)
         kwargs['installer'] = installer
         kwargs['cloudify_agent'] = cloudify_agent
+
+        if new_agent_config:
+            _update_runtime_properties(cloudify_agent)
 
         try:
             return func(*args, **kwargs)
@@ -137,9 +140,10 @@ class CloudifyAgentConfig(dict):
             self._set_remote_execution()
             self._set_windows()
             self._set_ip()
-            self._set_password()
-            self._validate_user()
-            self._validate_key_or_password()
+            if self['remote_execution']:
+                self._set_password()
+                self._validate_user()
+                self._validate_key_or_password()
 
     def set_installation_params(self, runner):
         self._set_basedir(runner)
@@ -357,3 +361,12 @@ def _parse_extra_values(config):
     extra_dict = config.pop('extra', {})
     config.update(extra_dict)
     return config
+
+
+def _update_runtime_properties(cloudify_agent):
+    """
+    Update runtime properties, so that they will be available to future
+    operations
+    """
+    ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
+    ctx.instance.update()

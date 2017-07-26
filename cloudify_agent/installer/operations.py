@@ -27,11 +27,6 @@ from .config.agent_config import create_agent_config_and_installer
 @operation
 @create_agent_config_and_installer(new_agent_config=True)
 def create(cloudify_agent, installer, **_):
-    # save runtime properties immediately so that they will be available
-    # to other operation even in case the create operation failed.
-    ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
-    ctx.instance.update()
-
     if cloudify_agent['remote_execution']:
         with install_script_path(cloudify_agent) as script_path:
             ctx.logger.info('Creating Agent {0}'.format(

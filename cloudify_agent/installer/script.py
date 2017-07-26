@@ -23,10 +23,6 @@ from posixpath import join as url_join
 from cloudify import ctx, utils as cloudify_utils
 from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
 
-from cloudify.utils import (
-    get_manager_file_server_root,
-    get_manager_file_server_url,
-)
 from cloudify_agent.api import utils
 from cloudify_agent.installer import AgentInstaller
 from cloudify_agent.installer.config.agent_config import \
@@ -96,8 +92,8 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         2. URL where the install script can be downloaded
         :rtype: (str, str)
         """
-        file_server_root = get_manager_file_server_root()
-        file_server_url = get_manager_file_server_url()
+        file_server_root = cloudify_utils.get_manager_file_server_root()
+        file_server_url = cloudify_utils.get_manager_file_server_url()
 
         # Store under cloudify_agent to avoid authentication
         script_relpath = os.path.join('cloudify_agent',
