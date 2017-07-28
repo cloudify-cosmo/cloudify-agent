@@ -191,11 +191,12 @@ def create_new_agent_config(old_agent):
 
 
 @contextmanager
-def _celery_client(agent):
+def _celery_app(agent):
     # We retrieve broker url from old agent in order to support
     # cases when old agent is not connected to current rabbit server.
     broker_config = agent.get('broker_config',
                               ctx.bootstrap_context.broker_config())
+    agent_version = agent.get('version', str(_get_manager_version()))
     broker_url = utils.internal.get_broker_url(broker_config)
     ctx.logger.info('Connecting to {0}'.format(broker_url))
 
@@ -206,7 +207,7 @@ def _celery_client(agent):
         broker_ssl_cert_path=ssl_cert_path
     )
 
-    if ManagerVersion(agent['version']) != ManagerVersion('3.2'):
+    if ManagerVersion(agent_version) != ManagerVersion('3.2'):
         celery_client.conf['CELERY_TASK_RESULT_EXPIRES'] = \
             defaults.CELERY_TASK_RESULT_EXPIRES
     try:
@@ -259,7 +260,7 @@ def _run_install_script(old_agent, timeout, validate_only=False):
     new_agent = create_new_agent_config(old_agent)
     old_agent_version = new_agent['old_agent_version']
 
-    with _celery_client(old_agent) as celery_client:
+    with _celery_app(old_agent) as celery_client:
         old_agent_name = old_agent['name']
         _assert_agent_alive(old_agent_name, celery_client, old_agent_version)
 
@@ -295,7 +296,7 @@ def _run_install_script(old_agent, timeout, validate_only=False):
     }
 
 
-def create_agent_from_old_agent(operation_timeout=300):
+def _validate_agent_status():
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
@@ -308,6 +309,10 @@ def create_agent_from_old_agent(operation_timeout=300):
         raise NonRecoverableError(
             ('Last validation attempt has shown that agent is dead. '
              'Rerun validation.'))
+
+
+def create_agent_from_old_agent(operation_timeout=300):
+    _validate_agent_status()
     old_agent = ctx.instance.runtime_properties['cloudify_agent']
     agents = _run_install_script(old_agent,
                                  operation_timeout,
@@ -327,42 +332,72 @@ def create_agent_amqp(install_agent_timeout, **_):
     create_agent_from_old_agent(install_agent_timeout)
 
 
+def _validate_amqp_connection(celery_app, agent_name, agent_version=None):
+    ctx.logger.info('Checking if agent can be accessed through: {0}'.format(
+        celery_app.conf['BROKER_URL']
+    ))
+    _assert_agent_alive(agent_name, celery_app, agent_version)
+
+
+def _validate_old_amqp():
+    agent = ctx.instance.runtime_properties['cloudify_agent']
+    try:
+        ctx.logger.info('Trying old AMQP...')
+        with _celery_app(agent) as app:
+            _validate_amqp_connection(app, agent['name'], agent.get('version'))
+    except Exception as e:
+        ctx.logger.info('Agent unavailable, reason {0}'.format(str(e)))
+        return {
+            'agent_alive_crossbroker': False,
+            'agent_alive_crossbroker_error': str(e)
+        }
+    else:
+        return {
+            'agent_alive_crossbroker': True,
+            'agent_alive_crossbroker_error': ''
+        }
+
+
+def _validate_current_amqp():
+    agent = ctx.instance.runtime_properties['cloudify_agent']
+    try:
+        ctx.logger.info('Trying current AMQP...')
+        app = get_celery_app(tenant=agent.get('rest_tenant'))
+        _validate_amqp_connection(app, agent['name'])
+    except Exception as e:
+        ctx.logger.info('Agent unavailable, reason {0}'.format(str(e)))
+        return {
+            'agent_alive': False,
+            'agent_alive_error': str(e)
+        }
+    else:
+        return {
+            'agent_alive': True,
+            'agent_alive_error': ''
+        }
+
+
 @operation
-def validate_agent_amqp(validate_agent_timeout, fail_on_agent_dead=False,
-                        fail_on_agent_not_installable=False, **_):
+def validate_agent_amqp(current_amqp=True, **_):
+    """
+    Validate connectivity between a cloudify agent and an AMQP server
+    :param current_amqp: If set to True, validation is done against the
+    current manager's AMQP. If set to False, validation is done against the
+    old manager's AMQP to which the agent is currently connected.
+    Note: in case of an in-place upgrade, both AMQP servers should be identical
+    """
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
-    agent = ctx.instance.runtime_properties['cloudify_agent']
-    agent_name = agent['name']
-    result = {}
-    ctx.logger.info(('Checking if agent can be accessed through '
-                     'current rabbitmq'))
-    try:
-        app = get_celery_app(tenant=agent.get('rest_tenant'))
-        _assert_agent_alive(agent_name, app)
-    except Exception as e:
-        result['agent_alive'] = False
-        result['agent_alive_error'] = str(e)
-        ctx.logger.info('Agent unavailable, reason {0}'.format(str(e)))
-    else:
-        result['agent_alive'] = True
-    ctx.logger.info(('Checking if agent can be accessed through '
-                     'different rabbitmq'))
-    try:
-        _run_install_script(agent, validate_agent_timeout, validate_only=True)
-    except Exception as e:
-        result['agent_alive_crossbroker'] = False
-        result['agent_alive_crossbroker_error'] = str(e)
-        ctx.logger.info('Agent unavailable, reason {0}'.format(str(e)))
-    else:
-        result['agent_alive_crossbroker'] = True
+
+    result = _validate_current_amqp() if current_amqp else _validate_old_amqp()
+
     result['timestamp'] = time.time()
     ctx.instance.runtime_properties['agent_status'] = result
-    if fail_on_agent_dead and not result['agent_alive']:
+
+    if current_amqp and not result['agent_alive']:
         raise NonRecoverableError(result['agent_alive_error'])
-    if fail_on_agent_not_installable and not result[
-            'agent_alive_crossbroker']:
+    if not current_amqp and not result['agent_alive_crossbroker']:
         raise NonRecoverableError(result['agent_alive_crossbroker_error'])
 
 
