@@ -234,7 +234,10 @@ def _get_ssl_cert_path(broker_config):
         return None
 
 
-def _get_ssl_cert_content():
+def _get_ssl_cert_content(old_agent_version):
+    if ManagerVersion(old_agent_version) < ManagerVersion('4.2'):
+        return None
+
     with open(get_local_rest_certificate(), 'r') as cert_file:
         return cert_file.read()
 
@@ -262,40 +265,22 @@ def _get_manager_version():
     return ManagerVersion(version_json['version'])
 
 
-def _run_install_script(old_agent, timeout):
-    # Assuming that if there is no version info in the agent then
-    # this agent was installed by current manager.
-    old_agent = copy.deepcopy(old_agent)
-    if 'version' not in old_agent:
-        old_agent['version'] = str(_get_manager_version())
-    new_agent = create_new_agent_config(old_agent)
-    old_agent_version = new_agent['old_agent_version']
+def _get_init_script_path_and_url(new_agent, old_agent_version):
+    script_path, script_url = init_script_download_link(new_agent)
 
-    with _celery_app(old_agent) as celery_app:
-        old_agent_name = old_agent['name']
-        _assert_agent_alive(old_agent_name, celery_app, old_agent_version)
+    # Prior to 4.2 (and script plugin 1.5.1) there was no way to pass
+    # a certificate to the script plugin, so the initial script must be
+    # passed over http
+    if ManagerVersion(old_agent_version) < ManagerVersion('4.2'):
+        # This returns the relative path on the manager, except host and port
+        link_relpath = script_url.split('/', 3)[3]
+        http_rest_host = 'http://{0}/'.format(get_manager_rest_service_host())
+        script_url = urljoin(http_rest_host, link_relpath)
 
-        script_path, script_url = init_script_download_link(new_agent)
-        script_runner_task = 'script_runner.tasks.run'
-        cloudify_context = {
-            'type': 'operation',
-            'task_name': script_runner_task,
-            'task_target': old_agent['queue']
-        }
-        kwargs = {'script_path': script_url,
-                  'ssl_cert_content': _get_ssl_cert_content(),
-                  '__cloudify_context': cloudify_context}
-        task = _celery_task_name(old_agent_version)
-        try:
-            result = celery_app.send_task(
-                task,
-                kwargs=kwargs,
-                queue=old_agent['queue']
-            )
-            result.get(timeout=timeout)
-        finally:
-            os.remove(script_path)
+    return script_path, script_url
 
+
+def _validate_created_agent(new_agent):
     created_agent = ctx.instance.runtime_properties['cloudify_agent']
     if created_agent['name'] != new_agent['name']:
         raise NonRecoverableError(
@@ -303,10 +288,56 @@ def _run_install_script(old_agent, timeout):
                 new_agent['name'], created_agent['name'])
         )
     created_agent.pop('old_agent_version', None)
-    return {
-        'old': old_agent,
-        'new': created_agent
+    return created_agent
+
+
+def _build_install_script_params(old_agent, script_url):
+    script_runner_task = 'script_runner.tasks.run'
+    cloudify_context = {
+        'type': 'operation',
+        'task_name': script_runner_task,
+        'task_target': old_agent['queue']
     }
+    kwargs = {'script_path': script_url,
+              'ssl_cert_content': _get_ssl_cert_content(old_agent['version']),
+              '__cloudify_context': cloudify_context}
+    return kwargs
+
+
+def _execute_install_script_task(app, params, old_agent, timeout, script_path):
+    task = _celery_task_name(old_agent['version'])
+    try:
+        result = app.send_task(
+            task,
+            kwargs=params,
+            queue=old_agent['queue']
+        )
+        result.get(timeout=timeout)
+    finally:
+        os.remove(script_path)
+
+
+def _run_install_script(old_agent, timeout):
+    old_agent = copy.deepcopy(old_agent)
+    if 'version' not in old_agent:
+        # Assuming that if there is no version info in the agent then
+        # this agent was installed by current manager.
+        old_agent['version'] = str(_get_manager_version())
+    new_agent = create_new_agent_config(old_agent)
+
+    with _celery_app(old_agent) as celery_app:
+        _assert_agent_alive(old_agent['name'], celery_app, old_agent['version'])
+
+        script_path, script_url = _get_init_script_path_and_url(
+            new_agent, old_agent['version']
+        )
+        params = _build_install_script_params(old_agent, script_url)
+        _execute_install_script_task(
+            celery_app, params, old_agent, timeout, script_path
+        )
+
+    created_agent = _validate_created_agent(new_agent)
+    return {'old': old_agent, 'new': created_agent}
 
 
 def _validate_agent():

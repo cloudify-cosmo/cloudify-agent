@@ -298,7 +298,7 @@ class CloudifyAgentConfig(dict):
             self['distro'] = distro[0].lower()
 
     def _set_agent_distro_codename(self, runner):
-        if self.get('distro_codename'):
+        if 'distro_codename' in self:  # Might be an empty string
             return
 
         if self['local']:
