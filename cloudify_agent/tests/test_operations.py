@@ -140,25 +140,6 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
             self.wait_for_daemon_dead(name=new_agent_name)
 
 
-def _get_celery_mock():
-    task_mock = MagicMock()
-
-    class AgentKeeper:
-
-        def set_value(self, task, kwargs, **_):
-            self.agent = kwargs['cloudify_agent']
-            return task_mock
-
-        def get_value(self, *_, **__):
-            return self.agent
-
-    keeper = AgentKeeper()
-    task_mock.get = keeper.get_value
-    celery_mock = MagicMock()
-    celery_mock.send_task = keeper.set_value
-    return MagicMock(return_value=celery_mock)
-
-
 rest_mock = MagicMock()
 rest_mock.manager = MagicMock()
 rest_mock.manager.get_version = lambda: '3.3'
@@ -244,7 +225,7 @@ class TestCreateAgentAmqp(BaseTest):
             agent = operations.create_new_agent_config(new_agent)
             self.assertIn(new_agent['name'], agent['name'])
 
-    @patch('cloudify_agent.operations.get_celery_app', _get_celery_mock())
+    @patch('cloudify_agent.operations.get_celery_app', MagicMock())
     @patch('cloudify_agent.api.utils.get_agent_registered',
            MagicMock(return_value={'cloudify.dispatch.dispatch': {}}))
     def test_create_agent_from_old_agent(self):

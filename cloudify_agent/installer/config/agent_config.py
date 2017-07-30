@@ -302,8 +302,7 @@ class CloudifyAgentConfig(dict):
             return
 
         if self['local']:
-            self['distro_codename'] = platform.dist()[
-                2].lower()
+            self['distro_codename'] = platform.dist()[2].lower()
         elif self['remote_execution']:
             distro = runner.machine_distribution()
             self['distro_codename'] = distro[2].lower()
