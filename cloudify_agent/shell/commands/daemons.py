@@ -160,6 +160,11 @@ from cloudify_agent.shell.decorators import handle_failures
               help='bypass maintenance mode on rest requests. [env {0}]'
                    .format(env.CLOUDIFY_BYPASS_MAINTENANCE_MODE),
               envvar=env.CLOUDIFY_BYPASS_MAINTENANCE_MODE)
+@click.option('--cluster',
+              help='List of nodes in a cluster [env {0}]'
+                   .format(env.CLOUDIFY_CLUSTER_NODES),
+              envvar=env.CLOUDIFY_CLUSTER_NODES,
+              callback=api_utils._parse_cluster_nodes)
 # this is defined in order to allow passing any kind of option to the
 # command line. in order to support creating daemons of different kind via
 # the same command line. this argument is parsed as keyword arguments which
