@@ -197,8 +197,8 @@ class FabricRunner(object):
         """
 
         remote_path = self.put_file(script)
-        self.run('chmod +x {0}'.format(remote_path))
-        result = self.run(remote_path)
+        self.sudo('chmod +x {0}'.format(remote_path))
+        result = self.sudo(remote_path)
         self.delete(os.path.dirname(remote_path))
         return result
 
