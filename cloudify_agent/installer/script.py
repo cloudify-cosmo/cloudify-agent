@@ -15,13 +15,18 @@
 
 import os
 import jinja2
+import uuid
+import tempfile
+from contextlib import contextmanager
+from posixpath import join as url_join
 
 from cloudify import ctx, utils as cloudify_utils
 from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
 
 from cloudify_agent.api import utils
-from cloudify_agent.installer.operations import init_agent_installer
 from cloudify_agent.installer import AgentInstaller
+from cloudify_agent.installer.config.agent_config import \
+    create_agent_config_and_installer
 
 
 class AgentInstallationScriptBuilder(AgentInstaller):
@@ -29,14 +34,31 @@ class AgentInstallationScriptBuilder(AgentInstaller):
     def __init__(self, cloudify_agent):
         super(AgentInstallationScriptBuilder, self).__init__(cloudify_agent)
         self.custom_env = None
-        self.custom_env_path = None
+        self.file_server_root = cloudify_utils.get_manager_file_server_root()
+        self.file_server_url = cloudify_utils.get_manager_file_server_url()
 
-    def build(self):
-        if self.cloudify_agent['windows']:
-            resource = 'script/windows.ps1.template'
+        basedir = self.cloudify_agent['basedir']
+        if cloudify_agent['windows']:
+            self.install_script_template = 'script/windows.ps1.template'
+            self.init_script_template = 'script/windows-download.ps1.template'
+            self.install_script_filename = '{0}.ps1'.format(uuid.uuid4())
+            self.init_script_filename = '{0}.ps1'.format(uuid.uuid4())
+            self.custom_env_path = '{0}\\custom_agent_env.bat'.format(basedir)
         else:
-            resource = 'script/linux.sh.template'
-        template = jinja2.Template(utils.get_resource(resource))
+            self.install_script_template = 'script/linux.sh.template'
+            self.init_script_template = 'script/linux-download.sh.template'
+            self.install_script_filename = '{0}.sh'.format(uuid.uuid4())
+            self.init_script_filename = '{0}.sh'.format(uuid.uuid4())
+            self.custom_env_path = '{0}/custom_agent_env.sh'.format(basedir)
+
+    def install_script(self):
+        """Render the agent installation script.
+        :return: Install script content
+        :rtype: str
+        """
+        template = jinja2.Template(
+            utils.get_resource(self.install_script_template)
+        )
         # Called before creating the agent env to populate all the variables
         local_rest_content = self._get_local_cert_content()
         remote_ssl_cert_path = self._get_remote_ssl_cert_path()
@@ -66,15 +88,102 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         if not environment:
             return
         self.custom_env = environment
-        if self.cloudify_agent['windows']:
-            self.custom_env_path = '{0}\\custom_agent_env.bat'.format(
-                self.cloudify_agent['basedir'])
+
+    def _get_script_path_and_url(self, script_filename):
+        """
+        Calculate install script's local path and download link
+        :return: A tuple with:
+        1. Path where the install script resides in the file server
+        2. URL where the install script can be downloaded
+        :rtype: (str, str)
+        """
+        # Store under cloudify_agent to avoid authentication
+        script_relpath = os.path.join('cloudify_agent', script_filename)
+        script_path = os.path.join(self.file_server_root, script_relpath)
+        script_url = url_join(self.file_server_url, script_relpath)
+        return script_path, script_url
+
+    def _script_download_link(self, is_install_script=True):
+        if is_install_script:
+            script_filename = self.install_script_filename
+            script_content = self.install_script()
         else:
-            self.custom_env_path = '{0}/custom_agent_env.sh'.format(
-                self.cloudify_agent['basedir'])
-        return self.custom_env_path
+            script_filename = self.init_script_filename
+            script_content = self.init_script()
+
+        script_path, script_url = self._get_script_path_and_url(
+            script_filename
+        )
+        with open(script_path, 'w') as script_file:
+            script_file.write(script_content)
+
+        return script_path, script_url
+
+    def install_script_download_link(self):
+        """Get agent installation script and write it to file server location.
+        :return: A tuple with:
+        1. Path where the install script resides in the file server
+        2. URL where the install script can be downloaded
+        :rtype: (str, str)
+        """
+        return self._script_download_link(is_install_script=True)
+
+    def init_script_download_link(self):
+        """Get agent init script and write it to file server location.
+        :return: A tuple with:
+        1. Path where the install script resides in the file server
+        2. URL where the install script can be downloaded
+        :rtype: (str, str)
+        """
+        return self._script_download_link(is_install_script=False)
+
+    def init_script(self):
+        """Get install script downloader.
+
+        To avoid passing sensitive information through userdata, a simple
+        script that downloads the script that actually installs the agent is
+        generated.
+        :return: Install script downloader content
+        :rtype: str
+        """
+        _, script_url = self.install_script_download_link()
+        template = jinja2.Template(
+            utils.get_resource(self.init_script_template)
+        )
+        return template.render(link=script_url)
 
 
-@init_agent_installer(validate_connection=False)
-def init_script(cloudify_agent, **_):
-    return AgentInstallationScriptBuilder(cloudify_agent).build()
+@create_agent_config_and_installer(validate_connection=False,
+                                   new_agent_config=True)
+def _get_script_builder(cloudify_agent, **_):
+    return AgentInstallationScriptBuilder(cloudify_agent)
+
+
+def install_script_download_link(cloudify_agent=None, **_):
+    script_builder = _get_script_builder(cloudify_agent=cloudify_agent)
+    return script_builder.install_script_download_link()
+
+
+def init_script(cloudify_agent=None, **_):
+    script_builder = _get_script_builder(cloudify_agent=cloudify_agent)
+    return script_builder.init_script()
+
+
+def init_script_download_link(cloudify_agent=None, **_):
+    script_builder = _get_script_builder(cloudify_agent=cloudify_agent)
+    return script_builder.init_script_download_link()
+
+
+@contextmanager
+def install_script_path(cloudify_agent):
+    script_builder = AgentInstallationScriptBuilder(cloudify_agent)
+    script = script_builder.install_script()
+    tempdir = tempfile.mkdtemp()
+    script_path = os.path.join(tempdir, script_builder.install_script_filename)
+    with open(script_path, 'w') as f:
+        f.write(script)
+
+    try:
+        yield script_path
+    finally:
+        os.remove(script_path)

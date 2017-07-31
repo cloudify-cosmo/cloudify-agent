@@ -185,31 +185,22 @@ class FabricRunner(object):
 
         return self.run('sudo {0}'.format(command), **attributes)
 
-    def run_script(self, script, args=None, **attributes):
-
+    def run_script(self, script):
         """
         Execute a script.
 
         :param script: The path to the script to execute.
-        :param args: arguments to the script
-        :param attributes: custom attributes passed directly to
-                           fabric's run command
-
         :return: a response object containing information
                  about the execution
         :rtype: FabricCommandExecutionResponse
         :raise: FabricCommandExecutionException
         """
 
-        if not args:
-            args = []
-
-        remote_path = self.put_file(script, **attributes)
+        remote_path = self.put_file(script)
         self.run('chmod +x {0}'.format(remote_path))
-        return self.run('{0} {1}'
-                        .format(remote_path,
-                                ' '.join(args)),
-                        **attributes)
+        result = self.run(remote_path)
+        self.delete(os.path.dirname(remote_path))
+        return result
 
     def exists(self, path, **attributes):
 

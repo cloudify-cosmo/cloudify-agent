@@ -26,14 +26,12 @@ from mock import patch
 from cloudify.utils import LocalCommandRunner
 from cloudify_agent.tests import BaseTest, agent_package, agent_ssl_cert
 from cloudify_agent.tests.api.pm import only_ci
-from cloudify_agent.installer.config import configuration
+from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 
 from cloudify_agent.tests.installer.config import mock_context
 
 
-@patch('cloudify_agent.installer.config.configuration.ctx', mock_context())
-@patch('cloudify_agent.installer.config.decorators.ctx', mock_context())
-@patch('cloudify_agent.installer.config.attributes.ctx', mock_context())
+@patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())
 @patch('cloudify.utils.ctx', mock_context())
 class TestInstaller(BaseTest):
     @classmethod
@@ -72,16 +70,19 @@ class TestInstaller(BaseTest):
         self.assertFalse(inspect.active())
         return new_agent
 
-    def _prepare_configuration(self, agent):
+    @staticmethod
+    def _prepare_configuration(agent):
         agent['name'] = '{0}_{1}'.format(
             agent.get('name', 'agent_'),
             str(uuid.uuid4()))
-        configuration.reinstallation_attributes(agent)
+        agent.set_default_values()
+        if agent.get('basedir'):
+            agent.set_config_paths()
 
     @only_ci
     def test_installation(self):
         base_dir = tempfile.mkdtemp()
-        agent = {
+        agent = CloudifyAgentConfig({
             'ip': 'localhost',
             'package_url': self._package_url,
             'rest_host': 'localhost',
@@ -90,7 +91,7 @@ class TestInstaller(BaseTest):
             'windows': os.name == 'nt',
             'local': False,
             'ssl_cert_path': self._rest_cert_path
-        }
+        })
         try:
             self._prepare_configuration(agent)
             self._test_agent_installation(agent)
@@ -99,7 +100,7 @@ class TestInstaller(BaseTest):
 
     @only_ci
     def test_installation_no_basedir(self):
-        agent = {
+        agent = CloudifyAgentConfig({
             'ip': 'localhost',
             'package_url': self._package_url,
             'rest_host': 'localhost',
@@ -107,7 +108,7 @@ class TestInstaller(BaseTest):
             'windows': os.name == 'nt',
             'local': False,
             'ssl_cert_path': self._rest_cert_path
-        }
+        })
         self._prepare_configuration(agent)
         self.assertNotIn('basedir', agent)
         new_agent = self._test_agent_installation(agent)

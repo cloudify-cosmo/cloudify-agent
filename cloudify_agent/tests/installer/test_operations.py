@@ -22,14 +22,17 @@ from mock import patch
 from cloudify.workflows import local
 from cloudify.utils import setup_logger
 
+from cloudify_agent.api import utils
 from cloudify_agent.tests import resources, agent_ssl_cert
 from cloudify_agent.tests.utils import (
     FileServer,
     get_source_uri,
     get_requirements_uri)
-from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
-from cloudify_agent.tests.api.pm import only_ci, only_os
-from cloudify_agent.api import utils
+from cloudify_agent.tests.api.pm import (
+    only_ci,
+    only_os,
+    BaseDaemonLiveTestCase
+)
 
 
 ##############################################################################
@@ -64,12 +67,23 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
         self.addCleanup(self.fs.stop)
         self.addCleanup(shutil.rmtree, self.resource_base)
 
-    @patch.dict('agent_packager.logger.LOGGER',
-                disable_existing_loggers=False)
-    @patch('cloudify.workflows.local._validate_node')
+    @only_os('posix')
     @only_ci
-    def test_local_agent_from_package(self, _):
+    def test_local_agent_from_package_posix(self):
+        # Check that agent still works with a filepath longer than 128 bytes
+        # (paths longer than 128 bytes break shebangs on linux.)
+        agent_name = 'agent-' + ''.join(uuid.uuid4().hex for _ in range(4))
+        self._test_local_agent_from_package(agent_name)
+
+    @only_os('nt')
+    @only_ci
+    def test_local_agent_from_package_nt(self):
         agent_name = utils.internal.generate_agent_name()
+        self._test_local_agent_from_package(agent_name)
+
+    @patch('cloudify.workflows.local._validate_node')
+    def _test_local_agent_from_package(self, agent_name, _):
+
         agent_queue = '{0}-queue'.format(agent_name)
 
         blueprint_path = resources.get_resource(
@@ -86,143 +100,6 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
             'ssl_cert_path': self._rest_cert_path
         }
 
-        env = local.init_env(name=self._testMethodName,
-                             blueprint_path=blueprint_path,
-                             inputs=inputs)
-
-        env.execute('install', task_retries=0)
-        self.assert_daemon_alive(name=agent_name)
-        agent_dict = self.get_agent_dict(env)
-        agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
-
-        env.execute('uninstall', task_retries=1)
-        self.wait_for_daemon_dead(name=agent_name)
-
-    @only_os('posix')
-    @patch('cloudify.workflows.local._validate_node')
-    @only_ci
-    def test_local_agent_from_package_long_name(self, _):
-        """Agent still works with a filepath longer than 128 bytes (package)
-
-        Paths longer than 128 bytes break shebangs on linux.
-        """
-        agent_name = 'agent-' + ''.join(uuid.uuid4().hex for i in range(4))
-        agent_queue = '{0}-queue'.format(agent_name)
-
-        blueprint_path = resources.get_resource(
-            'blueprints/agent-from-package/local-agent-blueprint.yaml')
-        self.logger.info('Initiating local env')
-
-        inputs = {
-            'resource_base': self.resource_base,
-            'source_url': self.source_url,
-            'requirements_file': self.requirements_file,
-            'name': agent_name,
-            'queue': agent_queue,
-            'file_server_port': self.fs.port,
-            'ssl_cert_path': self._rest_cert_path
-        }
-
-        env = local.init_env(name=self._testMethodName,
-                             blueprint_path=blueprint_path,
-                             inputs=inputs)
-
-        env.execute('install', task_retries=0)
-        self.assert_daemon_alive(name=agent_name)
-        agent_dict = self.get_agent_dict(env)
-        agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
-
-        env.execute('uninstall', task_retries=1)
-        self.wait_for_daemon_dead(name=agent_name)
-
-    @only_ci
-    @patch('cloudify.workflows.local._validate_node')
-    @patch.dict('agent_packager.logger.LOGGER',
-                disable_existing_loggers=False)
-    def test_local_agent_from_source(self, _):
-
-        agent_name = utils.internal.generate_agent_name()
-        agent_queue = '{0}-queue'.format(agent_name)
-
-        inputs = {
-            'source_url': self.source_url,
-            'requirements_file': self.requirements_file,
-            'name': agent_name,
-            'queue': agent_queue,
-            'ssl_cert_path': self._rest_cert_path
-        }
-
-        blueprint_path = resources.get_resource(
-            'blueprints/agent-from-source/local-agent-blueprint.yaml')
-        self.logger.info('Initiating local env')
-        env = local.init_env(name=self._testMethodName,
-                             blueprint_path=blueprint_path,
-                             inputs=inputs)
-
-        env.execute('install', task_retries=0)
-        self.assert_daemon_alive(name=agent_name)
-        agent_dict = self.get_agent_dict(env)
-        agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
-
-        env.execute('uninstall', task_retries=1)
-        self.wait_for_daemon_dead(name=agent_name)
-
-    @only_ci
-    @patch('cloudify.workflows.local._validate_node')
-    @patch.dict('agent_packager.logger.LOGGER',
-                disable_existing_loggers=False)
-    def test_3_2_backwards(self, _):
-
-        agent_name = utils.internal.generate_agent_name()
-        agent_queue = '{0}-queue'.format(agent_name)
-
-        inputs = {
-            'source_url': self.source_url,
-            'requirements_file': self.requirements_file,
-            'name': agent_name,
-            'queue': agent_queue,
-            'ssl_cert_path': self._rest_cert_path
-        }
-
-        blueprint_path = resources.get_resource(
-            'blueprints/3_2-agent-from-source/3_2-agent-from-source.yaml')
-        self.logger.info('Initiating local env')
-        env = local.init_env(name=self._testMethodName,
-                             blueprint_path=blueprint_path,
-                             inputs=inputs)
-
-        env.execute('install', task_retries=0)
-        self.assert_daemon_alive(name=agent_name)
-        agent_dict = self.get_agent_dict(env)
-        agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
-
-        env.execute('uninstall', task_retries=1)
-        self.wait_for_daemon_dead(name=agent_name)
-
-    @only_os('posix')
-    @only_ci
-    @patch('cloudify.workflows.local._validate_node')
-    def test_local_agent_from_source_long_name(self, _):
-        """Agent still works with a filepath longer than 128 bytes (source)
-
-        This test won't pass on windows because some files within the
-        virtualenv exceed 256 bytes, and windows doesn't support paths
-        that long.
-        """
-        agent_name = 'agent-' + ''.join(uuid.uuid4().hex for i in range(4))
-        agent_queue = '{0}-queue'.format(agent_name)
-
-        inputs = {
-            'source_url': self.source_url,
-            'requirements_file': self.requirements_file,
-            'name': agent_name,
-            'queue': agent_queue,
-            'ssl_cert_path': self._rest_cert_path
-        }
-
-        blueprint_path = resources.get_resource(
-            'blueprints/agent-from-source/local-agent-blueprint.yaml')
-        self.logger.info('Initiating local env')
         env = local.init_env(name=self._testMethodName,
                              blueprint_path=blueprint_path,
                              inputs=inputs)

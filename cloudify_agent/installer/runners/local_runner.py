@@ -56,3 +56,11 @@ class LocalCommandRunner(_UtilsLocalCommandRunner):
             tempdir = tempfile.mkdtemp()
             dst = os.path.join(tempdir, basename)
         shutil.copy2(src, dst)
+        return dst
+
+    def run_script(self, script_path):
+        self.run('chmod +x {0}'.format(script_path))
+        append = 'powershell' if os.name == 'nt' else 'sudo'
+        cmd = '{0} {1}'.format(append, script_path)
+        result = self.run(cmd)
+        return result

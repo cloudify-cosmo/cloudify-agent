@@ -59,3 +59,6 @@ before_test:
 
 test_script:
   - tox -e %TOX_ENV%
+
+# RDP can be set in Appveyor - look here:
+# https://www.appveyor.com/docs/how-to/rdp-to-build-worker/
