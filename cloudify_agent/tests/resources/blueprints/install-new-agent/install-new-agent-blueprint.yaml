@@ -38,9 +38,7 @@ node_templates:
           implementation: agent.cloudify_agent.operations.validate_agent_amqp
           executor: central_deployment_agent
           inputs:
-            validate_agent_timeout: 20
-            fail_on_agent_not_installable: True
-            fail_on_agent_dead: True
+            current_amqp: false
     relationships:
       - target: host
         type: cloudify.relationships.depends_on

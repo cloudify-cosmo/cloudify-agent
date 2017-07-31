@@ -34,16 +34,21 @@ class AgentInstallationScriptBuilder(AgentInstaller):
     def __init__(self, cloudify_agent):
         super(AgentInstallationScriptBuilder, self).__init__(cloudify_agent)
         self.custom_env = None
+        self.file_server_root = cloudify_utils.get_manager_file_server_root()
+        self.file_server_url = cloudify_utils.get_manager_file_server_url()
+
         basedir = self.cloudify_agent['basedir']
         if cloudify_agent['windows']:
             self.install_script_template = 'script/windows.ps1.template'
             self.init_script_template = 'script/windows-download.ps1.template'
             self.install_script_filename = '{0}.ps1'.format(uuid.uuid4())
+            self.init_script_filename = '{0}.ps1'.format(uuid.uuid4())
             self.custom_env_path = '{0}\\custom_agent_env.bat'.format(basedir)
         else:
             self.install_script_template = 'script/linux.sh.template'
             self.init_script_template = 'script/linux-download.sh.template'
             self.install_script_filename = '{0}.sh'.format(uuid.uuid4())
+            self.init_script_filename = '{0}.sh'.format(uuid.uuid4())
             self.custom_env_path = '{0}/custom_agent_env.sh'.format(basedir)
 
     def install_script(self):
@@ -84,7 +89,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             return
         self.custom_env = environment
 
-    def _get_script_path_and_url(self):
+    def _get_script_path_and_url(self, script_filename):
         """
         Calculate install script's local path and download link
         :return: A tuple with:
@@ -92,14 +97,26 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         2. URL where the install script can be downloaded
         :rtype: (str, str)
         """
-        file_server_root = cloudify_utils.get_manager_file_server_root()
-        file_server_url = cloudify_utils.get_manager_file_server_url()
-
         # Store under cloudify_agent to avoid authentication
-        script_relpath = os.path.join('cloudify_agent',
-                                      self.install_script_filename)
-        script_path = os.path.join(file_server_root, script_relpath)
-        script_url = url_join(file_server_url, script_relpath)
+        script_relpath = os.path.join('cloudify_agent', script_filename)
+        script_path = os.path.join(self.file_server_root, script_relpath)
+        script_url = url_join(self.file_server_url, script_relpath)
+        return script_path, script_url
+
+    def _script_download_link(self, is_install_script=True):
+        if is_install_script:
+            script_filename = self.install_script_filename
+            script_content = self.install_script()
+        else:
+            script_filename = self.init_script_filename
+            script_content = self.init_script()
+
+        script_path, script_url = self._get_script_path_and_url(
+            script_filename
+        )
+        with open(script_path, 'w') as script_file:
+            script_file.write(script_content)
+
         return script_path, script_url
 
     def install_script_download_link(self):
@@ -109,12 +126,16 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         2. URL where the install script can be downloaded
         :rtype: (str, str)
         """
-        script_path, script_url = self._get_script_path_and_url()
-        script_content = self.install_script()
-        with open(script_path, 'w') as script_file:
-            script_file.write(script_content)
+        return self._script_download_link(is_install_script=True)
 
-        return script_path, script_url
+    def init_script_download_link(self):
+        """Get agent init script and write it to file server location.
+        :return: A tuple with:
+        1. Path where the install script resides in the file server
+        2. URL where the install script can be downloaded
+        :rtype: (str, str)
+        """
+        return self._script_download_link(is_install_script=False)
 
     def init_script(self):
         """Get install script downloader.
@@ -146,6 +167,11 @@ def install_script_download_link(cloudify_agent=None, **_):
 def init_script(cloudify_agent=None, **_):
     script_builder = _get_script_builder(cloudify_agent=cloudify_agent)
     return script_builder.init_script()
+
+
+def init_script_download_link(cloudify_agent=None, **_):
+    script_builder = _get_script_builder(cloudify_agent=cloudify_agent)
+    return script_builder.init_script_download_link()
 
 
 @contextmanager
