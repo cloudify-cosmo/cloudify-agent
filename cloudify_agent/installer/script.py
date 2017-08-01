@@ -88,6 +88,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         if not environment:
             return
         self.custom_env = environment
+        return self.custom_env_path
 
     def _get_script_path_and_url(self, script_filename):
         """
