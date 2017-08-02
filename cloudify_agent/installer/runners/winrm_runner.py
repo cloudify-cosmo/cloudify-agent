@@ -406,8 +406,24 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
             ('\t', '`t')
         ]:
             contents = contents.replace(pattern, replacement)
-        return self.run('Set-Content "{0}" "{1}"'.format(
-                path, contents), powershell=True)
+
+        # Split content into chunks to avoid command line too long error
+        # maximum allowed commmand line length should be 2047 in old windows:
+        # https://support.microsoft.com/en-us/help/830473/command-prompt-cmd--exe-command-line-string-limitation
+        chunk_size = 2047
+        chunks = [
+            contents[index:index+chunk_size]
+            for index in xrange(0, len(contents), chunk_size)
+        ]
+
+        responses = [
+            self.run(
+                'Add-Content "{0}" "{1}"'.format(path, chunk),
+                powershell=True,
+            )
+            for chunk in chunks
+        ]
+        return responses
 
     def get(self, path):
 
