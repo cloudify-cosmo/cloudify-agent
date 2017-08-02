@@ -398,12 +398,12 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         :rtype WinRMCommandExecutionResponse.
         """
         for pattern, replacement in [
-            ('\r', '`r')
-            ('\n', '`n')
-            (' ',  '` ')
-            ("'",  "`'")
-            ('"',  '`"')
-            ('\t', '`t')
+            ('\r', '`r'),
+            ('\n', '`n'),
+            (' ',  '` '),
+            ("'",  "`'"),
+            ('"',  '`"'),
+            ('\t', '`t'),
         ]:
             contents = contents.replace(pattern, replacement)
 
