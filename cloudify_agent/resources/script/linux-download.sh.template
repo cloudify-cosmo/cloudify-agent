@@ -23,5 +23,5 @@ cd $(mktemp -d)
 
 download agent_installer.sh
 chmod +x ./agent_installer.sh
-sudo ./agent_installer.sh
+{{ sudo }} ./agent_installer.sh
 rm ./agent_installer.sh

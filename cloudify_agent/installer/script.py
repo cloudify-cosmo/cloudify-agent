@@ -21,7 +21,8 @@ from contextlib import contextmanager
 from posixpath import join as url_join
 
 from cloudify import ctx, utils as cloudify_utils
-from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
+from cloudify.constants import (CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
+                                AGENT_INSTALL_METHOD_INIT_SCRIPT)
 
 from cloudify_agent.api import utils
 from cloudify_agent.installer import AgentInstaller
@@ -151,7 +152,14 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         template = jinja2.Template(
             utils.get_resource(self.init_script_template)
         )
-        return template.render(link=script_url)
+        use_sudo = self.cloudify_agent.get('install_with_sudo')
+        install_method = cloudify_utils.internal.get_install_method(
+            ctx.node.properties)
+        if use_sudo or install_method == AGENT_INSTALL_METHOD_INIT_SCRIPT:
+            sudo = 'sudo'
+        else:
+            sudo = ''
+        return template.render(link=script_url, sudo=sudo)
 
 
 @create_agent_config_and_installer(validate_connection=False,
