@@ -152,9 +152,10 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         template = jinja2.Template(
             utils.get_resource(self.init_script_template)
         )
+        use_sudo = self.cloudify_agent.get('install_with_sudo')
         install_method = cloudify_utils.internal.get_install_method(
             ctx.node.properties)
-        if install_method == AGENT_INSTALL_METHOD_INIT_SCRIPT:
+        if use_sudo or install_method == AGENT_INSTALL_METHOD_INIT_SCRIPT:
             sudo = 'sudo'
         else:
             sudo = ''
