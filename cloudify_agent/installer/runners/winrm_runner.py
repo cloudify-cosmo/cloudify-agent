@@ -397,13 +397,15 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         :return a response object with information about the execution
         :rtype WinRMCommandExecutionResponse.
         """
-        contents = contents.replace(
-            '\r', '`r').replace(
-            '\n', '`n').replace(
-            ' ',  '` ').replace(
-            "'",  "`'").replace(
-            '"',  '`"').replace(
-            '\t', '`t')
+        contents = (
+            contents
+            .replace('\r', '`r')
+            .replace('\n', '`n')
+            .replace(' ',  '` ')
+            .replace("'",  "`'")
+            .replace('"',  '`"')
+            .replace('\t', '`t')
+        )
         return self.run('Set-Content "{0}" "{1}"'.format(
                 path, contents), powershell=True)
 
