@@ -387,14 +387,14 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
 
     def put(self, contents, path):
 
-        """
-        Writes the contents to a file in the given path.
+        """Split contents into chunks and write them to file in the given path.
 
         :param contents: The contents to write. string based.
         :param path: Path to a file.
                      The file must be inside an existing directory.
 
-        :return a response object with information about the execution
+        :return:
+            a list of response objects with information about all executions
         :rtype WinRMCommandExecutionResponse.
         """
         for pattern, replacement in [
