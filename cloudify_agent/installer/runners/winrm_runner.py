@@ -397,15 +397,8 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
             a list of response objects with information about all executions
         :rtype WinRMCommandExecutionResponse.
         """
-        for pattern, replacement in [
-            ('\r', '`r'),
-            ('\n', '`n'),
-            (' ',  '` '),
-            ("'",  "`'"),
-            ('"',  '`"'),
-            ('\t', '`t'),
-        ]:
-            contents = contents.replace(pattern, replacement)
+        # Escape single quotes, since the contents is surrounded by them
+        contents = contents.replace("'", "`'")
 
         # Split content into chunks to avoid command line too long error
         # maximum allowed commmand line length should be 2047 in old windows:
@@ -418,7 +411,7 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
 
         responses = [
             self.run(
-                'Add-Content "{0}" "{1}"'.format(path, chunk),
+                'Add-Content "{0}" \'{1}\''.format(path, chunk),
                 powershell=True,
             )
             for chunk in chunks
