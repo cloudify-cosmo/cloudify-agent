@@ -403,11 +403,7 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         # Split content into chunks to avoid command line too long error
         # maximum allowed commmand line length should be 2047 in old windows:
         # https://support.microsoft.com/en-us/help/830473/command-prompt-cmd--exe-command-line-string-limitation
-        chunk_size = 2047
-        chunks = [
-            contents[index:index+chunk_size]
-            for index in xrange(0, len(contents), chunk_size)
-        ]
+        chunks = contents.splitlines()
 
         responses = [
             self.run(
