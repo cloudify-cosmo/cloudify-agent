@@ -171,6 +171,7 @@ def _set_default_new_agent_config_values(old_agent, new_agent):
     new_agent['old_agent_version'] = old_agent['version']
     new_agent['remote_execution'] = True
     new_agent['disable_requiretty'] = False
+    new_agent['install_with_sudo'] = True
 
 
 def _copy_values_from_old_agent_config(old_agent, new_agent):
