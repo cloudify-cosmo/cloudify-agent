@@ -493,7 +493,7 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         return result
 
 
-def split_into_chunks(contents):
+def split_into_chunks(contents, max_size=2000, separator='\r\n'):
     """Split content into chunks to avoid command line too long error.
 
     Maximum allowed commmand line length should be 2047 in old windows:
@@ -507,10 +507,10 @@ def split_into_chunks(contents):
     :rtype: list[str]
 
     """
-    max_size = 2000
-    separator = '\r\n'
-
     def join_lines(lines, line):
+        if len(line) > max_size:
+            raise ValueError('Line too long (%d characters)' % len(line))
+
         if (
             lines and
             len(lines[-1]) + len(line) + len(separator) <= max_size
@@ -520,7 +520,10 @@ def split_into_chunks(contents):
             lines.append(line)
         return lines
 
-    chunks = reduce(join_lines, contents.splitlines(), [])
+    if contents:
+        chunks = reduce(join_lines, contents.splitlines(), [])
+    else:
+        chunks = ['']
     return chunks
 
 

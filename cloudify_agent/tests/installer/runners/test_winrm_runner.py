@@ -13,7 +13,10 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+from unittest import TestCase
+
 from cloudify_agent.installer.runners import winrm_runner
+from cloudify_agent.installer.runners.winrm_runner import split_into_chunks
 
 from cloudify_agent.tests import BaseTest
 
@@ -89,3 +92,34 @@ class TestDefaults(BaseTest):
         self.assertEquals(
             runner.session_config['port'],
             winrm_runner.DEFAULT_WINRM_PORT)
+
+
+class TestSplitIntoChunks(TestCase):
+    """Test content splitting into chunks."""
+
+    def test_empty_string(self):
+        """An empty string is not splitted."""
+        contents = ''
+        expected_chunks = ['']
+        self.assertEqual(split_into_chunks(contents), expected_chunks)
+
+    def test_one_line(self):
+        """A single is not splitted."""
+        contents = 'this is a string'
+        expected_chunks = [contents]
+        self.assertEqual(split_into_chunks(contents), expected_chunks)
+
+    def test_multiple_lines(self):
+        """Multiple lines are splitted as expected."""
+        contents = 'a\nfew\nshort\nlines'
+        expected_chunks = ['a\nfew', 'short', 'lines']
+        self.assertEqual(
+            split_into_chunks(contents, max_size=10, separator='\n'),
+            expected_chunks,
+        )
+
+    def test_line_too_long(self):
+        """Exception raised on line too long."""
+        contents = 'a very long line'
+        with self.assertRaises(ValueError):
+            split_into_chunks(contents, max_size=1)
