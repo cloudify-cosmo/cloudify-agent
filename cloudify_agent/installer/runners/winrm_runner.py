@@ -477,7 +477,11 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         pass
 
     def run_script(self, script_path):
-        remote_path = self.put_file(script_path)
+        # Keep script extension (.ps1) so that it can be executed
+        extension = ntpath.splitext(script_path)[1]
+        remote_path = '{}{}'.format(self.mktemp(), extension)
+
+        self.put_file(script_path, remote_path)
         result = self.run(remote_path)
         self.delete(ntpath.dirname(remote_path))
         return result
