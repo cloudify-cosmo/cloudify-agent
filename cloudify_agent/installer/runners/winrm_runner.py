@@ -507,9 +507,6 @@ def split_into_chunks(contents):
     :rtype: list[str]
 
     """
-    # Split content into chunks to avoid command line too long error
-    # maximum allowed commmand line length should be 2047 in old windows:
-    # https://support.microsoft.com/en-us/help/830473/command-prompt-cmd--exe-command-line-string-limitation
     max_size = 2000
     separator = '\r\n'
 
