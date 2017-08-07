@@ -284,6 +284,17 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
             '''@powershell -Command "[System.IO.Path]::GetTempFileName()"'''
         ).std_out.strip()
 
+    def get_temp_dir(self):
+        """Get remote temporary directory.
+
+        :return: Temporary directory
+        :rtype: str
+
+        """
+        return self.run(
+            '@powershell -Command "[System.IO.Path]::GetTempPath()"'
+        ).std_out.strip()
+
     def new_dir(self, path):
 
         """
@@ -477,10 +488,10 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         pass
 
     def run_script(self, script_path):
-        # Keep script extension (.ps1) so that it can be executed
-        extension = ntpath.splitext(script_path)[1]
-        remote_path = '{}{}'.format(self.mktemp(), extension)
-
+        remote_path = ntpath.join(
+            self.get_temp_dir(),
+            ntpath.basename(script_path),
+        )
         self.put_file(script_path, remote_path)
         result = self.run(remote_path, powershell=True)
         self.delete(ntpath.dirname(remote_path))
