@@ -482,7 +482,7 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         remote_path = '{}{}'.format(self.mktemp(), extension)
 
         self.put_file(script_path, remote_path)
-        result = self.run(remote_path)
+        result = self.run(remote_path, powershell=True)
         self.delete(ntpath.dirname(remote_path))
         return result
 
