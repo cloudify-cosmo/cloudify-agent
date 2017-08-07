@@ -410,12 +410,7 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         """
         # Escape single quotes, since the contents is surrounded by them
         contents = contents.replace("'", "''")
-
-        # Split content into chunks to avoid command line too long error
-        # maximum allowed commmand line length should be 2047 in old windows:
-        # https://support.microsoft.com/en-us/help/830473/command-prompt-cmd--exe-command-line-string-limitation
-        chunks = contents.splitlines()
-
+        chunks = split_into_chunks(contents)
         responses = [
             self.run(
                 'Add-Content "{0}" \'{1}\''.format(path, chunk),
@@ -496,6 +491,40 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         result = self.run(remote_path, powershell=True)
         self.delete(ntpath.dirname(remote_path))
         return result
+
+
+def split_into_chunks(contents):
+    """Split content into chunks to avoid command line too long error.
+
+    Maximum allowed commmand line length should be 2047 in old windows:
+    https://support.microsoft.com/en-us/help/830473/command-prompt-cmd--exe-command-line-string-limitation
+
+    :param contents:
+        The contents of a file that exceeds the maximum command line length in
+        windows.
+    :type content: str
+    :returns: The same content in chunks that won't exceed the limit
+    :rtype: list[str]
+
+    """
+    # Split content into chunks to avoid command line too long error
+    # maximum allowed commmand line length should be 2047 in old windows:
+    # https://support.microsoft.com/en-us/help/830473/command-prompt-cmd--exe-command-line-string-limitation
+    max_size = 2000
+    separator = '\r\n'
+
+    def join_lines(lines, line):
+        if (
+            lines and
+            len(lines[-1]) + len(line) + len(separator) <= max_size
+        ):
+            lines[-1] += '{}{}'.format(separator, line)
+        else:
+            lines.append(line)
+        return lines
+
+    chunks = reduce(join_lines, contents.splitlines(), [])
+    return chunks
 
 
 class WinRMCommandExecutionError(CommandExecutionError):
