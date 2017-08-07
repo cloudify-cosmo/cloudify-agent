@@ -23,7 +23,7 @@ function AddSSLCert()
 function DownloadAndExtractAgentPackage()
 {
     AddSSLCert
-    Download {{ conf.package_url }} "{{ conf.basedir }}\cloudify-windows-agent.exe"
+    Download "{{ conf.package_url }}" "{{ conf.basedir }}\cloudify-windows-agent.exe"
     # This call is not blocking so we pipe the output to null to make it blocking
     & "{{ conf.basedir }}\cloudify-windows-agent.exe" /SILENT /VERYSILENT /SUPPRESSMSGBOXES /DIR="{{ conf.envdir }}" | Out-Null
 }
