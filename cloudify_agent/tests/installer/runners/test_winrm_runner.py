@@ -121,5 +121,4 @@ class TestSplitIntoChunks(TestCase):
     def test_line_too_long(self):
         """Exception raised on line too long."""
         contents = 'a very long line'
-        with self.assertRaises(ValueError):
-            split_into_chunks(contents, max_size=1)
+        self.assertRaises(ValueError, split_into_chunks, contents, max_size=1)

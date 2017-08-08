@@ -515,7 +515,7 @@ def split_into_chunks(contents, max_size=2000, separator='\r\n'):
             lines and
             len(lines[-1]) + len(line) + len(separator) <= max_size
         ):
-            lines[-1] += '{}{}'.format(separator, line)
+            lines[-1] += '{0}{1}'.format(separator, line)
         else:
             lines.append(line)
         return lines
