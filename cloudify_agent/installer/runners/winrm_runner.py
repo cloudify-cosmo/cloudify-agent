@@ -497,7 +497,7 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         )
         self.put_file(script_path, remote_path)
         result = self.run(remote_path, powershell=True)
-        self.delete(ntpath.dirname(remote_path))
+        self.delete(remote_path)
         return result
 
 
