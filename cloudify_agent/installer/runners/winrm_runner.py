@@ -497,9 +497,12 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
             self.get_temp_dir(),
             ntpath.basename(script_path),
         )
-        self.put_file(script_path, remote_path)
-        result = self.run(remote_path, powershell=True)
-        self.delete(remote_path)
+        try:
+            self.put_file(script_path, remote_path)
+            result = self.run(remote_path, powershell=True)
+            self.logger.critical('Remote debugging!')
+        finally:
+            self.delete(remote_path, ignore_missing=True)
         return result
 
 
