@@ -483,6 +483,14 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         pass
 
     def run_script(self, script_path):
+        """Upload script to remote instances, execute it and delete it.
+
+        :param script_path: Local path to script
+        :type script_path: str
+        :return: Script execution output
+        :rtype WinRMCommandExecutionResponse
+
+        """
         remote_path = ntpath.join(
             self.get_temp_dir(),
             ntpath.basename(script_path),
