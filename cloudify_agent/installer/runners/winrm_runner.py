@@ -269,8 +269,10 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         """
 
         return self.run(
-            """@powershell -Command 'Remove-Item -Recurse -Force "{0}"'"""
-            .format(path), raise_on_failure=not ignore_missing)
+            'Remove-Item -Recurse -Force "{0}"'.format(path),
+            raise_on_failure=not ignore_missing,
+            powershell=True,
+        )
 
     def mktemp(self):
 
