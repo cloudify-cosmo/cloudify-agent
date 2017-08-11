@@ -197,9 +197,13 @@ class FabricRunner(object):
         """
 
         remote_path = self.put_file(script)
-        self.sudo('chmod +x {0}'.format(remote_path))
-        result = self.sudo(remote_path)
-        self.delete(os.path.dirname(remote_path))
+        try:
+            self.sudo('chmod +x {0}'.format(remote_path))
+            result = self.sudo(remote_path)
+        finally:
+            # The script is pushed to a remote directory created with mkdtemp.
+            # Hence, to cleanup the whole directory has to be removed.
+            self.delete(os.path.dirname(remote_path))
         return result
 
     def exists(self, path, **attributes):
