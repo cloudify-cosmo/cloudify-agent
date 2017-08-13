@@ -13,103 +13,78 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import getpass
-import json
 import os
 import tempfile
 import uuid
 import shutil
 
 from celery import Celery
-from mock import patch
 
+from cloudify import ctx
 from cloudify.utils import LocalCommandRunner
+from cloudify.state import current_ctx
 from cloudify_agent.tests import BaseTest, agent_package, agent_ssl_cert
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
-
+from cloudify_agent.installer.operations import create as create_agent
 from cloudify_agent.tests.installer.config import mock_context
 
 
-@patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())
-@patch('cloudify.utils.ctx', mock_context())
 class TestInstaller(BaseTest):
     @classmethod
     def setUpClass(cls):
         cls._package_url = agent_package.get_package_url()
 
-    def _test_agent_installation(self, agent):
-        if 'user' not in agent:
-            agent['user'] = getpass.getuser()
+    def _test_agent_installation(self, agent_config):
+        new_ctx = mock_context()
+        current_ctx.set(new_ctx)
+
         celery = Celery()
-        worker_name = 'celery@{0}'.format(agent['name'])
+        worker_name = 'celery@{0}'.format(agent_config['name'])
         inspect = celery.control.inspect(destination=[worker_name])
+
         self.assertFalse(inspect.active())
-        _, path = tempfile.mkstemp()
-        with open(path, 'w') as agent_file:
-            agent_file.write(json.dumps(agent))
-        _, output_path = tempfile.mkstemp()
-        runner = LocalCommandRunner()
-        runner.run(
-            'cfy-agent install-local --agent-file {0} '
-            '--output-agent-file {1} --rest-cert-path {2} '
-            '--rest-token TOKEN'.format(
-                path,
-                output_path,
-                self._rest_cert_path
-            ))
+        create_agent(agent_config=agent_config)
         self.assertTrue(inspect.active())
-        with open(output_path) as new_agent_file:
-            new_agent = json.loads(new_agent_file.read())
+
+        new_agent = ctx.instance.runtime_properties['cloudify_agent']
+
+        agent_ssl_cert.verify_remote_cert(new_agent['agent_dir'])
+
         command_format = 'cfy-agent daemons {0} --name {1}'.format(
             '{0}',
             new_agent['name'])
-        agent_ssl_cert.verify_remote_cert(new_agent['agent_dir'])
+        runner = LocalCommandRunner()
         runner.run(command_format.format('stop'))
         runner.run(command_format.format('delete'))
+
         self.assertFalse(inspect.active())
         return new_agent
 
-    @staticmethod
-    def _prepare_configuration(agent):
-        agent['name'] = '{0}_{1}'.format(
-            agent.get('name', 'agent_'),
-            str(uuid.uuid4()))
-        agent.set_default_values()
-        if agent.get('basedir'):
-            agent.set_config_paths()
-
-    @only_ci
-    def test_installation(self):
-        base_dir = tempfile.mkdtemp()
-        agent = CloudifyAgentConfig({
+    def _get_agent_config(self):
+        return CloudifyAgentConfig({
+            'name': '{0}_{1}'.format('agent_', str(uuid.uuid4())),
             'ip': 'localhost',
             'package_url': self._package_url,
             'rest_host': 'localhost',
             'broker_ip': 'localhost',
-            'basedir': base_dir,
             'windows': os.name == 'nt',
-            'local': False,
+            'local': True,
             'ssl_cert_path': self._rest_cert_path
         })
+
+    @only_ci
+    def test_installation(self):
+        base_dir = tempfile.mkdtemp()
+        agent_config = self._get_agent_config()
+        agent_config['basedir'] = base_dir
         try:
-            self._prepare_configuration(agent)
-            self._test_agent_installation(agent)
+            self._test_agent_installation(agent_config)
         finally:
             shutil.rmtree(base_dir)
 
     @only_ci
     def test_installation_no_basedir(self):
-        agent = CloudifyAgentConfig({
-            'ip': 'localhost',
-            'package_url': self._package_url,
-            'rest_host': 'localhost',
-            'broker_ip': 'localhost',
-            'windows': os.name == 'nt',
-            'local': False,
-            'ssl_cert_path': self._rest_cert_path
-        })
-        self._prepare_configuration(agent)
-        self.assertNotIn('basedir', agent)
-        new_agent = self._test_agent_installation(agent)
+        agent_config = self._get_agent_config()
+        new_agent = self._test_agent_installation(agent_config)
         self.assertIn('basedir', new_agent)
