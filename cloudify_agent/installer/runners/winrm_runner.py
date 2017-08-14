@@ -269,8 +269,10 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         """
 
         return self.run(
-            """@powershell -Command 'Remove-Item -Recurse -Force "{0}"'"""
-            .format(path), raise_on_failure=not ignore_missing)
+            'Remove-Item -Recurse -Force "{0}"'.format(path),
+            raise_on_failure=not ignore_missing,
+            powershell=True,
+        )
 
     def mktemp(self):
 
@@ -483,13 +485,23 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         pass
 
     def run_script(self, script_path):
+        """Upload script to remote instances, execute it and delete it.
+
+        :param script_path: Local path to script
+        :type script_path: str
+        :return: Script execution output
+        :rtype WinRMCommandExecutionResponse
+
+        """
         remote_path = ntpath.join(
             self.get_temp_dir(),
             ntpath.basename(script_path),
         )
-        self.put_file(script_path, remote_path)
-        result = self.run(remote_path, powershell=True)
-        self.delete(ntpath.dirname(remote_path))
+        try:
+            self.put_file(script_path, remote_path)
+            result = self.run(remote_path, powershell=True)
+        finally:
+            self.delete(remote_path, ignore_missing=True)
         return result
 
 
