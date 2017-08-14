@@ -284,6 +284,17 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
             '''@powershell -Command "[System.IO.Path]::GetTempFileName()"'''
         ).std_out.strip()
 
+    def get_temp_dir(self):
+        """Get remote temporary directory.
+
+        :return: Temporary directory
+        :rtype: str
+
+        """
+        return self.run(
+            '@powershell -Command "[System.IO.Path]::GetTempPath()"'
+        ).std_out.strip()
+
     def new_dir(self, path):
 
         """
@@ -387,25 +398,27 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
 
     def put(self, contents, path):
 
-        """
-        Writes the contents to a file in the given path.
+        """Split contents into chunks and write them to file in the given path.
 
         :param contents: The contents to write. string based.
         :param path: Path to a file.
                      The file must be inside an existing directory.
 
-        :return a response object with information about the execution
+        :return:
+            a list of response objects with information about all executions
         :rtype WinRMCommandExecutionResponse.
         """
-        contents = contents.replace(
-            '\r', '`r').replace(
-            '\n', '`n').replace(
-            ' ',  '` ').replace(
-            "'",  "`'").replace(
-            '"',  '`"').replace(
-            '\t', '`t')
-        return self.run('Set-Content "{0}" "{1}"'.format(
-                path, contents), powershell=True)
+        # Escape single quotes, since the contents is surrounded by them
+        contents = contents.replace("'", "''")
+        chunks = split_into_chunks(contents)
+        responses = [
+            self.run(
+                'Add-Content "{0}" \'{1}\''.format(path, chunk),
+                powershell=True,
+            )
+            for chunk in chunks
+        ]
+        return responses
 
     def get(self, path):
 
@@ -470,10 +483,48 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         pass
 
     def run_script(self, script_path):
-        remote_path = self.put_file(script_path)
-        result = self.run(remote_path)
+        remote_path = ntpath.join(
+            self.get_temp_dir(),
+            ntpath.basename(script_path),
+        )
+        self.put_file(script_path, remote_path)
+        result = self.run(remote_path, powershell=True)
         self.delete(ntpath.dirname(remote_path))
         return result
+
+
+def split_into_chunks(contents, max_size=2000, separator='\r\n'):
+    """Split content into chunks to avoid command line too long error.
+
+    Maximum allowed commmand line length should be 2047 in old windows:
+    https://support.microsoft.com/en-us/help/830473/command-prompt-cmd--exe-command-line-string-limitation
+
+    :param contents:
+        The contents of a file that exceeds the maximum command line length in
+        windows.
+    :type content: str
+    :returns: The same content in chunks that won't exceed the limit
+    :rtype: list[str]
+
+    """
+    def join_lines(lines, line):
+        if len(line) > max_size:
+            raise ValueError('Line too long (%d characters)' % len(line))
+
+        if (
+            lines and
+            len(lines[-1]) + len(line) + len(separator) <= max_size
+        ):
+            lines[-1] += '{0}{1}'.format(separator, line)
+        else:
+            lines.append(line)
+        return lines
+
+    if contents:
+        chunks = reduce(join_lines, contents.splitlines(), [])
+    else:
+        chunks = ['']
+    return chunks
 
 
 class WinRMCommandExecutionError(CommandExecutionError):
