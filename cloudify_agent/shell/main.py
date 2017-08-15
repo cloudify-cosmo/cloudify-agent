@@ -27,7 +27,6 @@ from cloudify_agent.api.utils import logger as api_utils_logger
 
 from cloudify_agent.shell.commands import daemons
 from cloudify_agent.shell.commands import configure
-from cloudify_agent.shell.commands import installer
 
 
 _logger = setup_logger('cloudify_agent.shell.main',
@@ -91,5 +90,3 @@ daemon_sub_command.add_command(daemons.status)
 
 main.add_command(daemon_sub_command)
 main.add_command(plugins_sub_command)
-
-main.add_command(installer.install_local)

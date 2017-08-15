@@ -57,25 +57,6 @@ class AgentInstaller(object):
             .format(command, self.cloudify_agent['name']),
             execution_env=execution_env)
 
-    def create_agent(self):
-        self.upload_rest_certificate()
-        self.logger.info('Creating agent from package')
-        self._install_agent_package()
-        self.run_daemon_command(
-            command='create {0}'
-            .format(self._create_process_management_options()),
-            execution_env=self._create_agent_env())
-
-    def upload_rest_certificate(self):
-        local_cert_path = self._get_local_ssl_cert_path()
-        remote_cert_path = self._get_remote_ssl_cert_path()
-        self.logger.info(
-            'Uploading SSL certificate from {0} to {1}'.format(
-                local_cert_path, remote_cert_path
-            )
-        )
-        self.runner.put_file(src=local_cert_path, dst=remote_cert_path)
-
     def _get_local_ssl_cert_path(self):
         default_path = os.environ[env.CLOUDIFY_LOCAL_REST_CERT_PATH]
         return self.cloudify_agent.setdefault('ssl_cert_path', default_path)
@@ -111,18 +92,6 @@ class AgentInstaller(object):
     def restart_agent(self):
         self.run_daemon_command('restart')
 
-    def _install_agent_package(self):
-
-        self.logger.info('Downloading Agent Package from {0}'.format(
-            self.cloudify_agent['package_url']
-        ))
-        package_path = self.download(url=self.cloudify_agent['package_url'])
-        self.logger.info('Untaring Agent package...')
-        self.extract(archive=package_path,
-                     destination=self.cloudify_agent['agent_dir'])
-
-        self.run_agent_command('configure {0}'.format(self._configure_flags()))
-
     def _configure_flags(self):
         flags = ''
         if not self.cloudify_agent['windows']:
@@ -130,21 +99,6 @@ class AgentInstaller(object):
             if self.cloudify_agent.get('disable_requiretty'):
                 flags = '{0} --disable-requiretty'.format(flags)
         return flags
-
-    def download(self, url, destination=None):
-        local_cert_file = self.cloudify_agent['agent_rest_cert_path']
-        local_cert_file = os.path.expanduser(local_cert_file)
-
-        return self.runner.download(
-            url,
-            output_path=destination,
-            certificate_file=local_cert_file)
-
-    def move(self, source, target):
-        raise NotImplementedError('Must be implemented by sub-class')
-
-    def extract(self, archive, destination):
-        raise NotImplementedError('Must be implemented by sub-class')
 
     def create_custom_env_file_on_target(self, environment):
         raise NotImplementedError('Must be implemented by sub-class')
@@ -238,19 +192,6 @@ class WindowsInstallerMixin(AgentInstaller):
         return '"{0}\\Scripts\\cfy-agent"'.format(
             self.cloudify_agent['envdir'])
 
-    def extract(self, archive, destination):
-        destination = '{0}\\env'.format(destination.rstrip('\\ '))
-        if not archive.endswith('.exe'):
-            new_archive = '{0}.exe'.format(archive)
-            self.move(archive, new_archive)
-            archive = new_archive
-        self.logger.debug('Extracting {0} to {1}'
-                          .format(archive, destination))
-        cmd = '{0} /SILENT /VERYSILENT' \
-              ' /SUPPRESSMSGBOXES /DIR="{1}"'.format(archive, destination)
-        self.runner.run(cmd)
-        return destination
-
 
 class LinuxInstallerMixin(AgentInstaller):
 
@@ -276,9 +217,6 @@ class LocalInstallerMixin(AgentInstaller):
                           .format(environment))
         return utils.env_to_file(env_variables=environment, posix=posix)
 
-    def move(self, source, target):
-        shutil.move(source, target)
-
 
 class RemoteInstallerMixin(AgentInstaller):
 
@@ -289,28 +227,3 @@ class RemoteInstallerMixin(AgentInstaller):
             return self.runner.put_file(src=env_file)
         else:
             return None
-
-    def move(self, source, target):
-        self.runner.move(source, target)
-
-    def _create_cert_dir(self, cert_file):
-        """Create the directory containing the manager certificate.
-
-        For cross-platform compatibility, use python to create the directory.
-        """
-
-        try:
-            self.runner.python(
-                'import os',
-                'os.makedirs(os.path.dirname(os.path.expanduser(\'{0}\')))'
-                .format(cert_file))
-        except:
-            # an error was thrown - if the directory does exist, we assume
-            # it was a "directory already exists" error and continue.
-            exists = self.runner.python(
-                'import os',
-                'os.path.exists(os.path.dirname(os.path.expanduser(\'{0}\')))'
-                .format(cert_file))
-
-            if 'True' not in exists:
-                raise

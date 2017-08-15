@@ -16,12 +16,10 @@
 import winrm
 import ntpath
 
-from cloudify import ctx
 from cloudify.exceptions import CommandExecutionException
 from cloudify.exceptions import CommandExecutionError
 from cloudify.utils import CommandExecutionResponse
 from cloudify.utils import setup_logger
-from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
 
 from cloudify_agent.installer import utils
 from cloudify_agent.api import utils as api_utils
@@ -168,95 +166,6 @@ class WinRMRunner(object):
 
         return self.run('echo')
 
-    def download(self, url, output_path=None, certificate_file=None):
-
-        """
-        :param url: URL to the resource to download.
-        :param output_path: Local path the resource will be saved as.
-        :param certificate_file: a local cert file to use for SSL certificate
-               verification.
-
-        :return the destination path the url was downloaded to.
-        """
-
-        if output_path is None:
-            output_path = self.mktemp()
-
-        if certificate_file:
-            self.logger.info('Adding certificate to cert root: "{0}"'.format(
-                certificate_file))
-            cmd = """
-Import-Certificate -FilePath "{0}" -CertStoreLocation Cert:\LocalMachine\Root
-""".format(certificate_file)
-            self.run(cmd, powershell=True)
-
-        self.logger.info('Downloading {0}'.format(url))
-        cmd = """
-$webClient = New-Object System.Net.WebClient
-$webClient.Headers['{0}'] = '{1}'
-$webClient.Downloadfile('{2}', '{3}')""".format(
-            CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
-            ctx.rest_token,
-            url,
-            output_path)
-
-        # downloading agent package from the manager
-        self.run(cmd, powershell=True)
-
-        return output_path
-
-    def move(self, src, dst):
-
-        """
-        Moves item at <src> to <dst>.
-
-        :param src: Path to the source item.
-        :param dst: Path to the destination item.
-
-        :return a response object with information about the execution
-        :rtype WinRMCommandExecutionResponse.
-        """
-
-        return self.run(
-            '''@powershell -Command "Move-Item {0} {1}"'''
-            .format(src, dst))
-
-    def copy(self, src, dst, force=False):
-
-        """
-        Copies item at <src> to <dst>.
-
-        :param src: Path to the source item.
-        :param dst: Path to the destination item.
-        :param force: Creates missing path if needed.
-
-        :return a response object with information about the execution
-        :rtype WinRMCommandExecutionResponse.
-        """
-
-        if force:
-            return self.run(
-                '''@powershell -Command "Copy-Item -Recurse -Force {0} {1}"'''
-                .format(src, dst))
-        return self.run(
-            '''@powershell -Command "Copy-Item -Recurse {0} {1}"'''  # NOQA
-            .format(src, dst))
-
-    def exists(self, path):
-
-        """
-        Test if the given path exists.
-
-        :param path: The path to tests.
-
-        :return whether or not the path exists
-        """
-
-        response = self.run(
-            '''@powershell -Command "Test-Path {0}"'''  # NOQA
-            .format(path))
-        return response.std_out == 'True\r\n'
-
     def delete(self, path, ignore_missing=False):
 
         """
@@ -309,47 +218,6 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
         """
 
         return self.run('mkdir \"{0}\" -Force'.format(path), powershell=True)
-
-    def new_file(self, path):
-
-        """
-        Creates the path as a new file.
-
-        :param path: The file path to create.
-
-        :return a response object with information about the execution
-        :rtype WinRMCommandExecutionResponse.
-        """
-
-        return self.run(
-            '''@powershell -Command "New-Item {0} -type file"'''
-            .format(path))
-
-    def service_state(self, service_name):
-
-        """
-        Queries the state of the given service.
-
-        :param service_name: The service name to query.
-
-        :return
-
-            The state of the service.
-                - 'Running'
-                - 'Stopped'
-                - 'Start Pending'
-                - 'Continue Pending'
-                - 'Pause Pending'
-                - 'Paused'
-                - 'Unknown'
-
-        :return the state of the service.
-        """
-
-        response = self.run(
-            '''@powershell -Command "(Get-Service -Name {0}).Status"'''  # NOQA
-            .format(service_name))
-        return response.std_out.strip()
 
     def machine_distribution(self):
 
@@ -421,42 +289,6 @@ $webClient.Downloadfile('{2}', '{3}')""".format(
             for chunk in chunks
         ]
         return responses
-
-    def get(self, path):
-
-        """
-        Reads the contents of the file in the given path.
-
-        :param path: Path to a file.
-
-        :return the content of the file in the given path.
-        """
-
-        return self.run(
-            '''@powershell -Command "Get-Content {0}"'''
-            .format(path)).std_out
-
-    def unzip(self, archive, destination):
-
-        """
-        Un-tars an archive. internally this will use the 'tar' command line,
-        so any archive supported by it is ok.
-
-        :param archive: path to the archive.
-        :param destination: destination directory
-
-        :return a response object with information about the execution
-        :rtype WinRMCommandExecutionResponse.
-        """
-
-        self.run(
-            '''@powershell -Command "Add-Type -assembly \
-"system.io.compression.filesystem""'''
-        )
-        return self.run(
-            '''@powershell -Command \
-"[io.compression.zipfile]::ExtractToDirectory({0}, {1})"'''
-            .format(archive, destination))
 
     def put_file(self, src, dst=None):
 
