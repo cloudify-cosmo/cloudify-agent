@@ -41,7 +41,7 @@ source common_build_env.sh &&
 curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-packager/${CORE_BRANCH}/common/provision.sh -o ./common-provision.sh &&
 source common-provision.sh
 
-
+install_common_prereqs &&
 install_requirements &&
 download_wheels &&
 download_resources &&
