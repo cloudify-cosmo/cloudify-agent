@@ -1,5 +1,6 @@
 #! /bin/bash -e
 
+{% if install %}
 download()
 {
     if command -v wget > /dev/null 2>&1; then
@@ -40,6 +41,15 @@ add_ssl_cert()
 }
 export -f add_ssl_cert
 
+install_agent()
+{
+    su {{ conf.user }} --shell /bin/bash -c "set -e; add_ssl_cert"
+    su {{ conf.user }} --shell /bin/bash -c "set -e; download_and_extract_agent_package"
+}
+export -f install_agent
+{% endif %}
+
+{% if configure %}
 export_daemon_env()
 {
     local agent_env_bin={{ conf.envdir }}/bin
@@ -84,6 +94,27 @@ disable_requiretty()
 }
 export -f disable_requiretty
 
+configure_agent()
+{
+    su {{ conf.user }} --shell /bin/bash -c "set -e; configure_virtualenv"
+    disable_requiretty
+}
+{% endif %}
+
+{% if start %}
+create_custom_env_file()
+{
+    {% if custom_env is not none %}
+        echo "#! /bin/bash" >> {{ custom_env_path }}
+        {% for env_key, env_value in custom_env.iteritems() %}
+            echo "export {{ env_key }}={{ env_value }}" >> {{ custom_env_path }}
+        {% endfor %}
+    {% else %}
+        echo "No custom env configured"
+    {% endif %}
+}
+export -f create_custom_env_file
+
 start_daemon()
 {
     export_daemon_env
@@ -93,21 +124,20 @@ start_daemon()
 }
 export -f start_daemon
 
-install_agent()
+start_agent()
 {
-    su {{ conf.user }} --shell /bin/bash -c "set -e; add_ssl_cert"
-    su {{ conf.user }} --shell /bin/bash -c "set -e; download_and_extract_agent_package"
-    su {{ conf.user }} --shell /bin/bash -c "set -e; configure_virtualenv"
-    disable_requiretty
-}
-export -f install_agent
-
-install_and_start_agent()
-{
-    install_agent
     su {{ conf.user }} --shell /bin/bash -c "set -e; create_custom_env_file"
     su {{ conf.user }} --shell /bin/bash -c "set -e; start_daemon"
 }
-export -f install_and_start_agent
+export -f start_agent
+{% endif %}
 
-install_and_start_agent
+{% if install %}
+install_agent
+{% endif %}
+{% if configure %}
+configure_agent
+{% endif %}
+{% if start %}
+start_agent
+{% endif %}
