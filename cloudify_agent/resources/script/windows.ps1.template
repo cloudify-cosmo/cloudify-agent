@@ -59,7 +59,7 @@ function ConfigureAgent()
 }
 {% endif %}
 
-{% if install %}
+{% if start %}
 function StartAgent()
 {
     cfy-agent daemons create {{ pm_options }}
