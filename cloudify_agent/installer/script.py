@@ -75,7 +75,10 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             ssl_cert_content=local_rest_content,
             ssl_cert_path=remote_ssl_cert_path,
             auth_token_header=CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
-            auth_token_value=ctx.rest_token
+            auth_token_value=ctx.rest_token,
+            install=True,
+            configure=True,
+            start=True,
         )
 
     def _get_local_cert_content(self):
