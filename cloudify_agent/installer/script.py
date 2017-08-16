@@ -57,7 +57,9 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         :rtype: str
         """
         template = jinja2.Template(
-            utils.get_resource(self.install_script_template)
+            utils.get_resource(self.install_script_template),
+            trim_blocks=True,
+            lstrip_blocks=True,
         )
         # Called before creating the agent env to populate all the variables
         local_rest_content = self._get_local_cert_content()
