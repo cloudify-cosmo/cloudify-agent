@@ -64,20 +64,22 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
             dist = platform.dist()
             package_name = '{0}-{1}-agent.tar.gz'.format(dist[0].lower(),
                                                          dist[2].lower())
-        agent_dir = os.path.join(self.temp_folder, 'packages', 'agents')
+        resources_dir = os.path.join(self.temp_folder, 'resources')
+        agent_dir = os.path.join(resources_dir, 'packages', 'agents')
+        agent_script_dir = os.path.join(resources_dir, 'cloudify_agent')
         os.makedirs(agent_dir)
+        os.makedirs(agent_script_dir)
+        os.makedirs(os.path.join(self.temp_folder, 'cloudify'))
+
         agent_path = os.path.join(agent_dir, package_name)
         shutil.copyfile(agent_package.get_package_path(), agent_path)
-        resources_dir = os.path.join(self.temp_folder, 'cloudify')
-        agent_script_dir = os.path.join(self.temp_folder, 'cloudify_agent')
-        os.makedirs(resources_dir)
-        os.makedirs(agent_script_dir)
+
         new_env = {
             constants.REST_HOST_KEY: 'localhost',
             constants.MANAGER_FILE_SERVER_URL_KEY:
                 'http://localhost:{0}'.format(port),
-            constants.MANAGER_FILE_SERVER_ROOT_KEY: self.temp_folder,
-            constants.REST_PORT_KEY: '80',
+            constants.MANAGER_FILE_SERVER_ROOT_KEY: resources_dir,
+            constants.REST_PORT_KEY: str(port),
         }
         with patch.dict(os.environ, new_env):
             try:
@@ -102,13 +104,19 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
         def http_rest_host():
             return os.environ[constants.MANAGER_FILE_SERVER_URL_KEY]
 
+        # Necessary to patch, because by default https will be used
+        def file_server_url(*args, **kwargs):
+            return '{0}/resources'.format(http_rest_host())
+
         with self._manager_env():
-            env = local.init_env(name=self._testMethodName,
-                                 blueprint_path=blueprint_path,
-                                 inputs=inputs)
-            with patch('cloudify_agent.operations._http_rest_host',
-                       http_rest_host):
-                env.execute('install', task_retries=0)
+            with patch('cloudify_agent.api.utils.get_manager_file_server_url',
+                       file_server_url):
+                env = local.init_env(name=self._testMethodName,
+                                     blueprint_path=blueprint_path,
+                                     inputs=inputs)
+                with patch('cloudify_agent.operations._http_rest_host',
+                           http_rest_host):
+                    env.execute('install', task_retries=0)
             self.assert_daemon_alive(name=agent_name)
             agent_dict = self.get_agent_dict(env, 'new_agent_host')
             agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])

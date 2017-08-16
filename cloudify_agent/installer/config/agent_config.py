@@ -31,6 +31,8 @@ from cloudify import utils as cloudify_utils
 from .installer_config import create_runner, get_installer
 from .config_errors import raise_missing_attribute, raise_missing_attributes
 
+AGENT_CONFIG_PATH = 'AGENT_CONFIG_PATH'
+
 
 def create_agent_config_and_installer(func=None,
                                       validate_connection=True,
@@ -86,6 +88,7 @@ class CloudifyAgentConfig(dict):
             self.update(_get_node_properties())         # node props are 3rd
         self.update(_get_runtime_properties())      # runtime props are 2nd
         self.update(_get_agent_inputs(kwargs))      # inputs are 1st in order
+        self.update(_get_config_from_file())        # config file is 0th
 
     def set_default_values(self):
         self._set_process_management()
@@ -282,9 +285,11 @@ class CloudifyAgentConfig(dict):
                 )
 
         if agent_package_name:
+            file_server_url = agent_utils.get_manager_file_server_url(
+                self['rest_host'], self['rest_port']
+            )
             self['package_url'] = posix_join(
-                cloudify_utils.get_manager_file_server_url(),
-                'packages', 'agents', agent_package_name
+                file_server_url, 'packages', 'agents', agent_package_name
             )
 
     def _set_agent_distro(self, runner):
@@ -306,6 +311,11 @@ class CloudifyAgentConfig(dict):
         elif self['remote_execution']:
             distro = runner.machine_distribution()
             self['distro_codename'] = distro[2].lower()
+
+
+def _get_config_from_file():
+    path = os.environ.get(AGENT_CONFIG_PATH)
+    return agent_utils.json_load(path) if path else {}
 
 
 def _get_agent_inputs(params):

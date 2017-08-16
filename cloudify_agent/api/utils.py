@@ -550,3 +550,8 @@ def _parse_cluster_nodes(ctx, param, value):
     """Parsing callback for the --cluster option for cfy-agent"""
     if value:
         return json_loads(base64.b64decode(value))
+
+
+def get_manager_file_server_url(hostname, port):
+    scheme = 'http' if port == 80 else 'https'
+    return '{0}://{1}:{2}/resources'.format(scheme, hostname, port)
