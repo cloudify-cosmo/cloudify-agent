@@ -122,12 +122,18 @@ start_agent()
 export -f start_agent
 {% endif %}
 
-{% if install %}
-install_agent
-{% endif %}
-{% if configure %}
-configure_agent
-{% endif %}
-{% if start %}
-start_agent
-{% endif %}
+main()
+{
+    {% if install %}
+    install_agent
+    {% endif %}
+    {% if configure %}
+    configure_agent
+    {% endif %}
+    {% if start %}
+    start_agent
+    {% endif %}
+}
+export -f main
+
+main

@@ -69,12 +69,17 @@ function StartAgent()
 {% endif %}
 
 
-{% if install %}
-InstallAgent
-{% endif %}
-{% if configure %}
-ConfigureAgent
-{% endif %}
-{% if start %}
-StartAgent
-{% endif %}
+function Main()
+{
+    {% if install %}
+    InstallAgent
+    {% endif %}
+    {% if configure %}
+    ConfigureAgent
+    {% endif %}
+    {% if start %}
+    StartAgent
+    {% endif %}
+}
+
+Main
