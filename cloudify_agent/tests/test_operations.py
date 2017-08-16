@@ -64,7 +64,9 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
             dist = platform.dist()
             package_name = '{0}-{1}-agent.tar.gz'.format(dist[0].lower(),
                                                          dist[2].lower())
-        agent_dir = os.path.join(self.temp_folder, 'packages', 'agents')
+        agent_dir = os.path.join(
+            self.temp_folder, 'resources', 'packages', 'agents'
+        )
         os.makedirs(agent_dir)
         agent_path = os.path.join(agent_dir, package_name)
         shutil.copyfile(agent_package.get_package_path(), agent_path)

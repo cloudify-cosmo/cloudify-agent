@@ -69,18 +69,7 @@ class TestConfiguration(BaseTest):
             'rest_token': 'test_token',
             'rest_tenant': {}
         }
-        if os.name == 'posix':
-            distro = platform.dist()[0].lower()
-            distro_codename = platform.dist()[2].lower()
-            expected['distro'] = platform.dist()[0].lower()
-            expected['distro_codename'] = platform.dist()[2].lower()
-            expected['package_url'] = 'localhost/packages/agents/' \
-                                      '{0}-{1}-agent.tar.gz'\
-                .format(distro, distro_codename)
-        else:
-            expected['package_url'] = 'localhost/packages/agents/' \
-                                      'cloudify-windows-agent.exe'
-
+        self._add_distro_package_url(expected, 80)
         self.maxDiff = None
         self.assertDictEqual(expected, cloudify_agent)
 
@@ -127,20 +116,25 @@ class TestConfiguration(BaseTest):
             'rest_token': 'test_token',
             'rest_tenant': {}
         }
+        self._add_distro_package_url(expected, 443)
+
+        self.maxDiff = None
+        self.assertDictEqual(expected, cloudify_agent)
+
+    @staticmethod
+    def _add_distro_package_url(expected, rest_port):
+        scheme = 'http' if rest_port == 80 else 'https'
+        base_url = '{0}://localhost:{1}'.format(scheme, rest_port)
+        agent_package_url = '{0}/resources/packages/agents'.format(base_url)
         if os.name == 'posix':
             distro = platform.dist()[0].lower()
             distro_codename = platform.dist()[2].lower()
             expected['distro'] = platform.dist()[0].lower()
             expected['distro_codename'] = platform.dist()[2].lower()
-            expected['package_url'] = 'localhost/packages/agents/' \
-                                      '{0}-{1}-agent.tar.gz' \
-                .format(distro, distro_codename)
+            package = '{0}-{1}-agent.tar.gz'.format(distro, distro_codename)
         else:
-            expected['package_url'] = 'localhost/packages/agents/' \
-                                      'cloudify-windows-agent.exe'
-
-        self.maxDiff = None
-        self.assertDictEqual(expected, cloudify_agent)
+            package = 'cloudify-windows-agent.exe'
+        expected['package_url'] = '{0}/{1}'.format(agent_package_url, package)
 
     @patch('cloudify_agent.installer.config.agent_config.ctx',
            mock_context(
