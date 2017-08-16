@@ -59,15 +59,19 @@ class BaseInstallScriptTest(BaseTest):
             cloudify_agent=self.input_cloudify_agent
         )
         install_script = script_builder.install_script()
+
+        # Remove last line where main function is executed
         install_script = '\n'.join(install_script.split('\n')[:-1])
+
         if self.windows:
             install_script_path = os.path.abspath('install_script.ps1')
         else:
             install_script_path = os.path.abspath('install_script.sh')
         with open(install_script_path, 'w') as f:
             f.write(install_script)
-            for command in commands:
-                f.write('{0}\n'.format(command))
+            # Inject test commands
+            f.write('\n{0}'.format('\n'.join(commands)))
+
         if not self.windows:
             os.chmod(install_script_path, 0755)
         if self.windows:
@@ -126,7 +130,7 @@ class TestLinuxInstallScript(BaseInstallScriptTest):
         self.input_cloudify_agent.update({'env': {'one': 'one'}})
         self._run('create_custom_env_file')
         with open('custom_agent_env.sh') as f:
-            self.assertIn('export one=one', f.read())
+            self.assertIn('export one="one"', f.read())
 
     def test_no_create_custom_env_file(self):
         self._run('create_custom_env_file')

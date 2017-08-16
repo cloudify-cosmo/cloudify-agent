@@ -2,6 +2,7 @@
 
 $ErrorActionPreference = "Stop"
 
+{% if install %}
 function Download($Url, $OutputPath)
 {
     # Make sure the output directory exists
@@ -20,14 +21,16 @@ function AddSSLCert()
     New-Item "{{ ssl_cert_path }}" -type file -force -value "{{ ssl_cert_content }}"
 }
 
-function DownloadAndExtractAgentPackage()
+function InstallAgent()
 {
     AddSSLCert
     Download "{{ conf.package_url }}" "{{ conf.basedir }}\cloudify-windows-agent.exe"
     # This call is not blocking so we pipe the output to null to make it blocking
     & "{{ conf.basedir }}\cloudify-windows-agent.exe" /SILENT /VERYSILENT /SUPPRESSMSGBOXES /DIR="{{ conf.envdir }}" | Out-Null
 }
+{% endif %}
 
+{% if configure %}
 function ExportDaemonEnv()
 {
     $env:Path = "{{ conf.envdir }}\Scripts" + ";" + $env:Path
@@ -50,23 +53,33 @@ function CreateCustomEnvFile()
 
 function ConfigureAgent()
 {
+    ExportDaemonEnv
+    CreateCustomEnvFile
     cfy-agent configure {{ configure_flags }}
 }
+{% endif %}
 
-function StartDaemon()
+{% if start %}
+function StartAgent()
 {
     cfy-agent daemons create {{ pm_options }}
     cfy-agent daemons configure
     cfy-agent daemons start
 }
+{% endif %}
 
-function InstallAgent()
+
+function Main()
 {
-    DownloadAndExtractAgentPackage
-    ExportDaemonEnv
-    CreateCustomEnvFile
+    {% if install %}
+    InstallAgent
+    {% endif %}
+    {% if configure %}
     ConfigureAgent
-    StartDaemon
+    {% endif %}
+    {% if start %}
+    StartAgent
+    {% endif %}
 }
 
-InstallAgent
+Main
