@@ -66,8 +66,7 @@ class BaseInstallScriptTest(BaseTest):
             install_script_path = os.path.abspath('install_script.sh')
         with open(install_script_path, 'w') as f:
             f.write(install_script)
-            for command in commands:
-                f.write('{0}\n'.format(command))
+            f.write('\n{0}'.format('\n'.join(commands)))
         if not self.windows:
             os.chmod(install_script_path, 0755)
         if self.windows:
