@@ -87,6 +87,7 @@ configure_agent()
     su {{ conf.user }} --shell /bin/bash -c "set -e; configure_virtualenv"
     disable_requiretty
 }
+export -f configure_agent
 {% endif %}
 
 {% if start %}
