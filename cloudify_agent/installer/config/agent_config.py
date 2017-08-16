@@ -315,7 +315,7 @@ class CloudifyAgentConfig(dict):
 
 def _get_config_from_file():
     path = os.environ.get(AGENT_CONFIG_PATH, '/opt/manager/agent_config.json')
-    return agent_utils.json_load(path) if path else {}
+    return agent_utils.json_load(path) if path and os.path.exists(path) else {}
 
 
 def _get_agent_inputs(params):
