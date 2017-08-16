@@ -62,18 +62,6 @@ export_daemon_env()
 }
 export -f export_daemon_env
 
-create_custom_env_file()
-{
-    {% if custom_env is not none %}
-        {% for env_key, env_value in custom_env.iteritems() %}
-            echo "export {{ env_key }}={{ env_value }}" >> {{ custom_env_path }}
-        {% endfor %}
-    {% else %}
-        echo "No custom env configured"
-    {% endif %}
-}
-export -f create_custom_env_file
-
 configure_virtualenv()
 {
     export_daemon_env
