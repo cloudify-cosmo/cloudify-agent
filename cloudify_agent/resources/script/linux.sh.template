@@ -93,10 +93,12 @@ configure_agent()
 create_custom_env_file()
 {
     {% if custom_env is not none %}
-        echo "#! /bin/bash" >> {{ custom_env_path }}
-        {% for env_key, env_value in custom_env.iteritems() %}
-            echo "export {{ env_key }}={{ env_value }}" >> {{ custom_env_path }}
-        {% endfor %}
+    cat <<EOF > {{ custom_env_path }}
+#!/bin/bash
+{% for env_key, env_value in custom_env.iteritems() %}
+export {{ env_key }}="{{ env_value }}"
+{% endfor %}
+EOF
     {% else %}
         echo "No custom env configured"
     {% endif %}
