@@ -51,10 +51,18 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             self.init_script_filename = '{0}.sh'.format(uuid.uuid4())
             self.custom_env_path = '{0}/custom_agent_env.sh'.format(basedir)
 
-    def install_script(self):
+    def install_script(self, install=True):
         """Render the agent installation script.
+
+        :param install:
+            Render install part.
+
+            If set to false, the agent needs to be installed externally, but
+            still it will be configured and started using this script.
+        :type install: bool
         :return: Install script content
         :rtype: str
+
         """
         template = jinja2.Template(
             utils.get_resource(self.install_script_template),
@@ -78,7 +86,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             ssl_cert_path=remote_ssl_cert_path,
             auth_token_header=CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
             auth_token_value=ctx.rest_token,
-            install=True,
+            install=install,
             configure=True,
             start=True,
         )
@@ -183,9 +191,25 @@ def init_script_download_link(cloudify_agent=None, **_):
 
 
 @contextmanager
-def install_script_path(cloudify_agent):
+def install_script_path(cloudify_agent, install=True):
+    """Render agent installation script to temporary location.
+
+    When used as context manager, the agent installation script location will
+    be returned when entering the context and the script will be automatically
+    removed when exiting from the context.
+
+    :param cloudify_agent: Agent configuration
+    :type cloudify_agent: dict(str)
+    :param install: bool
+    :type install:
+        Render install part of the script.
+
+        If set to false, the agent needs to be installed externally, but still
+        it will be configured and started using the script.
+
+    """
     script_builder = AgentInstallationScriptBuilder(cloudify_agent)
-    script = script_builder.install_script()
+    script = script_builder.install_script(install)
     tempdir = tempfile.mkdtemp()
     script_path = os.path.join(tempdir, script_builder.install_script_filename)
     with open(script_path, 'w') as f:
