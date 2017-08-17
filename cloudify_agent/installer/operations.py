@@ -26,9 +26,23 @@ from .config.agent_config import create_agent_config_and_installer
 
 @operation
 @create_agent_config_and_installer(new_agent_config=True)
-def create(cloudify_agent, installer, **_):
+def create(cloudify_agent, installer, install=True, **_):
+    """Create agent operation.
+
+    :param cloudify_agent: Agent configuration
+    :type cloudify_agent: dict
+    :param installer: Agent installer for the right OS
+    :type installer: :class:`cloudify_agent.installer.AgentInstaller`
+    :param install:
+        Whether to install agent or not.
+
+        When set to false, the agent needs to be installed externally and the
+        installer just takes care of the configuration and starting the daemon.
+    :type: install: bool
+
+    """
     if cloudify_agent['remote_execution']:
-        with install_script_path(cloudify_agent) as script_path:
+        with install_script_path(cloudify_agent, install) as script_path:
             ctx.logger.info('Creating Agent {0}'.format(
                 cloudify_agent['name']))
             try:
