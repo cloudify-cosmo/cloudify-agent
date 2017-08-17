@@ -191,9 +191,25 @@ def init_script_download_link(cloudify_agent=None, **_):
 
 
 @contextmanager
-def install_script_path(cloudify_agent):
+def install_script_path(cloudify_agent, install=True):
+    """Render agent installation script to temporary location.
+
+    When used as context manager, the agent installation script location will
+    be returned when entering the context and the script will be automatically
+    removed when exiting from the context.
+
+    :param cloudify_agent: Agent configuration
+    :type cloudify_agent: dict(str)
+    :param install: bool
+    :type install:
+        Render install part of the script.
+
+        If set to false, the agent needs to be installed externally, but still
+        it will be configured and started using the script.
+
+    """
     script_builder = AgentInstallationScriptBuilder(cloudify_agent)
-    script = script_builder.install_script()
+    script = script_builder.install_script(install)
     tempdir = tempfile.mkdtemp()
     script_path = os.path.join(tempdir, script_builder.install_script_filename)
     with open(script_path, 'w') as f:
