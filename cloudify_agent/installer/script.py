@@ -51,10 +51,18 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             self.init_script_filename = '{0}.sh'.format(uuid.uuid4())
             self.custom_env_path = '{0}/custom_agent_env.sh'.format(basedir)
 
-    def install_script(self):
+    def install_script(self, install=True):
         """Render the agent installation script.
+
+        :param install:
+            Render install part.
+
+            If set to false, the agent needs to be installed externally, but
+            still it will be configured and started using this script.
+        :type install: bool
         :return: Install script content
         :rtype: str
+
         """
         template = jinja2.Template(
             utils.get_resource(self.install_script_template),
@@ -78,7 +86,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             ssl_cert_path=remote_ssl_cert_path,
             auth_token_header=CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
             auth_token_value=ctx.rest_token,
-            install=True,
+            install=install,
             configure=True,
             start=True,
         )
