@@ -16,6 +16,7 @@
 import os
 import jinja2
 import uuid
+import subprocess
 import tempfile
 from contextlib import contextmanager
 from posixpath import join as url_join
@@ -122,6 +123,13 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         )
         with open(script_path, 'w') as script_file:
             script_file.write(script_content)
+
+        # Create transient systemd timer to remove file after a timeout
+        # TODO: Make timeout configurable
+        subprocess.Popen([
+            'sudo', '/usr/bin/systemd-run', '--on-active=5m',
+            'rm', script_path,
+        ])
 
         return script_path, script_url
 
