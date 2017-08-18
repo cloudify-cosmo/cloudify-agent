@@ -127,7 +127,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         # Create transient systemd timer to remove file after a timeout
         # TODO: Make timeout configurable
         subprocess.Popen([
-            'sudo', '/usr/bin/systemd-run', '--on-active=5m',
+            '/usr/bin/systemd-run', '--user', '--on-active=5m',
             'rm', script_path,
         ])
 
