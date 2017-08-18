@@ -128,7 +128,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         # TODO: Make timeout configurable
         subprocess.Popen([
             '/usr/bin/systemd-run', '--user', '--on-active=5m',
-            'rm', script_path,
+            'rm', '-f', script_path,
         ])
 
         return script_path, script_url
