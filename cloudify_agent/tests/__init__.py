@@ -66,6 +66,14 @@ LeQrlI6ZGJVyqflWbTF7pos1V7/TAW6kDlUK
         return f.name
 
     @staticmethod
+    def _clean_cert(cert_content):
+        """ Strip any whitespaces, and normalize the string on windows """
+
+        cert_content = cert_content.strip()
+        cert_content = cert_content.replace('\r\n', '\n').replace('\r', '\n')
+        return cert_content
+
+    @staticmethod
     def verify_remote_cert(agent_dir):
         agent_cert_path = os.path.join(
             os.path.expanduser(agent_dir),
@@ -73,8 +81,9 @@ LeQrlI6ZGJVyqflWbTF7pos1V7/TAW6kDlUK
             AGENT_SSL_CERT_FILENAME
         )
         with open(agent_cert_path, 'r') as f:
-            cert_content = f.read().strip()
+            cert_content = f.read()
 
+        cert_content = _AgentSSLCert._clean_cert(cert_content)
         assert cert_content == _AgentSSLCert.DUMMY_CERT
 
 

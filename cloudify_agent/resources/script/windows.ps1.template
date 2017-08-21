@@ -2,28 +2,37 @@
 
 $ErrorActionPreference = "Stop"
 
+{% if add_ssl_cert %}
+function AddSSLCert()
+{
+    # Make sure the output directory exists
+    New-Item -ItemType directory -Force -Path (Split-Path "{{ ssl_cert_path }}")
+
+    # Create a new file with the certificate content
+    New-Item "{{ ssl_cert_path }}" -type file -force -value "{{ ssl_cert_content }}"
+
+    # Add the certificate to the root cert store
+    Import-Certificate -FilePath "{{ ssl_cert_path }}" -CertStoreLocation Cert:\LocalMachine\Root
+}
+{% endif %}
+
+
 {% if install %}
 function Download($Url, $OutputPath)
 {
     # Make sure the output directory exists
     New-Item -ItemType directory -Force -Path (Split-Path $OutputPath)
 
-    # Add the certificate to the root cert store
-    Import-Certificate -FilePath "{{ ssl_cert_path }}" -CertStoreLocation Cert:\LocalMachine\Root
-
     $WebClient = New-Object System.Net.WebClient
     $WebClient.Headers.add('{{ auth_token_header }}', '{{ auth_token_value }}')
     $WebClient.DownloadFile("$Url", "$OutputPath")
 }
 
-function AddSSLCert()
-{
-    New-Item "{{ ssl_cert_path }}" -type file -force -value "{{ ssl_cert_content }}"
-}
-
 function InstallAgent()
 {
+    {% if add_ssl_cert %}
     AddSSLCert
+    {% endif %}
     Download "{{ conf.package_url }}" "{{ conf.basedir }}\cloudify-windows-agent.exe"
     # This call is not blocking so we pipe the output to null to make it blocking
     & "{{ conf.basedir }}\cloudify-windows-agent.exe" /SILENT /VERYSILENT /SUPPRESSMSGBOXES /DIR="{{ conf.envdir }}" | Out-Null
