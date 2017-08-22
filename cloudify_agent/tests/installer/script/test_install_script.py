@@ -37,22 +37,26 @@ class BaseInstallScriptTest(BaseTest):
 
     def setUp(self):
         super(BaseInstallScriptTest, self).setUp()
-        ctx = MockCloudifyContext(
-            node_id='d',
-            properties={'agent_config': {
+        self._set_mock_context()
+        self.addCleanup(current_ctx.clear)
+        self.input_cloudify_agent = {
+            'broker_ip': 'localhost',
+            'ssl_cert_path': self._rest_cert_path
+        }
+
+    def _set_mock_context(self, **override_properties):
+        node_properties = {
+            'agent_config': {
                 'user': self.username,
                 'install_method': 'init_script',
                 'rest_host': 'localhost',
                 'windows': self.windows,
                 'basedir': self.temp_folder
-            }})
-        current_ctx.set(ctx)
-
-        self.addCleanup(lambda: current_ctx.clear())
-        self.input_cloudify_agent = {
-            'broker_ip': 'localhost',
-            'ssl_cert_path': self._rest_cert_path
+            }
         }
+        node_properties['agent_config'].update(**override_properties)
+        ctx = MockCloudifyContext(node_id='d', properties=node_properties)
+        current_ctx.set(ctx)
 
     def _get_install_script(self, add_ssl_cert=True):
         script_builder = script._get_script_builder(
@@ -149,6 +153,15 @@ class TestLinuxInstallScript(BaseInstallScriptTest):
         install_script = self._get_install_script(add_ssl_cert=False)
         self.assertNotIn('add_ssl_cert', install_script)
 
+    def test_install_is_rendered_by_default(self):
+        install_script = self._get_install_script()
+        self.assertIn('install_agent', install_script)
+
+    def test_install_not_rendered_in_provided_mode(self):
+        self._set_mock_context(install_method='provided')
+        install_script = self._get_install_script()
+        self.assertNotIn('install_agent', install_script)
+
 
 @only_os('nt')
 class TestWindowsInstallScript(BaseInstallScriptTest):
@@ -176,3 +189,8 @@ class TestWindowsInstallScript(BaseInstallScriptTest):
     def test_add_ssl_func_not_rendered(self):
         install_script = self._get_install_script(add_ssl_cert=False)
         self.assertNotIn('AddSSLCert', install_script)
+
+    def test_install_not_rendered_in_provided_mode(self):
+        self._set_mock_context(install_method='provided')
+        install_script = self._get_install_script()
+        self.assertNotIn('InstallAgent', install_script)

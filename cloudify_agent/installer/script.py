@@ -21,7 +21,8 @@ from contextlib import contextmanager
 from posixpath import join as url_join
 
 from cloudify import ctx, utils as cloudify_utils
-from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
+from cloudify.constants import (CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
+                                AGENT_INSTALL_METHOD_PROVIDED)
 
 from cloudify_agent.api import utils
 from cloudify_agent.installer import AgentInstaller
@@ -56,11 +57,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         :return: Install script content
         :rtype: str
         """
-        template = jinja2.Template(
-            utils.get_resource(self.install_script_template),
-            trim_blocks=True,
-            lstrip_blocks=True,
-        )
+        template = self._get_template(self.install_script_template)
         # Called before creating the agent env to populate all the variables
         cert_content = self._get_local_cert_content() if add_ssl_cert else ''
         remote_ssl_cert_path = self._get_remote_ssl_cert_path()
@@ -78,7 +75,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             ssl_cert_path=remote_ssl_cert_path,
             auth_token_header=CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
             auth_token_value=ctx.rest_token,
-            install=True,
+            install=self._should_install_agent,
             configure=True,
             start=True,
             add_ssl_cert=add_ssl_cert
@@ -95,6 +92,27 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             return
         self.custom_env = environment
         return self.custom_env_path
+
+    @staticmethod
+    def _get_template(template_filename):
+        return jinja2.Template(
+            utils.get_resource(template_filename),
+            trim_blocks=True,
+            lstrip_blocks=True,
+        )
+
+    @property
+    def _should_install_agent(self):
+        """
+        The agent should be configured and started, but not installed when
+        running in provided mode (as it is up to the user to install it)
+        :return False if agent is installed in "provided" mode, True o/w
+        """
+
+        install_method = cloudify_utils.internal.get_install_method(
+            ctx.node.properties
+        )
+        return install_method != AGENT_INSTALL_METHOD_PROVIDED
 
     def _generate_script_path_and_url(self, script_filename):
         """
@@ -153,9 +171,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         :rtype: str
         """
         _, script_url = self.install_script_download_link(add_ssl_cert=False)
-        template = jinja2.Template(
-            utils.get_resource(self.init_script_template)
-        )
+        template = self._get_template(self.init_script_template)
         use_sudo = self.cloudify_agent.get('install_with_sudo')
         sudo = 'sudo' if use_sudo else ''
         return template.render(
