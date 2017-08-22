@@ -51,7 +51,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             self.init_script_filename = '{0}.sh'.format(uuid.uuid4())
             self.custom_env_path = '{0}/custom_agent_env.sh'.format(basedir)
 
-    def install_script(self):
+    def install_script(self, add_ssl_cert=True):
         """Render the agent installation script.
         :return: Install script content
         :rtype: str
@@ -62,7 +62,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             lstrip_blocks=True,
         )
         # Called before creating the agent env to populate all the variables
-        local_rest_content = self._get_local_cert_content()
+        cert_content = self._get_local_cert_content() if add_ssl_cert else ''
         remote_ssl_cert_path = self._get_remote_ssl_cert_path()
         # Called before rendering the template to populate all the variables
         daemon_env = self._create_agent_env()
@@ -74,13 +74,14 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             custom_env_path=self.custom_env_path,
             file_server_url=cloudify_utils.get_manager_file_server_url(),
             configure_flags=self._configure_flags(),
-            ssl_cert_content=local_rest_content,
+            ssl_cert_content=cert_content,
             ssl_cert_path=remote_ssl_cert_path,
             auth_token_header=CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
             auth_token_value=ctx.rest_token,
             install=True,
             configure=True,
             start=True,
+            add_ssl_cert=add_ssl_cert
         )
 
     def _get_local_cert_content(self):
@@ -95,7 +96,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         self.custom_env = environment
         return self.custom_env_path
 
-    def _get_script_path_and_url(self, script_filename):
+    def _generate_script_path_and_url(self, script_filename):
         """
         Calculate install script's local path and download link
         :return: A tuple with:
@@ -109,31 +110,6 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         script_url = url_join(self.file_server_url, script_relpath)
         return script_path, script_url
 
-    def _script_download_link(self, is_install_script=True):
-        if is_install_script:
-            script_filename = self.install_script_filename
-            script_content = self.install_script()
-        else:
-            script_filename = self.init_script_filename
-            script_content = self.init_script()
-
-        script_path, script_url = self._get_script_path_and_url(
-            script_filename
-        )
-        with open(script_path, 'w') as script_file:
-            script_file.write(script_content)
-
-        return script_path, script_url
-
-    def install_script_download_link(self):
-        """Get agent installation script and write it to file server location.
-        :return: A tuple with:
-        1. Path where the install script resides in the file server
-        2. URL where the install script can be downloaded
-        :rtype: (str, str)
-        """
-        return self._script_download_link(is_install_script=True)
-
     def init_script_download_link(self):
         """Get agent init script and write it to file server location.
         :return: A tuple with:
@@ -141,7 +117,31 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         2. URL where the install script can be downloaded
         :rtype: (str, str)
         """
-        return self._script_download_link(is_install_script=False)
+        script_filename = self.init_script_filename
+        script_content = self.init_script()
+        return self._get_script_path_and_url(script_filename, script_content)
+
+    def install_script_download_link(self, add_ssl_cert=True):
+        """Get agent installation script and write it to file server location.
+        :return: A tuple with:
+        1. Path where the install script resides in the file server
+        2. URL where the install script can be downloaded
+        :rtype: (str, str)
+        """
+        script_filename = self.install_script_filename
+        script_content = self.install_script(add_ssl_cert=add_ssl_cert)
+        return self._get_script_path_and_url(script_filename, script_content)
+
+    def _get_script_path_and_url(self, script_filename, script_content):
+        """Accept filename and content, and write it to the fileserver"""
+
+        script_path, script_url = self._generate_script_path_and_url(
+            script_filename
+        )
+        with open(script_path, 'w') as script_file:
+            script_file.write(script_content)
+
+        return script_path, script_url
 
     def init_script(self):
         """Get install script downloader.
@@ -152,13 +152,18 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         :return: Install script downloader content
         :rtype: str
         """
-        _, script_url = self.install_script_download_link()
+        _, script_url = self.install_script_download_link(add_ssl_cert=False)
         template = jinja2.Template(
             utils.get_resource(self.init_script_template)
         )
         use_sudo = self.cloudify_agent.get('install_with_sudo')
         sudo = 'sudo' if use_sudo else ''
-        return template.render(link=script_url, sudo=sudo)
+        return template.render(
+            link=script_url,
+            sudo=sudo,
+            ssl_cert_content=self._get_local_cert_content(),
+            ssl_cert_path=self._get_remote_ssl_cert_path()
+        )
 
 
 @create_agent_config_and_installer(validate_connection=False,

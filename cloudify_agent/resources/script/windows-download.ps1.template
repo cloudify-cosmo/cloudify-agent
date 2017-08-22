@@ -1,23 +1,27 @@
 #ps1_sysnative
 
-function Download($URL)
+function AddSSLCert()
 {
-    [Net.HttpWebRequest] $req = [Net.WebRequest]::create($URL)
+    # Make sure the cert directory exists
+    New-Item -ItemType directory -Force -Path (Split-Path "{{ ssl_cert_path }}")
 
-    # Downloading without certificate validation, because at this point we
-    # don't have the SSL certificates
-    $req.ServerCertificateValidationCallback = { $true; };
+    # Create a new file with the certificate content
+    New-Item "{{ ssl_cert_path }}" -type file -force -value "{{ ssl_cert_content }}"
 
-    [Net.HttpWebResponse] $result = $req.GetResponse()
-    [IO.Stream] $stream = $result.GetResponseStream()
-    [IO.StreamReader] $reader = New-Object IO.StreamReader($stream)
-    [string] $output = $reader.readToEnd()
-    $stream.flush()
-    $stream.close()
-
-    # Download into the current directory
-    New-Item -Path . -Name "agent_installer.ps1" -type file -force -value "$output"
+    # Add the certificate to the root cert store
+    Import-Certificate -FilePath "{{ ssl_cert_path }}" -CertStoreLocation Cert:\LocalMachine\Root
 }
 
-Download "{{ link }}"
+function Download()
+{
+    # Download install script into the current dir
+    $WebClient = New-Object System.Net.WebClient
+    $WebClient.DownloadFile("{{ link }}", "agent_installer.ps1")
+}
+
+AddSSLCert
+Download
+
 .\agent_installer.ps1
+
+Remove-Item .\agent_installer.ps1 -Force

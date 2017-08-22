@@ -1,5 +1,15 @@
 #! /bin/bash -e
 
+{% if add_ssl_cert %}
+add_ssl_cert()
+{
+    # Create all the directories in the path to the cert file
+    mkdir -p $(dirname {{ ssl_cert_path }})
+    echo "{{ ssl_cert_content }}" > {{ ssl_cert_path }}
+}
+export -f add_ssl_cert
+{% endif %}
+
 {% if install %}
 download()
 {
@@ -33,17 +43,11 @@ download_and_extract_agent_package()
 }
 export -f download_and_extract_agent_package
 
-add_ssl_cert()
-{
-    # Create all the directories in the path to the cert file
-    mkdir -p $(dirname {{ ssl_cert_path }})
-    echo "{{ ssl_cert_content }}" > {{ ssl_cert_path }}
-}
-export -f add_ssl_cert
-
 install_agent()
 {
+    {% if add_ssl_cert %}
     su {{ conf.user }} --shell /bin/bash -c "set -e; add_ssl_cert"
+    {% endif %}
     su {{ conf.user }} --shell /bin/bash -c "set -e; download_and_extract_agent_package"
 }
 export -f install_agent

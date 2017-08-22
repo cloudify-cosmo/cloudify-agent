@@ -2,16 +2,21 @@
 
 # Download and execute the script that will take care of the agent installation
 
+add_ssl_cert()
+{
+    # Create all the directories in the path to the cert file
+    mkdir -p $(dirname {{ ssl_cert_path }})
+    echo "{{ ssl_cert_content }}" > {{ ssl_cert_path }}
+}
+
 download()
 {
     SCRIPT_NAME=$1
 
-    # Downloading with '--insecure' flags, because at this point we don't have
-    # the SSL certificates
     if command -v wget > /dev/null 2>&1; then
-        wget {{ link }} -O ${SCRIPT_NAME} --no-check-certificate
+        wget {{ link }} -O ${SCRIPT_NAME} --ca-certificate {{ ssl_cert_path }}
     elif command -v curl > /dev/null 2>&1; then
-        curl -L -o ${SCRIPT_NAME} {{ link }} --insecure
+        curl -L -o ${SCRIPT_NAME} {{ link }} --cacert {{ ssl_cert_path }}
     else
         echo >&2 "error: wget/curl not found. cannot download agent installation script"
         return 1
@@ -21,6 +26,7 @@ download()
 # Create a temp directory and cd into it
 cd $(mktemp -d)
 
+add_ssl_cert
 download agent_installer.sh
 chmod +x ./agent_installer.sh
 {{ sudo }} ./agent_installer.sh
