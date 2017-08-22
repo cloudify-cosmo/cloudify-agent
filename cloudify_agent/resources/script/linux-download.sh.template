@@ -8,6 +8,7 @@ add_ssl_cert()
     mkdir -p $(dirname {{ ssl_cert_path }})
     echo "{{ ssl_cert_content }}" > {{ ssl_cert_path }}
 }
+export -f add_ssl_cert
 
 download()
 {
@@ -26,7 +27,15 @@ download()
 # Create a temp directory and cd into it
 cd $(mktemp -d)
 
+# If using `sudo` the script is running as a user, and there's no need
+# to use `su`. If running as root, `su` as the user, otherwise the cert
+# dir will be created with root privileges
+{% if sudo %}
 add_ssl_cert
+{% else %}
+su {{ user }} --shell /bin/bash -c "set -e; add_ssl_cert"
+{% endif %}
+
 download agent_installer.sh
 chmod +x ./agent_installer.sh
 {{ sudo }} ./agent_installer.sh

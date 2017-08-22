@@ -177,6 +177,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         return template.render(
             link=script_url,
             sudo=sudo,
+            user=self.cloudify_agent['user'],
             ssl_cert_content=self._get_local_cert_content(),
             ssl_cert_path=self._get_remote_ssl_cert_path()
         )
