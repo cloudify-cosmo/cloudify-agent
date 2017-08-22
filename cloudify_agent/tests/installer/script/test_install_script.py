@@ -54,11 +54,14 @@ class BaseInstallScriptTest(BaseTest):
             'ssl_cert_path': self._rest_cert_path
         }
 
-    def _run(self, *commands):
+    def _get_install_script(self, add_ssl_cert=True):
         script_builder = script._get_script_builder(
             cloudify_agent=self.input_cloudify_agent
         )
-        install_script = script_builder.install_script()
+        return script_builder.install_script(add_ssl_cert=add_ssl_cert)
+
+    def _run(self, *commands):
+        install_script = self._get_install_script()
 
         # Remove last line where main function is executed
         install_script = '\n'.join(install_script.split('\n')[:-1])
@@ -142,6 +145,10 @@ class TestLinuxInstallScript(BaseInstallScriptTest):
         agent_dir = os.path.join(self.temp_folder, 'd')
         agent_ssl_cert.verify_remote_cert(agent_dir)
 
+    def test_add_ssl_func_not_rendered(self):
+        install_script = self._get_install_script(add_ssl_cert=False)
+        self.assertNotIn('add_ssl_cert', install_script)
+
 
 @only_os('nt')
 class TestWindowsInstallScript(BaseInstallScriptTest):
@@ -165,3 +172,7 @@ class TestWindowsInstallScript(BaseInstallScriptTest):
         # basedir + node_id
         agent_dir = os.path.join(self.temp_folder, 'd')
         agent_ssl_cert.verify_remote_cert(agent_dir)
+
+    def test_add_ssl_func_not_rendered(self):
+        install_script = self._get_install_script(add_ssl_cert=False)
+        self.assertNotIn('AddSSLCert', install_script)
