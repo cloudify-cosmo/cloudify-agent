@@ -27,7 +27,9 @@ from .config.agent_config import create_agent_config_and_installer
 @operation
 @create_agent_config_and_installer(new_agent_config=True)
 def create(cloudify_agent, installer, **_):
-    if cloudify_agent['remote_execution']:
+    # When not in "remote" mode, this operation is called only to set the
+    # agent_config dict in the runtime properties
+    if cloudify_agent.is_remote:
         with install_script_path(cloudify_agent) as script_path:
             ctx.logger.info('Creating Agent {0}'.format(
                 cloudify_agent['name']))
@@ -48,23 +50,27 @@ def create(cloudify_agent, installer, **_):
 @operation
 @create_agent_config_and_installer
 def configure(cloudify_agent, installer, **_):
-    if cloudify_agent['remote_execution']:
-        ctx.logger.info('Configuring Agent {0}'.format(cloudify_agent['name']))
-        installer.configure_agent()
+    """
+    Only called in "provided" mode - all other modes configure during install
+    """
+    ctx.logger.info('Configuring Agent {0}'.format(cloudify_agent['name']))
+    installer.configure_agent()
 
 
 @operation
 @create_agent_config_and_installer
 def start(cloudify_agent, installer, **_):
-    if cloudify_agent['remote_execution']:
+    """
+    Not called in "remote" mode, so the only possibilities are:
+    * "provided" - in which case we need to actually start the agent via
+                   SSH/WinRM
+    * "userdata"/"plugin" - in which case we simply wait for the agent to
+                            be started by the install script
+    """
+    if cloudify_agent.is_provided:
         ctx.logger.info('Starting Agent {0}'.format(cloudify_agent['name']))
         installer.start_agent()
     else:
-        # if remote_execution is False, and this operation was invoked
-        # (install_agent is True), it means that some other process is
-        # installing the agent (e.g userdata). All that is left for us
-        # to do is wait for the agent to start.
-
         celery_client = get_celery_app(
             tenant=cloudify_agent['rest_tenant'],
             target=cloudify_agent['queue']
@@ -81,8 +87,9 @@ def start(cloudify_agent, installer, **_):
 @operation
 @create_agent_config_and_installer(validate_connection=False)
 def stop(cloudify_agent, installer, **_):
-    # no need to handling remote_execution False because this operation is
-    # not invoked in that case
+    """
+    Only called in "remote" mode - other modes stop via AMQP
+    """
     ctx.logger.info('Stopping Agent {0}'.format(cloudify_agent['name']))
     installer.stop_agent()
 
@@ -92,7 +99,7 @@ def stop(cloudify_agent, installer, **_):
 def delete(cloudify_agent, installer, **_):
     # delete the runtime properties set on create
     ctx.instance.runtime_properties.pop('cloudify_agent', None)
-    if cloudify_agent['remote_execution']:
+    if cloudify_agent.is_remote:
         ctx.logger.info('Deleting Agent {0}'.format(cloudify_agent['name']))
         installer.delete_agent()
 

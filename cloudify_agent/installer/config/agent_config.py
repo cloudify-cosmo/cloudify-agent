@@ -87,6 +87,21 @@ class CloudifyAgentConfig(dict):
         self.update(_get_runtime_properties())      # runtime props are 2nd
         self.update(_get_agent_inputs(kwargs))      # inputs are 1st in order
 
+    @property
+    def is_remote(self):
+        return self.install_mode == constants.AGENT_INSTALL_METHOD_REMOTE
+
+    @property
+    def is_provided(self):
+        return self.install_mode == constants.AGENT_INSTALL_METHOD_PROVIDED
+
+    @property
+    def install_mode(self):
+        install_mode = self.get('install_mode')
+        return install_mode or cloudify_utils.internal.get_install_method(
+            ctx.node.properties
+        )
+
     def set_default_values(self):
         self._set_process_management()
         self._set_name()
@@ -127,15 +142,12 @@ class CloudifyAgentConfig(dict):
         self['name'] = name
 
     def set_execution_params(self):
-        if 'local' not in self:
-            self['local'] = ctx.type == constants.DEPLOYMENT
-
         if self['local']:
             # If installing an agent locally, we auto-detect which os the agent
             # is dedicated for and we install it with the current user
             self['windows'] = os.name == 'nt'
             self['user'] = getpass.getuser()
-            self.setdefault('remote_execution', True)
+            self['remote_execution'] = False
         else:
             self._set_remote_execution()
             self._set_windows()
@@ -154,20 +166,14 @@ class CloudifyAgentConfig(dict):
         if 'remote_execution' in self:
             return
 
-        install_method = cloudify_utils.internal.get_install_method(
+        self['install_method'] = cloudify_utils.internal.get_install_method(
             ctx.node.properties)
-        if install_method not in constants.AGENT_INSTALL_METHODS:
+        if self['install_method'] not in constants.AGENT_INSTALL_METHODS:
             raise exceptions.AgentInstallerConfigurationError(
                 'agent_config.install_method must be one of {0}'
                 ' but found: {1}'.format(constants.AGENT_INSTALL_METHODS,
-                                         install_method))
-        remote_execution = (install_method ==
-                            constants.AGENT_INSTALL_METHOD_REMOTE)
-
-        self.update({
-            'remote_execution': remote_execution,
-            'install_method': install_method
-        })
+                                         self['install_method']))
+        self['remote_execution'] = self.is_remote
 
     def _set_windows(self):
         if 'windows' in self:
