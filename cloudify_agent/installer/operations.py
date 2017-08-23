@@ -82,6 +82,7 @@ def start(cloudify_agent, **_):
                                             celery_client)
     if registered:
         ctx.logger.info('Agent has started')
+        script.cleanup_scripts()
     else:
         return ctx.operation.retry(
             message='Waiting for Agent to start...')
@@ -95,6 +96,7 @@ def stop(cloudify_agent, installer, **_):
     """
     ctx.logger.info('Stopping Agent {0}'.format(cloudify_agent['name']))
     installer.stop_agent()
+    script.cleanup_scripts()
 
 
 @operation

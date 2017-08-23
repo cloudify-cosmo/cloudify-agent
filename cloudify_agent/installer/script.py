@@ -29,6 +29,9 @@ from cloudify_agent.installer.config.agent_config import \
     create_agent_config_and_installer
 
 
+LOCAL_CLEANUP_PATHS_KEY = 'local_cleanup_paths'
+
+
 class AgentInstallationScriptBuilder(AgentInstaller):
 
     def __init__(self, cloudify_agent):
@@ -145,6 +148,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         with open(script_path, 'w') as script_file:
             script_file.write(script_content)
 
+        _cleanup_after_installation(script_path)
         return script_path, script_url
 
     def init_script(self):
@@ -203,3 +207,27 @@ def install_script_path(cloudify_agent):
         yield script_path
     finally:
         os.remove(script_path)
+
+
+def _cleanup_after_installation(path):
+    """Mark path to be deleted after agent installation.
+
+    This simply adds the path to cloudify_agent inside runtime properties,
+    so that it can be removed later.
+    """
+    cloudify_agent = ctx.instance.runtime_properties.get('cloudify_agent', {})
+    cleanup = cloudify_agent.get(LOCAL_CLEANUP_PATHS_KEY, [])
+    cleanup.append(path)
+    cloudify_agent[LOCAL_CLEANUP_PATHS_KEY] = cleanup
+    ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
+
+
+def cleanup_scripts():
+    """Remove the files that were scheduled for deletion."""
+    cloudify_agent = ctx.instance.runtime_properties.get('cloudify_agent', {})
+    paths = cloudify_agent.pop(LOCAL_CLEANUP_PATHS_KEY, [])
+    for path in paths:
+        try:
+            os.remove(path)
+        except IOError:
+            pass
