@@ -142,7 +142,7 @@ class CloudifyAgentConfig(dict):
         self['name'] = name
 
     def set_execution_params(self):
-        if self['local']:
+        if self.setdefault('local', False):
             # If installing an agent locally, we auto-detect which os the agent
             # is dedicated for and we install it with the current user
             self['windows'] = os.name == 'nt'
