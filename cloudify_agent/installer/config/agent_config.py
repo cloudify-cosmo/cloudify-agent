@@ -164,12 +164,12 @@ class CloudifyAgentConfig(dict):
         self.set_config_paths()
         self._set_package_url(runner)
 
-    def _set_remote_execution(self):
-        if 'remote_execution' in self:
-            return
-
-        self['install_method'] = cloudify_utils.internal.get_install_method(
-            ctx.node.properties)
+    def _set_install_method(self):
+        install_method = cloudify_utils.internal.get_install_method(
+            ctx.node.properties
+        )
+        # If the install method wasn't specified, it's remote by default
+        self['install_method'] = install_method or 'remote'
         if self['install_method'] not in constants.AGENT_INSTALL_METHODS:
             raise exceptions.AgentInstallerConfigurationError(
                 'agent_config.install_method must be one of {0}'

@@ -131,8 +131,7 @@ class TestCreateAgentAmqp(BaseTest):
     @patch('cloudify.utils.ctx', mock_context())
     def _create_agent():
         old_agent = CloudifyAgentConfig({
-            'local': False,
-            'remote_execution': False,
+            'install_method': 'remote',
             'ip': '10.0.4.47',
             'rest_host': '10.0.4.46',
             'distro': 'ubuntu',
