@@ -21,8 +21,7 @@ from contextlib import contextmanager
 from posixpath import join as url_join
 
 from cloudify import ctx, utils as cloudify_utils
-from cloudify.constants import (CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
-                                AGENT_INSTALL_METHOD_PROVIDED)
+from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
 
 from cloudify_agent.api import utils
 from cloudify_agent.installer import AgentInstaller
@@ -39,7 +38,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         self.file_server_url = cloudify_utils.get_manager_file_server_url()
 
         basedir = self.cloudify_agent['basedir']
-        if cloudify_agent['windows']:
+        if cloudify_agent.is_windows:
             self.install_script_template = 'script/windows.ps1.template'
             self.init_script_template = 'script/windows-download.ps1.template'
             self.install_script_filename = '{0}.ps1'.format(uuid.uuid4())

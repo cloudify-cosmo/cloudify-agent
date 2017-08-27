@@ -64,7 +64,7 @@ class AgentInstaller(object):
     def _get_remote_ssl_cert_path(self):
         agent_dir = os.path.expanduser(self.cloudify_agent['agent_dir'])
         cert_filename = defaults.AGENT_SSL_CERT_FILENAME
-        if self.cloudify_agent['windows']:
+        if self.cloudify_agent.is_windows:
             path_join = ntpath.join
             ssl_target_dir = defaults.SSL_CERTS_TARGET_DIR.replace('/', '\\')
         else:
@@ -94,7 +94,7 @@ class AgentInstaller(object):
 
     def _configure_flags(self):
         flags = ''
-        if not self.cloudify_agent['windows']:
+        if not self.cloudify_agent.is_windows:
             flags = '--relocated-env'
             if self.cloudify_agent.get('disable_requiretty'):
                 flags = '{0} --disable-requiretty'.format(flags)
@@ -212,7 +212,7 @@ class LocalInstallerMixin(AgentInstaller):
         shutil.rmtree(self.cloudify_agent['agent_dir'])
 
     def create_custom_env_file_on_target(self, environment):
-        posix = not self.cloudify_agent['windows']
+        posix = not self.cloudify_agent.is_windows
         self.logger.debug('Creating a environment file from {0}'
                           .format(environment))
         return utils.env_to_file(env_variables=environment, posix=posix)
@@ -221,7 +221,7 @@ class LocalInstallerMixin(AgentInstaller):
 class RemoteInstallerMixin(AgentInstaller):
 
     def create_custom_env_file_on_target(self, environment):
-        posix = not self.cloudify_agent['windows']
+        posix = not self.cloudify_agent.is_windows
         env_file = utils.env_to_file(env_variables=environment, posix=posix)
         if env_file:
             return self.runner.put_file(src=env_file)

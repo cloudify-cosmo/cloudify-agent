@@ -89,18 +89,20 @@ class CloudifyAgentConfig(dict):
 
     @property
     def is_remote(self):
-        return self.install_mode == constants.AGENT_INSTALL_METHOD_REMOTE
+        return self['install_method'] == constants.AGENT_INSTALL_METHOD_REMOTE
 
     @property
     def is_provided(self):
-        return self.install_mode == constants.AGENT_INSTALL_METHOD_PROVIDED
+        return self['install_method'] == \
+               constants.AGENT_INSTALL_METHOD_PROVIDED
 
     @property
-    def install_mode(self):
-        install_mode = self.get('install_mode')
-        return install_mode or cloudify_utils.internal.get_install_method(
-            ctx.node.properties
-        )
+    def is_local(self):
+        return self['local']
+
+    @property
+    def is_windows(self):
+        return self['windows']
 
     def set_default_values(self):
         self._set_process_management()
@@ -123,7 +125,7 @@ class CloudifyAgentConfig(dict):
 
     def _set_process_management(self):
         self.setdefault('process_management', {})
-        default_pm_name = 'nssm' if self['windows'] else 'init.d'
+        default_pm_name = 'nssm' if self.is_windows else 'init.d'
         self['process_management'].setdefault('name', default_pm_name)
 
     def _set_name(self):
@@ -133,7 +135,7 @@ class CloudifyAgentConfig(dict):
         if self.get('name'):
             return
 
-        if self['local']:
+        if self.is_local:
             workflows_worker = self.get('workflows_worker', False)
             suffix = '_workflows' if workflows_worker else ''
             name = '{0}{1}'.format(ctx.deployment.id, suffix)
@@ -147,12 +149,12 @@ class CloudifyAgentConfig(dict):
             # is dedicated for and we install it with the current user
             self['windows'] = os.name == 'nt'
             self['user'] = getpass.getuser()
-            self['remote_execution'] = False
+            self['install_method'] = 'local'
         else:
-            self._set_remote_execution()
+            self._set_install_method()
             self._set_windows()
             self._set_ip()
-            if self['remote_execution']:
+            if self.is_remote:
                 self._set_password()
                 self._validate_user()
                 self._validate_key_or_password()
@@ -173,7 +175,6 @@ class CloudifyAgentConfig(dict):
                 'agent_config.install_method must be one of {0}'
                 ' but found: {1}'.format(constants.AGENT_INSTALL_METHODS,
                                          self['install_method']))
-        self['remote_execution'] = self.is_remote
 
     def _set_windows(self):
         if 'windows' in self:
@@ -198,7 +199,7 @@ class CloudifyAgentConfig(dict):
         ip = ip or ctx.node.properties.get('ip')
         ip = ip or self.get('ip')
 
-        if not ip and self['remote_execution']:
+        if not ip and self.is_remote:
             # a remote installation requires the ip to connect to.
             raise_missing_attribute('ip')
 
@@ -212,7 +213,7 @@ class CloudifyAgentConfig(dict):
         password = password or ctx.node.properties.get('password')
         password = password or self.get('password')
 
-        if not password and self['windows'] and self['remote_execution']:
+        if not password and self.is_windows and self.is_remote:
             # a remote windows installation requires a
             # password to connect to the machine
             raise_missing_attribute('password')
@@ -231,8 +232,8 @@ class CloudifyAgentConfig(dict):
         A *remote* *linux* installation requires either a password or a key
         file in order to connect to the remote machine
         """
-        if self['windows'] or self.get('key') or self.get('password') \
-                or not self['remote_execution']:
+        if self.is_windows or self.get('key') or self.get('password') \
+                or not self.is_remote:
             return
         raise_missing_attributes('key', 'password')
 
@@ -240,21 +241,21 @@ class CloudifyAgentConfig(dict):
         if self.get('basedir'):
             return
 
-        if self['local']:
+        if self.is_local:
             basedir = agent_utils.get_home_dir(self['user'])
         else:
-            if self['windows']:
+            if self.is_windows:
                 # TODO: Get the program files directory from the machine itself
                 # instead of hardcoding it an assuming it's in C:\
                 basedir = 'C:\\Program Files\\Cloudify Agents'
-            elif self['remote_execution']:
+            elif self.is_remote:
                 basedir = runner.home_dir(self['user'])
             else:
                 basedir = '~{0}'.format(self['user'])
         self['basedir'] = basedir
 
     def set_config_paths(self):
-        join = nt_join if self['windows'] else posix_join
+        join = nt_join if self.is_windows else posix_join
 
         if not self.get('agent_dir'):
             self['agent_dir'] = join(self['basedir'], self['name'])
@@ -275,7 +276,7 @@ class CloudifyAgentConfig(dict):
 
         agent_package_name = None
 
-        if self['windows']:
+        if self.is_windows:
             # No distribution difference in windows installation
             agent_package_name = 'cloudify-windows-agent.exe'
         else:
@@ -297,9 +298,9 @@ class CloudifyAgentConfig(dict):
         if self.get('distro'):
             return
 
-        if self['local']:
+        if self.is_local:
             self['distro'] = platform.dist()[0].lower()
-        elif self['remote_execution']:
+        elif self.is_remote:
             distro = runner.machine_distribution()
             self['distro'] = distro[0].lower()
 
@@ -307,9 +308,9 @@ class CloudifyAgentConfig(dict):
         if 'distro_codename' in self:  # Might be an empty string
             return
 
-        if self['local']:
+        if self.is_local:
             self['distro_codename'] = platform.dist()[2].lower()
-        elif self['remote_execution']:
+        elif self.is_remote:
             distro = runner.machine_distribution()
             self['distro_codename'] = distro[2].lower()
 
