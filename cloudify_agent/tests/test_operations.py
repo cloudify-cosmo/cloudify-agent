@@ -221,7 +221,7 @@ class TestCreateAgentAmqp(BaseTest):
                 'cloudify_agent']['queue']
 
             with self._patch_manager_env():
-                operations.create_agent_from_old_agent()
+                operations.create_agent_amqp()
             new_name = ctx.instance.runtime_properties[
                 'cloudify_agent']['name']
             new_agent_dir = ctx.instance.runtime_properties[
