@@ -80,12 +80,12 @@ def start(cloudify_agent, **_):
     )
     registered = utils.get_agent_registered(cloudify_agent['name'],
                                             celery_client)
-    if registered:
-        ctx.logger.info('Agent has started')
-        script.cleanup_scripts()
-    else:
+    if not registered:
         return ctx.operation.retry(
             message='Waiting for Agent to start...')
+
+    ctx.logger.info('Agent has started')
+    script.cleanup_scripts()
 
 
 @operation
