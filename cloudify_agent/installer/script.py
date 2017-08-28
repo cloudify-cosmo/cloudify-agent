@@ -21,8 +21,7 @@ from contextlib import contextmanager
 from posixpath import join as url_join
 
 from cloudify import ctx, utils as cloudify_utils
-from cloudify.constants import (CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
-                                AGENT_INSTALL_METHOD_PROVIDED)
+from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
 
 from cloudify_agent.api import utils
 from cloudify_agent.installer import AgentInstaller
@@ -39,7 +38,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         self.file_server_url = cloudify_utils.get_manager_file_server_url()
 
         basedir = self.cloudify_agent['basedir']
-        if cloudify_agent['windows']:
+        if cloudify_agent.is_windows:
             self.install_script_template = 'script/windows.ps1.template'
             self.init_script_template = 'script/windows-download.ps1.template'
             self.install_script_filename = '{0}.ps1'.format(uuid.uuid4())
@@ -75,7 +74,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             ssl_cert_path=remote_ssl_cert_path,
             auth_token_header=CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
             auth_token_value=ctx.rest_token,
-            install=self._should_install_agent,
+            install=not self.cloudify_agent.is_provided,
             configure=True,
             start=True,
             add_ssl_cert=add_ssl_cert
@@ -100,19 +99,6 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             trim_blocks=True,
             lstrip_blocks=True,
         )
-
-    @property
-    def _should_install_agent(self):
-        """
-        The agent should be configured and started, but not installed when
-        running in provided mode (as it is up to the user to install it)
-        :return False if agent is installed in "provided" mode, True o/w
-        """
-
-        install_method = cloudify_utils.internal.get_install_method(
-            ctx.node.properties
-        )
-        return install_method != AGENT_INSTALL_METHOD_PROVIDED
 
     def _generate_script_path_and_url(self, script_filename):
         """

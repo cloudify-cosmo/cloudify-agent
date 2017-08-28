@@ -29,12 +29,12 @@ from cloudify_agent.installer.runners.stub_runner import StubRunner
 
 
 def get_installer(cloudify_agent, runner):
-    if cloudify_agent['local']:
+    if cloudify_agent.is_local:
         if os.name == 'nt':
             installer = LocalWindowsAgentInstaller(cloudify_agent, ctx.logger)
         else:
             installer = LocalLinuxAgentInstaller(cloudify_agent, ctx.logger)
-    elif cloudify_agent['windows']:
+    elif cloudify_agent.is_windows:
         installer = RemoteWindowsAgentInstaller(
             cloudify_agent, runner, ctx.logger)
     else:
@@ -44,14 +44,14 @@ def get_installer(cloudify_agent, runner):
 
 
 def create_runner(agent_config, validate_connection):
-    if agent_config['local']:
+    if agent_config.is_local:
         runner = LocalCommandRunner(logger=ctx.logger)
-    elif agent_config['remote_execution'] is False:
+    elif not agent_config.is_remote:
         runner = StubRunner()
     else:
         host = agent_config['ip']
         try:
-            if agent_config['windows']:
+            if agent_config.is_windows:
                 runner = WinRMRunner(
                     host=host,
                     port=agent_config.get('port'),

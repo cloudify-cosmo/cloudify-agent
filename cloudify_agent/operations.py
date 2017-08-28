@@ -169,7 +169,6 @@ def _set_default_new_agent_config_values(old_agent, new_agent):
     # Set the broker IP explicitly to the current manager's IP
     new_agent['broker_ip'] = broker_hostname
     new_agent['old_agent_version'] = old_agent['version']
-    new_agent['remote_execution'] = True
     new_agent['disable_requiretty'] = False
     new_agent['install_with_sudo'] = True
 
@@ -360,9 +359,10 @@ def _validate_agent():
     return agent
 
 
-def create_agent_from_old_agent(operation_timeout=300):
+@operation
+def create_agent_amqp(install_agent_timeout=300, **_):
     old_agent = _validate_agent()
-    agents = _run_install_script(old_agent, operation_timeout)
+    agents = _run_install_script(old_agent, install_agent_timeout)
     returned_agent = agents['new']
     ctx.logger.info('Installed agent {0}'.format(returned_agent['name']))
 
@@ -373,11 +373,6 @@ def create_agent_from_old_agent(operation_timeout=300):
     # Setting old_cloudify_agent in order to uninstall it later.
     ctx.instance.runtime_properties['old_cloudify_agent'] = agents['old']
     ctx.instance.runtime_properties['cloudify_agent'] = returned_agent
-
-
-@operation
-def create_agent_amqp(install_agent_timeout, **_):
-    create_agent_from_old_agent(install_agent_timeout)
 
 
 def _validate_amqp_connection(celery_app, agent_name, agent_version=None):

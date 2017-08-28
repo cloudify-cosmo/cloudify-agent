@@ -131,8 +131,7 @@ class TestCreateAgentAmqp(BaseTest):
     @patch('cloudify.utils.ctx', mock_context())
     def _create_agent():
         old_agent = CloudifyAgentConfig({
-            'local': False,
-            'remote_execution': False,
+            'install_method': 'remote',
             'ip': '10.0.4.47',
             'rest_host': '10.0.4.46',
             'distro': 'ubuntu',
@@ -222,7 +221,7 @@ class TestCreateAgentAmqp(BaseTest):
                 'cloudify_agent']['queue']
 
             with self._patch_manager_env():
-                operations.create_agent_from_old_agent()
+                operations.create_agent_amqp()
             new_name = ctx.instance.runtime_properties[
                 'cloudify_agent']['name']
             new_agent_dir = ctx.instance.runtime_properties[

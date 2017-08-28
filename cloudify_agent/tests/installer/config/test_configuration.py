@@ -55,6 +55,7 @@ class TestConfiguration(BaseTest):
             'envdir': envdir,
             'user': user,
             'local': True,
+            'install_method': 'local',
             'disable_requiretty': True,
             'env': {},
             'fabric_env': {},
@@ -64,7 +65,6 @@ class TestConfiguration(BaseTest):
             'broker_ssl_cert_path': os.environ[constants.BROKER_SSL_CERT_PATH],
             'windows': os.name == 'nt',
             'system_python': 'python',
-            'remote_execution': True,
             'bypass_maintenance': False,
             'rest_token': 'test_token',
             'rest_tenant': {}
@@ -113,6 +113,7 @@ class TestConfiguration(BaseTest):
             'envdir': envdir,
             'user': user,
             'local': True,
+            'install_method': 'local',
             'disable_requiretty': True,
             'env': {},
             'fabric_env': {},
@@ -122,7 +123,6 @@ class TestConfiguration(BaseTest):
             'broker_ssl_cert_path': os.environ[constants.BROKER_SSL_CERT_PATH],
             'windows': os.name == 'nt',
             'system_python': 'python',
-            'remote_execution': True,
             'bypass_maintenance': False,
             'rest_token': 'test_token',
             'rest_tenant': {}
