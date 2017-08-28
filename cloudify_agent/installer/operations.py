@@ -85,7 +85,8 @@ def start(cloudify_agent, **_):
             message='Waiting for Agent to start...')
 
     ctx.logger.info('Agent has started')
-    script.cleanup_scripts()
+    if not cloudify_agent.is_provided:
+        script.cleanup_scripts()
 
 
 @operation

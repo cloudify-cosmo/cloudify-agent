@@ -229,5 +229,5 @@ def cleanup_scripts():
     for path in paths:
         try:
             os.remove(path)
-        except IOError:
+        except OSError:
             pass
