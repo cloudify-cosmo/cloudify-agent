@@ -101,6 +101,13 @@ class CloudifyAgentConfig(dict):
         return self['local']
 
     @property
+    def has_installer(self):
+        """
+        This is useful when deciding whether to run local/remote commands
+        """
+        return self.is_remote or self.is_local
+
+    @property
     def is_windows(self):
         return self['windows']
 

@@ -46,7 +46,7 @@ def get_installer(cloudify_agent, runner):
 def create_runner(agent_config, validate_connection):
     if agent_config.is_local:
         runner = LocalCommandRunner(logger=ctx.logger)
-    elif agent_config.is_remote is False:
+    elif not agent_config.is_remote:
         runner = StubRunner()
     else:
         host = agent_config['ip']

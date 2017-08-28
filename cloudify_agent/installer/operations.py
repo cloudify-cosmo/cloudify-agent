@@ -29,7 +29,7 @@ from .config.agent_config import create_agent_config_and_installer
 def create(cloudify_agent, installer, **_):
     # When not in "remote" mode, this operation is called only to set the
     # agent_config dict in the runtime properties
-    if cloudify_agent.is_remote:
+    if cloudify_agent.has_installer:
         with script.install_script_path(cloudify_agent) as script_path:
             ctx.logger.info('Creating Agent {0}'.format(
                 cloudify_agent['name']))
@@ -98,7 +98,7 @@ def stop(cloudify_agent, installer, **_):
 def delete(cloudify_agent, installer, **_):
     # delete the runtime properties set on create
     ctx.instance.runtime_properties.pop('cloudify_agent', None)
-    if cloudify_agent.is_remote:
+    if cloudify_agent.has_installer:
         ctx.logger.info('Deleting Agent {0}'.format(cloudify_agent['name']))
         installer.delete_agent()
 
