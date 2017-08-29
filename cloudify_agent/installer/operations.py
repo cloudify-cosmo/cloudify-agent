@@ -21,6 +21,7 @@ from cloudify.exceptions import CommandExecutionError
 from cloudify_agent.api import utils
 
 from cloudify_agent.installer import script
+from .config.agent_config import update_agent_runtime_properties
 from .config.agent_config import create_agent_config_and_installer
 
 
@@ -47,13 +48,16 @@ def create(cloudify_agent, installer, **_):
             )
     elif cloudify_agent.is_provided:
         ctx.logger.info('Working in "provided" mode')
-        install_script_download_link = script.install_script_download_link(
+        _, install_script_download_link = script.install_script_download_link(
             cloudify_agent
         )
         ctx.logger.info(
             'Agent config created. To configure/start the agent, download the '
             'following script: {0}'.format(install_script_download_link)
         )
+        cloudify_agent['install_script_download_link'] = \
+            install_script_download_link
+        update_agent_runtime_properties(cloudify_agent)
 
 
 @operation
