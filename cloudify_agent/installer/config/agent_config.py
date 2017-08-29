@@ -61,7 +61,7 @@ def create_agent_config_and_installer(func=None,
         kwargs['cloudify_agent'] = cloudify_agent
 
         if new_agent_config:
-            _update_runtime_properties(cloudify_agent)
+            update_agent_runtime_properties(cloudify_agent)
 
         try:
             return func(*args, **kwargs)
@@ -376,7 +376,7 @@ def _parse_extra_values(config):
     return config
 
 
-def _update_runtime_properties(cloudify_agent):
+def update_agent_runtime_properties(cloudify_agent):
     """
     Update runtime properties, so that they will be available to future
     operations
