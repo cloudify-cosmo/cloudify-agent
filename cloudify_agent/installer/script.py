@@ -26,7 +26,7 @@ from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
 from cloudify_agent.api import utils
 from cloudify_agent.installer import AgentInstaller
 from cloudify_agent.installer.config.agent_config import \
-    create_agent_config_and_installer
+    create_agent_config_and_installer, update_agent_runtime_properties
 
 
 LOCAL_CLEANUP_PATHS_KEY = 'local_cleanup_paths'
@@ -148,7 +148,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         with open(script_path, 'w') as script_file:
             script_file.write(script_content)
 
-        _cleanup_after_installation(script_path)
+        self._cleanup_after_installation(script_path)
         return script_path, script_url
 
     def init_script(self):
@@ -171,6 +171,17 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             ssl_cert_content=self._get_local_cert_content(),
             ssl_cert_path=self._get_remote_ssl_cert_path()
         )
+
+    def _cleanup_after_installation(self, path):
+        """Mark path to be deleted after agent installation.
+
+        This simply adds the path to cloudify_agent inside runtime properties,
+        so that it can be removed later.
+        """
+        cleanup = self.cloudify_agent.get(LOCAL_CLEANUP_PATHS_KEY, [])
+        cleanup.append(path)
+        self.cloudify_agent[LOCAL_CLEANUP_PATHS_KEY] = cleanup
+        update_agent_runtime_properties(self.cloudify_agent)
 
 
 @create_agent_config_and_installer(validate_connection=False,
@@ -209,23 +220,11 @@ def install_script_path(cloudify_agent):
         os.remove(script_path)
 
 
-def _cleanup_after_installation(path):
-    """Mark path to be deleted after agent installation.
-
-    This simply adds the path to cloudify_agent inside runtime properties,
-    so that it can be removed later.
-    """
-    cloudify_agent = ctx.instance.runtime_properties.get('cloudify_agent', {})
-    cleanup = cloudify_agent.get(LOCAL_CLEANUP_PATHS_KEY, [])
-    cleanup.append(path)
-    cloudify_agent[LOCAL_CLEANUP_PATHS_KEY] = cleanup
-    ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
-
-
 def cleanup_scripts():
     """Remove the files that were scheduled for deletion."""
     cloudify_agent = ctx.instance.runtime_properties.get('cloudify_agent', {})
     paths = cloudify_agent.pop(LOCAL_CLEANUP_PATHS_KEY, [])
+    update_agent_runtime_properties(cloudify_agent)
     for path in paths:
         try:
             os.remove(path)
