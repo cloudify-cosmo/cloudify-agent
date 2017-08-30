@@ -37,7 +37,8 @@ from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.api import defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
-from cloudify_agent.installer.script import init_script_download_link
+from cloudify_agent.installer.script import \
+    init_script_download_link, cleanup_scripts
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 
 
@@ -333,7 +334,7 @@ def _run_install_script(old_agent, timeout):
         _execute_install_script_task(
             celery_app, params, old_agent, timeout, script_path
         )
-
+    cleanup_scripts()
     created_agent = _validate_created_agent(new_agent)
     return {'old': old_agent, 'new': created_agent}
 
