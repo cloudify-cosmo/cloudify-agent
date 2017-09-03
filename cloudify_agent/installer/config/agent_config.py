@@ -114,11 +114,10 @@ class CloudifyAgentConfig(dict):
     def set_default_values(self):
         self._set_process_management()
         self._set_name()
+        self._set_network()
         self.setdefault('queue', self['name'])
         self.setdefault('rest_token', cloudify_utils.get_rest_token())
         self.setdefault('rest_tenant', cloudify_utils.get_tenant())
-        self.setdefault('rest_host',
-                        cloudify_utils.get_manager_rest_service_host())
         self.setdefault('rest_port',
                         cloudify_utils.get_manager_rest_service_port())
         self.setdefault('bypass_maintenance',
@@ -149,6 +148,19 @@ class CloudifyAgentConfig(dict):
         else:
             name = ctx.instance.id
         self['name'] = name
+
+    def _set_network(self):
+        networks = self.pop('networks')  # retrieved from the provider context
+        network = self.setdefault('network', constants.DEFAULT_NETWORK_NAME)
+        manager_ip = networks.get(network)
+        if not manager_ip:
+            raise exceptions.AgentInstallerConfigurationError(
+                'The network associated with the agent (`{0}`) does not '
+                'appear in the list of manager networks assigned at bootstrap '
+                '({1})'.format(network, networks.keys())
+            )
+        self['rest_host'] = manager_ip
+        self['broker_ip'] = manager_ip
 
     def set_execution_params(self):
         if self.setdefault('local', False):
@@ -296,9 +308,11 @@ class CloudifyAgentConfig(dict):
                 )
 
         if agent_package_name:
+            file_server_url = agent_utils.get_manager_file_server_url(
+                self['rest_host'], self['rest_port']
+            )
             self['package_url'] = posix_join(
-                cloudify_utils.get_manager_file_server_url(),
-                'packages', 'agents', agent_package_name
+                file_server_url, 'packages', 'agents', agent_package_name
             )
 
     def _set_agent_distro(self, runner):
