@@ -23,10 +23,9 @@ def mock_context(agent_properties=None,
                  agent_runtime_properties=None,
                  agent_context=None):
 
-    if not agent_properties:
-        agent_properties = {}
-    if not agent_runtime_properties:
-        agent_runtime_properties = {}
+    agent_context = agent_context or {}
+    agent_properties = agent_properties or {}
+    agent_runtime_properties = agent_runtime_properties or {}
 
     context = MockCloudifyContext(
         node_id='test_node',

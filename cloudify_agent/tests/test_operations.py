@@ -64,20 +64,22 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
             dist = platform.dist()
             package_name = '{0}-{1}-agent.tar.gz'.format(dist[0].lower(),
                                                          dist[2].lower())
-        agent_dir = os.path.join(self.temp_folder, 'packages', 'agents')
+        resources_dir = os.path.join(self.temp_folder, 'resources')
+        agent_dir = os.path.join(resources_dir, 'packages', 'agents')
+        agent_script_dir = os.path.join(resources_dir, 'cloudify_agent')
         os.makedirs(agent_dir)
+        os.makedirs(agent_script_dir)
+        os.makedirs(os.path.join(self.temp_folder, 'cloudify'))
+
         agent_path = os.path.join(agent_dir, package_name)
         shutil.copyfile(agent_package.get_package_path(), agent_path)
-        resources_dir = os.path.join(self.temp_folder, 'cloudify')
-        agent_script_dir = os.path.join(self.temp_folder, 'cloudify_agent')
-        os.makedirs(resources_dir)
-        os.makedirs(agent_script_dir)
+
         new_env = {
             constants.REST_HOST_KEY: 'localhost',
             constants.MANAGER_FILE_SERVER_URL_KEY:
                 'http://localhost:{0}'.format(port),
-            constants.MANAGER_FILE_SERVER_ROOT_KEY: self.temp_folder,
-            constants.REST_PORT_KEY: '80',
+            constants.MANAGER_FILE_SERVER_ROOT_KEY: resources_dir,
+            constants.REST_PORT_KEY: str(port),
         }
         with patch.dict(os.environ, new_env):
             try:
@@ -102,13 +104,19 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
         def http_rest_host():
             return os.environ[constants.MANAGER_FILE_SERVER_URL_KEY]
 
+        # Necessary to patch, because by default https will be used
+        def file_server_url(*args, **kwargs):
+            return '{0}/resources'.format(http_rest_host())
+
         with self._manager_env():
-            env = local.init_env(name=self._testMethodName,
-                                 blueprint_path=blueprint_path,
-                                 inputs=inputs)
-            with patch('cloudify_agent.operations._http_rest_host',
-                       http_rest_host):
-                env.execute('install', task_retries=0)
+            with patch('cloudify_agent.api.utils.get_manager_file_server_url',
+                       file_server_url):
+                env = local.init_env(name=self._testMethodName,
+                                     blueprint_path=blueprint_path,
+                                     inputs=inputs)
+                with patch('cloudify_agent.operations._http_rest_host',
+                           http_rest_host):
+                    env.execute('install', task_retries=0)
             self.assert_daemon_alive(name=agent_name)
             agent_dict = self.get_agent_dict(env, 'new_agent_host')
             agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
@@ -156,51 +164,50 @@ class TestCreateAgentAmqp(BaseTest):
         old_agent.set_installation_params(runner=None)
         return old_agent
 
-    def _create_node_instance_context(self):
-        properties = {}
-        properties['cloudify_agent'] = self._create_agent()
-        properties['agent_status'] = {'agent_alive_crossbroker': True}
-        mock = mocks.MockCloudifyContext(
-            node_id='host_af231',
-            runtime_properties=properties,
-            node_name='host',
-            properties={'cloudify_agent': {}},
-            bootstrap_context=context.BootstrapContext({
-                'cloudify_agent': {}}))
-        return mock
+    @contextmanager
+    def _set_context(self, host='localhost'):
+        old_context = ctx
+        try:
+            os.environ[constants.MANAGER_FILE_SERVER_ROOT_KEY] = \
+                self.temp_folder
 
-    def _patch_manager_env(self):
-        new_env = {
-            constants.REST_HOST_KEY: '10.0.4.48',
-            constants.MANAGER_FILE_SERVER_URL_KEY: 'http://10.0.4.48:53229',
-            constants.MANAGER_FILE_SERVER_ROOT_KEY: self.temp_folder
-        }
-        return patch.dict(os.environ, new_env)
+            properties = {}
+            properties['cloudify_agent'] = self._create_agent()
+            properties['agent_status'] = {'agent_alive_crossbroker': True}
+            mock = mocks.MockCloudifyContext(
+                node_id='host_af231',
+                runtime_properties=properties,
+                node_name='host',
+                properties={'cloudify_agent': {}},
+                bootstrap_context=context.BootstrapContext({
+                    'cloudify_agent': {'networks': {'default': host}}}))
+            current_ctx.set(mock)
+            yield
+        finally:
+            current_ctx.set(old_context)
 
-    @patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())
-    @patch('cloudify.utils.ctx', mock_context())
     def test_create_agent_dict(self):
-        old_agent = self._create_agent()
-        with self._patch_manager_env():
+        with self._set_context(host='10.0.4.48'):
+            old_agent = self._create_agent()
             new_agent = operations.create_new_agent_config(old_agent)
             new_agent['version'] = '3.4'
             third_agent = operations.create_new_agent_config(new_agent)
-        equal_keys = ['ip', 'basedir', 'user']
-        for k in equal_keys:
-            self.assertEqual(old_agent[k], new_agent[k])
-            self.assertEqual(old_agent[k], third_agent[k])
-        nonequal_keys = ['agent_dir', 'workdir', 'envdir', 'name', 'rest_host']
-        for k in nonequal_keys:
-            self.assertNotEqual(old_agent[k], new_agent[k])
-            self.assertNotEqual(old_agent[k], third_agent[k])
-        old_name = old_agent['name']
-        new_name = new_agent['name']
-        third_name = third_agent['name']
-        self.assertIn(old_name, new_name)
-        self.assertIn(old_name, third_name)
-        self.assertLessEqual(len(third_name), len(new_name))
-        new_agent['name'] = '{0}{1}'.format(new_agent['name'], 'not-uuid')
-        with self._patch_manager_env():
+            equal_keys = ['ip', 'basedir', 'user']
+            for k in equal_keys:
+                self.assertEqual(old_agent[k], new_agent[k])
+                self.assertEqual(old_agent[k], third_agent[k])
+            nonequal_keys = ['agent_dir', 'workdir', 'envdir', 'name',
+                             'rest_host']
+            for k in nonequal_keys:
+                self.assertNotEqual(old_agent[k], new_agent[k])
+                self.assertNotEqual(old_agent[k], third_agent[k])
+            old_name = old_agent['name']
+            new_name = new_agent['name']
+            third_name = third_agent['name']
+            self.assertIn(old_name, new_name)
+            self.assertIn(old_name, third_name)
+            self.assertLessEqual(len(third_name), len(new_name))
+            new_agent['name'] = '{0}{1}'.format(new_agent['name'], 'not-uuid')
             agent = operations.create_new_agent_config(new_agent)
             self.assertIn(new_agent['name'], agent['name'])
 
@@ -208,11 +215,8 @@ class TestCreateAgentAmqp(BaseTest):
     @patch('cloudify_agent.api.utils.get_agent_registered',
            MagicMock(return_value={'cloudify.dispatch.dispatch': {}}))
     def test_create_agent_from_old_agent(self):
-        context = self._create_node_instance_context()
-        old_context = ctx
-        current_ctx.set(context)
-        self._create_cloudify_agent_dir()
-        try:
+        with self._set_context():
+            self._create_cloudify_agent_dir()
             old_name = ctx.instance.runtime_properties[
                 'cloudify_agent']['name']
             old_agent_dir = ctx.instance.runtime_properties[
@@ -220,8 +224,7 @@ class TestCreateAgentAmqp(BaseTest):
             old_queue = ctx.instance.runtime_properties[
                 'cloudify_agent']['queue']
 
-            with self._patch_manager_env():
-                operations.create_agent_amqp()
+            operations.create_agent_amqp()
             new_name = ctx.instance.runtime_properties[
                 'cloudify_agent']['name']
             new_agent_dir = ctx.instance.runtime_properties[
@@ -231,8 +234,6 @@ class TestCreateAgentAmqp(BaseTest):
             self.assertNotEquals(old_name, new_name)
             self.assertNotEquals(old_agent_dir, new_agent_dir)
             self.assertNotEquals(old_queue, new_queue)
-        finally:
-            current_ctx.set(old_context)
 
     def _create_cloudify_agent_dir(self):
         agent_script_dir = os.path.join(self.temp_folder, 'cloudify_agent')
