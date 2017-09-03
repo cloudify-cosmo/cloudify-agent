@@ -172,11 +172,13 @@ def _set_default_new_agent_config_values(old_agent, new_agent):
     new_agent['old_agent_version'] = old_agent['version']
     new_agent['disable_requiretty'] = False
     new_agent['install_with_sudo'] = True
+    new_agent['networks'] = ctx.bootstrap_context.cloudify_agent.networks
 
 
 def _copy_values_from_old_agent_config(old_agent, new_agent):
     fields_to_copy = ['windows', 'ip', 'basedir', 'user', 'distro_codename',
-                      'distro', 'broker_ssl_cert_path', 'agent_rest_cert_path']
+                      'distro', 'broker_ssl_cert_path', 'agent_rest_cert_path',
+                      'network']
     for field in fields_to_copy:
         if field in old_agent:
             new_agent[field] = old_agent[field]
