@@ -150,15 +150,19 @@ class CloudifyAgentConfig(dict):
         self['name'] = name
 
     def _set_network(self):
-        networks = self.pop('networks')  # retrieved from the provider context
         network = self.setdefault('network', constants.DEFAULT_NETWORK_NAME)
-        manager_ip = networks.get(network)
-        if not manager_ip:
-            raise exceptions.AgentInstallerConfigurationError(
-                'The network associated with the agent (`{0}`) does not '
-                'appear in the list of manager networks assigned at bootstrap '
-                '({1})'.format(network, networks.keys())
-            )
+        networks = self.pop('networks', None)
+        if networks:
+            manager_ip = networks.get(network)
+            if not manager_ip:
+                raise exceptions.AgentInstallerConfigurationError(
+                    'The network associated with the agent (`{0}`) does not '
+                    'appear in the list of manager networks assigned at '
+                    'bootstrap ({1})'.format(network, ', '.join(networks))
+                )
+        else:
+            # Might be getting here when working in local workflows (or tests)
+            manager_ip = cloudify_utils.get_manager_rest_service_host()
         self['rest_host'] = manager_ip
         self['broker_ip'] = manager_ip
 
