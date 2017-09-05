@@ -38,7 +38,10 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         super(AgentInstallationScriptBuilder, self).__init__(cloudify_agent)
         self.custom_env = None
         self.file_server_root = cloudify_utils.get_manager_file_server_root()
-        self.file_server_url = cloudify_utils.get_manager_file_server_url()
+        self.file_server_url = utils.get_manager_file_server_url(
+            cloudify_agent['rest_host'],
+            cloudify_agent['rest_port']
+        )
 
         basedir = self.cloudify_agent['basedir']
         if cloudify_agent.is_windows:
@@ -71,7 +74,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             pm_options=self._create_process_management_options(),
             custom_env=self.custom_env,
             custom_env_path=self.custom_env_path,
-            file_server_url=cloudify_utils.get_manager_file_server_url(),
+            file_server_url=self.file_server_url,
             configure_flags=self._configure_flags(),
             ssl_cert_content=cert_content,
             ssl_cert_path=remote_ssl_cert_path,
