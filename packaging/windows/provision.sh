@@ -17,8 +17,9 @@ function download_wheels() {
     do
         dir=${dir%*/}
         dir=${dir##*/}
-        if [ "$dir" == "cloudify-agent" ];then
-            pip wheel --wheel-dir packaging/source/wheels /tmp/deps_repos/$dir
+        pip wheel --wheel-dir packaging/source/wheels /tmp/deps_repos/cloudify-rest-client
+        if [ "$dir" != "cloudify-agent" ] && [ "$dir" != "cloudify-rest-client" ];then
+            pip wheel --wheel-dir packaging/source/wheels --find-links packaging/source/wheels /tmp/deps_repos/$dir
         fi
     done
     pip wheel --wheel-dir packaging/source/wheels --find-links packaging/source/wheels /tmp/deps_repos/cloudify-agent
