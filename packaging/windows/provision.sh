@@ -5,11 +5,22 @@ function install_requirements() {
     python -m pip install pip --upgrade
     pip --version
     pip install wheel==0.24.0
+    pip install sh argh colorama
 }
 
 function download_wheels() {
-    pip wheel --wheel-dir packaging/source/wheels --requirement "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/$CORE_BRANCH/dev-requirements.txt"
-    pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels "https://github.com/cloudify-cosmo/cloudify-agent/archive/$CORE_BRANCH.zip"
+    curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-dev/rename-clap/scripts/cdep -o /tmp/cdep && chmod +x /tmp/cdep
+    export CDEP_REPO_BASE="/tmp/deps-repos"
+    /tmp/cdep setup -r ../cloudify-cli/build-requirements.txt -b cdep -d
+    for dir in /tmp/deps-repos/*/
+    do
+        dir=${dir%*/}
+        dir=${dir##*/}
+        if [ "$dir" == "cloudify-agent" ];then
+            pip wheel --wheel-dir packaging/source/wheels /tmp/deps-repos/$dir
+        fi
+    done
+    pip wheel --wheel-dir packaging/source/wheels --find-links packaging/source/wheels /tmp/deps-repos/cloudify-agent
 }
 
 function download_resources() {

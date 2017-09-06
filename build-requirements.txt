@@ -1,0 +1,4 @@
+cloudify-rest-client
+cloudify-plugins-common
+cloudify-script-plugin
+cloudify-diamond-plugin
