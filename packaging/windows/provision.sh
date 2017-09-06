@@ -13,7 +13,7 @@ function download_wheels() {
     export CDEP_REPO_BASE="/tmp/deps_repos"
     curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/cdep/build-requirements.txt -o /tmp/build-requirements.txt
     /tmp/cdep setup -r /tmp/build-requirements.txt -b $CORE_BRANCH -d
-    for dir in /tmp/deps-repos/*/
+    for dir in /tmp/deps_repos/*/
     do
         dir=${dir%*/}
         dir=${dir##*/}
