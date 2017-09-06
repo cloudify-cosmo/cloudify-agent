@@ -10,17 +10,18 @@ function install_requirements() {
 
 function download_wheels() {
     curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-dev/rename-clap/scripts/cdep -o /tmp/cdep && chmod +x /tmp/cdep
-    export CDEP_REPO_BASE="/tmp/deps-repos"
-    /tmp/cdep setup -r ../cloudify-cli/build-requirements.txt -b cdep -d
+    export CDEP_REPO_BASE="/tmp/deps_repos"
+    curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/cdep/build-requirements.txt -o /tmp/build-requirements.txt
+    /tmp/cdep setup -r /tmp/build-requirements.txt -b $CORE_BRANCH -d
     for dir in /tmp/deps-repos/*/
     do
         dir=${dir%*/}
         dir=${dir##*/}
         if [ "$dir" == "cloudify-agent" ];then
-            pip wheel --wheel-dir packaging/source/wheels /tmp/deps-repos/$dir
+            pip wheel --wheel-dir packaging/source/wheels /tmp/deps_repos/$dir
         fi
     done
-    pip wheel --wheel-dir packaging/source/wheels --find-links packaging/source/wheels /tmp/deps-repos/cloudify-agent
+    pip wheel --wheel-dir packaging/source/wheels --find-links packaging/source/wheels /tmp/deps_repos/cloudify-agent
 }
 
 function download_resources() {
