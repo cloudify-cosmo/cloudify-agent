@@ -54,6 +54,8 @@ def create_agent_config_and_installer(func=None,
             cloudify_agent.set_default_values()
 
         runner = create_runner(cloudify_agent, validate_connection)
+        if not runner:
+            return
         cloudify_agent.set_installation_params(runner)
 
         installer = get_installer(cloudify_agent, runner)
