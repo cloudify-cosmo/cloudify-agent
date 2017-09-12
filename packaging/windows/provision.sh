@@ -42,7 +42,7 @@ curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-packager/${CORE_B
 source common-provision.sh
 
 install_common_prereqs &&
-install_requirements &&
+#install_requirements && # moved to cloudify-packager
 download_wheels &&
 download_resources &&
 iscc packaging/create_install_wizard.iss &&
