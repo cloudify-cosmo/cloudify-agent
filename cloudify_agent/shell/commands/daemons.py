@@ -160,6 +160,10 @@ from cloudify_agent.shell.decorators import handle_failures
               help='bypass maintenance mode on rest requests. [env {0}]'
                    .format(env.CLOUDIFY_BYPASS_MAINTENANCE_MODE),
               envvar=env.CLOUDIFY_BYPASS_MAINTENANCE_MODE)
+@click.option('--network',
+              help='The name of the Cloudify Manager network to use [env {0}]'
+                   .format(env.CLOUDIFY_NETWORK_NAME),
+              is_eager=True)
 @click.option('--cluster',
               help='List of nodes in a cluster [env {0}]'
                    .format(env.CLOUDIFY_CLUSTER_NODES),

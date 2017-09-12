@@ -159,7 +159,8 @@ class AgentInstaller(object):
             env.CLOUDIFY_LOCAL_REST_CERT_PATH:
                 self.cloudify_agent['agent_rest_cert_path'],
             env.CLOUDIFY_CLUSTER_NODES: base64.b64encode(json.dumps(
-                self.cloudify_agent.get('cluster', [])))
+                self.cloudify_agent.get('cluster', []))),
+            env.CLOUDIFY_NETWORK_NAME: self.cloudify_agent.get('network')
         }
 
         execution_env = utils.purge_none_values(execution_env)
