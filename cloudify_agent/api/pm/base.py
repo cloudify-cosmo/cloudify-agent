@@ -243,12 +243,12 @@ class Daemon(object):
         # function.
         if self.cluster:
             self.broker_url = [defaults.BROKER_URL.format(
-                host=node['broker_ip'],
+                host=node_ip,
                 port=self.broker_port,
                 username=self.broker_user,
                 password=self.broker_pass,
                 vhost=self.broker_vhost
-            ) for node in self.cluster]
+            ) for node_ip in self.cluster]
         else:
             self.broker_url = defaults.BROKER_URL.format(
                 host=self.broker_ip,
@@ -282,6 +282,7 @@ class Daemon(object):
         self.process_management = self.PROCESS_MANAGEMENT
         self.virtualenv = VIRTUALENV
         self.cluster_settings_path = params.get('cluster_settings_path')
+        self.network = params.get('network') or 'default'
 
     def _get_celery_conf_path(self):
         return os.path.join(self.workdir, 'broker_config.json')
@@ -330,7 +331,8 @@ class Daemon(object):
             # only used for manager failures during installation - see
             # detailed comment in the ._get_amqp_client method
             celery_client = get_cluster_celery_app(
-                self.broker_url, self.cluster, self.broker_ssl_enabled)
+                self.broker_url, self.cluster, self.broker_ssl_enabled,
+                broker_ssl_cert_path=self.broker_ssl_cert_path)
         else:
             celery_client = get_celery_app(
                 broker_url=self.broker_url,
@@ -626,15 +628,15 @@ class Daemon(object):
             # first one from the self.cluster list will be online, and that
             # is equal to just using self.broker_url/self.broker_ip
             err = None
-            for node in self.cluster:
+            for node_ip in self.cluster:
                 try:
                     return amqp_client.create_client(
-                        amqp_host=node['broker_ip'],
+                        amqp_host=node_ip,
                         amqp_user=self.broker_user,
                         amqp_pass=self.broker_pass,
                         amqp_vhost=self.broker_vhost,
                         ssl_enabled=self.broker_ssl_enabled,
-                        ssl_cert_path=node.get('internal_cert_path')
+                        ssl_cert_path=self.broker_ssl_cert_path
                     )
                 except AMQPConnectionError as err:
                     continue

@@ -97,16 +97,15 @@ gate_keeper.configure_app(app)
 logging_server.configure_app(app)
 
 
-def _set_master(daemon_name, node):
+def _set_master(daemon_name, node_ip):
     factory = DaemonFactory()
     try:
         daemon = factory.load(daemon_name)
     except exceptions.DaemonNotFoundError:
         return
-    daemon.broker_ip = node['broker_ip']
-    daemon.broker_ssl_cert_path = node.get('internal_cert_path')
+    daemon.broker_ip = node_ip
     factory.save(daemon)
-    cluster.set_cluster_active(node)
+    cluster.set_cluster_active(node_ip)
 
 
 def _make_failover_strategy(daemon_name):
@@ -117,26 +116,18 @@ def _make_failover_strategy(daemon_name):
         while True:
             if cluster.is_cluster_configured():
                 nodes = cluster.get_cluster_nodes()
-                for node in nodes:
-                    _set_master(daemon_name, node)
+                for node_ip in nodes:
+                    _set_master(daemon_name, node_ip)
 
                     daemon = DaemonFactory().load(daemon_name)
 
                     broker_url = 'amqp://{0}:{1}@{2}:{3}/{4}'.format(
                         daemon.broker_user,
                         daemon.broker_pass,
-                        node['broker_ip'],
+                        node_ip,
                         daemon.broker_port,
                         daemon.broker_vhost
                     )
-
-                    if daemon.broker_ssl_enabled:
-                        # use a different cert for each node in the cluster -
-                        # can't pass that in the amqp url
-                        broker_ssl_cert_path = node.get('internal_cert_path')
-                        if broker_ssl_cert_path:
-                            app.conf['BROKER_USE_SSL']['ca_certs'] =\
-                                broker_ssl_cert_path
 
                     logger.debug('Trying broker at {0}'
                                  .format(broker_url))
@@ -198,5 +189,6 @@ if daemon_name:
         cluster.set_cluster_nodes(nodes)
         factory = DaemonFactory()
         daemon = factory.load(daemon_name)
-        daemon.cluster = nodes
+        network_name = daemon.network
+        daemon.cluster = [n['networks'][network_name] for n in nodes]
         factory.save(daemon)

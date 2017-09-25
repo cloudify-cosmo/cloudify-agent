@@ -546,8 +546,11 @@ def get_rest_client(rest_host,
 
 def _parse_cluster_nodes(ctx, param, value):
     """Parsing callback for the --cluster option for cfy-agent"""
-    if value:
-        return json_loads(base64.b64decode(value))
+    if not value:
+        return
+    network_name = ctx.params.get('network') or 'default'
+    nodes = json_loads(base64.b64decode(value))
+    return [n['networks'][network_name] for n in nodes]
 
 
 def get_manager_file_server_url(hostname, port):
