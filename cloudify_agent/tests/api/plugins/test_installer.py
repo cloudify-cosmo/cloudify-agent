@@ -21,7 +21,7 @@ import shutil
 import multiprocessing
 from contextlib import contextmanager
 
-from wagon import utils as wagon_utils
+import wagon
 from mock import patch
 
 from cloudify import dispatch
@@ -408,7 +408,7 @@ class TestGetManagedPlugin(BaseTest):
             {'id': '1', 'package_version': '1'},
             {'id': '2', 'package_version': '1'},
             {'id': '3', 'package_version': '1',
-             'supported_platform': wagon_utils.get_platform()},
+             'supported_platform': wagon.get_platform()},
             {'id': '4', 'package_version': '1'},
             {'id': '5', 'package_version': '1'},
         ]
