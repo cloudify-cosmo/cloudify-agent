@@ -27,7 +27,7 @@ install_requires = [
     'pywinrm==0.0.3',
     'paramiko==1.18.3',
     'fabric==1.13.1',
-    'wagon==0.3.2',
+    'wagon[venv]==0.6.1',
     'fasteners==0.13.0',
     'pyzmq==15.1.0',
     'virtualenv>=14.0.0,<15.0.0'

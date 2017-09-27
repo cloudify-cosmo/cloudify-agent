@@ -24,7 +24,7 @@ import tarfile
 import uuid
 from contextlib import contextmanager
 
-from wagon import wagon
+import wagon
 from agent_packager import packager
 
 from cloudify.exceptions import NonRecoverableError
@@ -120,9 +120,11 @@ def create_plugin_wagon(plugin_dir_name,
     else:
         plugin_source_path = resources.get_resource(os.path.join(
             'plugins', plugin_dir_name))
-    w = wagon.Wagon(plugin_source_path)
-    return w.create(with_requirements=requirements,
-                    archive_destination_dir=target_directory)
+    return wagon.create(
+        plugin_source_path,
+        requirement_files=requirements,
+        archive_destination_dir=target_directory
+    )
 
 
 def get_source_uri():

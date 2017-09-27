@@ -24,8 +24,7 @@ import logging
 from distutils.version import LooseVersion
 
 import fasteners
-from wagon import wagon
-from wagon import utils as wagon_utils
+import wagon
 
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
@@ -199,10 +198,12 @@ class PluginInstaller(object):
                                     output_file=wagon_path)
             self.logger.debug('Installing plugin {0} using wagon'
                               .format(plugin.id))
-            w = wagon.Wagon(source=wagon_path)
-            w.install(ignore_platform=True,
-                      install_args=args,
-                      virtualenv=VIRTUALENV)
+            wagon.install(
+                wagon_path,
+                ignore_platform=True,
+                install_args=args,
+                venv=VIRTUALENV
+            )
         finally:
             self.logger.debug('Removing directory: {0}'
                               .format(wagon_dir))
@@ -461,7 +462,7 @@ def get_managed_plugin(plugin):
 
 
 def _extract_platform_and_distro_info():
-    current_platform = wagon_utils.get_platform()
+    current_platform = wagon.get_platform()
     distribution, _, distribution_release = platform.linux_distribution(
         full_distribution_name=False)
     return current_platform, distribution.lower(), distribution_release.lower()
