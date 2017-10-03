@@ -9,12 +9,12 @@ function install_deps() {
 		sudo apt-get install -y software-properties-common ||
 		# precise
 		sudo apt-get install -y python-software-properties && sudo add-apt-repository -y ppa:git-core/ppa
-		sudo apt-get install -y curl python-dev git make gcc g++ libyaml-dev zlib1g-dev openssl libffi-dev libssl-dev
+		sudo apt-get install -y curl python-dev git make gcc g++ libyaml-dev zlib1g-dev libffi-dev libssl-dev
 	elif which yum; then
 		# centos/REHL
 		sudo yum -y update &&
 		sudo yum -y downgrade libyaml &&
-		sudo yum install curl python-devel make gcc gcc-c++ git libyaml-devel yum-utils openssl-devel -y &&
+		sudo yum install curl python-devel make gcc gcc-c++ git libyaml-devel yum-utils -y &&
 		# No package libffi-devel available in RHEL 6 therefore installing from url
 		if [[ $(cat /etc/redhat-release) =~ "(Santiago)" ]];then
 			sudo yum install -y ftp://195.220.108.108/linux/centos/6.9/os/x86_64/Packages/libffi-devel-3.0.5-3.2.el6.x86_64.rpm
