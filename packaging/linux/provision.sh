@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 function install_deps() {
 	echo Installing necessary dependencies
