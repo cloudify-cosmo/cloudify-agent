@@ -28,7 +28,6 @@ function install_deps() {
 }
 
 function install_requirements() {
-	curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python
 	sudo pip install pip==6.0.8 --upgrade
 	sudo pip install "virtualenv>=14.0.0,<15.0.0" &&
 	sudo pip install setuptools==19.1.1 --upgrade &&
