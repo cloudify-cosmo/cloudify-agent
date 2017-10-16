@@ -73,7 +73,7 @@ class PluginInstaller(object):
         with open(constraint, 'w') as f:
             f.write(self._pip_freeze())
         args = '{0} --prefix="{1}" --constraint="{2}"'.format(
-                args, tmp_plugin_dir, constraint).strip()
+            args, tmp_plugin_dir, constraint).strip()
         self._create_plugins_dir_if_missing()
 
         (current_platform,
@@ -257,6 +257,11 @@ class PluginInstaller(object):
             self.runner.run(command, cwd=plugin_dir)
             self.logger.debug('Retrieved package name: {0}'
                               .format(package_name))
+        except CommandExecutionException as e:
+            self.logger.debug('Failed running pip install. Output:\n{0}'
+                              .format(e.output))
+            raise exceptions.PluginInstallationError(
+                'Failed running pip install. ({0})'.format(e.error))
         finally:
             if plugin_dir and not os.path.isabs(source):
                 self.logger.debug('Removing directory: {0}'
