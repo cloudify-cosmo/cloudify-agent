@@ -82,7 +82,7 @@ def reset_worker_tasks_state(sender, *args, **kwargs):
     def callback(*args, **kwargs):
         try:
             inspector.stats()
-        except:
+        except Exception:
             pass
     sender.hub.call_soon(callback=callback)
 
