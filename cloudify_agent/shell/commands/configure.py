@@ -49,14 +49,14 @@ def configure(disable_requiretty, relocated_env, no_sudo):
     Configures global agent properties.
     """
 
-    click.echo('Configuring...')
     if disable_requiretty:
         click.echo('Disabling requiretty directive in sudoers file')
         _disable_requiretty(no_sudo)
+        click.echo('Successfully disabled requiretty for cfy-agent')
     if relocated_env:
         click.echo('Auto-correcting virtualenv {0}'.format(VIRTUALENV))
         _fix_virtualenv()
-    click.echo('Successfully configured cfy-agent')
+        click.echo('Successfully corrected cfy-agent`s virtualenv')
 
 
 def _disable_requiretty(no_sudo):
