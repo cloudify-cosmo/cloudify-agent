@@ -246,15 +246,21 @@ def _celery_task_name(version):
         return 'script_runner.tasks.run'
 
 
-def _assert_agent_alive(name, celery_client, version=None):
-    tasks = utils.get_agent_registered(name, celery_client)
-    if not tasks:
-        raise NonRecoverableError(
-            'Could not access tasks list for agent {0}'.format(name))
+def _assert_agent_alive(name, celery_client, version=None,
+                        retries=20, retry_interval=2):
     task_name = _celery_task_name(version)
-    if task_name not in tasks:
-        raise NonRecoverableError('Task {0} is not available in agent {1}'.
-                                  format(task_name, name))
+    for retry in range(retries):
+        tasks = utils.get_agent_registered(name, celery_client)
+        if tasks and task_name in tasks:
+            break
+        time.sleep(retry_interval)
+    else:
+        if not tasks:
+            raise NonRecoverableError(
+                'Could not access tasks list for agent {0}'.format(name))
+        if task_name not in tasks:
+            raise NonRecoverableError('Task {0} is not available in agent {1}'.
+                                      format(task_name, name))
 
 
 def _get_manager_version():
