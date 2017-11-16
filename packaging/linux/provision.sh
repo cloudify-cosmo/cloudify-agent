@@ -12,6 +12,8 @@ function install_deps() {
 		sudo apt-get install -y curl python-dev git make gcc g++ libyaml-dev zlib1g-dev openssl libffi-dev libssl-dev
 	elif which yum; then
 		# centos/REHL
+		sudo yum clean all &&
+		sudo rm -rf /var/cache/yum &&
 		sudo yum -y update &&
 		sudo yum -y downgrade libyaml &&
 		sudo yum install curl python-devel make gcc gcc-c++ git libyaml-devel yum-utils openssl-devel -y &&
