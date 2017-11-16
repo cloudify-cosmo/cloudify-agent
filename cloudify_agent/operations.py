@@ -173,6 +173,7 @@ def _set_default_new_agent_config_values(old_agent, new_agent):
     new_agent['disable_requiretty'] = False
     new_agent['install_with_sudo'] = True
     new_agent['networks'] = ctx.bootstrap_context.cloudify_agent.networks
+    new_agent['cluster'] = ctx.bootstrap_context.cloudify_agent.cluster or []
 
 
 def _copy_values_from_old_agent_config(old_agent, new_agent):
