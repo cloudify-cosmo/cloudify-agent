@@ -18,7 +18,7 @@ from setuptools import setup
 
 setup(
     name='mock-plugin-with-requirements',
-    version='4.2',
+    version='4.3.dev1',
     author='Gigaspaces',
     author_email='cloudify@gigaspaces.com',
     packages=[
