@@ -230,7 +230,7 @@ class PluginInstaller(object):
 
     def _pip_freeze(self):
         try:
-            return self.runner.run('{0} freeze'.format(get_pip_path())).std_out
+            return self.runner.run('{0} freeze --all'.format(get_pip_path())).std_out
         except CommandExecutionException as e:
             raise exceptions.PluginInstallationError(
                 'Failed running pip freeze. ({0})'.format(e))
