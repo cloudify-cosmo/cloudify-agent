@@ -47,7 +47,7 @@ export REPO=$5
 
 curl -u $GITHUB_USERNAME:$GITHUB_PASSWORD https://raw.githubusercontent.com/cloudify-cosmo/${REPO}/${CORE_BRANCH}/packages-urls/common_build_env.sh -o ./common_build_env.sh &&
 source common_build_env.sh &&
-curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-packager/master/common/provision.sh -o ./common-provision.sh &&
+curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-packager/${CORE_BRANCH}/common/provision.sh -o ./common-provision.sh &&
 source common-provision.sh
 
 install_common_prereqs &&
