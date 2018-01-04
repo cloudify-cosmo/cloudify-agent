@@ -96,7 +96,7 @@ class CloudifyAgentConfig(dict):
     @property
     def is_provided(self):
         return self['install_method'] == \
-               constants.AGENT_INSTALL_METHOD_PROVIDED
+            constants.AGENT_INSTALL_METHOD_PROVIDED
 
     @property
     def is_local(self):
@@ -130,6 +130,7 @@ class CloudifyAgentConfig(dict):
         self.setdefault('env', {})
         self.setdefault('fabric_env', {})
         self.setdefault('system_python', 'python')
+        self.setdefault('broker_heartbeat', None)
 
     def _set_process_management(self):
         self.setdefault('process_management', {})
