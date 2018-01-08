@@ -108,6 +108,7 @@ class CloudifyAgentConfig(dict):
         self.setdefault('env', {})
         self.setdefault('fabric_env', {})
         self.setdefault('system_python', 'python')
+        self.setdefault('broker_heartbeat', None)
 
     def _set_process_management(self):
         self.setdefault('process_management', {})

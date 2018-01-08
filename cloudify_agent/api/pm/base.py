@@ -104,6 +104,11 @@ class Daemon(object):
         the password for the broker connection
         defaults to 'guest'
 
+    ``broker_heartbeat``
+
+        The AMQP heartbeat interval to be used by agents.
+        Defaults to None.
+
     ``rest_host``:
 
         the ip address/host name of the manager, running the
@@ -231,6 +236,7 @@ class Daemon(object):
             self.broker_port = constants.BROKER_PORT_SSL
         else:
             self.broker_port = constants.BROKER_PORT_NO_SSL
+        self.broker_heartbeat = params.get('broker_heartbeat', None)
 
         self.host = params.get('host')
         self.deployment_id = params.get('deployment_id')
@@ -297,6 +303,8 @@ class Daemon(object):
             'broker_vhost': self.broker_vhost,
             'cluster': self.cluster
         }
+        if self.broker_heartbeat:
+            config['broker_heartbeat'] = self.broker_heartbeat
         with open(self._get_celery_conf_path(), 'w') as conf_handle:
             json.dump(config, conf_handle)
 
