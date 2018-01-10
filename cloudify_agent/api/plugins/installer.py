@@ -35,8 +35,9 @@ from cloudify.manager import get_rest_client
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import plugins
-from cloudify_agent.api.utils import get_pip_path
 from cloudify_agent.api import exceptions
+from cloudify_agent.api.utils import get_pip_path
+from cloudify_rest_client.constants import VisibilityState
 
 
 SYSTEM_DEPLOYMENT = '__system__'
@@ -127,13 +128,18 @@ class PluginInstaller(object):
         matching_existing_installation = False
         dst_dir = '{0}-{1}'.format(managed_plugin.package_name,
                                    managed_plugin.package_version)
-        dst_dir = self._full_dst_dir(dst_dir)
+        dst_dir = self._full_dst_dir(dst_dir, managed_plugin)
+        self.logger.debug('Checking if managed plugin installation exists '
+                          'in {0}'.format(dst_dir))
         lock = self._lock(dst_dir)
         lock.acquire()
         try:
             if os.path.exists(dst_dir):
+                self.logger.debug('Plugin path exists {0}'.format(dst_dir))
                 plugin_id_path = os.path.join(dst_dir, 'plugin.id')
                 if os.path.exists(plugin_id_path):
+                    self.logger.debug('Plugin id path exists {0}'.
+                                      format(plugin_id_path))
                     with open(plugin_id_path) as f:
                         existing_plugin_id = f.read().strip()
                     matching_existing_installation = (
@@ -306,9 +312,14 @@ class PluginInstaller(object):
                     raise
 
     @staticmethod
-    def _full_dst_dir(dst_dir):
+    def _full_dst_dir(dst_dir, managed_plugin=None):
+        if managed_plugin and managed_plugin['visibility'] \
+                == VisibilityState.GLOBAL:
+            tenant_name = managed_plugin['tenant_name']
+        else:
+            tenant_name = ctx.tenant_name
         plugins_dir = os.path.join(VIRTUALENV, 'plugins')
-        return os.path.join(plugins_dir, ctx.tenant_name, dst_dir)
+        return os.path.join(plugins_dir, tenant_name, dst_dir)
 
     @staticmethod
     def _lock(path):
