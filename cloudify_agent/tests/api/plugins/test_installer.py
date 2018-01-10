@@ -30,6 +30,7 @@ from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
 from cloudify.exceptions import NonRecoverableError
 from cloudify_rest_client.plugins import Plugin
+from cloudify_rest_client.constants import VisibilityState
 
 from cloudify_agent.api import exceptions
 from cloudify_agent.api.plugins import installer
@@ -458,7 +459,8 @@ def _patch_for_install_wagon(package_name, package_version,
     plugin = {'package_name': package_name,
               'package_version': package_version,
               'supported_platform': 'any',
-              'id': plugin_id}
+              'id': plugin_id,
+              'visibility': VisibilityState.TENANT}
     with _patch_client([plugin], download_path=download_path) as client:
         with patch('cloudify_agent.api.plugins.installer.get_managed_plugin',
                    lambda p: client.plugins.plugins[0]):
