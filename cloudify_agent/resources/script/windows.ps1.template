@@ -23,6 +23,7 @@ function Download($Url, $OutputPath)
     # Make sure the output directory exists
     New-Item -ItemType directory -Force -Path (Split-Path $OutputPath)
 
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     $WebClient = New-Object System.Net.WebClient
     $WebClient.Headers.add('{{ auth_token_header }}', '{{ auth_token_value }}')
     $WebClient.DownloadFile("$Url", "$OutputPath")
