@@ -14,6 +14,8 @@ function AddSSLCert()
 
 function Download()
 {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
     # Download install script into the current dir
     $WebClient = New-Object System.Net.WebClient
     $WebClient.DownloadFile("{{ link }}", "agent_installer.ps1")
