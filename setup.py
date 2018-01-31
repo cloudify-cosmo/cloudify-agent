@@ -21,7 +21,7 @@ install_requires = [
     'cloudify-rest-client==4.3.dev1',
     'cloudify-script-plugin==1.5.2',
     'appdirs==1.4.3',
-    'click==4.0',
+    'click==6.7',
     'celery==3.1.17',
     'jinja2==2.7.2',
     'pywinrm==0.0.3',
