@@ -131,6 +131,7 @@ from cloudify_agent.shell.decorators import handle_failures
               help='The interval of the AMQP heartbeat in seconds [env {0}]'
               .format(env.CLOUDIFY_BROKER_HEARTBEAT),
               type=int,
+              default=30,
               envvar=env.CLOUDIFY_BROKER_HEARTBEAT
               )
 @click.option('--min-workers',
