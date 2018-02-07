@@ -109,7 +109,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
             failure_restart_delay=self.failure_restart_delay,
             cluster_settings_path=self.cluster_settings_path,
             executable_temp_path=self.executable_temp_path,
-            heartbeat=self.broker_heartbeat
+            heartbeat=self.heartbeat
         )
 
         self._logger.debug('Rendered configuration script: {0}'.format(

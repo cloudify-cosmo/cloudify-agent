@@ -104,10 +104,11 @@ class Daemon(object):
         the password for the broker connection
         defaults to 'guest'
 
-    ``broker_heartbeat``
+    ``heartbeat``
 
-        The AMQP heartbeat interval to be used by agents.
-        Defaults to None.
+        The AMQP and Celery heartbeats interval to be used by agents,
+        in seconds.
+        Defaults to 30.
 
     ``rest_host``:
 
@@ -236,7 +237,7 @@ class Daemon(object):
             self.broker_port = constants.BROKER_PORT_SSL
         else:
             self.broker_port = constants.BROKER_PORT_NO_SSL
-        self.broker_heartbeat = params.get('broker_heartbeat')
+        self.heartbeat = params.get('heartbeat')
 
         self.host = params.get('host')
         self.deployment_id = params.get('deployment_id')
