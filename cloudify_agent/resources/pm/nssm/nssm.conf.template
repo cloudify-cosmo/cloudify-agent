@@ -18,7 +18,8 @@ echo Installing the agent as a windows service...
 --gate-keeper-bucket-size={{ max_workers }} ^
 --with-logging-server ^
 --logging-server-logdir="""{{ workdir }}\logs""" ^
---without-heartbeat
+{% if heartbeat %}--heartbeat-interval={{ heartbeat }}{% else %}--without-heartbeat{% endif %}
+
 
 if %errorlevel% neq 0 exit /b %errorlevel%
 

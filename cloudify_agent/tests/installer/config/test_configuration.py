@@ -120,7 +120,7 @@ class TestConfiguration(BaseTest):
             'name': 'test_deployment',
             'rest_host': 'localhost',
             'broker_ip': 'localhost',
-            'broker_heartbeat': None,
+            'heartbeat': None,
             'queue': 'test_deployment',
             'envdir': envdir,
             'user': user,

@@ -119,7 +119,8 @@ class DetachedDaemon(CronRespawnDaemon):
             min_workers=self.min_workers,
             max_workers=self.max_workers,
             virtualenv_path=VIRTUALENV,
-            workdir=self.workdir
+            workdir=self.workdir,
+            heartbeat=self.heartbeat
         )
 
         # no sudo needed, yey!
