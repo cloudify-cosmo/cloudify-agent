@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import unittest
+import getpass
 
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.tests.api.pm import only_os
@@ -27,4 +28,4 @@ class TestConfigureCommandLine(BaseCommandLineTestCase, unittest.TestCase):
     @only_os('posix')
     def test_configure(self):
         self._run('cfy-agent configure --disable-requiretty '
-                  '--relocated-env')
+                  '--relocated-env --user {}'.format(getpass.getuser()))

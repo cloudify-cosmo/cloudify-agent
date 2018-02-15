@@ -42,24 +42,32 @@ from cloudify_agent.shell.decorators import handle_failures
               help='Indication whether sudo should be used when applying '
                    ' disable-requiretty part',
               is_flag=True)
+@click.option('--user',
+              help='(For disable-requiretty) The user for which to disable '
+                   'requiretty',
+              required=False)
 @handle_failures
-def configure(disable_requiretty, relocated_env, no_sudo):
+def configure(disable_requiretty, relocated_env, no_sudo, user):
 
     """
     Configures global agent properties.
     """
 
     if disable_requiretty:
+        if not user:
+            raise Exception('Asked to disable requiretty, but user was not '
+                            'provided')
         click.echo('Disabling requiretty directive in sudoers file')
-        _disable_requiretty(no_sudo)
-        click.echo('Successfully disabled requiretty for cfy-agent')
+        _disable_requiretty(no_sudo, user)
+        click.echo(
+            'Successfully disabled requiretty for user {}'.format(user))
     if relocated_env:
         click.echo('Auto-correcting virtualenv {0}'.format(VIRTUALENV))
         _fix_virtualenv()
         click.echo('Successfully corrected cfy-agent`s virtualenv')
 
 
-def _disable_requiretty(no_sudo):
+def _disable_requiretty(no_sudo, user):
 
     """
     Disables the requiretty directive in the /etc/sudoers file. This
@@ -79,7 +87,8 @@ def _disable_requiretty(no_sudo):
     )
     runner.run('chmod +x {0}'.format(disable_requiretty_script_path))
     maybe_sudo = '' if no_sudo else 'sudo'
-    runner.run('{0} {1}'.format(disable_requiretty_script_path, maybe_sudo))
+    runner.run('{0} {1} {2}'.format(disable_requiretty_script_path,
+                                    user, maybe_sudo))
 
 
 def _fix_virtualenv():

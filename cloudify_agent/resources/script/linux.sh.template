@@ -108,9 +108,10 @@ export -f configure_virtualenv
 disable_requiretty()
 {
     {% if conf.disable_requiretty %}
+        echo "Disabling TTY requirement for user: {{ conf.user }}"
         export_daemon_env
         echo "Disabling TTY requirement for sudo..."
-        cfy-agent configure --disable-requiretty --no-sudo
+        cfy-agent configure --disable-requiretty --no-sudo --user {{ conf.user }}
         echo "TTY requirement for sudo disabled"
     {% else %}
         echo "Skipped disabling of TTY requirement"
