@@ -112,7 +112,8 @@ class AgentInstaller(object):
         if not self.cloudify_agent.is_windows:
             flags = '--relocated-env'
             if self.cloudify_agent.get('disable_requiretty'):
-                flags = '{0} --disable-requiretty'.format(flags)
+                flags = '{0} --disable-requiretty --user {1}'.format(
+                    flags, self.cloudify_agent['user'])
         return flags
 
     def create_custom_env_file_on_target(self, environment):
