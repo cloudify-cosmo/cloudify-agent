@@ -267,8 +267,12 @@ def _http_rest_host():
     return 'http://{0}/'.format(get_manager_rest_service_host())
 
 
-def _get_init_script_path_and_url(new_agent, old_agent_version):
-    script_path, script_url = init_script_download_link(new_agent)
+def _get_init_script_path_and_url(new_agent, old_agent_version, manager_ip=None,
+                                  manager_cert=None, rest_token=None,
+                                  transfer_agent=False):
+    script_path, script_url = init_script_download_link(
+        manager_ip, manager_cert, rest_token, transfer_agent,
+        cloudify_agent=new_agent)
 
     # Prior to 4.2 (and script plugin 1.5.1) there was no way to pass
     # a certificate to the script plugin, so the initial script must be
@@ -318,7 +322,8 @@ def _execute_install_script_task(app, params, old_agent, timeout, script_path):
         os.remove(script_path)
 
 
-def _run_install_script(old_agent, timeout):
+def _run_install_script(old_agent, timeout, manager_ip=None, manager_cert=None,
+                        rest_token=None, transfer_agent=False):
     old_agent = copy.deepcopy(old_agent)
     if 'version' not in old_agent:
         # Assuming that if there is no version info in the agent then
@@ -331,7 +336,8 @@ def _run_install_script(old_agent, timeout):
                             old_agent['version'])
 
         script_path, script_url = _get_init_script_path_and_url(
-            new_agent, old_agent['version']
+            new_agent, old_agent['version'], manager_ip, manager_cert,
+            rest_token, transfer_agent=transfer_agent
         )
         params = _build_install_script_params(old_agent, script_url)
         _execute_install_script_task(
@@ -446,3 +452,20 @@ def validate_agent_amqp(current_amqp=True, **_):
         raise NonRecoverableError(result['agent_alive_error'])
     if not current_amqp and not result['agent_alive_crossbroker']:
         raise NonRecoverableError(result['agent_alive_crossbroker_error'])
+
+
+@operation
+def transfer_agent_amqp(transfer_agent_timeout=300, manager_ip=None,
+                        manager_certificate=None, manager_rest_token=None, **_):
+
+    old_agent = _validate_agent()
+    agents = _run_install_script(old_agent, transfer_agent_timeout, manager_ip,
+                                 manager_certificate, manager_rest_token,
+                                 transfer_agent=True)
+    returned_agent = agents['new']
+    ctx.logger.info('Configured agent {0} to work with the new Manager'.
+                    format(returned_agent['name']))
+
+    # Make sure the agent is alive:
+    app = get_celery_app(tenant=returned_agent['rest_tenant'])
+    _assert_agent_alive(returned_agent['name'], app)

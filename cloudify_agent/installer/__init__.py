@@ -111,7 +111,7 @@ class AgentInstaller(object):
     def cfy_agent_path(self):
         raise NotImplementedError('Must be implemented by sub-class')
 
-    def _create_agent_env(self):
+    def _create_agent_env(self, manager_ip=None, rest_token=None):
         # Try to get broker credentials from the tenant. If they aren't set
         # get them from the broker_config module
         tenant = self.cloudify_agent.get('rest_tenant', {})
@@ -128,8 +128,8 @@ class AgentInstaller(object):
             # is actually created
             env.CLOUDIFY_DAEMON_QUEUE: self.cloudify_agent['queue'],
             env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
-            env.CLOUDIFY_REST_HOST: self.cloudify_agent['rest_host'],
-            env.CLOUDIFY_BROKER_IP: self.cloudify_agent['broker_ip'],
+            env.CLOUDIFY_REST_HOST: manager_ip if manager_ip else self.cloudify_agent['rest_host'],
+            env.CLOUDIFY_BROKER_IP: manager_ip if manager_ip else self.cloudify_agent['broker_ip'],
 
             # Optional broker values
             env.CLOUDIFY_BROKER_USER: broker_user,
@@ -145,7 +145,7 @@ class AgentInstaller(object):
             # by the agent on the remote host if not set here
             env.CLOUDIFY_DAEMON_USER: self.cloudify_agent.get('user'),
             env.CLOUDIFY_REST_PORT: self.cloudify_agent.get('rest_port'),
-            env.CLOUDIFY_REST_TOKEN: self.cloudify_agent.get('rest_token'),
+            env.CLOUDIFY_REST_TOKEN: rest_token if rest_token else self.cloudify_agent.get('rest_token'),
             env.CLOUDIFY_REST_TENANT: tenant_name,
             env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(
                 'max_workers'),

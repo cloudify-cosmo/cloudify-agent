@@ -10,6 +10,19 @@ add_ssl_cert()
 export -f add_ssl_cert
 {% endif %}
 
+export_daemon_env()
+{
+    export_agent_cli_env
+    {% for env_key, env_value in daemon_env.iteritems() %}
+        export {{ env_key }}={{ env_value }}
+    {% endfor %}
+}
+export -f export_daemon_env
+
+#####################################################
+###################### Install ######################
+#####################################################
+
 {% if install %}
 download()
 {
@@ -59,18 +72,11 @@ install_agent()
 export -f install_agent
 {% endif %}
 
+#######################################################
+###################### Configure ######################
+#######################################################
+
 {% if configure %}
-export_daemon_env()
-{
-    local agent_env_bin={{ conf.envdir }}/bin
-    export AGENT_PYTHON_INTERPRETER=${agent_env_bin}/python
-    export AGENT_CLI=${agent_env_bin}/cfy-agent
-    export PATH=${agent_env_bin}:$PATH
-    {% for env_key, env_value in daemon_env.iteritems() %}
-        export {{ env_key }}={{ env_value }}
-    {% endfor %}
-}
-export -f export_daemon_env
 
 configure_virtualenv()
 {
@@ -99,6 +105,10 @@ configure_agent()
 }
 export -f configure_agent
 {% endif %}
+
+###################################################
+###################### Start ######################
+###################################################
 
 {% if start %}
 create_custom_env_file()
@@ -133,8 +143,42 @@ start_agent()
 export -f start_agent
 {% endif %}
 
+###################################################
+################# Transfer Agent ##################
+###################################################
+
+export_agent_cli_env()
+{
+    local agent_env_bin={{ conf.envdir }}/bin
+    export AGENT_PYTHON_INTERPRETER=${agent_env_bin}/python
+    export AGENT_CLI=${agent_env_bin}/cfy-agent
+    export PATH=${agent_env_bin}:$PATH
+    export CLOUDIFY_DAEMON_NAME=daemon_env.CLOUDIFY_DAEMON_NAME
+}
+export -f  export_agent_cli_env
+
+delete_daemon()
+{
+    export_agent_cli_env
+    cfy-agent daemons stop
+    cfy-agent daemons delete
+}
+export -f  delete_daemon
+
+
+transfer_agent()
+{
+    delete_daemon
+    su centos --shell /bin/bash -c "set -e; add_ssl_cert"
+
+}
+export -f transfer_agent
+
 main()
 {
+    {% if transfer_agent %}
+    transfer_agent
+    {% endif %}
     {% if install %}
     install_agent
     {% endif %}
