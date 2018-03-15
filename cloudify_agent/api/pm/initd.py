@@ -52,8 +52,8 @@ class GenericLinuxDaemon(CronRespawnDaemon):
         # initd specific configuration
         self.start_on_boot = str(params.get(
             'start_on_boot', 'true')).lower() == 'true'
-        self._start_on_boot_handler = _StartOnBootHandler(self.service_name,
-                                                          self._runner)
+        self._start_on_boot_handler = StartOnBootHandler(self.service_name,
+                                                         self._runner)
 
     def configure(self):
         super(GenericLinuxDaemon, self).configure()
@@ -102,23 +102,26 @@ class GenericLinuxDaemon(CronRespawnDaemon):
             self._logger.debug(str(e))
             return False
 
-    def create_script(self):
+    def _get_rendered_script(self):
         self._logger.debug('Rendering init.d script from template')
-        rendered = utils.render_template_to_file(
+        return utils.render_template_to_file(
             template_path='pm/initd/initd.template',
             daemon_name=self.name,
             config_path=self.config_path
         )
+
+    def create_script(self):
+        rendered = self._get_rendered_script()
         self._runner.run('sudo mkdir -p {0}'.format(
             os.path.dirname(self.script_path)))
         self._runner.run('sudo cp {0} {1}'.format(rendered, self.script_path))
         self._runner.run('sudo rm {0}'.format(rendered))
         self._runner.run('sudo chmod +x {0}'.format(self.script_path))
 
-    def create_config(self):
+    def _get_rendered_config(self):
         self._logger.debug('Rendering configuration script "{0}" from template'
                            .format(self.config_path))
-        rendered = utils.render_template_to_file(
+        return utils.render_template_to_file(
             template_path='pm/initd/initd.conf.template',
             queue=self.queue,
             workdir=self.workdir,
@@ -143,6 +146,9 @@ class GenericLinuxDaemon(CronRespawnDaemon):
             executable_temp_path=self.executable_temp_path,
             heartbeat=self.heartbeat
         )
+
+    def create_config(self):
+        rendered = self._get_rendered_config()
         self._runner.run('sudo mkdir -p {0}'.format(
             os.path.dirname(self.config_path)))
         self._runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))
@@ -161,7 +167,7 @@ def status_command(daemon):
     return 'sudo service {0} status'.format(daemon.service_name)
 
 
-class _StartOnBootHandler(object):
+class StartOnBootHandler(object):
 
     def __init__(self, service_name, runner):
         self._name = service_name

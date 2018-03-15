@@ -18,3 +18,4 @@
 from cloudify_agent.api.pm.initd import GenericLinuxDaemon  # NOQA
 from cloudify_agent.api.pm.nssm import NonSuckingServiceManagerDaemon  # NOQA
 from cloudify_agent.api.pm.detach import DetachedDaemon  # NOQA
+from cloudify_agent.api.pm.systemd import SystemDDaemon  # NOQA
