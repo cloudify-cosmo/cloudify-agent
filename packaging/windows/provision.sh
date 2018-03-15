@@ -23,7 +23,7 @@ function download_resources() {
     curl -O http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/python.msi
     popd
     pushd packaging/source/virtualenv
-    curl -O http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/virtualenv-14.0.5-py2.py3-none-any.whl
+    curl -O http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/virtualenv-15.1.0-py2.py3-none-any.whl
     popd
 }
 
