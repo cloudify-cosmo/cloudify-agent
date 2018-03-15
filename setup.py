@@ -79,6 +79,7 @@ setup(
     entry_points={
         'console_scripts': [
             'cfy-agent = cloudify_agent.shell.main:main',
+            'worker = cloudify_agent.worker:main'
         ]
     }
 )
