@@ -88,6 +88,7 @@ class SystemDDaemon(Daemon):
         self._logger.debug('Rendering SystemD script from template')
         return utils.render_template_to_file(
             template_path='pm/systemd/systemd.template',
+            virtualenv_path=VIRTUALENV,
             config_path=self.config_path
         )
 
