@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 ########
 # Copyright (c) 2014 GigaSpaces Technologies Ltd. All rights reserved
 #
@@ -15,7 +14,6 @@
 # limitations under the License.
 ############
 
-import sys
 import json
 import time
 import logging
@@ -33,14 +31,8 @@ BROKER_PORT_NO_SSL = 5672
 
 
 # TODO: Properly handle logging (write to file, etc)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-ch = logging.StreamHandler(sys.stdout)
-ch.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')  # NOQA
-ch.setFormatter(formatter)
-logger.addHandler(ch)
 
 
 class AMQPTopicConsumer(object):
