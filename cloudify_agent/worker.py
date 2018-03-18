@@ -109,8 +109,8 @@ class AMQPTopicConsumer(object):
         parsed_body = json.loads(body)
         logger.info(parsed_body)
         result = None
+        task = parsed_body['cloudify_task']
         try:
-            task = parsed_body['cloudify_task']
             kwargs = task['kwargs']
             rv = dispatch.dispatch(**kwargs)
             result = {'ok': True, 'id': parsed_body['id'], 'result': rv}
@@ -121,7 +121,7 @@ class AMQPTopicConsumer(object):
         finally:
             logger.info('response %r', result)
             self.channel.basic_publish(
-                self.result_exchange, '', json.dumps(result)
+                self.result_exchange, task['id'], json.dumps(result)
             )
             self.channel.basic_ack(method.delivery_tag)
 
