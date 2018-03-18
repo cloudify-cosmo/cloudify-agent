@@ -121,7 +121,7 @@ class AMQPTopicConsumer(object):
         finally:
             logger.info('response %r', result)
             self.channel.basic_publish(
-                self.result_exchange, task['id'], json.dumps(result)
+                self.result_exchange, parsed_body['id'], json.dumps(result)
             )
             self.channel.basic_ack(method.delivery_tag)
 
