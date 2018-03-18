@@ -59,11 +59,14 @@ class AMQPTopicConsumer(object):
         self.channel.queue_declare(queue=queue,
                                    durable=True,
                                    auto_delete=False)
-        self.channel.exchange_declare(
-            exchange=self.result_exchange,
-            type='direct',
-            auto_delete=False,
-            durable=True)
+
+        for exchange in [self.queue, self.result_exchange]:
+            self.channel.exchange_declare(
+                exchange=exchange,
+                type='direct',
+                auto_delete=False,
+                durable=True)
+
         # result = self.channel.queue_declare(
         #     auto_delete=True,
         #     durable=False,
