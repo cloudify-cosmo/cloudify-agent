@@ -1,2 +1,1 @@
 CELERY_WORK_DIR={{ workdir }}
-VIRTUALENV={{ virtualenv_path }}
