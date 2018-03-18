@@ -15,16 +15,16 @@
 # limitations under the License.
 ############
 
-# import sys
+import sys
 import json
 import time
-# import logging
+import logging
 import argparse
 
 import pika
 from pika.exceptions import AMQPConnectionError
 
-from cloudify import dispatch, ctx, broker_config
+from cloudify import dispatch, broker_config
 
 D_CONN_ATTEMPTS = 12
 D_RETRY_DELAY = 5
@@ -33,14 +33,14 @@ BROKER_PORT_NO_SSL = 5672
 
 
 # TODO: Properly handle logging (write to file, etc)
-# logger = logging.getLogger()
-# logger.setLevel(logging.INFO)
-#
-# ch = logging.StreamHandler(sys.stdout)
-# ch.setLevel(logging.INFO)
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')  # NOQA
-# ch.setFormatter(formatter)
-# logger.addHandler(ch)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+ch = logging.StreamHandler(sys.stdout)
+ch.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')  # NOQA
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 
 class AMQPTopicConsumer(object):
@@ -112,18 +112,18 @@ class AMQPTopicConsumer(object):
 
     def _process(self, channel, method, properties, body):
         parsed_body = json.loads(body)
-        ctx.logger.info(parsed_body)
+        logger.info(parsed_body)
         try:
             task = parsed_body['cloudify_task']
             kwargs = task['kwargs']
             rv = dispatch.dispatch(**kwargs)
             result = {'ok': True, 'id': parsed_body['id'], 'result': rv}
         except Exception as e:
-            ctx.logger.warn('Failed message processing: {0!r}'.format(e))
-            ctx.logger.warn('Body: {0}\nType: {1}'.format(body, type(body)))
+            logger.warn('Failed message processing: {0!r}'.format(e))
+            logger.warn('Body: {0}\nType: {1}'.format(body, type(body)))
             result = {'ok': False, 'error': repr(e), 'id': parsed_body['id']}
         finally:
-            ctx.logger.info('response %r', result)
+            logger.info('response %r', result)
             self.channel.basic_publish(
                 self.result_exchange, '', json.dumps(result)
             )
