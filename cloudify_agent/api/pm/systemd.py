@@ -111,9 +111,6 @@ class SystemDDaemon(Daemon):
             log_level=self.log_level,
             log_file=self.get_logfile(),
             pid_file=self.pid_file,
-            cron_respawn=str(self.cron_respawn).lower(),
-            enable_cron_script=self.create_enable_cron_script(),
-            disable_cron_script=self.create_disable_cron_script(),
             cluster_settings_path=self.cluster_settings_path,
             executable_temp_path=self.executable_temp_path,
             heartbeat=self.heartbeat
