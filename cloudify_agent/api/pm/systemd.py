@@ -17,13 +17,10 @@ import os
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils, exceptions
-from cloudify_agent.api.pm.initd import (
-    GenericLinuxDaemon,
-    StartOnBootHandler
-)
+from cloudify_agent.api.pm.base import Daemon
 
 
-class SystemDDaemon(GenericLinuxDaemon):
+class SystemDDaemon(Daemon):
 
     """
     Implementation for the SystemD process management.
@@ -42,16 +39,18 @@ class SystemDDaemon(GenericLinuxDaemon):
     PROCESS_MANAGEMENT = 'systemd'
 
     def __init__(self, logger=None, **params):
-        super(GenericLinuxDaemon, self).__init__(logger=logger, **params)
+        super(SystemDDaemon, self).__init__(logger=logger, **params)
 
         self.service_name = 'cloudify-worker-{0}'.format(self.name)
         self.script_path = os.path.join(self.SCRIPT_DIR, self.service_name)
         self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
 
-        self.start_on_boot = str(params.get(
-            'start_on_boot', 'true')).lower() == 'true'
-        self._start_on_boot_handler = StartOnBootHandler(self.service_name,
-                                                         self._runner)
+    def configure(self):
+        super(SystemDDaemon, self).configure()
+        self._runner.run(self._systemctl_command('daemon-reload'))
+
+    def start(self, *args, **kwargs):
+        self._runner.run(self.start_command())
 
     def _systemctl_command(self, command):
         return 'sudo systemctl {command} {service}'.format(
