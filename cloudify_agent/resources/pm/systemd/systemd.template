@@ -5,8 +5,8 @@ Description=Cloudify Agent Worker Service
 TimeoutStartSec=0
 Restart=on-failure
 EnvironmentFile={{ config_path }}
-User=amqpinflux
-Group=amqpinflux
+User={{ user }}
+Group={{ user }}
 ExecStart={{ virtualenv_path }}/bin/worker --queue {{ queue }}
 
 [Install]
