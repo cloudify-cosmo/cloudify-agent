@@ -113,6 +113,7 @@ class AMQPTopicConsumer(object):
     def _process(self, channel, method, properties, body):
         parsed_body = json.loads(body)
         logger.info(parsed_body)
+        result = None
         try:
             task = parsed_body['cloudify_task']
             kwargs = task['kwargs']
