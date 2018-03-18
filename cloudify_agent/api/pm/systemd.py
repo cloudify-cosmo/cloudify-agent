@@ -47,7 +47,7 @@ class SystemDDaemon(Daemon):
 
     def configure(self):
         super(SystemDDaemon, self).configure()
-        self._runner.run(self._systemctl_command('daemon-reload'))
+        self._runner.run('sudo systemctl daemon-reload')
 
     def start(self, *args, **kwargs):
         self._runner.run(self.start_command())
