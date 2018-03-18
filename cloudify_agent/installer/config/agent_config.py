@@ -136,7 +136,7 @@ class CloudifyAgentConfig(dict):
 
     def _set_process_management(self):
         self.setdefault('process_management', {})
-        default_pm_name = 'nssm' if self.is_windows else 'init.d'
+        default_pm_name = 'nssm' if self.is_windows else 'systemd'
         self['process_management'].setdefault('name', default_pm_name)
 
     def _set_name(self):
