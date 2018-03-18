@@ -69,6 +69,20 @@ class SystemDDaemon(Daemon):
     def status_command(self):
         return self._systemctl_command('status')
 
+    def create_script(self):
+        rendered = self._get_rendered_script()
+        self._runner.run('sudo mkdir -p {0}'.format(
+            os.path.dirname(self.script_path)))
+        self._runner.run('sudo cp {0} {1}'.format(rendered, self.script_path))
+        self._runner.run('sudo rm {0}'.format(rendered))
+
+    def create_config(self):
+        rendered = self._get_rendered_config()
+        self._runner.run('sudo mkdir -p {0}'.format(
+            os.path.dirname(self.config_path)))
+        self._runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))
+        self._runner.run('sudo rm {0}'.format(rendered))
+
     def _get_rendered_script(self):
         self._logger.debug('Rendering SystemD script from template')
         return utils.render_template_to_file(
