@@ -64,7 +64,7 @@ class AMQPTopicConsumer(object):
         #     durable=False,
         #     exclusive=False)
         # queue = result.method.queue
-        self.channel.basic_qos(prefetch_size=1)
+        self.channel.basic_qos(prefetch_count=1)
         self.channel.queue_bind(queue=queue,
                                 exchange=queue,
                                 routing_key='')
