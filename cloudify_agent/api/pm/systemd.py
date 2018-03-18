@@ -42,7 +42,8 @@ class SystemDDaemon(Daemon):
         super(SystemDDaemon, self).__init__(logger=logger, **params)
 
         self.service_name = 'cloudify-worker-{0}'.format(self.name)
-        self.script_path = os.path.join(self.SCRIPT_DIR, self.service_name)
+        self.script_path = os.path.join(
+            self.SCRIPT_DIR, '{0}.service'.format(self.service_name))
         self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
 
     def configure(self):
