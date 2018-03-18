@@ -67,6 +67,8 @@ setup(
             'resources/pm/detach/detach.template',
             'resources/pm/nssm/nssm.exe',
             'resources/pm/nssm/nssm.conf.template',
+            'resources/pm/systemd/systemd.conf.template',
+            'resources/pm/systemd/systemd.template',
             'resources/script/linux.sh.template',
             'resources/script/windows.ps1.template',
             'resources/script/linux-download.sh.template',
