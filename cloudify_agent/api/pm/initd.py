@@ -15,16 +15,16 @@
 
 import os
 
-from cloudify.exceptions import CommandExecutionException
-
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
 from cloudify_agent import VIRTUALENV
-from cloudify_agent.api import defaults
-from cloudify_agent.api.pm.base import CronRespawnDaemon
+from cloudify_agent.api.pm.base import (
+    GenericLinuxDaemonMixin,
+    CronRespawnDaemonMixin
+)
 
 
-class GenericLinuxDaemon(CronRespawnDaemon):
+class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
 
     """
     Implementation for the init.d process management.
@@ -43,7 +43,7 @@ class GenericLinuxDaemon(CronRespawnDaemon):
     PROCESS_MANAGEMENT = 'init.d'
 
     def __init__(self, logger=None, **params):
-        super(GenericLinuxDaemon, self).__init__(logger=logger, **params)
+        super(InitDDaemon, self).__init__(logger=logger, **params)
 
         self.service_name = 'celeryd-{0}'.format(self.name)
         self.script_path = os.path.join(self.SCRIPT_DIR, self.service_name)
@@ -56,27 +56,15 @@ class GenericLinuxDaemon(CronRespawnDaemon):
                                                          self._runner)
 
     def configure(self):
-        super(GenericLinuxDaemon, self).configure()
+        super(InitDDaemon, self).configure()
         if self.start_on_boot:
             self._logger.info('Creating start-on-boot entry')
             self._start_on_boot_handler.create()
 
-    def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        if self._is_agent_registered():
-            if not force:
-                raise exceptions.DaemonStillRunningException(self.name)
-            self.stop()
-
+    def _delete(self):
         if self.start_on_boot:
             self._logger.info('Deleting start-on-boot entry')
             self._start_on_boot_handler.delete()
-
-        if os.path.exists(self.script_path):
-            self._logger.debug('Deleting {0}'.format(self.script_path))
-            self._runner.run('sudo rm {0}'.format(self.script_path))
-        if os.path.exists(self.config_path):
-            self._logger.debug('Deleting {0}'.format(self.config_path))
-            self._runner.run('sudo rm {0}'.format(self.config_path))
 
     def before_self_stop(self):
         if self.start_on_boot:
@@ -91,16 +79,11 @@ class GenericLinuxDaemon(CronRespawnDaemon):
             raise exceptions.DaemonNotConfiguredError(self.name)
         return start_command(self)
 
+    def _status(self):
+        return self.status_command()
+
     def status_command(self):
         return status_command(self)
-
-    def status(self):
-        try:
-            self._runner.run(self.status_command())
-            return True
-        except CommandExecutionException as e:
-            self._logger.debug(str(e))
-            return False
 
     def _get_rendered_script(self):
         self._logger.debug('Rendering init.d script from template')
@@ -111,11 +94,7 @@ class GenericLinuxDaemon(CronRespawnDaemon):
         )
 
     def create_script(self):
-        rendered = self._get_rendered_script()
-        self._runner.run('sudo mkdir -p {0}'.format(
-            os.path.dirname(self.script_path)))
-        self._runner.run('sudo cp {0} {1}'.format(rendered, self.script_path))
-        self._runner.run('sudo rm {0}'.format(rendered))
+        super(InitDDaemon, self).create_script()
         self._runner.run('sudo chmod +x {0}'.format(self.script_path))
 
     def _get_rendered_config(self):

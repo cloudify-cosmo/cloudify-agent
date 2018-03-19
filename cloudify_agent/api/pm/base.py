@@ -24,6 +24,7 @@ from cloudify.utils import (LocalCommandRunner,
                             get_exec_tempdir)
 from cloudify import amqp_client
 from cloudify import constants
+from cloudify.exceptions import CommandExecutionException
 from cloudify.celery.app import get_celery_app, get_cluster_celery_app
 
 from cloudify_agent import VIRTUALENV
@@ -783,7 +784,65 @@ class Daemon(object):
         return True
 
 
-class CronRespawnDaemon(Daemon):
+class GenericLinuxDaemonMixin(Daemon):
+    def __init__(self, script_path, config_path, **params):
+        super(GenericLinuxDaemonMixin, self).__init__(**params)
+
+        self.script_path = script_path
+        self.config_path = config_path
+
+    def _status(self):
+        raise NotImplementedError('Must be implemented by a subclass')
+
+    def _delete(self):
+        raise NotImplementedError('Must be implemented by a subclass')
+
+    def _get_rendered_script(self):
+        raise NotImplementedError('Must be implemented by a subclass')
+
+    def _get_rendered_config(self):
+        raise NotImplementedError('Must be implemented by a subclass')
+
+    def status(self):
+        try:
+            self._runner.run(self._status())
+            return True
+        except CommandExecutionException as e:
+            self._logger.debug(str(e))
+            return False
+
+    def create_script(self):
+        rendered = self._get_rendered_script()
+        self._runner.run('sudo mkdir -p {0}'.format(
+            os.path.dirname(self.script_path)))
+        self._runner.run(
+            'sudo cp {0} {1}'.format(rendered, self.script_path))
+        self._runner.run('sudo rm {0}'.format(rendered))
+
+    def create_config(self):
+        rendered = self._get_rendered_config()
+        self._runner.run('sudo mkdir -p {0}'.format(
+            os.path.dirname(self.config_path)))
+        self._runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))
+        self._runner.run('sudo rm {0}'.format(rendered))
+
+    def delete(self, force=defaults.DAEMON_FORCE_DELETE):
+        if self._is_agent_registered():
+            if not force:
+                raise exceptions.DaemonStillRunningException(self.name)
+            self.stop()
+
+        self._delete()
+
+        if os.path.exists(self.script_path):
+            self._logger.debug('Deleting {0}'.format(self.script_path))
+            self._runner.run('sudo rm {0}'.format(self.script_path))
+        if os.path.exists(self.config_path):
+            self._logger.debug('Deleting {0}'.format(self.config_path))
+            self._runner.run('sudo rm {0}'.format(self.config_path))
+
+
+class CronRespawnDaemonMixin(Daemon):
 
     """
     This Mixin exposes capabilities for adding a cron job that re-spawns
@@ -808,7 +867,7 @@ class CronRespawnDaemon(Daemon):
     """
 
     def __init__(self, logger=None, **params):
-        super(CronRespawnDaemon, self).__init__(logger, **params)
+        super(CronRespawnDaemonMixin, self).__init__(logger, **params)
         self.cron_respawn_delay = params.get('cron_respawn_delay', 1)
         self.cron_respawn = params.get('cron_respawn', False)
 

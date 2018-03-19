@@ -17,20 +17,16 @@ import os
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils, exceptions
-from cloudify_agent.api.pm.base import Daemon
+from cloudify_agent.api.pm.base import GenericLinuxDaemonMixin
 
 
-class SystemDDaemon(Daemon):
+class SystemDDaemon(GenericLinuxDaemonMixin):
 
     """
     Implementation for the SystemD process management.
 
     Following are all possible custom key-word arguments
     (in addition to the ones available in the base daemon)
-
-    ``start_on_boot``
-
-        start this daemon when the system boots.
 
     """
 
@@ -43,7 +39,7 @@ class SystemDDaemon(Daemon):
 
         self.service_name = 'cloudify-worker-{0}'.format(self.name)
         self.script_path = os.path.join(
-            self.SCRIPT_DIR, '{0}.service'.format(self.service_name))
+            self.SCRIPT_DIR, '{0}@.service'.format(self.service_name))
         self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
 
     def configure(self):
@@ -52,6 +48,12 @@ class SystemDDaemon(Daemon):
 
     def start(self, *args, **kwargs):
         self._runner.run(self.start_command())
+
+    def _status(self):
+        self._systemctl_command('status')
+
+    def _delete(self):
+        self._runner.run(self._systemctl_command('disable'))
 
     def _systemctl_command(self, command):
         return 'sudo systemctl {command} {service}'.format(
@@ -69,20 +71,6 @@ class SystemDDaemon(Daemon):
 
     def status_command(self):
         return self._systemctl_command('status')
-
-    def create_script(self):
-        rendered = self._get_rendered_script()
-        self._runner.run('sudo mkdir -p {0}'.format(
-            os.path.dirname(self.script_path)))
-        self._runner.run('sudo cp {0} {1}'.format(rendered, self.script_path))
-        self._runner.run('sudo rm {0}'.format(rendered))
-
-    def create_config(self):
-        rendered = self._get_rendered_config()
-        self._runner.run('sudo mkdir -p {0}'.format(
-            os.path.dirname(self.config_path)))
-        self._runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))
-        self._runner.run('sudo rm {0}'.format(rendered))
 
     def _get_rendered_script(self):
         self._logger.debug('Rendering SystemD script from template')
