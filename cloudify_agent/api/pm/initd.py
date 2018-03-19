@@ -43,15 +43,12 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
     PROCESS_MANAGEMENT = 'init.d'
 
     def __init__(self, logger=None, **params):
-        self.service_name = 'celeryd-{0}'.format(self.name)
-        script_path = os.path.join(self.SCRIPT_DIR, self.service_name)
-        config_path = os.path.join(self.CONFIG_DIR, self.service_name)
-        super(InitDDaemon, self).__init__(
-            logger=logger,
-            script_path=script_path,
-            config_path=config_path,
-            **params
-        )
+        super(InitDDaemon, self).__init__(logger=logger, **params)
+
+        self.service_name = 'cloudify-worker-{0}'.format(self.name)
+        self.script_path = os.path.join(
+            self.SCRIPT_DIR, '{0}.service'.format(self.service_name))
+        self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
 
         # initd specific configuration
         self.start_on_boot = str(params.get(

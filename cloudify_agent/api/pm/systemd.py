@@ -33,18 +33,16 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
     SCRIPT_DIR = '/usr/lib/systemd/system/'
     CONFIG_DIR = '/etc/sysconfig'
     PROCESS_MANAGEMENT = 'systemd'
+    NUM_OF_WORKERS = 3
 
     def __init__(self, logger=None, **params):
-        self.service_name = 'cloudify-worker-{0}'.format(self.name)
-        script_path = os.path.join(
-            self.SCRIPT_DIR, '{0}@.service'.format(self.service_name))
-        config_path = os.path.join(self.CONFIG_DIR, self.service_name)
-        super(SystemDDaemon, self).__init__(
-            logger=logger,
-            script_path=script_path,
-            config_path=config_path,
-            **params
-        )
+        super(SystemDDaemon, self).__init__(logger=logger, **params)
+
+        # The @ in the service name allows managing multiple worker instances
+        self.service_name = 'cloudify-worker-{0}@'.format(self.name)
+        self.script_path = os.path.join(
+            self.SCRIPT_DIR, '{0}.service'.format(self.service_name))
+        self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
 
     def configure(self):
         super(SystemDDaemon, self).configure()
@@ -60,9 +58,10 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
         self._runner.run(self._systemctl_command('disable'))
 
     def _systemctl_command(self, command):
-        return 'sudo systemctl {command} {service}'.format(
+        return 'sudo systemctl {command} {service}{{1..{workers}}}'.format(
             command=command,
-            service=self.service_name
+            service=self.service_name,
+            workers=self.NUM_OF_WORKERS
         )
 
     def stop_command(self):

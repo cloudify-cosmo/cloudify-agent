@@ -785,12 +785,6 @@ class Daemon(object):
 
 
 class GenericLinuxDaemonMixin(Daemon):
-    def __init__(self, script_path, config_path, **params):
-        super(GenericLinuxDaemonMixin, self).__init__(**params)
-
-        self.script_path = script_path
-        self.config_path = config_path
-
     def _status(self):
         raise NotImplementedError('Must be implemented by a subclass')
 
