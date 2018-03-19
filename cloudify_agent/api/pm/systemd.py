@@ -17,13 +17,10 @@ import os
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils, exceptions
-from cloudify_agent.api.pm.initd import (
-    GenericLinuxDaemon,
-    StartOnBootHandler
-)
+from cloudify_agent.api.pm.base import Daemon
 
 
-class SystemDDaemon(GenericLinuxDaemon):
+class SystemDDaemon(Daemon):
 
     """
     Implementation for the SystemD process management.
@@ -42,16 +39,19 @@ class SystemDDaemon(GenericLinuxDaemon):
     PROCESS_MANAGEMENT = 'systemd'
 
     def __init__(self, logger=None, **params):
-        super(GenericLinuxDaemon, self).__init__(logger=logger, **params)
+        super(SystemDDaemon, self).__init__(logger=logger, **params)
 
         self.service_name = 'cloudify-worker-{0}'.format(self.name)
-        self.script_path = os.path.join(self.SCRIPT_DIR, self.service_name)
+        self.script_path = os.path.join(
+            self.SCRIPT_DIR, '{0}.service'.format(self.service_name))
         self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
 
-        self.start_on_boot = str(params.get(
-            'start_on_boot', 'true')).lower() == 'true'
-        self._start_on_boot_handler = StartOnBootHandler(self.service_name,
-                                                         self._runner)
+    def configure(self):
+        super(SystemDDaemon, self).configure()
+        self._runner.run('sudo systemctl daemon-reload')
+
+    def start(self, *args, **kwargs):
+        self._runner.run(self.start_command())
 
     def _systemctl_command(self, command):
         return 'sudo systemctl {command} {service}'.format(
@@ -70,10 +70,27 @@ class SystemDDaemon(GenericLinuxDaemon):
     def status_command(self):
         return self._systemctl_command('status')
 
+    def create_script(self):
+        rendered = self._get_rendered_script()
+        self._runner.run('sudo mkdir -p {0}'.format(
+            os.path.dirname(self.script_path)))
+        self._runner.run('sudo cp {0} {1}'.format(rendered, self.script_path))
+        self._runner.run('sudo rm {0}'.format(rendered))
+
+    def create_config(self):
+        rendered = self._get_rendered_config()
+        self._runner.run('sudo mkdir -p {0}'.format(
+            os.path.dirname(self.config_path)))
+        self._runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))
+        self._runner.run('sudo rm {0}'.format(rendered))
+
     def _get_rendered_script(self):
         self._logger.debug('Rendering SystemD script from template')
         return utils.render_template_to_file(
             template_path='pm/systemd/systemd.template',
+            virtualenv_path=VIRTUALENV,
+            user=self.user,
+            queue=self.queue,
             config_path=self.config_path
         )
 
@@ -98,9 +115,6 @@ class SystemDDaemon(GenericLinuxDaemon):
             log_level=self.log_level,
             log_file=self.get_logfile(),
             pid_file=self.pid_file,
-            cron_respawn=str(self.cron_respawn).lower(),
-            enable_cron_script=self.create_enable_cron_script(),
-            disable_cron_script=self.create_disable_cron_script(),
             cluster_settings_path=self.cluster_settings_path,
             executable_temp_path=self.executable_temp_path,
             heartbeat=self.heartbeat

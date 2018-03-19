@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 ########
 # Copyright (c) 2014 GigaSpaces Technologies Ltd. All rights reserved
 #
@@ -15,7 +14,6 @@
 # limitations under the License.
 ############
 
-import sys
 import json
 import time
 import logging
@@ -33,14 +31,8 @@ BROKER_PORT_NO_SSL = 5672
 
 
 # TODO: Properly handle logging (write to file, etc)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-ch = logging.StreamHandler(sys.stdout)
-ch.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')  # NOQA
-ch.setFormatter(formatter)
-logger.addHandler(ch)
 
 
 class AMQPTopicConsumer(object):
@@ -59,16 +51,20 @@ class AMQPTopicConsumer(object):
         self.channel.queue_declare(queue=queue,
                                    durable=True,
                                    auto_delete=False)
-        self.channel.exchange_declare(
-            exchange=self.result_exchange,
-            type='direct',
-            auto_delete=False,
-            durable=True)
+
+        for exchange in [self.queue, self.result_exchange]:
+            self.channel.exchange_declare(
+                exchange=exchange,
+                type='direct',
+                auto_delete=False,
+                durable=True)
+
         # result = self.channel.queue_declare(
         #     auto_delete=True,
         #     durable=False,
         #     exclusive=False)
         # queue = result.method.queue
+        self.channel.basic_qos(prefetch_count=1)
         self.channel.queue_bind(queue=queue,
                                 exchange=queue,
                                 routing_key='')
@@ -114,20 +110,25 @@ class AMQPTopicConsumer(object):
         parsed_body = json.loads(body)
         logger.info(parsed_body)
         result = None
+        task = parsed_body['cloudify_task']
         try:
-            task = parsed_body['cloudify_task']
             kwargs = task['kwargs']
             rv = dispatch.dispatch(**kwargs)
-            result = {'ok': True, 'id': parsed_body['id'], 'result': rv}
+            result = {'ok': True, 'result': rv}
         except Exception as e:
             logger.warn('Failed message processing: {0!r}'.format(e))
             logger.warn('Body: {0}\nType: {1}'.format(body, type(body)))
-            result = {'ok': False, 'error': repr(e), 'id': parsed_body['id']}
+            result = {'ok': False, 'error': repr(e)}
         finally:
             logger.info('response %r', result)
-            self.channel.basic_publish(
-                self.result_exchange, '', json.dumps(result)
-            )
+            if properties.reply_to:
+                self.channel.basic_publish(
+                    exchange='',
+                    routing_key=properties.reply_to,
+                    properties=pika.BasicProperties(
+                        correlation_id=properties.correlation_id),
+                    body=json.dumps(result)
+                )
             self.channel.basic_ack(method.delivery_tag)
 
 
