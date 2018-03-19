@@ -114,11 +114,11 @@ class AMQPTopicConsumer(object):
         try:
             kwargs = task['kwargs']
             rv = dispatch.dispatch(**kwargs)
-            result = {'ok': True, 'id': parsed_body['id'], 'result': rv}
+            result = {'ok': True, 'result': rv}
         except Exception as e:
             logger.warn('Failed message processing: {0!r}'.format(e))
             logger.warn('Body: {0}\nType: {1}'.format(body, type(body)))
-            result = {'ok': False, 'error': repr(e), 'id': parsed_body['id']}
+            result = {'ok': False, 'error': repr(e)}
         finally:
             logger.info('response %r', result)
             if properties.reply_to:
