@@ -18,7 +18,7 @@ import nose.tools
 import time
 from mock import patch
 
-from cloudify_agent.api.pm.initd import GenericLinuxDaemon
+from cloudify_agent.api.pm.initd import InitDDaemon
 
 from cloudify_agent.tests.api.pm import BaseDaemonProcessManagementTest
 from cloudify_agent.tests.api.pm import patch_unless_ci
@@ -46,10 +46,10 @@ CONFIG_DIR = '/tmp/etc/default'
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
 @patch_unless_ci(
-    'cloudify_agent.api.pm.initd.GenericLinuxDaemon.SCRIPT_DIR',
+    'cloudify_agent.api.pm.initd.InitDDaemon.SCRIPT_DIR',
     SCRIPT_DIR)
 @patch_unless_ci(
-    'cloudify_agent.api.pm.initd.GenericLinuxDaemon.CONFIG_DIR',
+    'cloudify_agent.api.pm.initd.InitDDaemon.CONFIG_DIR',
     CONFIG_DIR)
 @patch_unless_ci(
     'cloudify_agent.api.pm.initd.status_command',
@@ -62,11 +62,11 @@ CONFIG_DIR = '/tmp/etc/default'
     _non_service_stop_command)
 @nose.tools.istest
 @only_os('posix')
-class TestGenericLinuxDaemon(BaseDaemonProcessManagementTest):
+class TestInitDDaemon(BaseDaemonProcessManagementTest):
 
     @property
     def daemon_cls(self):
-        return GenericLinuxDaemon
+        return InitDDaemon
 
     def test_configure(self):
         daemon = self.create_daemon()
