@@ -512,24 +512,17 @@ class Daemon(object):
         while time.time() < end_time:
             self._logger.debug('Querying daemon {0} registered tasks'.format(
                 self.name))
-            # check the process has shutdown
-            if not self._is_agent_registered():
-                # make sure the status command also recognizes the
-                # daemon is down
-                status = self.status()
-                if not status:
-                    self._logger.debug('Daemon {0} has shutdown'
-                                       .format(self.name, interval))
-                    self._logger.debug('Deleting AMQP queues')
-                    self._delete_amqp_queues()
-                    return
+            # make sure the status command also recognizes the
+            # daemon is down
+            status = self.status()
+            if not status:
+                self._logger.debug('Daemon {0} has shutdown'
+                                   .format(self.name, interval))
+                return
             self._logger.debug('Daemon {0} is still running. '
                                'Sleeping for {1} seconds...'
                                .format(self.name, interval))
             time.sleep(interval)
-        self._logger.debug('Verifying there were no un-handled '
-                           'exception during startup')
-        self._verify_no_celery_error()
         raise exceptions.DaemonShutdownTimeout(timeout, self.name)
 
     def restart(self,
@@ -785,7 +778,7 @@ class Daemon(object):
 
 
 class GenericLinuxDaemonMixin(Daemon):
-    def _status(self):
+    def status_command(self):
         raise NotImplementedError('Must be implemented by a subclass')
 
     def _delete(self):
@@ -799,7 +792,7 @@ class GenericLinuxDaemonMixin(Daemon):
 
     def status(self):
         try:
-            self._runner.run(self._status())
+            self._runner.run(self.status_command())
             return True
         except CommandExecutionException as e:
             self._logger.debug(str(e))

@@ -80,9 +80,6 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
             raise exceptions.DaemonNotConfiguredError(self.name)
         return start_command(self)
 
-    def _status(self):
-        return self.status_command()
-
     def status_command(self):
         return status_command(self)
 

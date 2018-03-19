@@ -51,9 +51,6 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
     def start(self, *args, **kwargs):
         self._runner.run(self.start_command())
 
-    def _status(self):
-        self._systemctl_command('status')
-
     def _delete(self):
         self._runner.run(self._systemctl_command('disable'))
 
