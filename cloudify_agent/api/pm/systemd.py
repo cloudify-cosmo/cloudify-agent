@@ -35,12 +35,16 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
     PROCESS_MANAGEMENT = 'systemd'
 
     def __init__(self, logger=None, **params):
-        super(SystemDDaemon, self).__init__(logger=logger, **params)
-
         self.service_name = 'cloudify-worker-{0}'.format(self.name)
-        self.script_path = os.path.join(
+        script_path = os.path.join(
             self.SCRIPT_DIR, '{0}@.service'.format(self.service_name))
-        self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
+        config_path = os.path.join(self.CONFIG_DIR, self.service_name)
+        super(SystemDDaemon, self).__init__(
+            logger=logger,
+            script_path=script_path,
+            config_path=config_path,
+            **params
+        )
 
     def configure(self):
         super(SystemDDaemon, self).configure()
