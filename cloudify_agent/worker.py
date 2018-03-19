@@ -121,9 +121,14 @@ class AMQPTopicConsumer(object):
             result = {'ok': False, 'error': repr(e), 'id': parsed_body['id']}
         finally:
             logger.info('response %r', result)
-            self.channel.basic_publish(
-                self.result_exchange, parsed_body['id'], json.dumps(result)
-            )
+            if properties.reply_to:
+                self.channel.basic_publish(
+                    exchange='',
+                    routing_key=properties.reply_to,
+                    properties=pika.BasicProperties(
+                        correlation_id=properties.correlation_id),
+                    body=json.dumps(result)
+                )
             self.channel.basic_ack(method.delivery_tag)
 
 
