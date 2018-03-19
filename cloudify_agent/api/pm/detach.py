@@ -21,10 +21,10 @@ from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
-from cloudify_agent.api.pm.base import CronRespawnDaemon
+from cloudify_agent.api.pm.base import CronRespawnDaemonMixin
 
 
-class DetachedDaemon(CronRespawnDaemon):
+class DetachedDaemon(CronRespawnDaemonMixin):
 
     """
     This process management is not really a full process management. It
