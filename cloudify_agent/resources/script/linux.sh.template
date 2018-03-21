@@ -13,13 +13,19 @@ export -f add_ssl_cert
 {% if install %}
 download()
 {
+    echo "Downloading $1..."
     if command -v wget > /dev/null 2>&1; then
         wget $1 -O $2 --header="{{ auth_token_header }}: {{ auth_token_value }}" --ca-certificate {{ ssl_cert_path }}
     elif command -v curl > /dev/null 2>&1; then
-        curl -L -o $2 $1 -H "{{ auth_token_header }}: {{ auth_token_value }}" --cacert {{ ssl_cert_path }}
+        STATUS_CODE=$(curl -L -o $2 --write-out "%{http_code}" $1 -H "{{ auth_token_header }}: {{ auth_token_value }}" --cacert {{ ssl_cert_path }})
+        if [ "${STATUS_CODE}" -ne "200" ] ; then
+            echo >&2 "Received unexpected HTTP response code (${STATUS_CODE}). Response data was saved into $2."
+            return 1
+        fi
     else
         echo >&2 "error: wget/curl not found. cannot download agent package"; return 1
     fi
+    echo "Download ended successfully"
 }
 export -f download
 
