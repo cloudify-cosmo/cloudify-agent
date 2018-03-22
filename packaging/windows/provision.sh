@@ -8,8 +8,8 @@ function install_requirements() {
 }
 
 function download_wheels() {
-    pip wheel --wheel-dir packaging/source/wheels --requirement "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/$CORE_BRANCH/dev-requirements.txt"
-    pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels "https://github.com/cloudify-cosmo/cloudify-agent/archive/$CORE_BRANCH.zip"
+    pip wheel --wheel-dir packaging/source/wheels --requirement "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/$AGENT_BRANCH/dev-requirements.txt"
+    pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels "https://github.com/cloudify-cosmo/cloudify-agent/archive/$AGENT_BRANCH.zip"
 }
 
 function download_resources() {
@@ -30,16 +30,33 @@ function download_resources() {
 # VERSION/PRERELEASE/BUILD must be exported as they is being read as an env var by the install wizard
 export CORE_TAG_NAME="4.4.dev1"
 export CORE_BRANCH="master"
-GITHUB_USERNAME=$1
-GITHUB_PASSWORD=$2
-AWS_ACCESS_KEY_ID=$3
-AWS_ACCESS_KEY=$4
+export GITHUB_USERNAME=$1
+export GITHUB_PASSWORD=$2
+export AWS_ACCESS_KEY_ID=$3
+export AWS_ACCESS_KEY=$4
 export REPO=$5
+export BRANCH=$6
 
 curl -u $GITHUB_USERNAME:$GITHUB_PASSWORD https://raw.githubusercontent.com/cloudify-cosmo/${REPO}/${CORE_BRANCH}/packages-urls/common_build_env.sh -o ./common_build_env.sh &&
 source common_build_env.sh &&
 curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-packager/${CORE_BRANCH}/common/provision.sh -o ./common-provision.sh &&
 source common-provision.sh
+
+AGENT_BRANCH="$CORE_BRANCH"
+if [[ ! -z $BRANCH ]] && [[ "$BRANCH" != "master" ]];then
+    pushd /tmp
+        curl -sLO https://github.com/cloudify-cosmo/cloudify-agent/archive/${BRANCH}.tar.gz
+        gunzip -t $BRANCH.tar.gz
+        test_gzip_file="$?"
+        gunzip -c $BRANCH.tar.gz | tar t > /dev/null
+        test_tar_file_inside="$?"
+        if [ "$test_gzip_file" == "0" ] && [ "$test_tar_file_inside" == "0" ]; then
+            rm -rf $BRANCH.tar.gz
+            AGENT_BRANCH="$BRANCH"
+            export AWS_S3_PATH="$AWS_S3_PATH/$BRANCH"
+        fi
+    popd
+fi
 
 install_common_prereqs &&
 #install_requirements && # moved to cloudify-packager
