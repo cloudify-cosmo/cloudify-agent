@@ -361,7 +361,7 @@ class TestGetSourceAndGetArgs(BaseTest):
         url = installer.get_plugin_source(plugin)
         args = installer.get_plugin_args(plugin)
         self.assertEqual(url, 'http://google.com')
-        self.assertEqual(args, '')
+        self.assertEqual(args, [])
 
     def test_get_url_https(self):
         plugin = {
@@ -372,7 +372,7 @@ class TestGetSourceAndGetArgs(BaseTest):
         args = installer.get_plugin_args(plugin)
 
         self.assertEqual(url, 'https://google.com')
-        self.assertEqual(args, '--pre')
+        self.assertEqual(args, ['--pre'])
 
     def test_get_url_faulty_schema(self):
         self.assertRaises(NonRecoverableError,
