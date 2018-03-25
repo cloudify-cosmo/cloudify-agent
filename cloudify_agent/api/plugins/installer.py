@@ -73,8 +73,8 @@ class PluginInstaller(object):
         constraint = os.path.join(tmp_plugin_dir, 'constraint.txt')
         with open(constraint, 'w') as f:
             f.write(self._pip_freeze())
-        args.extend(['--prefix="{0}"'.format(tmp_plugin_dir),
-                     '--constraint="{0}"'.format(constraint)])
+        args.extend(['--prefix={0}'.format(tmp_plugin_dir),
+                     '--constraint={0}'.format(constraint)])
         self._create_plugins_dir_if_missing()
 
         (current_platform,
