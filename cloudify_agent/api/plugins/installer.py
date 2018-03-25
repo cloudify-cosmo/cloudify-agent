@@ -73,8 +73,8 @@ class PluginInstaller(object):
         constraint = os.path.join(tmp_plugin_dir, 'constraint.txt')
         with open(constraint, 'w') as f:
             f.write(self._pip_freeze())
-        args = '{0} --prefix="{1}" --constraint="{2}"'.format(
-            args, tmp_plugin_dir, constraint).strip()
+        args.extend(['--prefix={0}'.format(tmp_plugin_dir),
+                     '--constraint={0}'.format(constraint)])
         self._create_plugins_dir_if_missing()
 
         (current_platform,
@@ -207,7 +207,7 @@ class PluginInstaller(object):
             wagon.install(
                 wagon_path,
                 ignore_platform=True,
-                install_args=args,
+                install_args=' '.join(args),
                 venv=VIRTUALENV
             )
         finally:
@@ -236,7 +236,7 @@ class PluginInstaller(object):
 
     def _pip_freeze(self):
         try:
-            return self.runner.run('{0} freeze'.format(get_pip_path())).std_out
+            return self.runner.run([get_pip_path(), 'freeze']).std_out
         except CommandExecutionException as e:
             raise exceptions.PluginInstallationError(
                 'Failed running pip freeze. ({0})'.format(e))
@@ -258,9 +258,9 @@ class PluginInstaller(object):
             self.logger.debug('Installing from directory: {0} '
                               '[args={1}, package_name={2}]'
                               .format(plugin_dir, args, package_name))
-            command = '{0} install {1} {2}'.format(
-                get_pip_path(), plugin_dir, args)
-            self.runner.run(command, cwd=plugin_dir)
+            command = [get_pip_path(), 'install', plugin_dir]
+            command.extend(args)
+            self.runner.run(command=command, cwd=plugin_dir)
             self.logger.debug('Retrieved package name: {0}'
                               .format(package_name))
         except CommandExecutionException as e:
@@ -515,4 +515,4 @@ def get_plugin_source(plugin, blueprint_id=None):
 
 def get_plugin_args(plugin):
     args = plugin.get('install_arguments') or ''
-    return args.strip()
+    return args.strip().split()
