@@ -16,8 +16,9 @@
 
 import json
 import time
-import logging
 import argparse
+import logging
+import logging.handlers
 from threading import Thread, Lock
 
 import pika
@@ -30,24 +31,23 @@ D_RETRY_DELAY = 5
 BROKER_PORT_SSL = 5671
 BROKER_PORT_NO_SSL = 5672
 
-# TODO: Make it configurable and scalable
-MAX_NUM_OF_WORKERS = 10
+LOGFILE_BACKUP_COUNT = 5
+LOGFILE_SIZE_BYTES = 5 * 1024 * 1024
+
+DEFAULT_MAX_WORKERS = 10
 
 CONSUMER_LOCK = Lock()
-
-# TODO: Properly handle logging (write to file, etc)
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
 
 
 class AMQPTopicConsumer(object):
 
-    def __init__(self, queue):
+    def __init__(self, queue, max_workers, log_file, log_level):
         """
             AMQPTopicConsumer initialisation expects a connection_parameters
             dict as provided by the __main__ of amqp_influx.
         """
         self.queue = queue
+        self._max_workers = max_workers
         self.result_exchange = '{0}_result'.format(queue)
 
         self.connection = self._get_connection()
@@ -64,12 +64,13 @@ class AMQPTopicConsumer(object):
                 auto_delete=False,
                 durable=True)
 
-        self.channel.basic_qos(prefetch_count=MAX_NUM_OF_WORKERS)
+        self.channel.basic_qos(prefetch_count=max_workers)
         self.channel.queue_bind(queue=queue,
                                 exchange=queue,
                                 routing_key='')
         self.channel.basic_consume(self._process, queue)
         self._thread_pool = []
+        self._logger = _init_logger(log_file, log_level)
 
     @staticmethod
     def _get_connection_params():
@@ -111,17 +112,17 @@ class AMQPTopicConsumer(object):
         # Clear out finished threads
         self._thread_pool = [t for t in self._thread_pool if t.is_alive()]
 
-        if len(self._thread_pool) <= MAX_NUM_OF_WORKERS:
+        if len(self._thread_pool) <= self._max_workers:
             new_thread = Thread(
                 target=_process_message,
-                args=(channel, method, properties, body)
+                args=(channel, method, properties, body, self._logger)
             )
             self._thread_pool.append(new_thread)
             new_thread.daemon = True
             new_thread.start()
 
 
-def _process_message(channel, method, properties, body):
+def _process_message(channel, method, properties, body, logger):
     parsed_body = json.loads(body)
     logger.info(parsed_body)
     result = None
@@ -148,11 +149,32 @@ def _process_message(channel, method, properties, body):
             channel.basic_ack(method.delivery_tag)
 
 
+def _init_logger(log_file, log_level):
+    logger = logging.getLogger(__name__)
+    handler = logging.handlers.RotatingFileHandler(
+        log_file,
+        maxBytes=LOGFILE_SIZE_BYTES,
+        backupCount=LOGFILE_BACKUP_COUNT
+    )
+    handler.setLevel(log_level)
+    logger.addHandler(handler)
+    logger.setLevel(log_level)
+    return logger
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--queue')
+    parser.add_argument('--max-workers', default=DEFAULT_MAX_WORKERS, type=int)
+    parser.add_argument('--log-file')
+    parser.add_argument('--log-level', default='INFO')
     args = parser.parse_args()
-    consumer = AMQPTopicConsumer(queue=args.queue)
+    consumer = AMQPTopicConsumer(
+        queue=args.queue,
+        max_workers=args.max_workers,
+        log_file=args.log_file,
+        log_level=args.log_level
+    )
     consumer.consume()
 
 
