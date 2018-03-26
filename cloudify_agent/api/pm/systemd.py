@@ -68,7 +68,10 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             virtualenv_path=VIRTUALENV,
             user=self.user,
             queue=self.queue,
-            config_path=self.config_path
+            config_path=self.config_path,
+            max_workers=self.max_workers,
+            log_level=self.log_level.upper(),
+            log_file=self.log_file,
         )
 
     def _get_rendered_config(self):
@@ -76,22 +79,12 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
                            .format(self.config_path))
         return utils.render_template_to_file(
             template_path='pm/systemd/systemd.conf.template',
-            queue=self.queue,
             workdir=self.workdir,
             rest_host=self.rest_host,
             rest_port=self.rest_port,
             local_rest_cert_file=self.local_rest_cert_file,
-            broker_url=self.broker_url,
-            user=self.user,
-            min_workers=self.min_workers,
-            max_workers=self.max_workers,
-            virtualenv_path=VIRTUALENV,
+            # TODO: Do we need those other args?
             extra_env_path=self.extra_env_path,
-            name=self.name,
-            storage_dir=utils.internal.get_storage_directory(self.user),
-            log_level=self.log_level,
-            log_file=self.get_logfile(),
-            pid_file=self.pid_file,
             cluster_settings_path=self.cluster_settings_path,
             executable_temp_path=self.executable_temp_path,
             heartbeat=self.heartbeat
