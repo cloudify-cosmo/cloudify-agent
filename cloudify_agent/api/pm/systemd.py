@@ -33,7 +33,6 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
     SCRIPT_DIR = '/usr/lib/systemd/system/'
     CONFIG_DIR = '/etc/sysconfig'
     PROCESS_MANAGEMENT = 'systemd'
-    NUM_OF_WORKERS = 3
 
     def configure(self):
         super(SystemDDaemon, self).configure()
@@ -46,10 +45,9 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
         self._runner.run(self._systemctl_command('disable'))
 
     def _systemctl_command(self, command):
-        return 'sudo systemctl {command} {service}{{1..{workers}}}'.format(
+        return 'sudo systemctl {command} {service}'.format(
             command=command,
             service=self.service_name,
-            workers=self.NUM_OF_WORKERS
         )
 
     def stop_command(self):
