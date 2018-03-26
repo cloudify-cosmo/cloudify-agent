@@ -18,7 +18,7 @@ import json
 import time
 import logging
 import argparse
-from threading import Thread
+from threading import Thread, Lock
 
 import pika
 from pika.exceptions import AMQPConnectionError
@@ -31,8 +31,9 @@ BROKER_PORT_SSL = 5671
 BROKER_PORT_NO_SSL = 5672
 
 # TODO: Make it configurable and scalable
-MAX_NUM_OF_WORKERS = 3
+MAX_NUM_OF_WORKERS = 10
 
+CONSUMER_LOCK = Lock()
 
 # TODO: Properly handle logging (write to file, etc)
 logging.basicConfig(level=logging.INFO)
@@ -63,7 +64,7 @@ class AMQPTopicConsumer(object):
                 auto_delete=False,
                 durable=True)
 
-        self.channel.basic_qos(prefetch_count=1)
+        self.channel.basic_qos(prefetch_count=MAX_NUM_OF_WORKERS)
         self.channel.queue_bind(queue=queue,
                                 exchange=queue,
                                 routing_key='')
@@ -135,15 +136,16 @@ def _process_message(channel, method, properties, body):
         result = {'ok': False, 'error': repr(e)}
     finally:
         logger.info('response %r', result)
-        if properties.reply_to:
-            channel.basic_publish(
-                exchange='',
-                routing_key=properties.reply_to,
-                properties=pika.BasicProperties(
-                    correlation_id=properties.correlation_id),
-                body=json.dumps(result)
-            )
-        channel.basic_ack(method.delivery_tag)
+        with CONSUMER_LOCK:
+            if properties.reply_to:
+                channel.basic_publish(
+                    exchange='',
+                    routing_key=properties.reply_to,
+                    properties=pika.BasicProperties(
+                        correlation_id=properties.correlation_id),
+                    body=json.dumps(result)
+                )
+            channel.basic_ack(method.delivery_tag)
 
 
 def main():
