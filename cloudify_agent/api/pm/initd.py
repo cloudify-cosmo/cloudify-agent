@@ -45,11 +45,6 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
     def __init__(self, logger=None, **params):
         super(InitDDaemon, self).__init__(logger=logger, **params)
 
-        self.service_name = 'cloudify-worker-{0}'.format(self.name)
-        self.script_path = os.path.join(
-            self.SCRIPT_DIR, '{0}.service'.format(self.service_name))
-        self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
-
         # initd specific configuration
         self.start_on_boot = str(params.get(
             'start_on_boot', 'true')).lower() == 'true'
