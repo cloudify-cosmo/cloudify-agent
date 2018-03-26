@@ -35,15 +35,6 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
     PROCESS_MANAGEMENT = 'systemd'
     NUM_OF_WORKERS = 3
 
-    def __init__(self, logger=None, **params):
-        super(SystemDDaemon, self).__init__(logger=logger, **params)
-
-        # The @ in the service name allows managing multiple worker instances
-        self.service_name = 'cloudify-worker-{0}@'.format(self.name)
-        self.script_path = os.path.join(
-            self.SCRIPT_DIR, '{0}.service'.format(self.service_name))
-        self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
-
     def configure(self):
         super(SystemDDaemon, self).configure()
         self._runner.run('sudo systemctl daemon-reload')
