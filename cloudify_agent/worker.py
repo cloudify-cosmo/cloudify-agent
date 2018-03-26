@@ -18,6 +18,7 @@ import json
 import time
 import logging
 import argparse
+from threading import Thread
 
 import pika
 from pika.exceptions import AMQPConnectionError
@@ -28,6 +29,9 @@ D_CONN_ATTEMPTS = 12
 D_RETRY_DELAY = 5
 BROKER_PORT_SSL = 5671
 BROKER_PORT_NO_SSL = 5672
+
+# TODO: Make it configurable and scalable
+MAX_NUM_OF_WORKERS = 3
 
 
 # TODO: Properly handle logging (write to file, etc)
@@ -59,16 +63,12 @@ class AMQPTopicConsumer(object):
                 auto_delete=False,
                 durable=True)
 
-        # result = self.channel.queue_declare(
-        #     auto_delete=True,
-        #     durable=False,
-        #     exclusive=False)
-        # queue = result.method.queue
         self.channel.basic_qos(prefetch_count=1)
         self.channel.queue_bind(queue=queue,
                                 exchange=queue,
                                 routing_key='')
         self.channel.basic_consume(self._process, queue)
+        self._thread_pool = []
 
     @staticmethod
     def _get_connection_params():
@@ -107,29 +107,43 @@ class AMQPTopicConsumer(object):
         self.channel.start_consuming()
 
     def _process(self, channel, method, properties, body):
-        parsed_body = json.loads(body)
-        logger.info(parsed_body)
-        result = None
-        task = parsed_body['cloudify_task']
-        try:
-            kwargs = task['kwargs']
-            rv = dispatch.dispatch(**kwargs)
-            result = {'ok': True, 'result': rv}
-        except Exception as e:
-            logger.warn('Failed message processing: {0!r}'.format(e))
-            logger.warn('Body: {0}\nType: {1}'.format(body, type(body)))
-            result = {'ok': False, 'error': repr(e)}
-        finally:
-            logger.info('response %r', result)
-            if properties.reply_to:
-                self.channel.basic_publish(
-                    exchange='',
-                    routing_key=properties.reply_to,
-                    properties=pika.BasicProperties(
-                        correlation_id=properties.correlation_id),
-                    body=json.dumps(result)
-                )
-            self.channel.basic_ack(method.delivery_tag)
+        # Clear out finished threads
+        self._thread_pool = [t for t in self._thread_pool if t.is_alive()]
+
+        if len(self._thread_pool) <= MAX_NUM_OF_WORKERS:
+            new_thread = Thread(
+                target=_process_message,
+                args=(channel, method, properties, body)
+            )
+            self._thread_pool.append(new_thread)
+            new_thread.daemon = True
+            new_thread.start()
+
+
+def _process_message(channel, method, properties, body):
+    parsed_body = json.loads(body)
+    logger.info(parsed_body)
+    result = None
+    task = parsed_body['cloudify_task']
+    try:
+        kwargs = task['kwargs']
+        rv = dispatch.dispatch(**kwargs)
+        result = {'ok': True, 'result': rv}
+    except Exception as e:
+        logger.warn('Failed message processing: {0!r}'.format(e))
+        logger.warn('Body: {0}\nType: {1}'.format(body, type(body)))
+        result = {'ok': False, 'error': repr(e)}
+    finally:
+        logger.info('response %r', result)
+        if properties.reply_to:
+            channel.basic_publish(
+                exchange='',
+                routing_key=properties.reply_to,
+                properties=pika.BasicProperties(
+                    correlation_id=properties.correlation_id),
+                body=json.dumps(result)
+            )
+        channel.basic_ack(method.delivery_tag)
 
 
 def main():
