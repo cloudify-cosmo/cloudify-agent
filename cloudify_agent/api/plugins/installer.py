@@ -207,7 +207,7 @@ class PluginInstaller(object):
             wagon.install(
                 wagon_path,
                 ignore_platform=True,
-                install_args=' '.join(args),
+                install_args=args,
                 venv=VIRTUALENV
             )
         finally:
