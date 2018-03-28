@@ -116,16 +116,17 @@ class AMQPTopicConsumer(object):
 
     def _process_stored(self):
         stored = os.listdir('/tmp/workflows')
-
+        self._logger.warn('stored: {0}'.format(stored))
         for execution_id in stored:
             try:
                 e = get_execution(execution_id)
             except IOError:
                 continue
-
+            self._logger.warn('processing {0}'.format(execution_id))
             self._do_dispatch(e['task']['kwargs'], e['reply_to'],
                               e['correlation_id'])
             delete_execution_dir(execution_id)
+            self._logger.warn('done processing {0}'.format(execution_id))
 
     def _process(self, channel, method, properties, body):
         # Clear out finished threads
