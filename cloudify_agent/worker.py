@@ -14,7 +14,6 @@
 # limitations under the License.
 ############
 
-import os
 import json
 import time
 import argparse
@@ -26,7 +25,7 @@ import pika
 from pika.exceptions import AMQPConnectionError
 
 from cloudify import dispatch, broker_config
-from cloudify.utils import store_execution, delete_execution_dir, get_execution, WORKFLOWS_DIR  # NOQA
+from cloudify.utils import store_execution, delete_execution_dir, get_execution, get_stored_execution_ids  # NOQA
 
 
 D_CONN_ATTEMPTS = 12
@@ -109,17 +108,14 @@ class AMQPTopicConsumer(object):
         return connection
 
     def consume(self):
-        t = Thread(target=self._process_stored)
-        t.daemon = True
-        t.start()
+        if self.queue == 'cloudify.management':
+            t = Thread(target=self._process_stored)
+            t.daemon = True
+            t.start()
         self.channel.start_consuming()
 
     def _process_stored(self):
-        try:
-            stored = os.listdir(WORKFLOWS_DIR)
-        except OSError:
-            self._logger.warn('no stored')
-            return
+        stored = get_stored_execution_ids()
         self._logger.warn('stored: {0}'.format(stored))
         for execution_id in stored:
             try:
