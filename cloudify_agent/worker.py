@@ -26,7 +26,7 @@ import pika
 from pika.exceptions import AMQPConnectionError
 
 from cloudify import dispatch, broker_config
-from cloudify.utils import store_execution, delete_execution_dir, get_execution
+from cloudify.utils import store_execution, delete_execution_dir, get_execution, WORKFLOWS_DIR  # NOQA
 
 
 D_CONN_ATTEMPTS = 12
@@ -116,7 +116,7 @@ class AMQPTopicConsumer(object):
 
     def _process_stored(self):
         try:
-            stored = os.listdir('/tmp/workflows')
+            stored = os.listdir(WORKFLOWS_DIR)
         except OSError:
             self._logger.warn('no stored')
             return
@@ -155,7 +155,7 @@ class AMQPTopicConsumer(object):
             if context['type'] == 'workflow':
                 execution_id = context['execution_id']
         except KeyError:
-            pass
+            raise
         else:
             if execution_id:
                 store_execution(execution_id, {
