@@ -115,7 +115,11 @@ class AMQPTopicConsumer(object):
         self.channel.start_consuming()
 
     def _process_stored(self):
-        stored = os.listdir('/tmp/workflows')
+        try:
+            stored = os.listdir('/tmp/workflows')
+        except OSError:
+            self._logger.warn('no stored')
+            return
         self._logger.warn('stored: {0}'.format(stored))
         for execution_id in stored:
             try:
