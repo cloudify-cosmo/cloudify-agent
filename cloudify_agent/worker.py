@@ -145,7 +145,7 @@ class AMQPTopicConsumer(object):
         self._logger.info(parsed_body)
         task = parsed_body['cloudify_task']
         try:
-            execution_id = task['__cloudify_context']['execution_id']
+            execution_id = task['kwargs']['__cloudify_context']['execution_id']
         except KeyError:
             execution_id = None
         else:
