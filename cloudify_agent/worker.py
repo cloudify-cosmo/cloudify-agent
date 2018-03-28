@@ -150,15 +150,17 @@ class AMQPTopicConsumer(object):
         self._logger.info(parsed_body)
         task = parsed_body['cloudify_task']
         try:
-            execution_id = task['kwargs']['__cloudify_context']['execution_id']
+            context = task['kwargs']['__cloudify_context']
+            execution_id = context['execution_id']
         except KeyError:
             execution_id = None
         else:
-            store_execution(execution_id, {
-                'task': task,
-                'correlation_id': properties.correlation_id,
-                'reply_to': properties.reply_to
-            })
+            if context['type'] == 'workflow':
+                store_execution(execution_id, {
+                    'task': task,
+                    'correlation_id': properties.correlation_id,
+                    'reply_to': properties.reply_to
+                })
 
         channel.basic_ack(method.delivery_tag)
         self._do_dispatch(task['kwargs'], properties.reply_to,
