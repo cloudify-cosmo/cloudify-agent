@@ -108,7 +108,9 @@ class AMQPTopicConsumer(object):
         return connection
 
     def consume(self):
+        self._logger.info('consume starting')
         if self.queue == 'cloudify.management':
+            self._logger.info('processing stored...')
             t = Thread(target=self._process_stored)
             t.daemon = True
             t.start()
