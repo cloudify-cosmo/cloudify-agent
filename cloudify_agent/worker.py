@@ -14,6 +14,7 @@
 # limitations under the License.
 ############
 
+import os
 import json
 import time
 import argparse
@@ -25,6 +26,8 @@ import pika
 from pika.exceptions import AMQPConnectionError
 
 from cloudify import dispatch, broker_config
+from cloudify.utils import store_execution, delete_execution_dir, get_execution
+
 
 D_CONN_ATTEMPTS = 12
 D_RETRY_DELAY = 5
@@ -106,7 +109,23 @@ class AMQPTopicConsumer(object):
         return connection
 
     def consume(self):
+        t = Thread(target=self._process_stored)
+        t.daemon = True
+        t.start()
         self.channel.start_consuming()
+
+    def _process_stored(self):
+        stored = os.listdir('/tmp/workflows')
+
+        for execution_id in stored:
+            try:
+                e = get_execution(execution_id)
+            except IOError:
+                continue
+
+            self._do_dispatch(e['task']['kwargs'], e['reply_to'],
+                              e['correlation_id'])
+            delete_execution_dir(execution_id)
 
     def _process(self, channel, method, properties, body):
         # Clear out finished threads
@@ -114,39 +133,54 @@ class AMQPTopicConsumer(object):
 
         if len(self._thread_pool) <= self._max_workers:
             new_thread = Thread(
-                target=_process_message,
-                args=(channel, method, properties, body, self._logger)
+                target=self._process_message,
+                args=(channel, method, properties, body)
             )
             self._thread_pool.append(new_thread)
             new_thread.daemon = True
             new_thread.start()
 
+    def _process_message(self, channel, method, properties, body):
+        parsed_body = json.loads(body)
+        self._logger.info(parsed_body)
+        task = parsed_body['cloudify_task']
+        try:
+            execution_id = task['__cloudify_context']['execution_id']
+        except KeyError:
+            execution_id = None
+        else:
+            store_execution(execution_id, {
+                'task': task,
+                'correlation_id': properties.correlation_id,
+                'reply_to': properties.reply_to
+            })
 
-def _process_message(channel, method, properties, body, logger):
-    parsed_body = json.loads(body)
-    logger.info(parsed_body)
-    result = None
-    task = parsed_body['cloudify_task']
-    try:
-        kwargs = task['kwargs']
-        rv = dispatch.dispatch(**kwargs)
-        result = {'ok': True, 'result': rv}
-    except Exception as e:
-        logger.warn('Failed message processing: {0!r}'.format(e))
-        logger.warn('Body: {0}\nType: {1}'.format(body, type(body)))
-        result = {'ok': False, 'error': repr(e)}
-    finally:
-        logger.info('response %r', result)
-        with CONSUMER_LOCK:
-            if properties.reply_to:
-                channel.basic_publish(
-                    exchange='',
-                    routing_key=properties.reply_to,
-                    properties=pika.BasicProperties(
-                        correlation_id=properties.correlation_id),
-                    body=json.dumps(result)
-                )
-            channel.basic_ack(method.delivery_tag)
+        channel.basic_ack(method.delivery_tag)
+        self._do_dispatch(task['kwargs'], properties.reply_to,
+                          properties.correlation_id)
+        if execution_id:
+            delete_execution_dir(execution_id)
+
+    def _do_dispatch(self, kwargs, reply_to, correlation_id):
+        try:
+            rv = dispatch.dispatch(**kwargs)
+            result = {'ok': True, 'result': rv}
+        except Exception as e:
+            self._logger.warn('Failed message processing: {0!r}'.format(e))
+            self._logger.warn('Kwargs: {0}'.format(kwargs))
+            result = {'ok': False, 'error': repr(e)}
+        finally:
+
+            self._logger.info('response %r', result)
+            with CONSUMER_LOCK:
+                if reply_to:
+                    self.channel.basic_publish(
+                        exchange='',
+                        routing_key=reply_to,
+                        properties=pika.BasicProperties(
+                            correlation_id=correlation_id),
+                        body=json.dumps(result)
+                    )
 
 
 def _init_logger(log_file, log_level):
