@@ -149,13 +149,15 @@ class AMQPTopicConsumer(object):
         parsed_body = json.loads(body)
         self._logger.info(parsed_body)
         task = parsed_body['cloudify_task']
+        execution_id = None
         try:
             context = task['kwargs']['__cloudify_context']
-            execution_id = context['execution_id']
-        except KeyError:
-            execution_id = None
-        else:
             if context['type'] == 'workflow':
+                execution_id = context['execution_id']
+        except KeyError:
+            pass
+        else:
+            if execution_id:
                 store_execution(execution_id, {
                     'task': task,
                     'correlation_id': properties.correlation_id,
