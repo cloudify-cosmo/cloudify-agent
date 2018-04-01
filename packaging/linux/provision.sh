@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 function install_deps() {
 	echo Installing necessary dependencies
@@ -9,14 +9,14 @@ function install_deps() {
 		sudo apt-get install -y software-properties-common ||
 		# precise
 		sudo apt-get install -y python-software-properties && sudo add-apt-repository -y ppa:git-core/ppa
-		sudo apt-get install -y curl python-dev git make gcc g++ libyaml-dev zlib1g-dev openssl libffi-dev libssl-dev
+		sudo apt-get install -y curl python-dev git make gcc g++ libyaml-dev zlib1g-dev libffi-dev libssl-dev
 	elif which yum; then
 		# centos/REHL
 		sudo yum clean all &&
 		sudo rm -rf /var/cache/yum &&
 		sudo yum -y update &&
 		sudo yum -y downgrade libyaml &&
-		sudo yum install curl python-devel make gcc gcc-c++ git libyaml-devel yum-utils openssl-devel -y &&
+		sudo yum install curl python-devel make gcc gcc-c++ git libyaml-devel yum-utils -y &&
 		# No package libffi-devel available in RHEL 6 therefore installing from url
 		if [[ $(cat /etc/redhat-release) =~ "(Santiago)" ]];then
 			sudo yum install -y ftp://195.220.108.108/linux/centos/6.9/os/x86_64/Packages/libffi-devel-3.0.5-3.2.el6.x86_64.rpm
@@ -30,7 +30,8 @@ function install_deps() {
 }
 
 function install_requirements() {
-	sudo pip install pip==6.0.8 --upgrade
+	curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python
+	#sudo pip install pip==6.0.8 --upgrade
 	sudo pip install "virtualenv>=14.0.0,<15.0.0" &&
 	sudo pip install setuptools==19.1.1 --upgrade &&
 	sudo pip install cloudify-agent-packager==4.0.1
@@ -49,7 +50,7 @@ export BRANCH=$6
 
 curl -u $GITHUB_USERNAME:$GITHUB_PASSWORD https://raw.githubusercontent.com/cloudify-cosmo/${REPO}/${CORE_BRANCH}/packages-urls/common_build_env.sh -o ./common_build_env.sh &&
 source common_build_env.sh &&
-curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-packager/${CORE_BRANCH}/common/provision.sh -o ./common-provision.sh &&
+curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-packager/pip-install-fail/common/provision.sh -o ./common-provision.sh &&
 source common-provision.sh
 
 install_common_prereqs &&
