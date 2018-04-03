@@ -20,7 +20,7 @@ import queue
 import argparse
 import logging
 import logging.handlers
-from threading import Thread, Lock
+from threading import Thread
 
 import pika
 from pika.exceptions import AMQPConnectionError, ConnectionClosed
@@ -36,8 +36,6 @@ LOGFILE_BACKUP_COUNT = 5
 LOGFILE_SIZE_BYTES = 5 * 1024 * 1024
 
 DEFAULT_MAX_WORKERS = 10
-
-CONSUMER_LOCK = Lock()
 
 
 class AMQPWorker(object):
