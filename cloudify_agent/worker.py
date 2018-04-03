@@ -16,7 +16,7 @@
 
 import json
 import time
-import queue
+import Queue
 import argparse
 import logging
 import logging.handlers
@@ -45,7 +45,7 @@ class AMQPWorker(object):
         self._max_workers = max_workers
         self._thread_pool = []
         self._logger = _init_logger(log_file, log_level)
-        self._publish_queue = queue.Queue()
+        self._publish_queue = Queue.Queue()
 
     # the public methods consume and publish are threadsafe
     def _connect(self):
@@ -113,7 +113,7 @@ class AMQPWorker(object):
         while True:
             try:
                 msg = self._publish_queue.get_nowait()
-            except queue.Empty:
+            except Queue.Empty:
                 return
             try:
                 channel.basic_publish(**msg)
