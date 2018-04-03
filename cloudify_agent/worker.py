@@ -16,13 +16,14 @@
 
 import json
 import time
+import queue
 import argparse
 import logging
 import logging.handlers
 from threading import Thread, Lock
 
 import pika
-from pika.exceptions import AMQPConnectionError
+from pika.exceptions import AMQPConnectionError, ConnectionClosed
 
 from cloudify import dispatch, broker_config
 
@@ -39,38 +40,43 @@ DEFAULT_MAX_WORKERS = 10
 CONSUMER_LOCK = Lock()
 
 
-class AMQPTopicConsumer(object):
+class AMQPWorker(object):
 
     def __init__(self, queue, max_workers, log_file, log_level):
-        """
-            AMQPTopicConsumer initialisation expects a connection_parameters
-            dict as provided by the __main__ of amqp_influx.
-        """
         self.queue = queue
         self._max_workers = max_workers
-        self.result_exchange = '{0}_result'.format(queue)
-
-        self.connection = self._get_connection()
-
-        self.channel = self.connection.channel()
-        self.channel.queue_declare(queue=queue,
-                                   durable=True,
-                                   auto_delete=False)
-
-        for exchange in [self.queue, self.result_exchange]:
-            self.channel.exchange_declare(
-                exchange=exchange,
-                type='direct',
-                auto_delete=False,
-                durable=True)
-
-        self.channel.basic_qos(prefetch_count=max_workers)
-        self.channel.queue_bind(queue=queue,
-                                exchange=queue,
-                                routing_key='')
-        self.channel.basic_consume(self._process, queue)
         self._thread_pool = []
         self._logger = _init_logger(log_file, log_level)
+        self._publish_queue = queue.Queue()
+
+    # the public methods consume and publish are threadsafe
+    def _connect(self):
+        self.connection = self._get_connection()
+        in_channel = self.connection.channel()
+        out_channel = self.connection.channel()
+
+        in_channel.basic_qos(prefetch_count=self._max_workers)
+        in_channel.queue_declare(queue=self.queue,
+                                 durable=True,
+                                 auto_delete=False)
+        in_channel.queue_bind(queue=self.queue,
+                              exchange=self.queue,
+                              routing_key='')
+        in_channel.basic_consume(self._process, self.queue)
+        return in_channel, out_channel
+
+    def consume(self):
+        in_channel, out_channel = self._connect()
+        while True:
+            try:
+                self.connection.process_data_events(0.2)
+                self._process_publish(out_channel)
+            except ConnectionClosed:
+                in_channel, out_channel = self._connect()
+                continue
+
+    def publish(self, **kwargs):
+        self._publish_queue.put(kwargs)
 
     @staticmethod
     def _get_connection_params():
@@ -105,8 +111,13 @@ class AMQPTopicConsumer(object):
 
         return connection
 
-    def consume(self):
-        self.channel.start_consuming()
+    def _process_publish(self, channel):
+        while True:
+            try:
+                msg = self._publish_queue.get_nowait()
+            except queue.Empty:
+                return
+            channel.basic_publish(**msg)
 
     def _process(self, channel, method, properties, body):
         # Clear out finished threads
@@ -115,14 +126,16 @@ class AMQPTopicConsumer(object):
         if len(self._thread_pool) <= self._max_workers:
             new_thread = Thread(
                 target=_process_message,
-                args=(channel, method, properties, body, self._logger)
+                args=(self, channel, properties, body, self._logger)
             )
             self._thread_pool.append(new_thread)
             new_thread.daemon = True
             new_thread.start()
 
+        channel.basic_ack(method.delivery_tag)
 
-def _process_message(channel, method, properties, body, logger):
+
+def _process_message(worker, channel, properties, body, logger):
     parsed_body = json.loads(body)
     logger.info(parsed_body)
     result = None
@@ -137,16 +150,14 @@ def _process_message(channel, method, properties, body, logger):
         result = {'ok': False, 'error': repr(e)}
     finally:
         logger.info('response %r', result)
-        with CONSUMER_LOCK:
-            if properties.reply_to:
-                channel.basic_publish(
-                    exchange='',
-                    routing_key=properties.reply_to,
-                    properties=pika.BasicProperties(
-                        correlation_id=properties.correlation_id),
-                    body=json.dumps(result)
-                )
-            channel.basic_ack(method.delivery_tag)
+        if properties.reply_to:
+            worker.publish(
+                exchange='',
+                routing_key=properties.reply_to,
+                properties=pika.BasicProperties(
+                    correlation_id=properties.correlation_id),
+                body=json.dumps(result)
+            )
 
 
 def _init_logger(log_file, log_level):
@@ -169,7 +180,7 @@ def main():
     parser.add_argument('--log-file')
     parser.add_argument('--log-level', default='INFO')
     args = parser.parse_args()
-    consumer = AMQPTopicConsumer(
+    consumer = AMQPWorker(
         queue=args.queue,
         max_workers=args.max_workers,
         log_file=args.log_file,
