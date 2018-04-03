@@ -117,7 +117,13 @@ class AMQPWorker(object):
                 msg = self._publish_queue.get_nowait()
             except queue.Empty:
                 return
-            channel.basic_publish(**msg)
+            try:
+                channel.basic_publish(**msg)
+            except ConnectionClosed:
+                # if we couldn't send the message because the connection
+                # was down, requeue it to be sent again later
+                self._publish_queue.put(msg)
+                raise
 
     def _process(self, channel, method, properties, body):
         # Clear out finished threads
