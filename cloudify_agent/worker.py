@@ -131,8 +131,8 @@ class AMQPWorker(object):
 
         if len(self._thread_pool) <= self._max_workers:
             new_thread = Thread(
-                target=_process_message,
-                args=(self, channel, properties, body, self._logger)
+                target=self._process_message,
+                args=(properties, body, self._logger)
             )
             self._thread_pool.append(new_thread)
             new_thread.daemon = True
@@ -140,30 +140,29 @@ class AMQPWorker(object):
 
         channel.basic_ack(method.delivery_tag)
 
-
-def _process_message(worker, channel, properties, body, logger):
-    parsed_body = json.loads(body)
-    logger.info(parsed_body)
-    result = None
-    task = parsed_body['cloudify_task']
-    try:
-        kwargs = task['kwargs']
-        rv = dispatch.dispatch(**kwargs)
-        result = {'ok': True, 'result': rv}
-    except Exception as e:
-        logger.warn('Failed message processing: {0!r}'.format(e))
-        logger.warn('Body: {0}\nType: {1}'.format(body, type(body)))
-        result = {'ok': False, 'error': repr(e)}
-    finally:
-        logger.info('response %r', result)
-        if properties.reply_to:
-            worker.publish(
-                exchange='',
-                routing_key=properties.reply_to,
-                properties=pika.BasicProperties(
-                    correlation_id=properties.correlation_id),
-                body=json.dumps(result)
-            )
+    def _process_message(self, properties, body, logger):
+        parsed_body = json.loads(body)
+        logger.info(parsed_body)
+        result = None
+        task = parsed_body['cloudify_task']
+        try:
+            kwargs = task['kwargs']
+            rv = dispatch.dispatch(**kwargs)
+            result = {'ok': True, 'result': rv}
+        except Exception as e:
+            logger.warn('Failed message processing: {0!r}'.format(e))
+            logger.warn('Body: {0}\nType: {1}'.format(body, type(body)))
+            result = {'ok': False, 'error': repr(e)}
+        finally:
+            logger.info('response %r', result)
+            if properties.reply_to:
+                self.publish(
+                    exchange='',
+                    routing_key=properties.reply_to,
+                    properties=pika.BasicProperties(
+                        correlation_id=properties.correlation_id),
+                    body=json.dumps(result)
+                )
 
 
 def _init_logger(log_file, log_level):
