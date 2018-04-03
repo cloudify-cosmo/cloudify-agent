@@ -27,6 +27,7 @@ from pika.exceptions import AMQPConnectionError, ConnectionClosed
 
 from cloudify import dispatch, broker_config
 
+HEARTBEAT_INTERVAL = 30
 D_CONN_ATTEMPTS = 12
 D_RETRY_DELAY = 5
 BROKER_PORT_SSL = 5671
@@ -88,7 +89,8 @@ class AMQPWorker(object):
             virtual_host=broker_config.broker_vhost,
             credentials=credentials,
             ssl=broker_config.broker_ssl_enabled,
-            ssl_options=broker_config.broker_ssl_options
+            ssl_options=broker_config.broker_ssl_options,
+            heartbeat=HEARTBEAT_INTERVAL
         )
 
     def _get_connection(self):
