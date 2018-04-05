@@ -193,9 +193,11 @@ end;
 
 function runVenvInitialization(): Boolean;
 var
+  VirtualenvArgs: String;
   ErrorCode: Integer;
 begin
-  Exec(getVenvPath, Expandconstant('--clear "{app}"'), Expandconstant('{tmp}'), SW_SHOW, ewWaituntilterminated, ErrorCode);
+  VirtualenvArgs := ExpandConstant('--no-download --clear "{app}"')
+  Exec(getVenvPath, VirtualenvArgs, Expandconstant('{tmp}'), SW_SHOW, ewWaituntilterminated, ErrorCode);
 
   if Errorcode <> 0 then
     Result := False
@@ -215,7 +217,7 @@ begin
     Result := False;
     Exit;
   end;
-  
+
   //Main wheels install
   PipArgs := Expandconstant('/c set "VIRTUAL_ENV={app}" && set "PATH={app}\Scripts;%PATH%" && pip install --pre --use-wheel --no-index --find-links . --force-reinstall --ignore-installed ' + mainPackageName);
   Exec(Expandconstant('{sys}\cmd.exe'), PipArgs, Expandconstant('{tmp}'), SW_SHOW, ewWaituntilterminated, ErrorCode);
