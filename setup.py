@@ -32,7 +32,7 @@ install_requires = [
     'pyzmq==15.1.0',
     'virtualenv==15.1.0',
     'pip==9.0.1',
-    'pika==0.9.14'
+    'pika==0.11.2'
 ]
 
 setup(
