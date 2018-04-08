@@ -172,7 +172,11 @@ def _init_logger(log_file, log_level):
         maxBytes=LOGFILE_SIZE_BYTES,
         backupCount=LOGFILE_BACKUP_COUNT
     )
+    fmt = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
     handler.setLevel(log_level)
+    handler.setFormatter(fmt)
     logger.addHandler(handler)
     logger.setLevel(log_level)
     return logger
