@@ -104,7 +104,8 @@ class DaemonFactory(object):
         :rtype: cloudify_agent.api.pm.base.Daemon
         """
         name = attributes.get('name')
-        if name:
+        is_agents_transfer = attributes.get('agents_transfer_mode')
+        if name and not is_agents_transfer:
             # an explicit name was passed, make sure we don't already
             # have a daemon with that name
             try:

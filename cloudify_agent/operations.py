@@ -165,8 +165,8 @@ def _save_daemon(daemon):
 
 
 def _set_default_new_agent_config_values(old_agent, new_agent):
-    new_agent['name'] = utils.internal.generate_new_agent_name(
-        old_agent['name'])
+    # new_agent['name'] = utils.internal.generate_new_agent_name(
+    #     old_agent['name'])
     # Set the broker IP explicitly to the current manager's IP
     new_agent['broker_ip'] = broker_hostname
     new_agent['old_agent_version'] = old_agent['version']
@@ -179,18 +179,19 @@ def _set_default_new_agent_config_values(old_agent, new_agent):
 def _copy_values_from_old_agent_config(old_agent, new_agent):
     fields_to_copy = ['windows', 'ip', 'basedir', 'user', 'distro_codename',
                       'distro', 'broker_ssl_cert_path', 'agent_rest_cert_path',
-                      'network']
+                      'network', 'name']
     for field in fields_to_copy:
         if field in old_agent:
             new_agent[field] = old_agent[field]
 
 
-def create_new_agent_config(old_agent):
+def create_new_agent_config(old_agent, manager_ip):
     new_agent = CloudifyAgentConfig()
     _set_default_new_agent_config_values(old_agent, new_agent)
     _copy_values_from_old_agent_config(old_agent, new_agent)
     new_agent.set_default_values()
     new_agent.set_installation_params(runner=None)
+    new_agent['broker_ip'] = manager_ip
     return new_agent
 
 
@@ -200,10 +201,12 @@ def _celery_app(agent):
     # cases when old agent is not connected to current rabbit server.
     broker_config = agent.get('broker_config',
                               ctx.bootstrap_context.broker_config())
+    ctx.logger.info('[_celery_app]: agent: {0}'.format(agent))
+    ctx.logger.info('[_celery_app] broker_config: {0}'.format(broker_config))
     agent_version = agent.get('version') or str(_get_manager_version())
     broker_url = utils.internal.get_broker_url(broker_config)
-    ctx.logger.info('Connecting to {0}'.format(broker_url))
-
+    ctx.logger.info('[_celery_app] Connecting to {0}'.format(broker_url))
+    # os.environ[BROKER_SSL_CERT_PATH]
     ssl_cert_path = _get_ssl_cert_path(broker_config)
     celery_client = get_celery_app(
         broker_url=broker_url,
@@ -227,6 +230,7 @@ def _get_ssl_cert_path(broker_config):
         os.close(fd)
         with open(ssl_cert_path, 'w') as cert_file:
             cert_file.write(broker_config.get('broker_ssl_cert', ''))
+            ctx.logger.info("ADI2: broker_config.get('broker_ssl_cert') = {0}".format(broker_config.get('broker_ssl_cert', '')))
         return ssl_cert_path
     else:
         return None
@@ -270,10 +274,14 @@ def _http_rest_host():
 def _get_init_script_path_and_url(new_agent, old_agent_version, manager_ip=None,
                                   manager_cert=None, rest_token=None,
                                   transfer_agent=False):
+    ctx.logger.info('[_get_init_script_path_and_url] Starting...')
+    # ctx.logger.info('[_get_init_script_path_and_url]: new_agent = {0},'
+    #                 ' old_agent_version ={1}, manager_ip = {2},'
+    #                 ' manager_cert = {3}, rest_token = {4},'
+    #                 ' transfer_agent = {5}'.format(new_agent,old_agent_version, manager_ip, manager_cert,rest_token, transfer_agent))
     script_path, script_url = init_script_download_link(
-        manager_ip, manager_cert, rest_token, transfer_agent,
-        cloudify_agent=new_agent)
-
+        new_agent, manager_ip, manager_cert, rest_token, transfer_agent)
+    ctx.logger.info('[_get_init_script_path_and_url] got script_path and script_url')
     # Prior to 4.2 (and script plugin 1.5.1) there was no way to pass
     # a certificate to the script plugin, so the initial script must be
     # passed over http
@@ -297,6 +305,7 @@ def _validate_created_agent(new_agent):
 
 
 def _build_install_script_params(old_agent, script_url):
+    ctx.logger.info('[_build_install_script_params] old_agent: {0}'.format(old_agent))
     script_runner_task = 'script_runner.tasks.run'
     cloudify_context = {
         'type': 'operation',
@@ -310,7 +319,9 @@ def _build_install_script_params(old_agent, script_url):
 
 
 def _execute_install_script_task(app, params, old_agent, timeout, script_path):
+    ctx.logger.info('[_execute_install_script_task]: Starting...')
     task = _celery_task_name(old_agent['version'])
+    ctx.logger.info('[_execute_install_script_task]: task: {0}'.format(task))
     try:
         result = app.send_task(
             task,
@@ -324,13 +335,14 @@ def _execute_install_script_task(app, params, old_agent, timeout, script_path):
 
 def _run_install_script(old_agent, timeout, manager_ip=None, manager_cert=None,
                         rest_token=None, transfer_agent=False):
+    ctx.logger.info('[_run_install_script] Stating ...')
     old_agent = copy.deepcopy(old_agent)
     if 'version' not in old_agent:
         # Assuming that if there is no version info in the agent then
         # this agent was installed by current manager.
         old_agent['version'] = str(_get_manager_version())
-    new_agent = create_new_agent_config(old_agent)
-
+    new_agent = create_new_agent_config(old_agent, manager_ip)
+    ctx.logger.info('[_run_install_script] after new_agent...')
     with _celery_app(old_agent) as celery_app:
         _assert_agent_alive(old_agent['name'], celery_app,
                             old_agent['version'])
@@ -339,7 +351,10 @@ def _run_install_script(old_agent, timeout, manager_ip=None, manager_cert=None,
             new_agent, old_agent['version'], manager_ip, manager_cert,
             rest_token, transfer_agent=transfer_agent
         )
+        ctx.logger.info('[_run_install_script] script_path: {0}, script_url: {1}'.format(script_path, script_url))
+        ctx.logger.info('[_run_install_script] after script_path, script_url')
         params = _build_install_script_params(old_agent, script_url)
+        ctx.logger.info('[_run_install_script] params: {0}'.format(params))
         _execute_install_script_task(
             celery_app, params, old_agent, timeout, script_path
         )
@@ -442,11 +457,11 @@ def validate_agent_amqp(current_amqp=True, **_):
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
-
+    ctx.logger.info("ADI1: runtime_properties {0}".format(ctx.instance.runtime_properties))
     result = _validate_current_amqp() if current_amqp else _validate_old_amqp()
 
     result['timestamp'] = time.time()
-    ctx.instance.runtime_properties['agent_status'] = result
+    ctx.instance.runtime_properties ['agent_status'] = result
 
     if current_amqp and not result['agent_alive']:
         raise NonRecoverableError(result['agent_alive_error'])
@@ -458,7 +473,16 @@ def validate_agent_amqp(current_amqp=True, **_):
 def transfer_agent_amqp(transfer_agent_timeout=300, manager_ip=None,
                         manager_certificate=None, manager_rest_token=None, **_):
 
+    ctx.logger.info('new_manager_ip: {0}'.format(manager_ip))
+    ctx.logger.info('new_manager_certificate: {0}'.format(manager_certificate))
+    ctx.logger.info('new_manager_rest_token: {0}'.format(manager_rest_token))
+    ctx.logger.info('Starting transfer_agent_amqp...')
+    ctx.logger.info('BEFORE [_create_broker_config] runtime_properties: {0}'.format(ctx.instance.runtime_properties))
+    _create_broker_config() # pass the old agent and edit it, (switch with next line...)
+    ctx.logger.info('AFTER [_create_broker_config] runtime_properties: {0}'.format(ctx.instance.runtime_properties))
+
     old_agent = _validate_agent()
+    ctx.logger.info('Done with _validate_agent...')
     agents = _run_install_script(old_agent, transfer_agent_timeout, manager_ip,
                                  manager_certificate, manager_rest_token,
                                  transfer_agent=True)
@@ -469,3 +493,32 @@ def transfer_agent_amqp(transfer_agent_timeout=300, manager_ip=None,
     # Make sure the agent is alive:
     app = get_celery_app(tenant=returned_agent['rest_tenant'])
     _assert_agent_alive(returned_agent['name'], app)
+
+
+def _create_broker_config():
+    """
+    This function creates a dictionary called 'broker_config' within the
+    'cloudify_agent' dict, that contains all the required information that will
+     later be used to create a Celery client
+    :return:
+    """
+    if 'cloudify_agent' not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            'cloudify_agent key not available in runtime_properties')
+    agent = ctx.instance.runtime_properties['cloudify_agent']
+    agent['broker_config'] = dict()
+    broker_conf = agent['broker_config']
+    broker_conf['broker_ip'] = agent.get('broker_ip')
+    broker_conf['broker_user'] =\
+        (agent.get('rest_tenant')).get('rabbitmq_username')
+    broker_conf['broker_vhost'] =\
+        (agent.get('rest_tenant')).get('rabbitmq_vhost')
+    broker_conf['broker_pass'] =\
+        (agent.get('rest_tenant')).get('rabbitmq_password')
+    broker_conf['broker_ssl_enabled'] = True
+    status = ctx.instance.runtime_properties['agent_status']
+    status['agent_alive_crossbroker'] = True
+    ssl_path = agent.get('broker_ssl_cert_path')
+    with open(ssl_path, 'r') as ssl_file:
+        ssl_cert = ssl_file.read()
+    broker_conf['broker_ssl_cert'] = ssl_cert
