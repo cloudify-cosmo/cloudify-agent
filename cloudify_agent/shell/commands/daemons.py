@@ -200,17 +200,12 @@ def create(**params):
     attributes.update(_parse_custom_options(custom_arg))
 
     click.echo('Creating...')
-    click.echo('attributes = {0}'.format(attributes))
-    click.echo('agents-transfer-mode = {0}'.format(attributes.get('agents_transfer_mode')))
     from cloudify_agent.shell.main import get_logger
     daemon = DaemonFactory().new(
         logger=get_logger(),
         **attributes
     )
-    click.echo('[create] after new()')
-
     daemon.create()
-    click.echo('[create] line 213')
     _save_daemon(daemon)
     click.echo('Successfully created daemon: {0}'
                .format(daemon.name))

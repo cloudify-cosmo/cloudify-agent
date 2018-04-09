@@ -18,7 +18,6 @@ import sys
 import jinja2
 import uuid
 import tempfile
-import traceback
 from contextlib import contextmanager
 from posixpath import join as url_join
 
@@ -37,7 +36,6 @@ LOCAL_CLEANUP_PATHS_KEY = 'local_cleanup_paths'
 class AgentInstallationScriptBuilder(AgentInstaller):
     def __init__(self, cloudify_agent, manager_ip=None, manager_cert=None,
                  rest_token=None, transfer_agent=False):
-        ctx.logger.info('[AgentInstallationScriptBuilder] Creating object...')
         super(AgentInstallationScriptBuilder, self).__init__(cloudify_agent)
         self.custom_env = None
         self.file_server_root = cloudify_utils.get_manager_file_server_root()
@@ -45,7 +43,6 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             cloudify_agent['rest_host'],
             cloudify_agent['rest_port']
         )
-        ctx.logger.info('[AgentInstallationScriptBuilder] halfway...')
         # When transfer_agent is set to True the script will only configure the
         # agent to work with a new Manager (instead of downloading and
         # installing the agent from scratch).
@@ -62,14 +59,11 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             self.init_script_filename = '{0}.ps1'.format(uuid.uuid4())
             self.custom_env_path = '{0}\\custom_agent_env.bat'.format(basedir)
         else:
-            ctx.logger.info('[AgentInstallationScriptBuilder] linux template...')
             self.install_script_template = 'script/linux.sh.template'
             self.init_script_template = 'script/linux-download.sh.template'
-            ctx.logger.info('[AgentInstallationScriptBuilder] middle...')
             self.install_script_filename = '{0}.sh'.format(uuid.uuid4())
             self.init_script_filename = '{0}.sh'.format(uuid.uuid4())
             self.custom_env_path = '{0}/custom_agent_env.sh'.format(basedir)
-            ctx.logger.info('[AgentInstallationScriptBuilder] done with template...')
 
     def install_script(self, add_ssl_cert=True):
         """Render the agent installation script.
@@ -188,11 +182,9 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         :rtype: str
         """
         if self.transfer_agent:
-            ctx.logger.info('[init_script]: in transfer_agent mode, add_ssl_cert = True!')
             _, script_url = self.install_script_download_link(
                 add_ssl_cert=True)
         else:
-            ctx.logger.info('[init_script]: in regular mode, add_ssl_cert = False')
             _, script_url = self.install_script_download_link(
                 add_ssl_cert=False)
         template = self._get_template(self.init_script_template)
@@ -225,7 +217,6 @@ class AgentInstallationScriptBuilder(AgentInstaller):
 def _get_script_builder(
         cloudify_agent, transfer_agent=False, manager_ip=None,
         manager_cert=None, rest_token=None, **_):
-    ctx.logger.info('[_get_script_builder]')
     return AgentInstallationScriptBuilder(manager_ip=manager_ip,
                                           manager_cert=manager_cert,
                                           rest_token=rest_token,
@@ -246,14 +237,12 @@ def init_script(cloudify_agent=None, **_):
 def init_script_download_link(
         cloudify_agent=None, manager_ip=None, manager_cert=None,
         rest_token=None, transfer_agent=False, **_):
-    ctx.logger.info('[init_script_download_link]')
     try:
         script_builder = _get_script_builder(cloudify_agent=cloudify_agent,
                                              transfer_agent=transfer_agent,
                                              manager_ip=manager_ip,
                                              manager_cert=manager_cert,
                                              rest_token=rest_token)
-        ctx.logger.info('[init_script_download_link] has script builder')
     except:
         ctx.logger.info(sys.exc_info()[0])
         raise
