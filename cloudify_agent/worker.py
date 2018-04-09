@@ -26,6 +26,7 @@ import pika
 from pika.exceptions import AMQPConnectionError, ConnectionClosed
 
 from cloudify import dispatch, broker_config
+from cloudify.exceptions import OperationRetry
 
 HEARTBEAT_INTERVAL = 30
 D_CONN_ATTEMPTS = 12
@@ -149,6 +150,9 @@ class AMQPWorker(object):
             kwargs = task['kwargs']
             rv = dispatch.dispatch(**kwargs)
             result = {'ok': True, 'result': rv}
+        except OperationRetry as e:
+            self._logger.warn('OperationRetry caught: {0!r}'.format(e))
+            result = {'ok': False, 'retry': repr(e)}
         except Exception as e:
             self._logger.warn('Failed message processing: {0!r}'.format(e))
             self._logger.warn('Body: {0}\nType: {1}'.format(body, type(body)))
