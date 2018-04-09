@@ -2,7 +2,7 @@
 
 echo Installing the agent as a windows service...
 
-{{ nssm_path }} install {{ name }} {{ virtualenv_path }}\Scripts\celeryd.exe ^
+"{{ nssm_path }}" install {{ name }} "{{ virtualenv_path }}\Scripts\celeryd.exe" ^
 --events -Q {{ queue }} ^
 --hostname={{ name }} ^
 --concurrency={{ max_workers }} ^
@@ -18,13 +18,14 @@ echo Installing the agent as a windows service...
 --gate-keeper-bucket-size={{ max_workers }} ^
 --with-logging-server ^
 --logging-server-logdir="""{{ workdir }}\logs""" ^
---without-heartbeat
+{% if heartbeat %}--heartbeat-interval={{ heartbeat }}{% else %}--without-heartbeat{% endif %}
+
 
 if %errorlevel% neq 0 exit /b %errorlevel%
 
 echo Setting service environment
 
-{{ nssm_path }} set {{ name }} AppEnvironmentExtra ^
+"{{ nssm_path }}" set {{ name }} AppEnvironmentExtra ^
 REST_HOST={{ rest_host }} ^
 REST_PORT={{ rest_port }} ^
 LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}" ^
@@ -37,10 +38,10 @@ CELERY_WORK_DIR="{{ workdir }}" ^
 CELERY_APP=cloudify_agent.app.app ^
 CELERY_TASK_SERIALIZER=json ^
 CELERY_RESULT_SERIALIZER=json ^ {{ custom_environment }} ^
-CFY_EXEC_TEMP={{ executable_temp_path }}
+CFY_EXEC_TEMP="{{ executable_temp_path }}"
 
-{{ nssm_path }} set {{ name }} DisplayName "Cloudify Agent - {{ name }}"
-{{ nssm_path }} set {{ name }} Description "Cloudify Agent Service"
+"{{ nssm_path }}" set {{ name }} DisplayName "Cloudify Agent - {{ name }}"
+"{{ nssm_path }}" set {{ name }} Description "Cloudify Agent Service"
 
 if %errorlevel% neq 0 exit /b %errorlevel%
 

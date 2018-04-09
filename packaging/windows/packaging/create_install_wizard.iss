@@ -54,11 +54,11 @@ const
   //Registry key path
   RegPythonPath = 'SOFTWARE\Python\PythonCore\2.7\InstallPath';
   //Error messages
-  errPythonMissing = 'Python installation was not found. In order to install {#AppName} you will need Python installed. Procceed to Python 2.7 installation?';
+  errPythonMissing = 'Python installation was not found. In order to install {#AppName} you will need Python installed. Proceed to Python 2.7 installation?';
   errPipMissing = 'Pip was not found. Pip is a package management tool that is required to successfully install {#AppName}. Would you like to install it?';
   errVenvMissing = 'Virtualenv was not found. Virtualenv is a python environment managment tool that is required to successfully install {#AppName}. Would you like to install it?';
-  errUnexpected = 'Unexpected error. Check install logs';
-  infoPythonUninstall = 'Cloudify uninstaller will not remove Python as a safety precaution. Uninstalling Python should be done independently by the user';
+  errUnexpected = 'Unexpected error. Check installation logs.';
+  infoPythonUninstall = 'Cloudify uninstaller will not remove Python as a safety precaution. Uninstalling Python should be done independently by the user.';
 
 
 function getPythonDir(): String;

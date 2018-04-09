@@ -63,6 +63,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             broker_vhost='/',
             broker_ssl_cert=None,
             broker_ssl_enabled=False,
+            heartbeat=30,
             rest_username=None,
             rest_password=None,
             rest_token=None,
@@ -112,6 +113,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             broker_vhost='/',
             broker_ssl_cert=None,
             broker_ssl_enabled=False,
+            heartbeat=30,
             broker_ssl_cert_path=os.environ[
                 env_constants.CLOUDIFY_BROKER_SSL_CERT_PATH],
             rest_username=None,

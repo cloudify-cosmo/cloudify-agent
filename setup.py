@@ -17,25 +17,26 @@
 from setuptools import setup
 
 install_requires = [
-    'cloudify-plugins-common==4.3.dev1',
-    'cloudify-rest-client==4.3.dev1',
-    'cloudify-script-plugin==1.5.1',
+    'cloudify-plugins-common==4.4.dev1',
+    'cloudify-rest-client==4.4.dev1',
+    'cloudify-script-plugin==1.5.3',
     'appdirs==1.4.3',
-    'click==4.0',
+    'click==6.7',
     'celery==3.1.17',
     'jinja2==2.7.2',
     'pywinrm==0.0.3',
     'paramiko==1.18.3',
     'fabric==1.13.1',
-    'wagon[venv]==0.6.1',
+    'wagon[venv]==0.6.3',
     'fasteners==0.13.0',
     'pyzmq==15.1.0',
-    'virtualenv>=14.0.0,<15.0.0'
+    'virtualenv==15.1.0',
+    'pip==9.0.1'
 ]
 
 setup(
     name='cloudify-agent',
-    version='4.3.dev1',
+    version='4.4.dev1',
     author='Gigaspaces',
     author_email='cloudify@gigaspaces.com',
     packages=[

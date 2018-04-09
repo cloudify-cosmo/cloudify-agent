@@ -127,6 +127,14 @@ from cloudify_agent.shell.decorators import handle_failures
               type=click.Path(exists=False, readable=False, file_okay=True),
               envvar=env.CLOUDIFY_BROKER_SSL_CERT_PATH
               )
+@click.option('--heartbeat',
+              help='The interval of the AMQP and Celery heartbeat in '
+              'seconds [env {0}]'
+              .format(env.CLOUDIFY_HEARTBEAT),
+              type=int,
+              default=30,
+              envvar=env.CLOUDIFY_HEARTBEAT
+              )
 @click.option('--min-workers',
               help='Minimum number of workers for '
                    'the autoscale configuration. [env {0}]'

@@ -167,13 +167,15 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         template = self._get_template(self.init_script_template)
         use_sudo = self.cloudify_agent.get('install_with_sudo')
         sudo = 'sudo' if use_sudo else ''
-        return template.render(
+        args_dict = dict(
             link=script_url,
             sudo=sudo,
-            user=self.cloudify_agent['user'],
             ssl_cert_content=self._get_local_cert_content(),
             ssl_cert_path=self._get_remote_ssl_cert_path()
         )
+        if not self.cloudify_agent.is_windows:
+            args_dict['user'] = self.cloudify_agent['user']
+        return template.render(**args_dict)
 
     def _cleanup_after_installation(self, path):
         """Mark path to be deleted after agent installation.

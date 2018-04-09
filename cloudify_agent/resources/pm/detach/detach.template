@@ -23,4 +23,4 @@
 --gate-keeper-bucket-size={{ max_workers }} \
 --with-logging-server \
 --logging-server-logdir={{ workdir }}/logs \
---without-heartbeat
+{% if heartbeat %}--heartbeat-interval={{ heartbeat }}{% else %}--without-heartbeat{% endif %}

@@ -35,8 +35,9 @@ from cloudify.manager import get_rest_client
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import plugins
-from cloudify_agent.api.utils import get_pip_path
 from cloudify_agent.api import exceptions
+from cloudify_agent.api.utils import get_pip_path
+from cloudify_rest_client.constants import VisibilityState
 
 
 SYSTEM_DEPLOYMENT = '__system__'
@@ -72,8 +73,8 @@ class PluginInstaller(object):
         constraint = os.path.join(tmp_plugin_dir, 'constraint.txt')
         with open(constraint, 'w') as f:
             f.write(self._pip_freeze())
-        args = '{0} --prefix="{1}" --constraint="{2}"'.format(
-            args, tmp_plugin_dir, constraint).strip()
+        args.extend(['--prefix={0}'.format(tmp_plugin_dir),
+                     '--constraint={0}'.format(constraint)])
         self._create_plugins_dir_if_missing()
 
         (current_platform,
@@ -127,13 +128,18 @@ class PluginInstaller(object):
         matching_existing_installation = False
         dst_dir = '{0}-{1}'.format(managed_plugin.package_name,
                                    managed_plugin.package_version)
-        dst_dir = self._full_dst_dir(dst_dir)
+        dst_dir = self._full_dst_dir(dst_dir, managed_plugin)
+        self.logger.debug('Checking if managed plugin installation exists '
+                          'in {0}'.format(dst_dir))
         lock = self._lock(dst_dir)
         lock.acquire()
         try:
             if os.path.exists(dst_dir):
+                self.logger.debug('Plugin path exists {0}'.format(dst_dir))
                 plugin_id_path = os.path.join(dst_dir, 'plugin.id')
                 if os.path.exists(plugin_id_path):
+                    self.logger.debug('Plugin id path exists {0}'.
+                                      format(plugin_id_path))
                     with open(plugin_id_path) as f:
                         existing_plugin_id = f.read().strip()
                     matching_existing_installation = (
@@ -230,7 +236,7 @@ class PluginInstaller(object):
 
     def _pip_freeze(self):
         try:
-            return self.runner.run('{0} freeze --all'.format(get_pip_path())).std_out
+            return self.runner.run([get_pip_path(), 'freeze --all']).std_out
         except CommandExecutionException as e:
             raise exceptions.PluginInstallationError(
                 'Failed running pip freeze. ({0})'.format(e))
@@ -252,9 +258,9 @@ class PluginInstaller(object):
             self.logger.debug('Installing from directory: {0} '
                               '[args={1}, package_name={2}]'
                               .format(plugin_dir, args, package_name))
-            command = '{0} install {1} {2}'.format(
-                get_pip_path(), plugin_dir, args)
-            self.runner.run(command, cwd=plugin_dir)
+            command = [get_pip_path(), 'install', plugin_dir]
+            command.extend(args)
+            self.runner.run(command=command, cwd=plugin_dir)
             self.logger.debug('Retrieved package name: {0}'
                               .format(package_name))
         except CommandExecutionException as e:
@@ -306,9 +312,14 @@ class PluginInstaller(object):
                     raise
 
     @staticmethod
-    def _full_dst_dir(dst_dir):
+    def _full_dst_dir(dst_dir, managed_plugin=None):
+        if managed_plugin and managed_plugin['visibility'] \
+                == VisibilityState.GLOBAL:
+            tenant_name = managed_plugin['tenant_name']
+        else:
+            tenant_name = ctx.tenant_name
         plugins_dir = os.path.join(VIRTUALENV, 'plugins')
-        return os.path.join(plugins_dir, ctx.tenant_name, dst_dir)
+        return os.path.join(plugins_dir, tenant_name, dst_dir)
 
     @staticmethod
     def _lock(path):
@@ -504,4 +515,4 @@ def get_plugin_source(plugin, blueprint_id=None):
 
 def get_plugin_args(plugin):
     args = plugin.get('install_arguments') or ''
-    return args.strip()
+    return args.strip().split()
