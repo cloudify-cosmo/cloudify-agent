@@ -336,7 +336,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
                     daemon.rest_host,
                     daemon.rest_port
                 ),
-            constants.CELERY_WORK_DIR_KEY: daemon.workdir,
+            constants.AGENT_WORK_DIR_KEY: daemon.workdir,
             utils.internal.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY:
                 utils.internal.get_storage_directory(),
             utils.internal.CLOUDIFY_DAEMON_NAME_KEY: daemon.name,
