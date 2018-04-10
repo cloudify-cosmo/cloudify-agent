@@ -25,8 +25,8 @@ from threading import Thread
 import pika
 from pika.exceptions import AMQPConnectionError, ConnectionClosed
 
-from cloudify import dispatch, broker_config
-from cloudify.exceptions import OperationRetry
+from cloudify import exceptions, dispatch, broker_config
+from cloudify.error_handling import serialize_known_exception
 
 HEARTBEAT_INTERVAL = 30
 D_CONN_ATTEMPTS = 12
@@ -38,6 +38,14 @@ LOGFILE_BACKUP_COUNT = 5
 LOGFILE_SIZE_BYTES = 5 * 1024 * 1024
 
 DEFAULT_MAX_WORKERS = 10
+
+SUPPORTED_EXCEPTIONS = (
+    exceptions.OperationRetry,
+    exceptions.RecoverableError,
+    exceptions.NonRecoverableError,
+    exceptions.ProcessExecutionError,
+    exceptions.HttpException
+)
 
 
 class AMQPWorker(object):
@@ -150,9 +158,9 @@ class AMQPWorker(object):
             kwargs = task['kwargs']
             rv = dispatch.dispatch(**kwargs)
             result = {'ok': True, 'result': rv}
-        except OperationRetry as e:
-            self._logger.warn('OperationRetry caught: {0!r}'.format(e))
-            result = {'ok': False, 'retry': repr(e)}
+        except SUPPORTED_EXCEPTIONS as e:
+            error = serialize_known_exception(e)
+            result = {'ok': False, 'error': error}
         except Exception as e:
             self._logger.warn('Failed message processing: {0!r}'.format(e))
             self._logger.warn('Body: {0}\nType: {1}'.format(body, type(body)))
