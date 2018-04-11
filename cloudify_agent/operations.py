@@ -34,12 +34,13 @@ from cloudify.celery.app import get_celery_app
 
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api.factory import DaemonFactory
-from cloudify_agent.api import defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.installer.script import \
     init_script_download_link, cleanup_scripts
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
+
+CELERY_TASK_RESULT_EXPIRES = 600
 
 
 @operation
@@ -213,7 +214,7 @@ def _celery_app(agent):
 
     if ManagerVersion(agent_version) != ManagerVersion('3.2'):
         celery_client.conf['CELERY_TASK_RESULT_EXPIRES'] = \
-            defaults.CELERY_TASK_RESULT_EXPIRES
+            CELERY_TASK_RESULT_EXPIRES
     try:
         yield celery_client
     finally:
