@@ -15,7 +15,6 @@
 ############
 
 import json
-import time
 import Queue
 import argparse
 import logging
@@ -23,7 +22,7 @@ import logging.handlers
 from threading import Thread
 
 import pika
-from pika.exceptions import AMQPConnectionError, ConnectionClosed
+from pika.exceptions import ConnectionClosed
 
 from cloudify import exceptions, dispatch, broker_config
 from cloudify.error_handling import serialize_known_exception
@@ -59,7 +58,9 @@ class AMQPWorker(object):
 
     # the public methods consume and publish are threadsafe
     def _connect(self):
-        self.connection = self._get_connection()
+        self.connection = pika.BlockingConnection(
+            self._get_connection_params()
+        )
         in_channel = self.connection.channel()
         out_channel = self.connection.channel()
 
@@ -99,26 +100,10 @@ class AMQPWorker(object):
             credentials=credentials,
             ssl=broker_config.broker_ssl_enabled,
             ssl_options=broker_config.broker_ssl_options,
-            heartbeat=HEARTBEAT_INTERVAL
+            heartbeat=HEARTBEAT_INTERVAL,
+            connection_attempts=D_CONN_ATTEMPTS,
+            retry_delay=D_RETRY_DELAY
         )
-
-    def _get_connection(self):
-        connection_params = self._get_connection_params()
-
-        # add retry with try/catch because Pika is currently ignoring these
-        # connection parameters when using BlockingConnection:
-        # https://github.com/pika/pika/issues/354
-        for _ in range(D_CONN_ATTEMPTS):
-            try:
-                connection = pika.BlockingConnection(connection_params)
-            except AMQPConnectionError:
-                time.sleep(D_RETRY_DELAY)
-            else:
-                break
-        else:
-            raise AMQPConnectionError
-
-        return connection
 
     def _process_publish(self, channel):
         while True:
