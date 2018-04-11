@@ -143,15 +143,23 @@ class AMQPWorker(object):
             kwargs = task['kwargs']
             rv = dispatch.dispatch(**kwargs)
             result = {'ok': True, 'result': rv}
+            self._logger.warning(task)
+            self._logger.info('SUCCESS - result: {0}'.format(result))
         except SUPPORTED_EXCEPTIONS as e:
             error = serialize_known_exception(e)
             result = {'ok': False, 'error': error}
+            self._logger.error(
+                'ERROR - caught: {0}\n{1}'.format(
+                    repr(e), error['traceback']
+                )
+            )
         except Exception as e:
-            self._logger.warn('Failed message processing: {0!r}'.format(e))
-            self._logger.warn('Body: {0}\nType: {1}'.format(body, type(body)))
             result = {'ok': False, 'error': repr(e)}
+            self._logger.error(
+                'ERROR - failed message processing: '
+                '{0!r}\nbody: {1}\ntype: {2}'.format(e, body, type(body))
+            )
         finally:
-            self._logger.info('response %r', result)
             if properties.reply_to:
                 self.publish(
                     exchange='',
