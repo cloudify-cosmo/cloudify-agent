@@ -65,6 +65,8 @@ class AMQPWorker(object):
         out_channel = self.connection.channel()
 
         in_channel.basic_qos(prefetch_count=self._max_workers)
+        in_channel.exchange_declare(
+            exchange=self.queue, auto_delete=False, durable=True)
         in_channel.queue_declare(queue=self.queue,
                                  durable=True,
                                  auto_delete=False)
