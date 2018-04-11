@@ -15,8 +15,6 @@ export CLOUDIFY_CLUSTER_SETTINGS_PATH={{ cluster_settings_path|default('') }}
 # Celery worker environment variables
 export AGENT_WORK_DIR={{ workdir }}
 export CELERY_APP=cloudify_agent.app.app
-export CELERY_TASK_SERIALIZER=json
-export CELERY_RESULT_SERIALIZER=json
 # Needed in case agent user is root
 export C_FORCE_ROOT=true
 
