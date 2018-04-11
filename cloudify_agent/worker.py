@@ -134,11 +134,34 @@ class AMQPWorker(object):
 
         channel.basic_ack(method.delivery_tag)
 
+    def _print_task(self, task):
+        ctx = task['cloudify_task']['kwargs']['__cloudify_context']
+        if ctx['type'] == 'workflow':
+            prefix = 'Processing workflow'
+            suffix = ''
+        else:
+            prefix = 'Processing operation'
+            suffix = '\nNode ID: {0}'.format(ctx['node_id'])
+        self._logger.info(
+            '{prefix} on queue `{queue}` on tenant `{tenant}`:\n'
+            'Task name: {name}\n'
+            'Execution ID: {execution_id}\n'
+            'Workflow ID: {workflow_id}{suffix}'.format(
+                prefix=prefix,
+                name=ctx['task_name'],
+                queue=ctx['task_target'],
+                tenant=ctx['tenant']['name'],
+                execution_id=ctx['execution_id'],
+                workflow_id=ctx['workflow_id'],
+                suffix=suffix
+            )
+        )
+
     def _process_message(self, properties, body):
-        parsed_body = json.loads(body)
-        self._logger.info(parsed_body)
+        full_task = json.loads(body)
+        self._print_task(full_task)
         result = None
-        task = parsed_body['cloudify_task']
+        task = full_task['cloudify_task']
         try:
             kwargs = task['kwargs']
             rv = dispatch.dispatch(**kwargs)
