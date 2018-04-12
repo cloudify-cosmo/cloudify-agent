@@ -122,16 +122,19 @@ class AgentInstaller(object):
                                  broker_config.broker_password)
         broker_vhost = tenant.get('rabbitmq_vhost',
                                   broker_config.broker_vhost)
-
+        rest_host = manager_ip if manager_ip else \
+            self.cloudify_agent['rest_host']
+        broker_ip = manager_ip if manager_ip else \
+            self.cloudify_agent['broker_ip']
+        rest_token = rest_token if rest_token else \
+            self.cloudify_agent.get('rest_token')
         execution_env = {
             # mandatory values calculated before the agent
             # is actually created
             env.CLOUDIFY_DAEMON_QUEUE: self.cloudify_agent['queue'],
             env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
-            env.CLOUDIFY_REST_HOST: manager_ip if manager_ip else
-            self.cloudify_agent['rest_host'],
-            env.CLOUDIFY_BROKER_IP: manager_ip if manager_ip else
-            self.cloudify_agent['broker_ip'],
+            env.CLOUDIFY_REST_HOST: rest_host,
+            env.CLOUDIFY_BROKER_IP: broker_ip,
 
             # Optional broker values
             env.CLOUDIFY_BROKER_USER: broker_user,
@@ -147,8 +150,7 @@ class AgentInstaller(object):
             # by the agent on the remote host if not set here
             env.CLOUDIFY_DAEMON_USER: self.cloudify_agent.get('user'),
             env.CLOUDIFY_REST_PORT: self.cloudify_agent.get('rest_port'),
-            env.CLOUDIFY_REST_TOKEN: rest_token if rest_token else
-            self.cloudify_agent.get('rest_token'),
+            env.CLOUDIFY_REST_TOKEN: rest_token,
             env.CLOUDIFY_REST_TENANT: tenant_name,
             env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(
                 'max_workers'),

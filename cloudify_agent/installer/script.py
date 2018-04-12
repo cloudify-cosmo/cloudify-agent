@@ -14,7 +14,6 @@
 #  * limitations under the License.
 
 import os
-import sys
 import jinja2
 import uuid
 import tempfile
@@ -70,16 +69,8 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         :return: Install script content
         :rtype: str
         """
-        cert_content = ''
-        if add_ssl_cert:
-            cert_content = self._get_local_cert_content()
-        if self.manager_cert:
-            cert_content = self.manager_cert
-
-        install_agent = False
-        if not self.transfer_agent:
-            install_agent = not self.cloudify_agent.is_provided
-
+        cert_content = self._get_cert_content(add_ssl_cert)
+        should_install_agent = self._should_install_agent()
         template = self._get_template(self.install_script_template)
         # Called before creating the agent env to populate all the variables
         remote_ssl_cert_path = self._get_remote_ssl_cert_path()
@@ -97,12 +88,26 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             ssl_cert_path=remote_ssl_cert_path,
             auth_token_header=CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
             auth_token_value=ctx.rest_token,
-            install=install_agent,
+            install=should_install_agent,
             configure=False if self.transfer_agent else True,
             start=True,
             transfer_agent=self.transfer_agent,
             add_ssl_cert=add_ssl_cert
         )
+
+    def _should_install_agent(self):
+        install_agent = False
+        if not self.transfer_agent:
+            install_agent = not self.cloudify_agent.is_provided
+        return install_agent
+
+    def _get_cert_content(self, add_ssl_cert):
+        cert_content = ''
+        if add_ssl_cert:
+            cert_content = self._get_local_cert_content()
+        if self.manager_cert:
+            cert_content = self.manager_cert
+        return cert_content
 
     def _get_local_cert_content(self):
         local_cert_path = os.path.expanduser(self._get_local_ssl_cert_path())
@@ -181,12 +186,10 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         :return: Install script downloader content
         :rtype: str
         """
-        if self.transfer_agent:
-            _, script_url = self.install_script_download_link(
-                add_ssl_cert=True)
-        else:
-            _, script_url = self.install_script_download_link(
-                add_ssl_cert=False)
+        add_ssl_cert = True if self.transfer_agent else False
+        _, script_url = self.install_script_download_link(
+            add_ssl_cert=add_ssl_cert)
+
         template = self._get_template(self.init_script_template)
         use_sudo = self.cloudify_agent.get('install_with_sudo')
         sudo = 'sudo' if use_sudo else ''
@@ -237,15 +240,12 @@ def init_script(cloudify_agent=None, **_):
 def init_script_download_link(
         cloudify_agent=None, manager_ip=None, manager_cert=None,
         rest_token=None, transfer_agent=False, **_):
-    try:
-        script_builder = _get_script_builder(cloudify_agent=cloudify_agent,
-                                             transfer_agent=transfer_agent,
-                                             manager_ip=manager_ip,
-                                             manager_cert=manager_cert,
-                                             rest_token=rest_token)
-    except:
-        ctx.logger.info(sys.exc_info()[0])
-        raise
+
+    script_builder = _get_script_builder(cloudify_agent=cloudify_agent,
+                                         transfer_agent=transfer_agent,
+                                         manager_ip=manager_ip,
+                                         manager_cert=manager_cert,
+                                         rest_token=rest_token)
 
     return script_builder.init_script_download_link()
 

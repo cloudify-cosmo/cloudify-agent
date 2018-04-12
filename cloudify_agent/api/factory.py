@@ -106,8 +106,11 @@ class DaemonFactory(object):
         name = attributes.get('name')
         is_agents_transfer = attributes.get('agents_transfer_mode')
         if name and not is_agents_transfer:
-            # an explicit name was passed, make sure we don't already
-            # have a daemon with that name
+            # an explicit name was passed, and we are not in 'agents transfer
+            # mode': make sure we don't already have a daemon with that name.
+            # If the executed workflow is 'agents transfer' we skip the
+            # daemon name validation (since we intend to create another daemon
+            # object with the same name)
             try:
                 self.load(name, logger=logger)
                 # this means we do have one, raise an error

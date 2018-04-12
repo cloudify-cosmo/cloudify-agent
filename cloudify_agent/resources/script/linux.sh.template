@@ -19,6 +19,19 @@ export_daemon_env()
 }
 export -f export_daemon_env
 
+
+export_agent_cli_env()
+{
+    local agent_env_bin={{ conf.envdir }}/bin
+    export AGENT_PYTHON_INTERPRETER=${agent_env_bin}/python
+    export AGENT_CLI=${agent_env_bin}/cfy-agent
+    export PATH=${agent_env_bin}:$PATH
+    export CLOUDIFY_DAEMON_NAME={{ conf.name }}
+
+}
+export -f  export_agent_cli_env
+
+
 #####################################################
 ###################### Install ######################
 #####################################################
@@ -80,25 +93,21 @@ export -f install_agent
 
 configure_virtualenv()
 {
-    echo "[configure_virtualenv] Starting..." >> /tmp/adi.log
     export_daemon_env
     # configure command is run explicily as the virtualenv has not been "fixed"
     # yet
     ${AGENT_PYTHON_INTERPRETER} ${AGENT_CLI} configure --relocated-env
-    echo "[configure_virtualenv] Done..." >> /tmp/adi.log
 }
 export -f configure_virtualenv
 
 disable_requiretty()
 {
-    echo "[disable_requiretty] Starting..." >> /tmp/adi.log
     {% if conf.disable_requiretty %}
         export_daemon_env
         cfy-agent configure --disable-requiretty --no-sudo
     {% else %}
         echo "Skipping disable_requiretty part"
     {% endif %}
-    echo "[disable_requiretty] Done..." >> /tmp/adi.log
 }
 export -f disable_requiretty
 
@@ -117,7 +126,6 @@ export -f configure_agent
 {% if start %}
 create_custom_env_file()
 {
-    echo "[create_custom_env_file] Starting..." >> /tmp/adi.log
     {% if custom_env is not none %}
     cat <<EOF > {{ custom_env_path }}
 #!/bin/bash
@@ -128,68 +136,34 @@ EOF
     {% else %}
         echo "No custom env configured"
     {% endif %}
-    echo "[create_custom_env_file] Done..." >> /tmp/adi.log
 }
 export -f create_custom_env_file
 
 start_daemon()
 {
-    echo "[start_daemon] Starting..." >> /tmp/adi.log
     export_daemon_env
-    cfy-agent daemons create {{ pm_options }} {% if transfer_agent %}--agents-transfer-mode {%endif%}
-    echo "[start_daemon] After cfy-agent daemons create..." >> /tmp/adi.log
+    cfy-agent daemons create {{ pm_options }} {% if transfer_agent %}--agents-transfer-mode {% endif %}
+
     cfy-agent daemons configure
-    echo "[start_daemon] After cfy-agent daemons configure..." >> /tmp/adi.log
     {% if not transfer_agent %}
     cfy-agent daemons start
     {% endif %}
-    echo "[start_daemon] Done..." >> /tmp/adi.log
 }
 export -f start_daemon
 
 start_agent()
 {
-    echo "[start_agent] Starting..." >> /tmp/adi.log
     su {{ conf.user }} --shell /bin/bash -c "set -e; create_custom_env_file"
     su {{ conf.user }} --shell /bin/bash -c "set -e; start_daemon"
-    echo "[start_agent] Done..." >> /tmp/adi.log
 }
 export -f start_agent
 {% endif %}
 
-###################################################
-################# Transfer Agent ##################
-###################################################
-
-export_agent_cli_env()
-{
-    echo "[export_agent_cli_env] Starting..." >> /tmp/adi.log
-    local agent_env_bin={{ conf.envdir }}/bin
-    export AGENT_PYTHON_INTERPRETER=${agent_env_bin}/python
-    export AGENT_CLI=${agent_env_bin}/cfy-agent
-    export PATH=${agent_env_bin}:$PATH
-    export CLOUDIFY_DAEMON_NAME={{ conf.name }}
-    echo "[export_agent_cli_env] Done..." >> /tmp/adi.log
-
-}
-export -f  export_agent_cli_env
-
-
-transfer_agent()
-{
-    echo "[transfer_agent] Starting..." >> /tmp/adi.log
-    echo "starting transfer_agent..."
-    su {{ conf.user }} --shell /bin/bash -c "set -e; add_ssl_cert"
-    echo "[transfer_agent] Done..." >> /tmp/adi.log
-
-
-}
-export -f transfer_agent
-
 main()
 {
     {% if transfer_agent %}
-    transfer_agent
+    echo "Starting agents transfer..."
+    su {{ conf.user }} --shell /bin/bash -c "set -e; add_ssl_cert"
     {% endif %}
     {% if install %}
     install_agent
@@ -200,17 +174,7 @@ main()
     {% if start %}
     start_agent
     {% endif %}
-    {% if transfer_agent %}
-    #/etc/init.d/celeryd-{{ conf.name }} try-restart
-    # sleep 5 && /etc/init.d/celeryd-{{ conf.name }} try-restart &
-    # sleep 5 && /etc/init.d/celeryd-{{ conf.name }} kill &
-    echo "[transfer_agent] *************** BEFORE kill -9 ***************" >> /tmp/adi.log
-    ps aux | grep celery >> /tmp/adi.log
-    #sleep 5 && ps -ef | grep celery | grep -v grep | awk '{print $2}' | xargs kill -9 &
-    sleep 5 && /etc/init.d/celeryd-{{ conf.name }} try-restart &
-    echo "[transfer_agent] *************** AFTER kill -9 ***************" >> /tmp/adi.log
-    {% endif %}
-    echo "[main] Done !!!" >> /tmp/adi.log
+
 }
 export -f main
 

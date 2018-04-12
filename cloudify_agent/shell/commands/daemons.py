@@ -178,8 +178,8 @@ from cloudify_agent.shell.decorators import handle_failures
               envvar=env.CLOUDIFY_CLUSTER_NODES,
               callback=api_utils._parse_cluster_nodes)
 @click.option('--agents-transfer-mode',
-              help='When transfer agents mode is enabled the daemon name'
-                   'validation will be skipped, to allow creating a new agent'
+              help='When transfer agents mode is enabled the daemon name '
+                   'validation will be skipped, to allow creating a new agent '
                    'daemon with the same name.',
               is_flag=True,
               default=False)
