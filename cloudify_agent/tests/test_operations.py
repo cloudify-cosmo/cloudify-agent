@@ -148,7 +148,7 @@ class TestCreateAgentAmqp(BaseTest):
             'user': 'vagrant',
             'key': '~/.ssh/id_rsa',
             'windows': False,
-            'package_url': 'http://10.0.4.46:53229/packages/agents/'
+            'package_url': 'http://10.0.4.46:53333/resources/packages/agents/'
                            'ubuntu-trusty-agent.tar.gz',
             'version': '3.4',
             'broker_config': {
