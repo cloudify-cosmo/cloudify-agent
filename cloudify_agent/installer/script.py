@@ -262,7 +262,6 @@ def install_script_path(cloudify_agent):
     try:
         yield script_path
     finally:
-        return
         os.remove(script_path)
 
 

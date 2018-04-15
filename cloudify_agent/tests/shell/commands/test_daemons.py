@@ -74,7 +74,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
                 env_constants.CLOUDIFY_LOCAL_REST_CERT_PATH],
             bypass_maintenance_mode=None,
             network=None,
-            cluster=None
+            cluster=None,
+            agents_transfer_mode=False
         )
 
         daemon = factory_new.return_value
@@ -124,7 +125,8 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
                 env_constants.CLOUDIFY_LOCAL_REST_CERT_PATH],
             bypass_maintenance_mode=None,
             network=None,
-            cluster=None
+            cluster=None,
+            agents_transfer_mode=False
         )
 
     def test_configure(self, *factory_methods):

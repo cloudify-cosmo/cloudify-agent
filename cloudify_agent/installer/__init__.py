@@ -122,12 +122,10 @@ class AgentInstaller(object):
                                  broker_config.broker_password)
         broker_vhost = tenant.get('rabbitmq_vhost',
                                   broker_config.broker_vhost)
-        rest_host = manager_ip if manager_ip else \
-            self.cloudify_agent['rest_host']
-        broker_ip = manager_ip if manager_ip else \
-            self.cloudify_agent['broker_ip']
-        rest_token = rest_token if rest_token else \
-            self.cloudify_agent.get('rest_token')
+        rest_host = manager_ip or self.cloudify_agent['rest_host']
+        broker_ip = manager_ip or self.cloudify_agent['broker_ip']
+        rest_token = rest_token or self.cloudify_agent.get('rest_token')
+
         execution_env = {
             # mandatory values calculated before the agent
             # is actually created

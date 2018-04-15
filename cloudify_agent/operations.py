@@ -190,7 +190,7 @@ def _copy_values_from_old_agent_config(
             new_agent[field] = old_agent[field]
 
 
-def create_new_agent_config(old_agent, manager_ip, transfer_agent=False):
+def create_new_agent_config(old_agent, manager_ip=None, transfer_agent=False):
     new_agent = CloudifyAgentConfig()
     _set_default_new_agent_config_values(old_agent, new_agent, transfer_agent)
     _copy_values_from_old_agent_config(old_agent, new_agent, transfer_agent)
@@ -252,6 +252,7 @@ def _celery_task_name(version):
 
 def _assert_agent_alive(name, celery_client, version=None):
     tasks = utils.get_agent_registered(name, celery_client)
+    # Using RecoverableError to allow retries
     if not tasks:
         raise RecoverableError(
             'Could not access tasks list for agent {0}'.format(name))
@@ -418,8 +419,8 @@ def _validate_current_amqp():
         ctx.logger.info('Trying current AMQP...')
         app = get_celery_app(tenant=agent.get('rest_tenant'))
         _validate_amqp_connection(app, agent['name'])
+    # Using RecoverableError to allow retries
     except RecoverableError:
-        # Using RecoverableError to allow retries
         raise
     except Exception as e:
         ctx.logger.info('Agent unavailable, reason {0}'.format(str(e)))
@@ -487,7 +488,7 @@ def _create_broker_config(transfer_mode=False):
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
     agent = ctx.instance.runtime_properties['cloudify_agent']
-    if 'broker_conf' not in agent:
+    if 'broker_config' not in agent:
         agent['broker_config'] = dict()
     broker_conf = agent['broker_config']
     broker_conf['broker_ip'] = agent.get('broker_ip')
@@ -503,6 +504,8 @@ def _create_broker_config(transfer_mode=False):
         with open(ssl_path, 'r') as ssl_file:
             ssl_cert = ssl_file.read()
         broker_conf['broker_ssl_cert'] = ssl_cert
+    ctx.instance.runtime_properties['cloudify_agent'] = agent
+    ctx.instance.update()
 
 
 def _conceal_amqp_password(url):
