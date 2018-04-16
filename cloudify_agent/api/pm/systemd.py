@@ -78,6 +78,7 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             max_workers=self.max_workers,
             log_level=self.log_level.upper(),
             log_file=self.log_file,
+            name=self.name
         )
 
     def _get_rendered_config(self):
