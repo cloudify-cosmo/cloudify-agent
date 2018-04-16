@@ -15,6 +15,7 @@
 ############
 
 import json
+import time
 import Queue
 import argparse
 import logging
@@ -178,8 +179,7 @@ class AMQPWorker(object):
             )
         )
 
-    def _process_message(self, properties, body):
-        full_task = json.loads(body)
+    def _process_cloudify_task(self, full_task):
         self._print_task(full_task)
         result = None
         task = full_task['cloudify_task']
@@ -187,7 +187,6 @@ class AMQPWorker(object):
             kwargs = task['kwargs']
             rv = dispatch.dispatch(**kwargs)
             result = {'ok': True, 'result': rv}
-            self._logger.warning(task)
             self._logger.info('SUCCESS - result: {0}'.format(result))
         except SUPPORTED_EXCEPTIONS as e:
             error = serialize_known_exception(e)
@@ -197,21 +196,54 @@ class AMQPWorker(object):
                     repr(e), error['traceback']
                 )
             )
+        return result
+
+    def ping_task(self):
+        return {'time': time.time()}
+
+    def _process_service_task(self, full_task):
+        service_tasks = {
+            'ping': self.ping_task
+        }
+
+        task = full_task['service_task']
+        task_name = task['task_name']
+        kwargs = task['kwargs']
+
+        return service_tasks[task_name](**kwargs)
+
+    def _process_message(self, properties, body):
+        try:
+            full_task = json.loads(body)
+        except ValueError:
+            self._logger.error('Error parsing task: {0}'.format(body))
+            return
+
+        if 'cloudify_task' in full_task:
+            handler = self._process_cloudify_task
+        elif 'service_task' in full_task:
+            handler = self._process_service_task
+        else:
+            self._logger.error('Could not handle task')
+            return
+
+        try:
+            result = handler(full_task)
         except Exception as e:
             result = {'ok': False, 'error': repr(e)}
             self._logger.error(
                 'ERROR - failed message processing: '
                 '{0!r}\nbody: {1}\ntype: {2}'.format(e, body, type(body))
             )
-        finally:
-            if properties.reply_to:
-                self.publish(
-                    exchange='',
-                    routing_key=properties.reply_to,
-                    properties=pika.BasicProperties(
-                        correlation_id=properties.correlation_id),
-                    body=json.dumps(result)
-                )
+
+        if properties.reply_to:
+            self.publish(
+                exchange='',
+                routing_key=properties.reply_to,
+                properties=pika.BasicProperties(
+                    correlation_id=properties.correlation_id),
+                body=json.dumps(result)
+            )
 
 
 def _init_logger(log_file, log_level):
