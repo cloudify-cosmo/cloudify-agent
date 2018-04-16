@@ -27,6 +27,8 @@ from pika.exceptions import ConnectionClosed
 
 from cloudify import broker_config, cluster, dispatch, exceptions
 from cloudify.error_handling import serialize_known_exception
+from cloudify_agent.api.factory import DaemonFactory
+
 
 HEARTBEAT_INTERVAL = 30
 D_CONN_ATTEMPTS = 12
@@ -83,13 +85,14 @@ def _get_agent_connection_params(daemon_name):
 class AMQPWorker(object):
 
     def __init__(self, connection_params, queue, max_workers,
-                 log_file, log_level):
+                 log_file, log_level, name=None):
         self._connection_params = connection_params
         self.queue = queue
         self._max_workers = max_workers
         self._thread_pool = []
         self._logger = _init_logger(log_file, log_level)
         self._publish_queue = Queue.Queue()
+        self.name = name
 
     # the public methods consume and publish are threadsafe
     def _connect(self):
@@ -201,9 +204,19 @@ class AMQPWorker(object):
     def ping_task(self):
         return {'time': time.time()}
 
+    def cluster_update_task(self, nodes):
+        factory = DaemonFactory()
+        daemon = factory.load(self.name)
+        network_name = daemon.network
+        nodes = [n['networks'][network_name] for n in nodes]
+        cluster.set_cluster_nodes(nodes)
+        daemon.cluster = nodes
+        factory.save(daemon)
+
     def _process_service_task(self, full_task):
         service_tasks = {
-            'ping': self.ping_task
+            'ping': self.ping_task,
+            'cluster-update': self.cluster_update_task
         }
 
         task = full_task['service_task']
@@ -284,7 +297,8 @@ def main():
         queue=args.queue,
         max_workers=args.max_workers,
         log_file=args.log_file,
-        log_level=args.log_level
+        log_level=args.log_level,
+        name=args.name
     )
     consumer.consume()
 
