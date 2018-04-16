@@ -24,7 +24,7 @@ from threading import Thread
 import pika
 from pika.exceptions import ConnectionClosed
 
-from cloudify import exceptions, dispatch, broker_config
+from cloudify import broker_config, cluster, dispatch, exceptions
 from cloudify.error_handling import serialize_known_exception
 
 HEARTBEAT_INTERVAL = 30
@@ -47,9 +47,43 @@ SUPPORTED_EXCEPTIONS = (
 )
 
 
+def _get_common_connection_params():
+    credentials = pika.credentials.PlainCredentials(
+        username=broker_config.broker_username,
+        password=broker_config.broker_password,
+    )
+    return {
+        'host': broker_config.broker_hostname,
+        'port': broker_config.broker_port,
+        'virtual_host': broker_config.broker_vhost,
+        'credentials': credentials,
+        'ssl': broker_config.broker_ssl_enabled,
+        'ssl_options': broker_config.broker_ssl_options,
+        'heartbeat': HEARTBEAT_INTERVAL
+    }
+
+
+def _get_connection_params():
+    return pika.ConnectionParameters(**_get_common_connection_params())
+
+
+def _get_agent_connection_params(daemon_name):
+    while True:
+        params = _get_common_connection_params()
+        if cluster.is_cluster_configured():
+            nodes = cluster.get_cluster_nodes()
+            for node_ip in nodes:
+                params['host'] = node_ip
+                yield pika.ConnectionParameters(**params)
+        else:
+            yield pika.ConnectionParameters(**params)
+
+
 class AMQPWorker(object):
 
-    def __init__(self, queue, max_workers, log_file, log_level):
+    def __init__(self, connection_params, queue, max_workers,
+                 log_file, log_level):
+        self._connection_params = connection_params
         self.queue = queue
         self._max_workers = max_workers
         self._thread_pool = []
@@ -58,9 +92,12 @@ class AMQPWorker(object):
 
     # the public methods consume and publish are threadsafe
     def _connect(self):
-        self.connection = pika.BlockingConnection(
-            self._get_connection_params()
-        )
+        if isinstance(self._connection_params, pika.ConnectionParameters):
+            params = self._connection_params
+        else:
+            params = next(self._connection_params)
+
+        self.connection = pika.BlockingConnection(params)
         in_channel = self.connection.channel()
         out_channel = self.connection.channel()
 
@@ -88,24 +125,6 @@ class AMQPWorker(object):
 
     def publish(self, **kwargs):
         self._publish_queue.put(kwargs)
-
-    @staticmethod
-    def _get_connection_params():
-        credentials = pika.credentials.PlainCredentials(
-            username=broker_config.broker_username,
-            password=broker_config.broker_password,
-        )
-        return pika.ConnectionParameters(
-            host=broker_config.broker_hostname,
-            port=broker_config.broker_port,
-            virtual_host=broker_config.broker_vhost,
-            credentials=credentials,
-            ssl=broker_config.broker_ssl_enabled,
-            ssl_options=broker_config.broker_ssl_options,
-            heartbeat=HEARTBEAT_INTERVAL,
-            connection_attempts=D_CONN_ATTEMPTS,
-            retry_delay=D_RETRY_DELAY
-        )
 
     def _process_publish(self, channel):
         while True:
@@ -218,8 +237,18 @@ def main():
     parser.add_argument('--max-workers', default=DEFAULT_MAX_WORKERS, type=int)
     parser.add_argument('--log-file')
     parser.add_argument('--log-level', default='INFO')
+    parser.add_argument('--name')
     args = parser.parse_args()
+
+    if args.name:
+        # we are an agent
+        conn_params = _get_agent_connection_params()
+    else:
+        # we are the mgmtworker
+        conn_params = _get_connection_params()
+
     consumer = AMQPWorker(
+        connection_params=conn_params,
         queue=args.queue,
         max_workers=args.max_workers,
         log_file=args.log_file,
