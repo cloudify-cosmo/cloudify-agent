@@ -78,12 +78,22 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
     def status_command(self):
         return status_command(self)
 
+    def _get_script_path(self):
+        return os.path.join(self.SCRIPT_DIR, self.service_name)
+
     def _get_rendered_script(self):
         self._logger.debug('Rendering init.d script from template')
         return utils.render_template_to_file(
             template_path='pm/initd/initd.template',
-            daemon_name=self.name,
-            config_path=self.config_path
+            service_name=self.service_name,
+            config_path=self.config_path,
+            user=self.user,
+            queue=self.queue,
+            max_workers=self.max_workers,
+            log_level=self.log_level.upper(),
+            log_file=self.log_file,
+            pidfile=self.pid_file,
+            virtualenv_path=self.virtualenv,
         )
 
     def create_script(self):
@@ -118,13 +128,6 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
             executable_temp_path=self.executable_temp_path,
             heartbeat=self.heartbeat
         )
-
-    def create_config(self):
-        rendered = self._get_rendered_config()
-        self._runner.run('sudo mkdir -p {0}'.format(
-            os.path.dirname(self.config_path)))
-        self._runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))
-        self._runner.run('sudo rm {0}'.format(rendered))
 
 
 def start_command(daemon):
