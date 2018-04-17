@@ -1,6 +1,6 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:          cloudify-agent-worker-{{ name }}
+# Provides:          {{ service_name }}
 # Required-Start:    $local_fs $network $named $time $syslog
 # Required-Stop:     $local_fs $network $named $time $syslog
 # Default-Start:     2 3 4 5
@@ -8,24 +8,21 @@
 # Description:       Cloudify Agent worker
 ### END INIT INFO
 
-SCRIPT={{ virtualenv_path }}/bin/python -m cloudify_agent.worker \
-    --queue "{{ queue }}" \
-    --max-workers {{ max_workers }} \
-    --log-file "{{ log_file }}" \
-    --log-level {{ log_level }}
 RUNAS={{ user }}
 
 PIDFILE={{ pidfile }}
 LOGFILE={{ log_file }}
+CMD=({{ virtualenv_path }}/bin/python -m cloudify_agent.worker --queue "{{ queue }}" --max-workers {{ max_workers }} --log-file "{{ log_file }}" --log-level {{ log_level }})
 
 start() {
   if [ -f "$PIDFILE" ] && kill -0 $(cat "$PIDFILE"); then
     echo 'Service already running' >&2
     return 1
   fi
-  echo 'Starting service…' >&2
-  local CMD="$SCRIPT &> \"$LOGFILE\" && echo \$!"
-  su -c "$CMD" $RUNAS > "$PIDFILE"
+  source {{ config_path }}
+  echo 'Starting service...' >&2
+  sudo -u ${RUNAS} "${CMD[@]}" &
+  echo $! > ${PIDFILE}
   echo 'Service started' >&2
 }
 
@@ -34,7 +31,7 @@ stop() {
     echo 'Service not running' >&2
     return 1
   fi
-  echo 'Stopping service…' >&2
+  echo 'Stopping service...' >&2
   kill -15 $(cat "$PIDFILE") && rm -f "$PIDFILE"
   echo 'Service stopped' >&2
 }

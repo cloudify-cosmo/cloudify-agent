@@ -61,6 +61,12 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
     def status_command(self):
         return self._systemctl_command('status')
 
+    def _get_script_path(self):
+        return os.path.join(
+            self.SCRIPT_DIR,
+            '{0}.service'.format(self.service_name)
+        )
+
     def _get_rendered_script(self):
         self._logger.debug('Rendering SystemD script from template')
         return utils.render_template_to_file(

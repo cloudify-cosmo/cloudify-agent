@@ -793,12 +793,14 @@ class GenericLinuxDaemonMixin(Daemon):
     def _get_rendered_config(self):
         raise NotImplementedError('Must be implemented by a subclass')
 
+    def _get_script_path(self):
+        raise NotImplementedError('Must be implemented by a subclass')
+
     def __init__(self, logger=None, **params):
         super(GenericLinuxDaemonMixin, self).__init__(logger=logger, **params)
 
         self.service_name = 'cloudify-worker-{0}'.format(self.name)
-        self.script_path = os.path.join(
-            self.SCRIPT_DIR, '{0}.service'.format(self.service_name))
+        self.script_path = self._get_script_path()
         self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
 
     def status(self):
