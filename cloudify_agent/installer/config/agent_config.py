@@ -100,6 +100,8 @@ class CloudifyAgentConfig(dict):
 
     @property
     def is_local(self):
+        # default 'local' because during agent upgrade, the old agent might
+        # have not had it set
         return self.get('local', False)
 
     @property
