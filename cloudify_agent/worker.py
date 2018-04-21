@@ -50,81 +50,58 @@ SUPPORTED_EXCEPTIONS = (
 )
 
 
-def _get_common_connection_params():
-    credentials = pika.credentials.PlainCredentials(
-        username=broker_config.broker_username,
-        password=broker_config.broker_password,
-    )
-    return {
-        'host': broker_config.broker_hostname,
-        'port': broker_config.broker_port,
-        'virtual_host': broker_config.broker_vhost,
-        'credentials': credentials,
-        'ssl': broker_config.broker_ssl_enabled,
-        'ssl_options': broker_config.broker_ssl_options,
-        'heartbeat': HEARTBEAT_INTERVAL
-    }
-
-
-def _get_connection_params():
-    return pika.ConnectionParameters(**_get_common_connection_params())
-
-
-def _get_agent_connection_params(daemon_name):
-    while True:
-        params = _get_common_connection_params()
-        if cluster.is_cluster_configured():
-            nodes = cluster.get_cluster_nodes()
-            for node_ip in nodes:
-                params['host'] = node_ip
-                yield pika.ConnectionParameters(**params)
-        else:
-            yield pika.ConnectionParameters(**params)
-
-
 class AMQPWorker(object):
 
-    def __init__(self, connection_params, queue, max_workers,
-                 log_file, log_level, name=None):
-        self._connection_params = connection_params
-        self.queue = queue
-        self._max_workers = max_workers
-        self._thread_pool = []
-        self._logger = _init_logger(log_file, log_level)
+    def __init__(self, handlers, log_file, log_level, logger, name=None):
+        self._logger = logger
+        self._handlers = handlers
         self._publish_queue = Queue.Queue()
         self.name = name
+        self._connection_params = self._get_connection_params()
 
-    # the public methods consume and publish are threadsafe
+    def _get_common_connection_params(self):
+        credentials = pika.credentials.PlainCredentials(
+            username=broker_config.broker_username,
+            password=broker_config.broker_password,
+        )
+        return {
+            'host': broker_config.broker_hostname,
+            'port': broker_config.broker_port,
+            'virtual_host': broker_config.broker_vhost,
+            'credentials': credentials,
+            'ssl': broker_config.broker_ssl_enabled,
+            'ssl_options': broker_config.broker_ssl_options,
+            'heartbeat': HEARTBEAT_INTERVAL
+        }
+
+    def _get_connection_params(self):
+        while True:
+            params = self._get_common_connection_params()
+            if self.name:
+                daemon = DaemonFactory().load(self.name)
+                if daemon.cluster:
+                    for node_ip in daemon.cluster:
+                        params['host'] = node_ip
+                        yield pika.ConnectionParameters(**params)
+                    continue
+            yield pika.ConnectionParameters(**params)
+
     def _connect(self):
-        if isinstance(self._connection_params, pika.ConnectionParameters):
-            params = self._connection_params
-        else:
-            params = next(self._connection_params)
-
+        params = next(self._connection_params)
         self.connection = pika.BlockingConnection(params)
-        in_channel = self.connection.channel()
         out_channel = self.connection.channel()
-
-        in_channel.basic_qos(prefetch_count=self._max_workers)
-        in_channel.exchange_declare(
-            exchange=self.queue, auto_delete=False, durable=True)
-        in_channel.queue_declare(queue=self.queue,
-                                 durable=True,
-                                 auto_delete=False)
-        in_channel.queue_bind(queue=self.queue,
-                              exchange=self.queue,
-                              routing_key='')
-        in_channel.basic_consume(self._process, self.queue)
-        return in_channel, out_channel
+        for handler in self._handlers:
+            handler.register(self.connection)
+        return out_channel
 
     def consume(self):
-        in_channel, out_channel = self._connect()
+        out_channel = self._connect()
         while True:
             try:
                 self.connection.process_data_events(0.2)
                 self._process_publish(out_channel)
             except ConnectionClosed:
-                in_channel, out_channel = self._connect()
+                out_channel = self._connect()
                 continue
 
     def publish(self, **kwargs):
@@ -159,28 +136,7 @@ class AMQPWorker(object):
 
         channel.basic_ack(method.delivery_tag)
 
-    def _print_task(self, task):
-        ctx = task['cloudify_task']['kwargs']['__cloudify_context']
-        if ctx['type'] == 'workflow':
-            prefix = 'Processing workflow'
-            suffix = ''
-        else:
-            prefix = 'Processing operation'
-            suffix = '\nNode ID: {0}'.format(ctx['node_id'])
-        self._logger.info(
-            '{prefix} on queue `{queue}` on tenant `{tenant}`:\n'
-            'Task name: {name}\n'
-            'Execution ID: {execution_id}\n'
-            'Workflow ID: {workflow_id}{suffix}'.format(
-                prefix=prefix,
-                name=ctx['task_name'],
-                queue=ctx['task_target'],
-                tenant=ctx['tenant']['name'],
-                execution_id=ctx['execution_id'],
-                workflow_id=ctx['workflow_id'],
-                suffix=suffix
-            )
-        )
+
 
     def _process_cloudify_task(self, full_task):
         self._print_task(full_task)
@@ -259,6 +215,49 @@ class AMQPWorker(object):
             )
 
 
+class TaskHandler(object):
+    def __init__(self, queue, logger, threadpool_size=5):
+        self.threadpool_size = threadpool_size
+        self.queue = queue
+        self._logger = logger
+
+    def register(self, connection):
+        in_channel = self.connection.channel()
+        in_channel.basic_qos(prefetch_count=self.threadpool_size)
+        in_channel.exchange_declare(
+            exchange=self.queue, auto_delete=False, durable=True)
+        in_channel.queue_declare(queue=self.queue,
+                                 durable=True,
+                                 auto_delete=False)
+        in_channel.queue_bind(queue=self.queue,
+                              exchange=self.queue,
+                              routing_key='')
+        in_channel.basic_consume(self._process, self.queue)
+
+    def _print_task(self, task):
+        ctx = task['cloudify_task']['kwargs']['__cloudify_context']
+        if ctx['type'] == 'workflow':
+            prefix = 'Processing workflow'
+            suffix = ''
+        else:
+            prefix = 'Processing operation'
+            suffix = '\nNode ID: {0}'.format(ctx['node_id'])
+        self._logger.info(
+            '{prefix} on queue `{queue}` on tenant `{tenant}`:\n'
+            'Task name: {name}\n'
+            'Execution ID: {execution_id}\n'
+            'Workflow ID: {workflow_id}{suffix}'.format(
+                prefix=prefix,
+                name=ctx['task_name'],
+                queue=ctx['task_target'],
+                tenant=ctx['tenant']['name'],
+                execution_id=ctx['execution_id'],
+                workflow_id=ctx['workflow_id'],
+                suffix=suffix
+            )
+        )
+
+
 def _init_logger(log_file, log_level):
     logger = logging.getLogger(__name__)
     handler = logging.handlers.RotatingFileHandler(
@@ -284,20 +283,11 @@ def main():
     parser.add_argument('--log-level', default='INFO')
     parser.add_argument('--name')
     args = parser.parse_args()
-
-    if args.name:
-        # we are an agent
-        conn_params = _get_agent_connection_params()
-    else:
-        # we are the mgmtworker
-        conn_params = _get_connection_params()
-
+    logger = _init_logger(args.log_file, args.log_level)
     consumer = AMQPWorker(
-        connection_params=conn_params,
         queue=args.queue,
         max_workers=args.max_workers,
-        log_file=args.log_file,
-        log_level=args.log_level,
+        logger=logger,
         name=args.name
     )
     consumer.consume()
