@@ -90,7 +90,7 @@ class AMQPWorker(object):
         self.connection = pika.BlockingConnection(params)
         out_channel = self.connection.channel()
         for handler in self._handlers:
-            self.register_handler(self.connection, self._publish_queue)
+            handler.register(self.connection, self._publish_queue)
         return out_channel
 
     def consume(self):
