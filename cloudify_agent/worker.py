@@ -141,7 +141,7 @@ class TaskConsumer(object):
         in_channel.queue_bind(queue=self.queue,
                               exchange=self.queue,
                               routing_key=self.routing_key)
-        in_channel.basic_consume(self._process, self.queue)
+        in_channel.basic_consume(self.process, self.queue)
 
     def process(self, channel, method, properties, body):
         try:
