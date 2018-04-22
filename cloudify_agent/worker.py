@@ -125,7 +125,8 @@ class TaskConsumer(object):
 
     def __init__(self, queue, logger, threadpool_size=5):
         self.threadpool_size = threadpool_size
-        self.queue = queue
+        self.exchange = queue
+        self.queue = '{0}_{1}'.format(queue, self.routing_key)
         self._logger = logger
         self._sem = Semaphore(threadpool_size)
         self._output_queue = None
@@ -141,7 +142,7 @@ class TaskConsumer(object):
                                  durable=True,
                                  auto_delete=False)
         in_channel.queue_bind(queue=self.queue,
-                              exchange=self.queue,
+                              exchange=self.exchange,
                               routing_key=self.routing_key)
         in_channel.basic_consume(self.process, self.queue)
 
