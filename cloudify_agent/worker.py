@@ -20,12 +20,12 @@ import Queue
 import argparse
 import logging
 import logging.handlers
-from threading import Thread
+from threading import Thread, Semaphore
 
 import pika
 from pika.exceptions import ConnectionClosed
 
-from cloudify import broker_config, cluster, dispatch, exceptions
+from cloudify import broker_config, dispatch, exceptions
 from cloudify.error_handling import serialize_known_exception
 from cloudify_agent.api.factory import DaemonFactory
 
@@ -51,8 +51,7 @@ SUPPORTED_EXCEPTIONS = (
 
 
 class AMQPWorker(object):
-
-    def __init__(self, handlers, log_file, log_level, logger, name=None):
+    def __init__(self, handlers, logger, name=None):
         self._logger = logger
         self._handlers = handlers
         self._publish_queue = Queue.Queue()
@@ -91,7 +90,7 @@ class AMQPWorker(object):
         self.connection = pika.BlockingConnection(params)
         out_channel = self.connection.channel()
         for handler in self._handlers:
-            handler.register(self.connection)
+            self.register_handler(self.connection, self._publish_queue)
         return out_channel
 
     def consume(self):
@@ -103,9 +102,6 @@ class AMQPWorker(object):
             except ConnectionClosed:
                 out_channel = self._connect()
                 continue
-
-    def publish(self, **kwargs):
-        self._publish_queue.put(kwargs)
 
     def _process_publish(self, channel):
         while True:
@@ -121,108 +117,21 @@ class AMQPWorker(object):
                 self._publish_queue.put(msg)
                 raise
 
-    def _process(self, channel, method, properties, body):
-        # Clear out finished threads
-        self._thread_pool = [t for t in self._thread_pool if t.is_alive()]
 
-        if len(self._thread_pool) <= self._max_workers:
-            new_thread = Thread(
-                target=self._process_message,
-                args=(properties, body)
-            )
-            self._thread_pool.append(new_thread)
-            new_thread.daemon = True
-            new_thread.start()
+class TaskConsumer(object):
+    routing_key = ''
 
-        channel.basic_ack(method.delivery_tag)
-
-
-
-    def _process_cloudify_task(self, full_task):
-        self._print_task(full_task)
-        result = None
-        task = full_task['cloudify_task']
-        try:
-            kwargs = task['kwargs']
-            rv = dispatch.dispatch(**kwargs)
-            result = {'ok': True, 'result': rv}
-            self._logger.info('SUCCESS - result: {0}'.format(result))
-        except SUPPORTED_EXCEPTIONS as e:
-            error = serialize_known_exception(e)
-            result = {'ok': False, 'error': error}
-            self._logger.error(
-                'ERROR - caught: {0}\n{1}'.format(
-                    repr(e), error['traceback']
-                )
-            )
-        return result
-
-    def ping_task(self):
-        return {'time': time.time()}
-
-    def cluster_update_task(self, nodes):
-        factory = DaemonFactory()
-        daemon = factory.load(self.name)
-        network_name = daemon.network
-        nodes = [n['networks'][network_name] for n in nodes]
-        cluster.set_cluster_nodes(nodes)
-        daemon.cluster = nodes
-        factory.save(daemon)
-
-    def _process_service_task(self, full_task):
-        service_tasks = {
-            'ping': self.ping_task,
-            'cluster-update': self.cluster_update_task
-        }
-
-        task = full_task['service_task']
-        task_name = task['task_name']
-        kwargs = task['kwargs']
-
-        return service_tasks[task_name](**kwargs)
-
-    def _process_message(self, properties, body):
-        try:
-            full_task = json.loads(body)
-        except ValueError:
-            self._logger.error('Error parsing task: {0}'.format(body))
-            return
-
-        if 'cloudify_task' in full_task:
-            handler = self._process_cloudify_task
-        elif 'service_task' in full_task:
-            handler = self._process_service_task
-        else:
-            self._logger.error('Could not handle task')
-            return
-
-        try:
-            result = handler(full_task)
-        except Exception as e:
-            result = {'ok': False, 'error': repr(e)}
-            self._logger.error(
-                'ERROR - failed message processing: '
-                '{0!r}\nbody: {1}\ntype: {2}'.format(e, body, type(body))
-            )
-
-        if properties.reply_to:
-            self.publish(
-                exchange='',
-                routing_key=properties.reply_to,
-                properties=pika.BasicProperties(
-                    correlation_id=properties.correlation_id),
-                body=json.dumps(result)
-            )
-
-
-class TaskHandler(object):
     def __init__(self, queue, logger, threadpool_size=5):
         self.threadpool_size = threadpool_size
         self.queue = queue
         self._logger = logger
+        self._sem = Semaphore(threadpool_size)
+        self._output_queue = None
 
-    def register(self, connection):
-        in_channel = self.connection.channel()
+    def register(self, connection, output_queue):
+        self._output_queue = output_queue
+
+        in_channel = connection.channel()
         in_channel.basic_qos(prefetch_count=self.threadpool_size)
         in_channel.exchange_declare(
             exchange=self.queue, auto_delete=False, durable=True)
@@ -231,8 +140,52 @@ class TaskHandler(object):
                                  auto_delete=False)
         in_channel.queue_bind(queue=self.queue,
                               exchange=self.queue,
-                              routing_key='')
+                              routing_key=self.routing_key)
         in_channel.basic_consume(self._process, self.queue)
+
+    def process(self, channel, method, properties, body):
+        try:
+            full_task = json.loads(body)
+        except ValueError:
+            self._logger.error('Error parsing task: {0}'.format(body))
+            return
+
+        self._sem.acquire()
+        new_thread = Thread(
+            target=self._process_message,
+            args=(properties, full_task)
+        )
+        new_thread.daemon = True
+        new_thread.start()
+        channel.basic_ack(method.delivery_tag)
+
+    def _process_message(self, properties, full_task):
+        try:
+            result = self.handle_task(full_task)
+        except Exception as e:
+            result = {'ok': False, 'error': repr(e)}
+            self._logger.error(
+                'ERROR - failed message processing: '
+                '{0!r}\nbody: {1}'.format(e, full_task)
+            )
+
+        if properties.reply_to:
+            self._output_queue.put({
+                'exchange': '',
+                'routing_key': properties.reply_to,
+                'properties': pika.BasicProperties(
+                    correlation_id=properties.correlation_id),
+                'body': json.dumps(result)
+            })
+        self._sem.release()
+
+    def handle_task(self, full_task):
+        raise NotImplementedError()
+
+
+class CloudifyOperationConsumer(TaskConsumer):
+    routing_key = 'operation'
+    handler = dispatch.OperationHandler
 
     def _print_task(self, task):
         ctx = task['cloudify_task']['kwargs']['__cloudify_context']
@@ -257,6 +210,57 @@ class TaskHandler(object):
             )
         )
 
+    def handle_task(self, full_task):
+        self._print_task(full_task)
+        result = None
+        task = full_task['cloudify_task']
+        handler = dispatch.OperationHandler(**task['kwargs'])
+        try:
+            rv = handler.handle_or_dispatch_to_subprocess_if_remote()
+            result = {'ok': True, 'result': rv}
+            self._logger.info('SUCCESS - result: {0}'.format(result))
+        except SUPPORTED_EXCEPTIONS as e:
+            error = serialize_known_exception(e)
+            result = {'ok': False, 'error': error}
+            self._logger.error(
+                'ERROR - caught: {0}\n{1}'.format(
+                    repr(e), error['traceback']
+                )
+            )
+        return result
+
+
+class CloudifyWorkflowConsumer(CloudifyOperationConsumer):
+    routing_key = 'workflow'
+    handler = dispatch.WorkflowHandler
+
+
+class ServiceTaskConsumer(TaskConsumer):
+    routing_key = 'service'
+
+    def handle_task(self, full_task):
+        service_tasks = {
+            'ping': self.ping_task,
+            'cluster-update': self.cluster_update_task
+        }
+
+        task = full_task['service_task']
+        task_name = task['task_name']
+        kwargs = task['kwargs']
+
+        return service_tasks[task_name](**kwargs)
+
+    def ping_task(self):
+        return {'time': time.time()}
+
+    def cluster_update_task(self, nodes):
+        factory = DaemonFactory()
+        daemon = factory.load(self.name)
+        network_name = daemon.network
+        nodes = [n['networks'][network_name] for n in nodes]
+        daemon.cluster = nodes
+        factory.save(daemon)
+
 
 def _init_logger(log_file, log_level):
     logger = logging.getLogger(__name__)
@@ -275,6 +279,16 @@ def _init_logger(log_file, log_level):
     return logger
 
 
+def make_amqp_worker(args):
+    logger = _init_logger(args.log_file, args.log_level)
+    handlers = [
+        CloudifyOperationConsumer(args.queue, logger, args.max_workers),
+        CloudifyWorkflowConsumer(args.queue, logger, args.max_workers),
+        ServiceTaskConsumer(args.queue, logger, args.max_workers),
+    ]
+    return AMQPWorker(handlers=handlers, logger=logger, name=args.name)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--queue')
@@ -283,14 +297,8 @@ def main():
     parser.add_argument('--log-level', default='INFO')
     parser.add_argument('--name')
     args = parser.parse_args()
-    logger = _init_logger(args.log_file, args.log_level)
-    consumer = AMQPWorker(
-        queue=args.queue,
-        max_workers=args.max_workers,
-        logger=logger,
-        name=args.name
-    )
-    consumer.consume()
+    worker = make_amqp_worker(args)
+    worker.consume()
 
 
 if __name__ == '__main__':
