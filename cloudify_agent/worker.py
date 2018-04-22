@@ -217,7 +217,8 @@ class CloudifyOperationConsumer(TaskConsumer):
         result = None
         task = full_task['cloudify_task']
         ctx = task['kwargs'].pop('__cloudify_context')
-        handler = self.handler(cloudify_context=ctx, kwargs=task['kwargs'])
+        handler = self.handler(cloudify_context=ctx, args=task.get('args', []),
+                               kwargs=task['kwargs'])
         try:
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
             result = {'ok': True, 'result': rv}
