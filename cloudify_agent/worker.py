@@ -15,17 +15,20 @@
 ############
 
 import json
+import time
 import Queue
 import argparse
 import logging
 import logging.handlers
-from threading import Thread
+from threading import Thread, Semaphore
 
 import pika
 from pika.exceptions import ConnectionClosed
 
-from cloudify import exceptions, dispatch, broker_config
+from cloudify import broker_config, dispatch, exceptions
 from cloudify.error_handling import serialize_known_exception
+from cloudify_agent.api.factory import DaemonFactory
+
 
 HEARTBEAT_INTERVAL = 30
 D_CONN_ATTEMPTS = 12
@@ -48,64 +51,77 @@ SUPPORTED_EXCEPTIONS = (
 
 
 class AMQPWorker(object):
+    MAX_BACKOFF = 30
 
-    def __init__(self, queue, max_workers, log_file, log_level):
-        self.queue = queue
-        self._max_workers = max_workers
-        self._thread_pool = []
-        self._logger = _init_logger(log_file, log_level)
+    def __init__(self, handlers, logger, name=None):
+        self._logger = logger
+        self._handlers = handlers
         self._publish_queue = Queue.Queue()
+        self.name = name
+        self._connection_params = self._get_connection_params()
+        self._reconnect_backoff = 1
 
-    # the public methods consume and publish are threadsafe
-    def _connect(self):
-        self.connection = pika.BlockingConnection(
-            self._get_connection_params()
+    def _get_common_connection_params(self):
+        credentials = pika.credentials.PlainCredentials(
+            username=broker_config.broker_username,
+            password=broker_config.broker_password,
         )
-        in_channel = self.connection.channel()
-        out_channel = self.connection.channel()
+        return {
+            'host': broker_config.broker_hostname,
+            'port': broker_config.broker_port,
+            'virtual_host': broker_config.broker_vhost,
+            'credentials': credentials,
+            'ssl': broker_config.broker_ssl_enabled,
+            'ssl_options': broker_config.broker_ssl_options,
+            'heartbeat': HEARTBEAT_INTERVAL
+        }
 
-        in_channel.basic_qos(prefetch_count=self._max_workers)
-        in_channel.exchange_declare(
-            exchange=self.queue, auto_delete=False, durable=True)
-        in_channel.queue_declare(queue=self.queue,
-                                 durable=True,
-                                 auto_delete=False)
-        in_channel.queue_bind(queue=self.queue,
-                              exchange=self.queue,
-                              routing_key='')
-        in_channel.basic_consume(self._process, self.queue)
-        return in_channel, out_channel
+    def _get_connection_params(self):
+        while True:
+            params = self._get_common_connection_params()
+            if self.name:
+                daemon = DaemonFactory().load(self.name)
+                if daemon.cluster:
+                    for node_ip in daemon.cluster:
+                        params['host'] = node_ip
+                        yield pika.ConnectionParameters(**params)
+                    continue
+            yield pika.ConnectionParameters(**params)
+
+    def _get_reconnect_backoff(self):
+        backoff = self._reconnect_backoff
+        self._reconnect_backoff = max(backoff * 2, self.MAX_BACKOFF)
+        return backoff
+
+    def _reset_reconnect_backoff(self):
+        self._reconnect_backoff = 1
+
+    def _connect(self):
+        for params in self._connection_params:
+            try:
+                self.connection = pika.BlockingConnection(params)
+            except pika.exceptions.AMQPConnectionError:
+                time.sleep(self._get_next_backoff())
+            else:
+                self._reset_reconnect_backoff()
+                break
+
+        out_channel = self.connection.channel()
+        for handler in self._handlers:
+            handler.register(self.connection, self._publish_queue)
+            self._logger.info('Registered handler for {0}'
+                              .format(handler.routing_key))
+        return out_channel
 
     def consume(self):
-        in_channel, out_channel = self._connect()
+        out_channel = self._connect()
         while True:
             try:
                 self.connection.process_data_events(0.2)
                 self._process_publish(out_channel)
             except ConnectionClosed:
-                in_channel, out_channel = self._connect()
+                out_channel = self._connect()
                 continue
-
-    def publish(self, **kwargs):
-        self._publish_queue.put(kwargs)
-
-    @staticmethod
-    def _get_connection_params():
-        credentials = pika.credentials.PlainCredentials(
-            username=broker_config.broker_username,
-            password=broker_config.broker_password,
-        )
-        return pika.ConnectionParameters(
-            host=broker_config.broker_hostname,
-            port=broker_config.broker_port,
-            virtual_host=broker_config.broker_vhost,
-            credentials=credentials,
-            ssl=broker_config.broker_ssl_enabled,
-            ssl_options=broker_config.broker_ssl_options,
-            heartbeat=HEARTBEAT_INTERVAL,
-            connection_attempts=D_CONN_ATTEMPTS,
-            retry_delay=D_RETRY_DELAY
-        )
 
     def _process_publish(self, channel):
         while True:
@@ -121,20 +137,76 @@ class AMQPWorker(object):
                 self._publish_queue.put(msg)
                 raise
 
-    def _process(self, channel, method, properties, body):
-        # Clear out finished threads
-        self._thread_pool = [t for t in self._thread_pool if t.is_alive()]
 
-        if len(self._thread_pool) <= self._max_workers:
-            new_thread = Thread(
-                target=self._process_message,
-                args=(properties, body)
-            )
-            self._thread_pool.append(new_thread)
-            new_thread.daemon = True
-            new_thread.start()
+class TaskConsumer(object):
+    routing_key = ''
 
+    def __init__(self, queue, logger, threadpool_size=5):
+        self.threadpool_size = threadpool_size
+        self.exchange = queue
+        self.queue = '{0}_{1}'.format(queue, self.routing_key)
+        self._logger = logger
+        self._sem = Semaphore(threadpool_size)
+        self._output_queue = None
+
+    def register(self, connection, output_queue):
+        self._output_queue = output_queue
+
+        in_channel = connection.channel()
+        in_channel.basic_qos(prefetch_count=self.threadpool_size)
+        in_channel.exchange_declare(
+            exchange=self.exchange, auto_delete=False, durable=True)
+        in_channel.queue_declare(queue=self.queue,
+                                 durable=True,
+                                 auto_delete=False)
+        in_channel.queue_bind(queue=self.queue,
+                              exchange=self.exchange,
+                              routing_key=self.routing_key)
+        in_channel.basic_consume(self.process, self.queue)
+
+    def process(self, channel, method, properties, body):
+        try:
+            full_task = json.loads(body)
+        except ValueError:
+            self._logger.error('Error parsing task: {0}'.format(body))
+            return
+
+        self._sem.acquire()
+        new_thread = Thread(
+            target=self._process_message,
+            args=(properties, full_task)
+        )
+        new_thread.daemon = True
+        new_thread.start()
         channel.basic_ack(method.delivery_tag)
+
+    def _process_message(self, properties, full_task):
+        try:
+            result = self.handle_task(full_task)
+        except Exception as e:
+            result = {'ok': False, 'error': repr(e)}
+            self._logger.error(
+                'ERROR - failed message processing: '
+                '{0!r}\nbody: {1}'.format(e, full_task)
+            )
+
+        if properties.reply_to:
+            self._output_queue.put({
+                'exchange': '',
+                'routing_key': properties.reply_to,
+                'properties': pika.BasicProperties(
+                    correlation_id=properties.correlation_id),
+                'body': json.dumps(result)
+            })
+        self._sem.release()
+
+    def handle_task(self, full_task):
+        raise NotImplementedError()
+
+
+class CloudifyOperationConsumer(TaskConsumer):
+    routing_key = 'operation'
+    handler = dispatch.OperationHandler
 
     def _print_task(self, task):
         ctx = task['cloudify_task']['kwargs']['__cloudify_context']
@@ -159,16 +231,16 @@ class AMQPWorker(object):
             )
         )
 
-    def _process_message(self, properties, body):
-        full_task = json.loads(body)
+    def handle_task(self, full_task):
         self._print_task(full_task)
         result = None
         task = full_task['cloudify_task']
+        ctx = task['kwargs'].pop('__cloudify_context')
+        handler = self.handler(cloudify_context=ctx, args=task.get('args', []),
+                               kwargs=task['kwargs'])
         try:
-            kwargs = task['kwargs']
-            rv = dispatch.dispatch(**kwargs)
+            rv = handler.handle_or_dispatch_to_subprocess_if_remote()
             result = {'ok': True, 'result': rv}
-            self._logger.warning(task)
             self._logger.info('SUCCESS - result: {0}'.format(result))
         except SUPPORTED_EXCEPTIONS as e:
             error = serialize_known_exception(e)
@@ -178,21 +250,39 @@ class AMQPWorker(object):
                     repr(e), error['traceback']
                 )
             )
-        except Exception as e:
-            result = {'ok': False, 'error': repr(e)}
-            self._logger.error(
-                'ERROR - failed message processing: '
-                '{0!r}\nbody: {1}\ntype: {2}'.format(e, body, type(body))
-            )
-        finally:
-            if properties.reply_to:
-                self.publish(
-                    exchange='',
-                    routing_key=properties.reply_to,
-                    properties=pika.BasicProperties(
-                        correlation_id=properties.correlation_id),
-                    body=json.dumps(result)
-                )
+        return result
+
+
+class CloudifyWorkflowConsumer(CloudifyOperationConsumer):
+    routing_key = 'workflow'
+    handler = dispatch.WorkflowHandler
+
+
+class ServiceTaskConsumer(TaskConsumer):
+    routing_key = 'service'
+
+    def handle_task(self, full_task):
+        service_tasks = {
+            'ping': self.ping_task,
+            'cluster-update': self.cluster_update_task
+        }
+
+        task = full_task['service_task']
+        task_name = task['task_name']
+        kwargs = task['kwargs']
+
+        return service_tasks[task_name](**kwargs)
+
+    def ping_task(self):
+        return {'time': time.time()}
+
+    def cluster_update_task(self, nodes):
+        factory = DaemonFactory()
+        daemon = factory.load(self.name)
+        network_name = daemon.network
+        nodes = [n['networks'][network_name] for n in nodes]
+        daemon.cluster = nodes
+        factory.save(daemon)
 
 
 def _init_logger(log_file, log_level):
@@ -212,20 +302,26 @@ def _init_logger(log_file, log_level):
     return logger
 
 
+def make_amqp_worker(args):
+    logger = _init_logger(args.log_file, args.log_level)
+    handlers = [
+        CloudifyOperationConsumer(args.queue, logger, args.max_workers),
+        CloudifyWorkflowConsumer(args.queue, logger, args.max_workers),
+        ServiceTaskConsumer(args.queue, logger, args.max_workers),
+    ]
+    return AMQPWorker(handlers=handlers, logger=logger, name=args.name)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--queue')
     parser.add_argument('--max-workers', default=DEFAULT_MAX_WORKERS, type=int)
     parser.add_argument('--log-file')
     parser.add_argument('--log-level', default='INFO')
+    parser.add_argument('--name')
     args = parser.parse_args()
-    consumer = AMQPWorker(
-        queue=args.queue,
-        max_workers=args.max_workers,
-        log_file=args.log_file,
-        log_level=args.log_level
-    )
-    consumer.consume()
+    worker = make_amqp_worker(args)
+    worker.consume()
 
 
 if __name__ == '__main__':
