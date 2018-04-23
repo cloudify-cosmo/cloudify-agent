@@ -51,12 +51,15 @@ SUPPORTED_EXCEPTIONS = (
 
 
 class AMQPWorker(object):
+    MAX_BACKOFF = 30
+
     def __init__(self, handlers, logger, name=None):
         self._logger = logger
         self._handlers = handlers
         self._publish_queue = Queue.Queue()
         self.name = name
         self._connection_params = self._get_connection_params()
+        self._reconnect_backoff = 1
 
     def _get_common_connection_params(self):
         credentials = pika.credentials.PlainCredentials(
@@ -85,9 +88,24 @@ class AMQPWorker(object):
                     continue
             yield pika.ConnectionParameters(**params)
 
+    def _get_reconnect_backoff(self):
+        backoff = self._reconnect_backoff
+        self._reconnect_backoff = max(backoff * 2, self.MAX_BACKOFF)
+        return backoff
+
+    def _reset_reconnect_backoff(self):
+        self._reconnect_backoff = 1
+
     def _connect(self):
-        params = next(self._connection_params)
-        self.connection = pika.BlockingConnection(params)
+        for params in self._connection_params:
+            try:
+                self.connection = pika.BlockingConnection(params)
+            except pika.exceptions.AMQPConnectionError:
+                time.sleep(self._get_next_backoff())
+            else:
+                self._reset_reconnect_backoff()
+                break
+
         out_channel = self.connection.channel()
         for handler in self._handlers:
             handler.register(self.connection, self._publish_queue)
