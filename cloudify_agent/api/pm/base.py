@@ -466,25 +466,6 @@ class Daemon(object):
         self._logger.info('Starting daemon with command: {0}'
                           .format(start_command))
         self._runner.run(start_command)
-        end_time = time.time() + timeout
-        while time.time() < end_time:
-            self._logger.debug('Querying daemon {0} registered tasks'.format(
-                self.name))
-            if self._is_agent_registered():
-                # make sure the status command recognizes the daemon is up
-                status = self.status()
-                if status:
-                    self._logger.debug('Daemon {0} has started'
-                                       .format(self.name))
-                    return
-            self._logger.debug('Daemon {0} has not started yet. '
-                               'Sleeping for {1} seconds...'
-                               .format(self.name, interval))
-            time.sleep(interval)
-        self._logger.debug('Verifying there were no un-handled '
-                           'exception during startup')
-        self._verify_no_celery_error()
-        raise exceptions.DaemonStartupTimeout(timeout, self.name)
 
     def stop(self,
              interval=defaults.STOP_INTERVAL,
@@ -588,22 +569,6 @@ class Daemon(object):
         """
 
         return '%I'
-
-    def _verify_no_celery_error(self):
-
-        error_dump_path = os.path.join(
-            utils.internal.get_storage_directory(self.user),
-            '{0}.err'.format(self.name))
-
-        # this means the celery worker had an uncaught
-        # exception and it wrote its content
-        # to the file above because of our custom exception
-        # handler (see app.py)
-        if os.path.exists(error_dump_path):
-            with open(error_dump_path) as f:
-                error = f.read()
-            os.remove(error_dump_path)
-            raise exceptions.DaemonError(error)
 
     def _delete_amqp_queues(self):
         client = self._get_amqp_client()
