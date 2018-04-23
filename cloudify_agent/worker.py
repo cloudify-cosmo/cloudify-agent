@@ -101,7 +101,7 @@ class AMQPWorker(object):
             try:
                 self.connection = pika.BlockingConnection(params)
             except pika.exceptions.AMQPConnectionError:
-                time.sleep(self._get_next_backoff())
+                time.sleep(self._get_reconnect_backoff())
             else:
                 self._reset_reconnect_backoff()
                 break
