@@ -25,7 +25,7 @@ from contextlib import contextmanager
 import cloudify.manager
 from cloudify import ctx
 from cloudify.broker_config import broker_hostname
-from cloudify.exceptions import NonRecoverableError
+from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.utils import (ManagerVersion,
                             get_local_rest_certificate,
                             get_manager_rest_service_host)
@@ -164,9 +164,11 @@ def _save_daemon(daemon):
     factory.save(daemon)
 
 
-def _set_default_new_agent_config_values(old_agent, new_agent):
-    new_agent['name'] = utils.internal.generate_new_agent_name(
-        old_agent['name'])
+def _set_default_new_agent_config_values(
+        old_agent, new_agent, transfer_agent=False):
+    if not transfer_agent:
+        new_agent['name'] = utils.internal.generate_new_agent_name(
+            old_agent['name'])
     # Set the broker IP explicitly to the current manager's IP
     new_agent['broker_ip'] = broker_hostname
     new_agent['old_agent_version'] = old_agent['version']
@@ -176,21 +178,25 @@ def _set_default_new_agent_config_values(old_agent, new_agent):
     new_agent['cluster'] = ctx.bootstrap_context.cloudify_agent.cluster or []
 
 
-def _copy_values_from_old_agent_config(old_agent, new_agent):
+def _copy_values_from_old_agent_config(
+        old_agent, new_agent, transfer_agent=False):
     fields_to_copy = ['windows', 'ip', 'basedir', 'user', 'distro_codename',
                       'distro', 'broker_ssl_cert_path', 'agent_rest_cert_path',
                       'network']
+    if transfer_agent:
+        fields_to_copy.append('name')
     for field in fields_to_copy:
         if field in old_agent:
             new_agent[field] = old_agent[field]
 
 
-def create_new_agent_config(old_agent):
+def create_new_agent_config(old_agent, manager_ip=None, transfer_agent=False):
     new_agent = CloudifyAgentConfig()
-    _set_default_new_agent_config_values(old_agent, new_agent)
-    _copy_values_from_old_agent_config(old_agent, new_agent)
+    _set_default_new_agent_config_values(old_agent, new_agent, transfer_agent)
+    _copy_values_from_old_agent_config(old_agent, new_agent, transfer_agent)
     new_agent.set_default_values()
     new_agent.set_installation_params(runner=None)
+    new_agent['broker_ip'] = manager_ip
     return new_agent
 
 
@@ -202,15 +208,12 @@ def _celery_app(agent):
                               ctx.bootstrap_context.broker_config())
     agent_version = agent.get('version') or str(_get_manager_version())
     broker_url = utils.internal.get_broker_url(broker_config)
-    ctx.logger.info('Connecting to {0}'.format(broker_url))
-
     ssl_cert_path = _get_ssl_cert_path(broker_config)
     celery_client = get_celery_app(
         broker_url=broker_url,
         broker_ssl_enabled=broker_config.get('broker_ssl_enabled'),
         broker_ssl_cert_path=ssl_cert_path
     )
-
     if ManagerVersion(agent_version) != ManagerVersion('3.2'):
         celery_client.conf['CELERY_TASK_RESULT_EXPIRES'] = \
             defaults.CELERY_TASK_RESULT_EXPIRES
@@ -249,13 +252,14 @@ def _celery_task_name(version):
 
 def _assert_agent_alive(name, celery_client, version=None):
     tasks = utils.get_agent_registered(name, celery_client)
+    # Using RecoverableError to allow retries
     if not tasks:
-        raise NonRecoverableError(
+        raise RecoverableError(
             'Could not access tasks list for agent {0}'.format(name))
     task_name = _celery_task_name(version)
     if task_name not in tasks:
-        raise NonRecoverableError('Task {0} is not available in agent {1}'.
-                                  format(task_name, name))
+        raise RecoverableError('Task {0} is not available in agent {1}'.
+                               format(task_name, name))
 
 
 def _get_manager_version():
@@ -267,9 +271,11 @@ def _http_rest_host():
     return 'http://{0}/'.format(get_manager_rest_service_host())
 
 
-def _get_init_script_path_and_url(new_agent, old_agent_version):
-    script_path, script_url = init_script_download_link(new_agent)
-
+def _get_init_script_path_and_url(new_agent, old_agent_version,
+                                  manager_ip=None, manager_cert=None,
+                                  rest_token=None, transfer_agent=False):
+    script_path, script_url = init_script_download_link(
+        new_agent, manager_ip, manager_cert, rest_token, transfer_agent)
     # Prior to 4.2 (and script plugin 1.5.1) there was no way to pass
     # a certificate to the script plugin, so the initial script must be
     # passed over http
@@ -318,20 +324,21 @@ def _execute_install_script_task(app, params, old_agent, timeout, script_path):
         os.remove(script_path)
 
 
-def _run_install_script(old_agent, timeout):
+def _run_install_script(old_agent, timeout, manager_ip=None, manager_cert=None,
+                        rest_token=None, transfer_agent=False):
     old_agent = copy.deepcopy(old_agent)
     if 'version' not in old_agent:
         # Assuming that if there is no version info in the agent then
         # this agent was installed by current manager.
         old_agent['version'] = str(_get_manager_version())
-    new_agent = create_new_agent_config(old_agent)
-
+    new_agent = create_new_agent_config(old_agent, manager_ip, transfer_agent)
     with _celery_app(old_agent) as celery_app:
         _assert_agent_alive(old_agent['name'], celery_app,
                             old_agent['version'])
 
         script_path, script_url = _get_init_script_path_and_url(
-            new_agent, old_agent['version']
+            new_agent, old_agent['version'], manager_ip, manager_cert,
+            rest_token, transfer_agent=transfer_agent
         )
         params = _build_install_script_params(old_agent, script_url)
         _execute_install_script_task(
@@ -380,9 +387,9 @@ def create_agent_amqp(install_agent_timeout=300, **_):
 
 
 def _validate_amqp_connection(celery_app, agent_name, agent_version=None):
+    broker_url = _conceal_amqp_password(celery_app.conf['BROKER_URL'])
     ctx.logger.info('Checking if agent can be accessed through: {0}'.format(
-        celery_app.conf['BROKER_URL']
-    ))
+        broker_url))
     _assert_agent_alive(agent_name, celery_app, agent_version)
 
 
@@ -407,10 +414,14 @@ def _validate_old_amqp():
 
 def _validate_current_amqp():
     agent = ctx.instance.runtime_properties['cloudify_agent']
+    _create_broker_config()
     try:
         ctx.logger.info('Trying current AMQP...')
         app = get_celery_app(tenant=agent.get('rest_tenant'))
         _validate_amqp_connection(app, agent['name'])
+    # Using RecoverableError to allow retries
+    except RecoverableError:
+        raise
     except Exception as e:
         ctx.logger.info('Agent unavailable, reason {0}'.format(str(e)))
         return {
@@ -436,7 +447,6 @@ def validate_agent_amqp(current_amqp=True, **_):
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
-
     result = _validate_current_amqp() if current_amqp else _validate_old_amqp()
 
     result['timestamp'] = time.time()
@@ -446,3 +456,63 @@ def validate_agent_amqp(current_amqp=True, **_):
         raise NonRecoverableError(result['agent_alive_error'])
     if not current_amqp and not result['agent_alive_crossbroker']:
         raise NonRecoverableError(result['agent_alive_crossbroker_error'])
+
+
+@operation
+def transfer_agent_amqp(transfer_agent_timeout=300,
+                        manager_ip=None, manager_certificate=None,
+                        manager_rest_token=None, **_):
+
+    _create_broker_config(transfer_mode=True)
+    old_agent = _validate_agent()
+    agents = _run_install_script(old_agent, transfer_agent_timeout, manager_ip,
+                                 manager_certificate, manager_rest_token,
+                                 transfer_agent=True)
+    returned_agent = agents['new']
+    ctx.logger.info('Configured agent {0} to work with the new Manager'.
+                    format(returned_agent['name']))
+
+    # Make sure the agent is alive:
+    app = get_celery_app(tenant=returned_agent['rest_tenant'])
+    _assert_agent_alive(returned_agent['name'], app)
+
+
+def _create_broker_config(transfer_mode=False):
+    """
+    This function creates a dictionary called 'broker_config' within the
+    'cloudify_agent' dict, that contains all the required information that will
+     later be used to create a Celery client
+    :return:
+    """
+    if 'cloudify_agent' not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            'cloudify_agent key not available in runtime_properties')
+    agent = ctx.instance.runtime_properties['cloudify_agent']
+    if 'broker_config' not in agent:
+        agent['broker_config'] = dict()
+    broker_conf = agent['broker_config']
+    broker_conf['broker_ip'] = agent.get('broker_ip')
+    tenant = agent.get('rest_tenant', {})
+    broker_conf['broker_user'] = tenant.get('rabbitmq_username')
+    broker_conf['broker_vhost'] = tenant.get('rabbitmq_vhost')
+    broker_conf['broker_pass'] = tenant.get('rabbitmq_password')
+    broker_conf['broker_ssl_enabled'] = True
+    if transfer_mode:
+        status = ctx.instance.runtime_properties['agent_status']
+        status['agent_alive_crossbroker'] = True
+        ssl_path = agent.get('broker_ssl_cert_path')
+        with open(ssl_path, 'r') as ssl_file:
+            ssl_cert = ssl_file.read()
+        broker_conf['broker_ssl_cert'] = ssl_cert
+    ctx.instance.runtime_properties['cloudify_agent'] = agent
+    ctx.instance.update()
+
+
+def _conceal_amqp_password(url):
+    """
+    replace the broker password in the url before printing it
+    """
+    before_password = url[:url.find(':', 5)]
+    after_password = url[url.find('@'):]
+    final = before_password + ':***' + after_password
+    return final

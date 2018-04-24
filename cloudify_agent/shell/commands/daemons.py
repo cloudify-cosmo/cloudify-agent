@@ -177,6 +177,12 @@ from cloudify_agent.shell.decorators import handle_failures
                    .format(env.CLOUDIFY_CLUSTER_NODES),
               envvar=env.CLOUDIFY_CLUSTER_NODES,
               callback=api_utils._parse_cluster_nodes)
+@click.option('--agents-transfer-mode',
+              help='When transfer agents mode is enabled the daemon name '
+                   'validation will be skipped, to allow creating a new agent '
+                   'daemon with the same name.',
+              is_flag=True,
+              default=False)
 # this is defined in order to allow passing any kind of option to the
 # command line. in order to support creating daemons of different kind via
 # the same command line. this argument is parsed as keyword arguments which
@@ -194,13 +200,11 @@ def create(**params):
     attributes.update(_parse_custom_options(custom_arg))
 
     click.echo('Creating...')
-
     from cloudify_agent.shell.main import get_logger
     daemon = DaemonFactory().new(
         logger=get_logger(),
         **attributes
     )
-
     daemon.create()
     _save_daemon(daemon)
     click.echo('Successfully created daemon: {0}'

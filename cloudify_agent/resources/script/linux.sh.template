@@ -10,6 +10,32 @@ add_ssl_cert()
 export -f add_ssl_cert
 {% endif %}
 
+export_daemon_env()
+{
+    export_agent_cli_env
+    {% for env_key, env_value in daemon_env.iteritems() %}
+        export {{ env_key }}={{ env_value }}
+    {% endfor %}
+}
+export -f export_daemon_env
+
+
+export_agent_cli_env()
+{
+    local agent_env_bin={{ conf.envdir }}/bin
+    export AGENT_PYTHON_INTERPRETER=${agent_env_bin}/python
+    export AGENT_CLI=${agent_env_bin}/cfy-agent
+    export PATH=${agent_env_bin}:$PATH
+    export CLOUDIFY_DAEMON_NAME={{ conf.name }}
+
+}
+export -f  export_agent_cli_env
+
+
+#####################################################
+###################### Install ######################
+#####################################################
+
 {% if install %}
 download()
 {
@@ -59,18 +85,11 @@ install_agent()
 export -f install_agent
 {% endif %}
 
+#######################################################
+###################### Configure ######################
+#######################################################
+
 {% if configure %}
-export_daemon_env()
-{
-    local agent_env_bin={{ conf.envdir }}/bin
-    export AGENT_PYTHON_INTERPRETER=${agent_env_bin}/python
-    export AGENT_CLI=${agent_env_bin}/cfy-agent
-    export PATH=${agent_env_bin}:$PATH
-    {% for env_key, env_value in daemon_env.iteritems() %}
-        export {{ env_key }}={{ env_value }}
-    {% endfor %}
-}
-export -f export_daemon_env
 
 configure_virtualenv()
 {
@@ -100,6 +119,10 @@ configure_agent()
 export -f configure_agent
 {% endif %}
 
+###################################################
+###################### Start ######################
+###################################################
+
 {% if start %}
 create_custom_env_file()
 {
@@ -119,9 +142,12 @@ export -f create_custom_env_file
 start_daemon()
 {
     export_daemon_env
-    cfy-agent daemons create {{ pm_options }}
+    cfy-agent daemons create {{ pm_options }} {% if transfer_agent %}--agents-transfer-mode {% endif %}
+
     cfy-agent daemons configure
+    {% if not transfer_agent %}
     cfy-agent daemons start
+    {% endif %}
 }
 export -f start_daemon
 
@@ -135,6 +161,10 @@ export -f start_agent
 
 main()
 {
+    {% if transfer_agent %}
+    echo "Starting agents transfer..."
+    su {{ conf.user }} --shell /bin/bash -c "set -e; add_ssl_cert"
+    {% endif %}
     {% if install %}
     install_agent
     {% endif %}
@@ -144,6 +174,7 @@ main()
     {% if start %}
     start_agent
     {% endif %}
+
 }
 export -f main
 
