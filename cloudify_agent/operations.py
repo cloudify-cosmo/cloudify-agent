@@ -370,8 +370,11 @@ def _validate_agent():
 
 
 @operation
-def create_agent_amqp(install_agent_timeout=300, **_):
+def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
+                      manager_certificate=None, **_):
     old_agent = _validate_agent()
+    if manager_ip:
+        _update_broker_config(old_agent, manager_ip, manager_certificate)
     agents = _run_install_script(old_agent, install_agent_timeout)
     returned_agent = agents['new']
     ctx.logger.info('Installed agent {0}'.format(returned_agent['name']))
@@ -435,7 +438,8 @@ def _validate_current_amqp():
 
 
 @operation
-def validate_agent_amqp(current_amqp=True, **_):
+def validate_agent_amqp(current_amqp=True, manager_ip=None,
+                        manager_certificate=None, **_):
     """
     Validate connectivity between a cloudify agent and an AMQP server
     :param current_amqp: If set to True, validation is done against the
@@ -443,6 +447,9 @@ def validate_agent_amqp(current_amqp=True, **_):
     old manager's AMQP to which the agent is currently connected.
     Note: in case of an in-place upgrade, both AMQP servers should be identical
     """
+    if manager_ip:
+        agent = ctx.instance.runtime_properties['cloudify_agent']
+        _update_broker_config(agent, manager_ip, manager_certificate)
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
@@ -507,6 +514,22 @@ def _create_broker_config(transfer_mode=False):
     ctx.instance.update()
 
 
+def _update_broker_config(agent, manager_ip, manager_cert):
+    if 'cloudify_agent' not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            'cloudify_agent key not available in runtime_properties')
+    agent['broker_ip'] = manager_ip
+    agent['rest_host'] = manager_ip
+    package_url = agent['package_url']
+    agent['package_url'] = _create_package_url(package_url, manager_ip)
+    broker_conf = agent['broker_config']
+    broker_conf['broker_ip'] = manager_ip
+    if manager_cert:
+        broker_conf['broker_ssl_cert'] = manager_cert
+    ctx.instance.runtime_properties['cloudify_agent'] = agent
+    ctx.instance.update()
+
+
 def _conceal_amqp_password(url):
     """
     replace the broker password in the url before printing it
@@ -515,3 +538,10 @@ def _conceal_amqp_password(url):
     after_password = url[url.find('@'):]
     final = before_password + ':***' + after_password
     return final
+
+
+def _create_package_url(url, ip):
+    before = url[:url.find('/', 7)]
+    after = url[url.find(':', 6):]
+    new_url = before + '/' + ip + after
+    return new_url
