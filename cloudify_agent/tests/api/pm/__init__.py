@@ -103,8 +103,6 @@ class BaseDaemonLiveTestCase(BaseTest):
         super(BaseDaemonLiveTestCase, self).setUp()
         self.celery = Celery(broker='amqp://',
                              backend='amqp://')
-        self.celery.conf.update(
-            CELERY_TASK_RESULT_EXPIRES=defaults.CELERY_TASK_RESULT_EXPIRES)
         self.runner = LocalCommandRunner(logger=self.logger)
         self.daemons = []
 
