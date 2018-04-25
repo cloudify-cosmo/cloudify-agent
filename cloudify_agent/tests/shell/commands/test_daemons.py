@@ -154,7 +154,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
         daemon.start.assert_called_once_with(
             interval=5,
             timeout=20,
-            delete_amqp_queue=False,
+            delete_amqp_queue=True,
         )
 
     def test_stop(self, *factory_methods):
