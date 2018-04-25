@@ -1,26 +1,8 @@
 #!/bin/bash
 
-# Cloudify environment variables
-export CLOUDIFY_DAEMON_NAME={{ name }}
-export CLOUDIFY_DAEMON_STORAGE_DIRECTORY={{ storage_dir }}
-export CLOUDIFY_DAEMON_USER={{ user }}
-export REST_HOST={{ rest_host }}
-export REST_PORT={{ rest_port }}
-export LOCAL_REST_CERT_FILE={{ local_rest_cert_file }}
-export MANAGER_FILE_SERVER_URL=https://${REST_HOST}:${REST_PORT}/resources
-export VIRTUALENV={{ virtualenv_path }}
-export PATH="${VIRTUALENV}/bin:${PATH}"
-export CLOUDIFY_CLUSTER_SETTINGS_PATH={{ cluster_settings_path|default('') }}
-
-# Celery worker environment variables
 export AGENT_WORK_DIR={{ workdir }}
-export CELERY_APP=cloudify_agent.app.app
-# Needed in case agent user is root
-export C_FORCE_ROOT=true
-
-# extra environment variables provided by users
-EXTRA_ENV_PATH={{ extra_env_path }}
-if [ -f ${EXTRA_ENV_PATH} ]; then
-    . ${EXTRA_ENV_PATH}
-fi
-
+export MANAGER_FILE_SERVER_URL="https://{{ rest_host }}:{{ rest_port }}/resources"
+export LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}"
+export REST_HOST="{{ rest_host }}"
+export REST_PORT="{{ rest_port }}"
+export CLOUDIFY_DAEMON_NAME={{ name }}
