@@ -66,6 +66,7 @@ class TestInstaller(BaseTest):
             'name': '{0}_{1}'.format('agent_', str(uuid.uuid4())),
             'ip': 'localhost',
             'package_url': self._package_url,
+            'process_management': 'init.d',
             'rest_host': 'localhost',
             'broker_ip': 'localhost',
             'windows': os.name == 'nt',

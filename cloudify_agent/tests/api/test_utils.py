@@ -80,7 +80,7 @@ class TestUtils(BaseTest):
         )
         with open(temp) as f:
             rendered = f.read()
-            self.assertTrue('export REST_HOST=127.0.0.1' in rendered)
+            self.assertTrue('export REST_HOST="127.0.0.1"' in rendered)
 
     def test_resource_to_tempfile(self):
         temp = utils.resource_to_tempfile(
