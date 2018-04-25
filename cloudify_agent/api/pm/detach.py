@@ -112,15 +112,11 @@ class DetachedDaemon(CronRespawnDaemonMixin):
             config_path=self.config_path,
             queue=self.queue,
             name=self.name,
-            log_level=self.log_level,
+            log_level=self.log_level.upper(),
             log_file=self.get_logfile(),
-            pid_file=self.pid_file,
-            broker_url=self.broker_url,
-            min_workers=self.min_workers,
             max_workers=self.max_workers,
             virtualenv_path=VIRTUALENV,
             workdir=self.workdir,
-            heartbeat=self.heartbeat
         )
 
         # no sudo needed, yey!
@@ -136,7 +132,6 @@ class DetachedDaemon(CronRespawnDaemonMixin):
             file_path=self.config_path,
             user=self.user,
             name=self.name,
-            broker_url=self.broker_url,
             rest_host=self.rest_host,
             rest_port=self.rest_port,
             local_rest_cert_file=self.local_rest_cert_file,
