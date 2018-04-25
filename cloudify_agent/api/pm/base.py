@@ -460,8 +460,10 @@ class Daemon(object):
         """
 
         if delete_amqp_queue:
-            self._logger.debug('Deleting AMQP queues')
-            self._delete_amqp_queues()
+            self._logger.warning('Deprecation warning:\n'
+                                 'The `delete_amqp_queue` param is no '
+                                 'longer used, and it is only left for '
+                                 'backwards compatibility')
         start_command = self.start_command()
         self._logger.info('Starting daemon with command: {0}'
                           .format(start_command))
@@ -569,23 +571,6 @@ class Daemon(object):
         """
 
         return '%I'
-
-    def _delete_amqp_queues(self):
-        client = self._get_amqp_client()
-        try:
-            channel = client.connection.channel()
-            self._logger.debug('Deleting queue: {0}'.format(self.queue))
-
-            channel.queue_delete(self.queue)
-            pid_box_queue = 'celery@{0}.celery.pidbox'.format(self.name)
-            self._logger.debug('Deleting queue: {0}'.format(pid_box_queue))
-            channel.queue_delete(pid_box_queue)
-        finally:
-            try:
-                client.close()
-            except Exception as e:
-                self._logger.warning('Failed closing amqp client: {0}'
-                                     .format(e))
 
     def _get_amqp_client(self):
         if self.cluster:
