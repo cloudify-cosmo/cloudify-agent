@@ -100,7 +100,9 @@ class CloudifyAgentConfig(dict):
 
     @property
     def is_local(self):
-        return self['local']
+        # default 'local' because during agent upgrade, the old agent might
+        # have not had it set
+        return self.get('local', False)
 
     @property
     def has_installer(self):
@@ -170,7 +172,8 @@ class CloudifyAgentConfig(dict):
         self['broker_ip'] = manager_ip
 
     def set_execution_params(self):
-        if self.setdefault('local', False):
+        self.setdefault('local', False)
+        if self.is_local:
             # If installing an agent locally, we auto-detect which os the agent
             # is dedicated for and we install it with the current user
             self['windows'] = os.name == 'nt'
