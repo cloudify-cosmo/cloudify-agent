@@ -115,7 +115,7 @@ class TestConfiguration(BaseTest):
         expected = {
             'agent_dir': agent_dir,
             'process_management':
-                {'name': 'init.d' if os.name == 'posix' else 'nssm'},
+                {'name': 'systemd' if os.name == 'posix' else 'nssm'},
             'basedir': basedir,
             'name': 'test_deployment',
             'rest_host': 'localhost',
