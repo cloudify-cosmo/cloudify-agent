@@ -27,8 +27,7 @@ from cloudify import ctx
 from cloudify.broker_config import broker_hostname
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import (ManagerVersion,
-                            get_local_rest_certificate,
-                            get_manager_rest_service_host)
+                            get_local_rest_certificate)
 from cloudify.decorators import operation
 from cloudify.celery.app import get_celery_app
 
@@ -179,7 +178,7 @@ def _set_default_new_agent_config_values(old_agent, new_agent):
 def _copy_values_from_old_agent_config(old_agent, new_agent):
     fields_to_copy = ['windows', 'ip', 'basedir', 'user', 'distro_codename',
                       'distro', 'broker_ssl_cert_path', 'agent_rest_cert_path',
-                      'network']
+                      'network', 'local', 'install_method']
     for field in fields_to_copy:
         if field in old_agent:
             new_agent[field] = old_agent[field]
@@ -263,8 +262,8 @@ def _get_manager_version():
     return ManagerVersion(version_json['version'])
 
 
-def _http_rest_host():
-    return 'http://{0}/'.format(get_manager_rest_service_host())
+def _http_rest_host(cloudify_agent):
+    return 'http://{0}/'.format(cloudify_agent['rest_host'])
 
 
 def _get_init_script_path_and_url(new_agent, old_agent_version):
@@ -276,7 +275,7 @@ def _get_init_script_path_and_url(new_agent, old_agent_version):
     if ManagerVersion(old_agent_version) < ManagerVersion('4.2'):
         # This is the relative path on the manager, except the host and port
         link_relpath = script_url.split('/', 3)[3]
-        script_url = urljoin(_http_rest_host(), link_relpath)
+        script_url = urljoin(_http_rest_host(new_agent), link_relpath)
 
     return script_path, script_url
 
