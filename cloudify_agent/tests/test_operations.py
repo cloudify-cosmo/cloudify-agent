@@ -101,7 +101,7 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
         }
 
         # Necessary to patch this method, because by default port 80 is used
-        def http_rest_host():
+        def http_rest_host(cloudify_agent):
             return os.environ[constants.MANAGER_FILE_SERVER_URL_KEY]
 
         # Necessary to patch, because by default https will be used
