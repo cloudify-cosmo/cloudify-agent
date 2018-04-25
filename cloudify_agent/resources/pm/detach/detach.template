@@ -4,23 +4,9 @@
 . {{ config_path }}
 
 # running the celery worker command directly
-{{ virtualenv_path }}/bin/celery worker \
---events \
---queues={{ queue }} \
---hostname={{ name }} \
---autoscale={{ max_workers }},{{ min_workers }} \
---maxtasksperchild=10 \
---without-gossip \
---without-mingle \
---loglevel={{ log_level }} \
---pidfile={{ pid_file }} \
---logfile={{ log_file }} \
---include=cloudify.dispatch \
---detach \
---config=cloudify.broker_config \
--Ofair \
---with-gate-keeper \
---gate-keeper-bucket-size={{ max_workers }} \
---with-logging-server \
---logging-server-logdir={{ workdir }}/logs \
-{% if heartbeat %}--heartbeat-interval={{ heartbeat }}{% else %}--without-heartbeat{% endif %}
+{{ virtualenv_path }}/bin/python -m cloudify_agent.worker \
+    --queue "{{ queue }}" \
+    --max-workers {{ max_workers }} \
+    --log-file "{{ log_file }}" \
+    --log-level {{ log_level }} \
+    --name "{{ name }}"
