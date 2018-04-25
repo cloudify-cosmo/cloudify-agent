@@ -30,8 +30,8 @@ from cloudify.utils import (ManagerVersion,
                             get_local_rest_certificate,
                             get_manager_rest_service_host)
 from cloudify.decorators import operation
-from cloudify.celery.app import get_celery_app
 
+from cloudify_agent.celery_app import get_celery_app
 from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.api import exceptions

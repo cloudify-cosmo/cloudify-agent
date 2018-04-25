@@ -15,12 +15,12 @@
 
 from cloudify import ctx
 from cloudify.decorators import operation
-from cloudify.celery.app import get_celery_app
 from cloudify.exceptions import CommandExecutionError
 
 from cloudify_agent.api import utils
-
 from cloudify_agent.installer import script
+from cloudify_agent.celery_app import get_celery_app
+
 from .config.agent_config import update_agent_runtime_properties
 from .config.agent_config import create_agent_config_and_installer
 

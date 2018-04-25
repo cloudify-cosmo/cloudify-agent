@@ -25,12 +25,12 @@ from cloudify.utils import (LocalCommandRunner,
 from cloudify import amqp_client
 from cloudify import constants
 from cloudify.exceptions import CommandExecutionException
-from cloudify.celery.app import get_celery_app, get_cluster_celery_app
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import defaults
+from cloudify_agent.celery_app import get_celery_app, get_cluster_celery_app
 
 
 AGENT_IS_REGISTERED_TIMEOUT = 1
