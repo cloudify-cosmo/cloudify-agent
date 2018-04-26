@@ -14,27 +14,17 @@
 # limitations under the License.
 ############
 
-import json
 import time
-import Queue
 import argparse
 import logging
 import logging.handlers
-from threading import Thread, Semaphore
 
-import pika
-from pika.exceptions import ConnectionClosed
 
-from cloudify import broker_config, dispatch, exceptions
+from cloudify import dispatch, exceptions
+from cloudify.amqp_client import AMQPWorker, TaskConsumer
 from cloudify.error_handling import serialize_known_exception
 from cloudify_agent.api.factory import DaemonFactory
 
-
-HEARTBEAT_INTERVAL = 30
-D_CONN_ATTEMPTS = 12
-D_RETRY_DELAY = 5
-BROKER_PORT_SSL = 5671
-BROKER_PORT_NO_SSL = 5672
 
 LOGFILE_BACKUP_COUNT = 5
 LOGFILE_SIZE_BYTES = 5 * 1024 * 1024
@@ -48,160 +38,6 @@ SUPPORTED_EXCEPTIONS = (
     exceptions.ProcessExecutionError,
     exceptions.HttpException
 )
-
-
-class AMQPWorker(object):
-    MAX_BACKOFF = 30
-
-    def __init__(self, handlers, logger, name=None):
-        self._logger = logger
-        self._handlers = handlers
-        self._publish_queue = Queue.Queue()
-        self.name = name
-        self._connection_params = self._get_connection_params()
-        self._reconnect_backoff = 1
-
-    def _get_common_connection_params(self):
-        credentials = pika.credentials.PlainCredentials(
-            username=broker_config.broker_username,
-            password=broker_config.broker_password,
-        )
-        return {
-            'host': broker_config.broker_hostname,
-            'port': broker_config.broker_port,
-            'virtual_host': broker_config.broker_vhost,
-            'credentials': credentials,
-            'ssl': broker_config.broker_ssl_enabled,
-            'ssl_options': broker_config.broker_ssl_options,
-            'heartbeat': HEARTBEAT_INTERVAL
-        }
-
-    def _get_connection_params(self):
-        while True:
-            params = self._get_common_connection_params()
-            if self.name:
-                daemon = DaemonFactory().load(self.name)
-                if daemon.cluster:
-                    for node_ip in daemon.cluster:
-                        params['host'] = node_ip
-                        yield pika.ConnectionParameters(**params)
-                    continue
-            yield pika.ConnectionParameters(**params)
-
-    def _get_reconnect_backoff(self):
-        backoff = self._reconnect_backoff
-        self._reconnect_backoff = max(backoff * 2, self.MAX_BACKOFF)
-        return backoff
-
-    def _reset_reconnect_backoff(self):
-        self._reconnect_backoff = 1
-
-    def _connect(self):
-        for params in self._connection_params:
-            try:
-                self.connection = pika.BlockingConnection(params)
-            except pika.exceptions.AMQPConnectionError:
-                time.sleep(self._get_reconnect_backoff())
-            else:
-                self._reset_reconnect_backoff()
-                break
-
-        out_channel = self.connection.channel()
-        for handler in self._handlers:
-            handler.register(self.connection, self._publish_queue)
-            self._logger.info('Registered handler for {0}'
-                              .format(handler.routing_key))
-        return out_channel
-
-    def consume(self):
-        out_channel = self._connect()
-        while True:
-            try:
-                self.connection.process_data_events(0.2)
-                self._process_publish(out_channel)
-            except ConnectionClosed:
-                out_channel = self._connect()
-                continue
-
-    def _process_publish(self, channel):
-        while True:
-            try:
-                msg = self._publish_queue.get_nowait()
-            except Queue.Empty:
-                return
-            try:
-                channel.basic_publish(**msg)
-            except ConnectionClosed:
-                # if we couldn't send the message because the connection
-                # was down, requeue it to be sent again later
-                self._publish_queue.put(msg)
-                raise
-
-
-class TaskConsumer(object):
-    routing_key = ''
-
-    def __init__(self, queue, logger, threadpool_size=5):
-        self.threadpool_size = threadpool_size
-        self.exchange = queue
-        self.queue = '{0}_{1}'.format(queue, self.routing_key)
-        self._logger = logger
-        self._sem = Semaphore(threadpool_size)
-        self._output_queue = None
-
-    def register(self, connection, output_queue):
-        self._output_queue = output_queue
-
-        in_channel = connection.channel()
-        in_channel.basic_qos(prefetch_count=self.threadpool_size)
-        in_channel.exchange_declare(
-            exchange=self.exchange, auto_delete=False, durable=True)
-        in_channel.queue_declare(queue=self.queue,
-                                 durable=True,
-                                 auto_delete=False)
-        in_channel.queue_bind(queue=self.queue,
-                              exchange=self.exchange,
-                              routing_key=self.routing_key)
-        in_channel.basic_consume(self.process, self.queue)
-
-    def process(self, channel, method, properties, body):
-        try:
-            full_task = json.loads(body)
-        except ValueError:
-            self._logger.error('Error parsing task: {0}'.format(body))
-            return
-
-        self._sem.acquire()
-        new_thread = Thread(
-            target=self._process_message,
-            args=(properties, full_task)
-        )
-        new_thread.daemon = True
-        new_thread.start()
-        channel.basic_ack(method.delivery_tag)
-
-    def _process_message(self, properties, full_task):
-        try:
-            result = self.handle_task(full_task)
-        except Exception as e:
-            result = {'ok': False, 'error': repr(e)}
-            self._logger.error(
-                'ERROR - failed message processing: '
-                '{0!r}\nbody: {1}'.format(e, full_task)
-            )
-
-        if properties.reply_to:
-            self._output_queue.put({
-                'exchange': '',
-                'routing_key': properties.reply_to,
-                'properties': pika.BasicProperties(
-                    correlation_id=properties.correlation_id),
-                'body': json.dumps(result)
-            })
-        self._sem.release()
-
-    def handle_task(self, full_task):
-        raise NotImplementedError()
 
 
 class CloudifyOperationConsumer(TaskConsumer):
