@@ -21,7 +21,7 @@ import logging.handlers
 
 
 from cloudify import dispatch, exceptions
-from cloudify.amqp_client import AMQPWorker, TaskConsumer
+from cloudify.amqp_client import AMQPConnection, TaskConsumer
 from cloudify.error_handling import serialize_known_exception
 from cloudify_agent.api.factory import DaemonFactory
 
@@ -145,7 +145,7 @@ def make_amqp_worker(args):
         CloudifyWorkflowConsumer(args.queue, logger, args.max_workers),
         ServiceTaskConsumer(args.queue, logger, args.max_workers),
     ]
-    return AMQPWorker(handlers=handlers, logger=logger, name=args.name)
+    return AMQPConnection(handlers=handlers, logger=logger, name=args.name)
 
 
 def main():
