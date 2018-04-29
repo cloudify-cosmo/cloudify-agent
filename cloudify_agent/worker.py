@@ -39,6 +39,8 @@ SUPPORTED_EXCEPTIONS = (
     exceptions.HttpException
 )
 
+logger = logging.getLogger(__name__)
+
 
 class CloudifyOperationConsumer(TaskConsumer):
     routing_key = 'operation'
@@ -52,7 +54,7 @@ class CloudifyOperationConsumer(TaskConsumer):
         else:
             prefix = 'Processing operation'
             suffix = '\nNode ID: {0}'.format(ctx['node_id'])
-        self._logger.info(
+        logger.info(
             '{prefix} on queue `{queue}` on tenant `{tenant}`:\n'
             'Task name: {name}\n'
             'Execution ID: {execution_id}\n'
@@ -77,11 +79,11 @@ class CloudifyOperationConsumer(TaskConsumer):
         try:
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
             result = {'ok': True, 'result': rv}
-            self._logger.info('SUCCESS - result: {0}'.format(result))
+            logger.info('SUCCESS - result: {0}'.format(result))
         except SUPPORTED_EXCEPTIONS as e:
             error = serialize_known_exception(e)
             result = {'ok': False, 'error': error}
-            self._logger.error(
+            logger.error(
                 'ERROR - caught: {0}\n{1}'.format(
                     repr(e), error['traceback']
                 )
@@ -122,20 +124,8 @@ class ServiceTaskConsumer(TaskConsumer):
 
 
 def _init_logger(log_file, log_level):
-    logger = logging.getLogger(__name__)
-    handler = logging.handlers.RotatingFileHandler(
-        log_file,
-        maxBytes=LOGFILE_SIZE_BYTES,
-        backupCount=LOGFILE_BACKUP_COUNT
-    )
-    fmt = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    handler.setLevel(log_level)
-    handler.setFormatter(fmt)
-    logger.addHandler(handler)
-    logger.setLevel(log_level)
-    return logger
+    logging.basicConfig(level=logging.INFO)
+    return logging.getLogger(__name__)
 
 
 def make_amqp_worker(args):
