@@ -129,13 +129,12 @@ def _init_logger(log_file, log_level):
 
 
 def make_amqp_worker(args):
-    logger = _init_logger(args.log_file, args.log_level)
     handlers = [
         CloudifyOperationConsumer(args.queue, args.max_workers),
         CloudifyWorkflowConsumer(args.queue, args.max_workers),
         ServiceTaskConsumer(args.queue, args.max_workers),
     ]
-    return AMQPConnection(handlers=handlers, logger=logger, name=args.name)
+    return AMQPConnection(handlers=handlers, name=args.name)
 
 
 def main():
