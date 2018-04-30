@@ -46,14 +46,20 @@ class CloudifyOperationConsumer(TaskConsumer):
     routing_key = 'operation'
     handler = dispatch.OperationHandler
 
-    def _print_task(self, task):
-        ctx = task['cloudify_task']['kwargs']['__cloudify_context']
+    def _print_task(self, ctx, action, status=None):
         if ctx['type'] == 'workflow':
-            prefix = 'Processing workflow'
+            prefix = '{0} workflow'.format(action)
             suffix = ''
         else:
-            prefix = 'Processing operation'
+            prefix = '{0} operation'.format(action)
             suffix = '\nNode ID: {0}'.format(ctx['node_id'])
+
+        if status:
+            suffix += '\nStatus: {0}'.format(status)
+
+        delimiter = '#' * 80
+        prefix = '\n{0}\n{1}'.format(delimiter, prefix)
+        suffix = '{0}\n{1}'.format(suffix, delimiter)
         logger.info(
             '{prefix} on queue `{queue}` on tenant `{tenant}`:\n'
             'Task name: {name}\n'
@@ -70,23 +76,25 @@ class CloudifyOperationConsumer(TaskConsumer):
         )
 
     def handle_task(self, full_task):
-        self._print_task(full_task)
         task = full_task['cloudify_task']
         ctx = task['kwargs'].pop('__cloudify_context')
+        self._print_task(ctx, 'Started handling')
         handler = self.handler(cloudify_context=ctx, args=task.get('args', []),
                                kwargs=task['kwargs'])
         try:
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
             result = {'ok': True, 'result': rv}
-            logger.info('SUCCESS - result: {0}'.format(result))
+            status = 'SUCCESS - result: {0}'.format(result)
         except SUPPORTED_EXCEPTIONS as e:
             error = serialize_known_exception(e)
             result = {'ok': False, 'error': error}
+            status = 'ERROR - result: {0}'.format(result)
             logger.error(
                 'ERROR - caught: {0}\n{1}'.format(
                     repr(e), error['traceback']
                 )
             )
+        self._print_task(ctx, 'Finished handling', status)
         return result
 
 
