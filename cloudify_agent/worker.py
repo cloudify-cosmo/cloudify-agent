@@ -71,7 +71,6 @@ class CloudifyOperationConsumer(TaskConsumer):
 
     def handle_task(self, full_task):
         self._print_task(full_task)
-        result = None
         task = full_task['cloudify_task']
         ctx = task['kwargs'].pop('__cloudify_context')
         handler = self.handler(cloudify_context=ctx, args=task.get('args', []),
