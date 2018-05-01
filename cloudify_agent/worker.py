@@ -58,19 +58,16 @@ class CloudifyOperationConsumer(TaskConsumer):
             suffix = ''
         else:
             prefix = '{0} operation'.format(action)
-            suffix = '\nNode ID: {0}'.format(ctx['node_id'])
+            suffix = '\n\tNode ID: {0}'.format(ctx['node_id'])
 
         if status:
-            suffix += '\nStatus: {0}'.format(status)
+            suffix += '\n\tStatus: {0}'.format(status)
 
-        delimiter = '#' * 80
-        prefix = '\n{0}\n{1}'.format(delimiter, prefix)
-        suffix = '{0}\n{1}'.format(suffix, delimiter)
         logger.info(
-            '{prefix} on queue `{queue}` on tenant `{tenant}`:\n'
-            'Task name: {name}\n'
-            'Execution ID: {execution_id}\n'
-            'Workflow ID: {workflow_id}{suffix}'.format(
+            '\n\t{prefix} on queue `{queue}` on tenant `{tenant}`:\n'
+            '\tTask name: {name}\n'
+            '\tExecution ID: {execution_id}\n'
+            '\tWorkflow ID: {workflow_id}{suffix}\n'.format(
                 prefix=prefix,
                 name=ctx['task_name'],
                 queue=ctx['task_target'],
