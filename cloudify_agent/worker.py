@@ -15,12 +15,11 @@
 ############
 
 import time
-import argparse
 import logging
-import logging.handlers
-
+import argparse
 
 from cloudify import dispatch, exceptions
+from cloudify.logs import setup_agent_logger
 from cloudify.amqp_client import AMQPConnection, TaskConsumer
 from cloudify.error_handling import serialize_known_exception
 from cloudify_agent.api.factory import DaemonFactory
@@ -39,7 +38,14 @@ SUPPORTED_EXCEPTIONS = (
     exceptions.HttpException
 )
 
-logger = logging.getLogger(__name__)
+logger = None
+
+
+def _setup_logger(name):
+    global logger
+    name = name or 'mgmtworker'
+    setup_agent_logger(name)
+    logger = logging.getLogger('worker.{0}'.format(name))
 
 
 class CloudifyOperationConsumer(TaskConsumer):
@@ -52,19 +58,16 @@ class CloudifyOperationConsumer(TaskConsumer):
             suffix = ''
         else:
             prefix = '{0} operation'.format(action)
-            suffix = '\nNode ID: {0}'.format(ctx['node_id'])
+            suffix = '\n\tNode ID: {0}'.format(ctx['node_id'])
 
         if status:
-            suffix += '\nStatus: {0}'.format(status)
+            suffix += '\n\tStatus: {0}'.format(status)
 
-        delimiter = '#' * 80
-        prefix = '\n{0}\n{1}'.format(delimiter, prefix)
-        suffix = '{0}\n{1}'.format(suffix, delimiter)
         logger.info(
-            '{prefix} on queue `{queue}` on tenant `{tenant}`:\n'
-            'Task name: {name}\n'
-            'Execution ID: {execution_id}\n'
-            'Workflow ID: {workflow_id}{suffix}'.format(
+            '\n\t{prefix} on queue `{queue}` on tenant `{tenant}`:\n'
+            '\tTask name: {name}\n'
+            '\tExecution ID: {execution_id}\n'
+            '\tWorkflow ID: {workflow_id}{suffix}\n'.format(
                 prefix=prefix,
                 name=ctx['task_name'],
                 queue=ctx['task_target'],
@@ -130,13 +133,9 @@ class ServiceTaskConsumer(TaskConsumer):
         factory.save(daemon)
 
 
-def _init_logger(log_file, log_level):
-    logging.basicConfig(level=logging.INFO)
-    return logging.getLogger(__name__)
-
-
 def make_amqp_worker(args):
-    _init_logger(args.log_file, args.log_level)
+    _setup_logger(args.name)
+
     handlers = [
         CloudifyOperationConsumer(args.queue, args.max_workers),
         CloudifyWorkflowConsumer(args.queue, args.max_workers),
@@ -149,8 +148,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--queue')
     parser.add_argument('--max-workers', default=DEFAULT_MAX_WORKERS, type=int)
-    parser.add_argument('--log-file')
-    parser.add_argument('--log-level', default='INFO')
     parser.add_argument('--name')
     args = parser.parse_args()
     worker = make_amqp_worker(args)
