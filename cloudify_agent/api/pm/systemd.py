@@ -76,8 +76,6 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             queue=self.queue,
             config_path=self.config_path,
             max_workers=self.max_workers,
-            log_level=self.log_level.upper(),
-            log_file=self.log_file,
             name=self.name
         )
 
@@ -90,6 +88,8 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             rest_host=self.rest_host,
             rest_port=self.rest_port,
             local_rest_cert_file=self.local_rest_cert_file,
+            log_level=self.log_level.upper(),
+            log_dir=self.workdir,
             # TODO: Do we need those other args?
             extra_env_path=self.extra_env_path,
             cluster_settings_path=self.cluster_settings_path,
