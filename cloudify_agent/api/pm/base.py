@@ -296,7 +296,7 @@ class Daemon(object):
         return os.path.join(self.workdir, 'broker_config.json')
 
     def create_celery_conf(self):
-        self._logger.info('Deploying celery configuration.')
+        self._logger.info('Deploying broker configuration.')
         config = {
             'broker_ssl_enabled': self.broker_ssl_enabled,
             'broker_cert_path': self.broker_ssl_cert_path,
