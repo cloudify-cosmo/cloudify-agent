@@ -19,6 +19,7 @@ import threading
 import sys
 import os
 import copy
+import yaml
 from posixpath import join as urljoin
 from contextlib import contextmanager
 
@@ -480,7 +481,7 @@ def validate_agent_amqp(current_amqp=True, manager_ip=None,
 def transfer_agent_amqp(transfer_agent_timeout=300,
                         manager_ip=None, manager_certificate=None,
                         manager_rest_token=None, **_):
-
+    manager_ip = _get_network_ip(manager_ip)
     _create_broker_config(transfer_mode=True)
     old_agent = _validate_agent()
     agents = _run_install_script(old_agent, transfer_agent_timeout, manager_ip,
@@ -557,3 +558,16 @@ def _create_package_url(url, ip):
     after = rest.split(':')[1]
     new = '{before}//{ip}:{after}'.format(before=before, ip=ip, after=after)
     return new
+
+
+def _get_network_ip(manager_ip):
+    network_ip_mapping = yaml.safe_load(manager_ip)
+    # Multi-network mode: a dict containing networks and ips was passed
+    if type(manager_ip) is dict:
+        agent = ctx.instance.runtime_properties['cloudify_agent']
+        network_name = agent['network']
+        new_network_ip = network_ip_mapping[network_name]
+        return new_network_ip
+    # Regular mode: the only ip of the new manager was passed
+    else:
+        return network_ip_mapping
