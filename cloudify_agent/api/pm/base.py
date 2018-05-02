@@ -334,10 +334,6 @@ class Daemon(object):
         self._validate_host()
 
     def _is_agent_alive(self):
-        if self.cluster:
-            # TODO: Implement!!
-            raise NotImplementedError()
-
         self._logger.debug('Validating agent is connected to the broker')
         return utils.is_agent_alive(
             self.name, timeout=AGENT_IS_REGISTERED_TIMEOUT
