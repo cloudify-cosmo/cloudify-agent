@@ -76,9 +76,9 @@ def start(cloudify_agent, **_):
     tenant = cloudify_agent['rest_tenant']
     agent_alive = utils.is_agent_alive(
         name=cloudify_agent['queue'],
-        username=tenant['broker_username'],
-        password=tenant['broker_password'],
-        vhost=tenant['broker_vhost']
+        username=tenant['rabbitmq_username'],
+        password=tenant['rabbitmq_password'],
+        vhost=tenant['rabbitmq_vhost']
     )
 
     if not agent_alive:
