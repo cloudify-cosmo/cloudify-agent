@@ -64,7 +64,7 @@ class DetachedDaemon(CronRespawnDaemonMixin):
         super(DetachedDaemon, self).stop(interval, timeout)
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        if self._is_agent_registered():
+        if self._is_daemon_running():
             if not force:
                 raise exceptions.DaemonStillRunningException(self.name)
             self.stop()
