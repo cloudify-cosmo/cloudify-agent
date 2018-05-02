@@ -333,11 +333,10 @@ class Daemon(object):
         self._validate_autoscale()
         self._validate_host()
 
-    def _is_agent_alive(self):
-        self._logger.debug('Validating agent is connected to the broker')
-        return utils.is_agent_alive(
-            self.name, timeout=AGENT_IS_REGISTERED_TIMEOUT
-        )
+    def _is_daemon_running(self):
+        self._logger.debug('Checking if agent daemon is running...')
+        # TODO: Validate that the daemon is not running using the PID file
+        return False
 
     ########################################################################
     # the following methods must be implemented by the sub-classes as they
@@ -760,7 +759,7 @@ class GenericLinuxDaemonMixin(Daemon):
         self._runner.run('sudo rm {0}'.format(rendered))
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        if self._is_agent_alive():
+        if self._is_daemon_running():
             if not force:
                 raise exceptions.DaemonStillRunningException(self.name)
             self.stop()
