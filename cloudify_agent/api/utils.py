@@ -35,6 +35,7 @@ from cloudify.constants import (SECURED_PROTOCOL,
                                 BROKER_PORT_NO_SSL)
 
 from cloudify.utils import setup_logger, get_exec_tempdir
+from cloudify.amqp_client import BlockingRequestResponseHandler, get_client
 
 from cloudify_rest_client import CloudifyClient
 
@@ -212,6 +213,29 @@ def get_agent_registered(name,
     if registered is None or destination not in registered:
         return None
     return set(registered[destination])
+
+
+def is_agent_alive(name,
+                   username=None,
+                   password=None,
+                   vhost=None,
+                   timeout=workflows_tasks.INSPECT_TIMEOUT):
+    """
+    Send a `ping` service task to an agent, and validate that a correct
+    response is received
+    """
+    handler = BlockingRequestResponseHandler(exchange=name)
+    client = get_client(username=username, password=password, vhost=vhost)
+    client.add_handler(handler)
+    client.consume_in_thread()
+    task = {
+        'service_task': {
+            'task_name': 'ping',
+            'kwargs': {}
+        }
+    }
+    response = handler.publish(task, routing_key='service', timeout=timeout)
+    return 'time' in response
 
 
 def get_windows_home_dir(username):
