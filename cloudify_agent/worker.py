@@ -119,7 +119,14 @@ class ServiceTaskConsumer(TaskConsumer):
         task_name = task['task_name']
         kwargs = task['kwargs']
 
-        return service_tasks[task_name](**kwargs)
+        logger.info(
+            'Received `{0}` service task with kwargs: {1}'.format(
+                task_name, kwargs
+            )
+        )
+        result = service_tasks[task_name](**kwargs)
+        logger.info('Result: {0}'.format(result))
+        return result
 
     def ping_task(self):
         return {'time': time.time()}
