@@ -30,7 +30,6 @@ from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import defaults
-from cloudify_agent.celery_app import get_celery_app, get_cluster_celery_app
 
 
 AGENT_IS_REGISTERED_TIMEOUT = 1
@@ -334,27 +333,15 @@ class Daemon(object):
         self._validate_autoscale()
         self._validate_host()
 
-    def _is_agent_registered(self):
+    def _is_agent_alive(self):
         if self.cluster:
-            # only used for manager failures during installation - see
-            # detailed comment in the ._get_amqp_client method
-            celery_client = get_cluster_celery_app(
-                self.broker_url, self.cluster, self.broker_ssl_enabled,
-                broker_ssl_cert_path=self.broker_ssl_cert_path)
-        else:
-            celery_client = get_celery_app(
-                broker_url=self.broker_url,
-                broker_ssl_enabled=self.broker_ssl_enabled,
-                broker_ssl_cert_path=self.broker_ssl_cert_path)
-        try:
-            self._logger.debug('Retrieving daemon registered tasks')
-            return utils.get_agent_registered(
-                self.name,
-                celery_client,
-                timeout=AGENT_IS_REGISTERED_TIMEOUT)
-        finally:
-            if celery_client:
-                celery_client.close()
+            # TODO: Implement!!
+            raise NotImplementedError()
+
+        self._logger.debug('Validating agent is connected to the broker')
+        return utils.is_agent_alive(
+            self.name, timeout=AGENT_IS_REGISTERED_TIMEOUT
+        )
 
     ########################################################################
     # the following methods must be implemented by the sub-classes as they
@@ -777,7 +764,7 @@ class GenericLinuxDaemonMixin(Daemon):
         self._runner.run('sudo rm {0}'.format(rendered))
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        if self._is_agent_registered():
+        if self._is_agent_alive():
             if not force:
                 raise exceptions.DaemonStillRunningException(self.name)
             self.stop()

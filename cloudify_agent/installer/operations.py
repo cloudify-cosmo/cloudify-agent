@@ -19,7 +19,6 @@ from cloudify.exceptions import CommandExecutionError
 
 from cloudify_agent.api import utils
 from cloudify_agent.installer import script
-from cloudify_agent.celery_app import get_celery_app
 
 from .config.agent_config import update_agent_runtime_properties
 from .config.agent_config import create_agent_config_and_installer
@@ -74,13 +73,15 @@ def start(cloudify_agent, **_):
     Only called in "init_script"/"plugin" mode, where the agent is started
     externally (e.g. userdata script), and all we have to do is wait for it
     """
-    celery_client = get_celery_app(
-        tenant=cloudify_agent['rest_tenant'],
-        target=cloudify_agent['queue']
+    tenant = cloudify_agent['rest_tenant']
+    agent_alive = utils.is_agent_alive(
+        name=cloudify_agent['queue'],
+        username=tenant['broker_username'],
+        password=tenant['broker_password'],
+        vhost=tenant['broker_vhost']
     )
-    registered = utils.get_agent_registered(cloudify_agent['name'],
-                                            celery_client)
-    if not registered:
+
+    if not agent_alive:
         return ctx.operation.retry(
             message='Waiting for Agent to start...')
 
