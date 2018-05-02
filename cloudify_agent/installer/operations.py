@@ -105,10 +105,13 @@ def stop(cloudify_agent, installer, **_):
 @create_agent_config_and_installer(validate_connection=False)
 def delete(cloudify_agent, installer, **_):
     # delete the runtime properties set on create
-    ctx.instance.runtime_properties.pop('cloudify_agent', None)
     if cloudify_agent.has_installer:
         ctx.logger.info('Deleting Agent {0}'.format(cloudify_agent['name']))
         installer.delete_agent()
+    ctx.instance.runtime_properties.pop('cloudify_agent', None)
+    ctx.instance.update()
+
+    # TODO: Delete the RabbitMQ queue after deleting the agent
 
 
 @operation
