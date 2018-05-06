@@ -42,6 +42,7 @@ status() {
     echo "Service running with PID $(cat "$PIDFILE")"
   else
     echo "Service is not running"
+    return 1
   fi
 }
 
