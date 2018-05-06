@@ -21,7 +21,7 @@ start() {
   fi
   source {{ config_path }}
   echo 'Starting service...' >&2
-  sudo -Eu ${RUNAS} "${CMD[@]}" &
+  nohup sudo -Eu ${RUNAS} "${CMD[@]}" </dev/null >/dev/null 2>&1 &
   echo $! > ${PIDFILE}
   echo 'Service started' >&2
 }
