@@ -90,9 +90,8 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
             user=self.user,
             queue=self.queue,
             max_workers=self.max_workers,
-            log_level=self.log_level.upper(),
-            log_file=self.log_file,
             pidfile=self.pid_file,
+            name=self.name,
             virtualenv_path=self.virtualenv,
         )
 
@@ -110,23 +109,12 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
             rest_host=self.rest_host,
             rest_port=self.rest_port,
             local_rest_cert_file=self.local_rest_cert_file,
-            broker_url=self.broker_url,
-            user=self.user,
-            min_workers=self.min_workers,
-            max_workers=self.max_workers,
-            virtualenv_path=VIRTUALENV,
-            extra_env_path=self.extra_env_path,
-            name=self.name,
-            storage_dir=utils.internal.get_storage_directory(self.user),
-            log_level=self.log_level,
-            log_file=self.get_logfile(),
-            pid_file=self.pid_file,
+            log_level=self.log_level.upper(),
+            log_dir=self.workdir,
             cron_respawn=str(self.cron_respawn).lower(),
             enable_cron_script=self.create_enable_cron_script(),
             disable_cron_script=self.create_disable_cron_script(),
-            cluster_settings_path=self.cluster_settings_path,
             executable_temp_path=self.executable_temp_path,
-            heartbeat=self.heartbeat
         )
 
 
