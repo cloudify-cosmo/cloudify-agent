@@ -182,7 +182,8 @@ def _copy_values_from_old_agent_config(
         old_agent, new_agent, transfer_agent=False):
     fields_to_copy = ['windows', 'ip', 'basedir', 'user', 'distro_codename',
                       'distro', 'broker_ssl_cert_path', 'agent_rest_cert_path',
-                      'network', 'local', 'install_method']
+                      'network', 'local', 'install_method',
+                      'process_management']
     if transfer_agent:
         fields_to_copy.append('name')
     for field in fields_to_copy:
