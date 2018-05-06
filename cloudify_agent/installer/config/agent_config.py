@@ -116,7 +116,6 @@ class CloudifyAgentConfig(dict):
         return self['windows']
 
     def set_default_values(self):
-        self._set_process_management()
         self._set_name()
         self._set_network()
         self.setdefault('queue', self['name'])
@@ -134,9 +133,28 @@ class CloudifyAgentConfig(dict):
         self.setdefault('system_python', 'python')
         self.setdefault('heartbeat', None)
 
-    def _set_process_management(self):
+    def _set_process_management(self, runner):
+        """
+        Determine the process management system to use for the agent.
+        * If working with windows, the only option is nssm
+        * If working with linux then:
+            * If the install method is remote (SSH) we try to determine
+              the default system automatically
+            * If the install method is not remote, we default to systemd
+            * If process_management was explicitly provided, it supersedes
+              the default
+        """
         self.setdefault('process_management', {})
-        default_pm_name = 'nssm' if self.is_windows else 'systemd'
+        if self.is_windows:
+            default_pm_name = 'nssm'
+        else:
+            if self.is_remote:
+                ret_code = runner.run(
+                    'which systemctl', exit_on_failure=False
+                ).return_code
+                default_pm_name = 'systemd' if ret_code == 0 else 'init.d'
+            else:
+                default_pm_name = 'systemd'
         self['process_management'].setdefault('name', default_pm_name)
 
     def _set_name(self):
@@ -189,6 +207,7 @@ class CloudifyAgentConfig(dict):
                 self._validate_key_or_password()
 
     def set_installation_params(self, runner):
+        self._set_process_management(runner)
         self._set_basedir(runner)
         self.set_config_paths()
         self._set_package_url(runner)
