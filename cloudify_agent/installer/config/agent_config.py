@@ -30,6 +30,7 @@ from cloudify import utils as cloudify_utils
 
 from .installer_config import create_runner, get_installer
 from .config_errors import raise_missing_attribute, raise_missing_attributes
+from ..runners.fabric_runner import FabricCommandExecutionException
 
 
 def create_agent_config_and_installer(func=None,
@@ -149,12 +150,21 @@ class CloudifyAgentConfig(dict):
             default_pm_name = 'nssm'
         else:
             if self.is_remote:
-                output = runner.run('which systemctl && echo $?').std_out
-                ret_code = output.split()[-1]
-                default_pm_name = 'systemd' if ret_code == '0' else 'init.d'
+                default_pm_name = self._get_process_management(runner)
             else:
                 default_pm_name = 'systemd'
         self['process_management'].setdefault('name', default_pm_name)
+
+    @staticmethod
+    def _get_process_management(runner):
+        try:
+            runner.run('which systemctl')
+        except FabricCommandExecutionException as e:
+            if e.code != 1:
+                raise
+            return 'initd'
+        else:
+            return 'systemd'
 
     def _set_name(self):
         # service_name takes precedence over name (which is deprecated)
