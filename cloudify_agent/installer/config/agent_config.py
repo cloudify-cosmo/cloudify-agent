@@ -149,7 +149,8 @@ class CloudifyAgentConfig(dict):
             default_pm_name = 'nssm'
         else:
             if self.is_remote:
-                ret_code = runner.run('which systemctl && echo $?').std_out
+                output = runner.run('which systemctl && echo $?').std_out
+                ret_code = output.split()[-1]
                 default_pm_name = 'systemd' if ret_code == '0' else 'init.d'
             else:
                 default_pm_name = 'systemd'
