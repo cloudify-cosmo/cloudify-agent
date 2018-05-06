@@ -1,8 +1,9 @@
 #!/bin/bash
 
 export AGENT_WORK_DIR={{ workdir }}
+export AGENT_LOG_DIR="{{ log_dir }}"
+export AGENT_LOG_LEVEL={{ log_level }}
 export MANAGER_FILE_SERVER_URL="https://{{ rest_host }}:{{ rest_port }}/resources"
 export LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}"
 export REST_HOST="{{ rest_host }}"
 export REST_PORT="{{ rest_port }}"
-export CLOUDIFY_DAEMON_NAME={{ name }}
