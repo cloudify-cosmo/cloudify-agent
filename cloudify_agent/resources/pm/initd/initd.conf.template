@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export AGENT_WORK_DIR={{ workdir }}
+export AGENT_WORK_DIR="{{ workdir }}"
 export AGENT_LOG_DIR="{{ log_dir }}"
 export AGENT_LOG_LEVEL={{ log_level }}
 export MANAGER_FILE_SERVER_URL="https://{{ rest_host }}:{{ rest_port }}/resources"
