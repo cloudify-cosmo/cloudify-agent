@@ -127,7 +127,7 @@ class CloudifyAgentConfig(dict):
         self.setdefault('bypass_maintenance',
                         cloudify_utils.get_is_bypass_maintenance())
         self.setdefault('min_workers', 0)
-        self.setdefault('max_workers', 5)
+        self.setdefault('max_workers', 20)
         self.setdefault('disable_requiretty', True)
         self.setdefault('env', {})
         self.setdefault('fabric_env', {})
