@@ -12,22 +12,22 @@ RUNAS={{ user }}
 
 PIDFILE={{ pidfile }}
 LOGFILE={{ log_file }}
-CMD=({{ virtualenv_path }}/bin/python -m cloudify_agent.worker --queue "{{ queue }}" --max-workers {{ max_workers }} --log-file "{{ log_file }}" --log-level {{ log_level }})
+CMD=({{ virtualenv_path }}/bin/python -m cloudify_agent.worker --queue "{{ queue }}" --max-workers {{ max_workers }} --name "{{ name }}")
 
 start() {
-  if [ -f "$PIDFILE" ] && kill -0 $(cat "$PIDFILE"); then
+  if [ -f "$PIDFILE" ] && ps -p $(cat "$PIDFILE"); then
     echo 'Service already running' >&2
     return 1
   fi
   source {{ config_path }}
   echo 'Starting service...' >&2
-  sudo -Eu ${RUNAS} "${CMD[@]}" &
+  nohup sudo -Eu ${RUNAS} "${CMD[@]}" </dev/null >/dev/null 2>&1 &
   echo $! > ${PIDFILE}
   echo 'Service started' >&2
 }
 
 stop() {
-  if [ ! -f "$PIDFILE" ] || ! kill -0 $(cat "$PIDFILE"); then
+  if [ ! -f "$PIDFILE" ] || ! ps -p $(cat "$PIDFILE"); then
     echo 'Service not running' >&2
     return 1
   fi
@@ -36,12 +36,25 @@ stop() {
   echo 'Service stopped' >&2
 }
 
+status() {
+  echo "Checking status of service {{ service_name }}..."
+  if [ -f "$PIDFILE" ] && ps -p $(cat "$PIDFILE"); then
+    echo "Service running with PID $(cat "$PIDFILE")"
+  else
+    echo "Service is not running"
+    return 1
+  fi
+}
+
 case "$1" in
   start)
     start
     ;;
   stop)
     stop
+    ;;
+  status)
+    status
     ;;
   restart)
     stop
