@@ -481,9 +481,9 @@ def validate_agent_amqp(current_amqp=True, manager_ip=None,
 def transfer_agent_amqp(transfer_agent_timeout=300,
                         manager_ip=None, manager_certificate=None,
                         manager_rest_token=None, **_):
-    manager_ip = _get_network_ip(manager_ip)
     _create_broker_config(transfer_mode=True)
     old_agent = _validate_agent()
+    manager_ip = _get_network_ip(manager_ip, old_agent)
     agents = _run_install_script(old_agent, transfer_agent_timeout, manager_ip,
                                  manager_certificate, manager_rest_token,
                                  transfer_agent=True)
@@ -560,14 +560,19 @@ def _create_package_url(url, ip):
     return new
 
 
-def _get_network_ip(manager_ip):
-    network_ip_mapping = yaml.safe_load(manager_ip)
+def _get_network_ip(manager_ip, agent):
+    manager_ip = yaml.safe_load(manager_ip)
     # Multi-network mode: a dict containing networks and ips was passed
-    if type(manager_ip) is dict:
-        agent = ctx.instance.runtime_properties['cloudify_agent']
+    if isinstance(manager_ip, dict):
+        network_ip_mapping = manager_ip
         network_name = agent['network']
         new_network_ip = network_ip_mapping[network_name]
         return new_network_ip
     # Regular mode: the only ip of the new manager was passed
+    elif isinstance(manager_ip, basestring):
+        return manager_ip
     else:
-        return network_ip_mapping
+        raise NonRecoverableError(
+            '`Agents transfer` command received invalid manager_ip value:'
+            ' expected dict or str and received: {0}, of type {1}'.format(
+                manager_ip, type(manager_ip)))
