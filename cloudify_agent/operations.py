@@ -441,7 +441,7 @@ def _uses_cloudify_amqp(agent):
 
 def _validate_old_amqp():
     agent = ctx.instance.runtime_properties['cloudify_agent']
-    validator = _validate_cloudify_amqp if _uses_cloudify_amqp() \
+    validator = _validate_cloudify_amqp if _uses_cloudify_amqp(agent) \
         else _validate_celery
     try:
         ctx.logger.info('Trying old AMQP...')
