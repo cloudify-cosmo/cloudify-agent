@@ -2,7 +2,7 @@
 
 echo Installing the agent as a windows service...
 
-"{{ nssm_path }}" install {{ name }} "{{ virtualenv_path }}/bin/python" -m cloudify_agent.worker ^
+"{{ nssm_path }}" install {{ name }} "{{ virtualenv_path }}\Scripts\python.exe" -m cloudify_agent.worker ^
     --queue "{{ queue }}" ^
     --max-workers {{ max_workers }} ^
     --name "{{ name }}"
