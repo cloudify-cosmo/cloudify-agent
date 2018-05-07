@@ -90,26 +90,18 @@ class NonSuckingServiceManagerDaemon(Daemon):
             file_path=self.config_path,
             queue=self.queue,
             nssm_path=self.nssm_path,
-            log_level=self.log_level,
-            log_file=self.get_logfile(),
+            log_level=self.log_level.upper(),
+            log_dir=self.workdir,
             workdir=self.workdir,
             user=self.user,
             rest_host=self.rest_host,
             rest_port=self.rest_port,
             local_rest_cert_file=self.local_rest_cert_file,
-            broker_url=self.broker_url,
-            min_workers=self.min_workers,
             max_workers=self.max_workers,
             virtualenv_path=VIRTUALENV,
             name=self.name,
-            storage_dir=utils.internal.get_storage_directory(self.user),
             custom_environment=env_string,
-            startup_policy=self.startup_policy,
-            failure_reset_timeout=self.failure_reset_timeout,
-            failure_restart_delay=self.failure_restart_delay,
-            cluster_settings_path=self.cluster_settings_path,
-            executable_temp_path=self.executable_temp_path,
-            heartbeat=self.heartbeat
+            executable_temp_path=self.executable_temp_path
         )
 
         self._logger.debug('Rendered configuration script: {0}'.format(
