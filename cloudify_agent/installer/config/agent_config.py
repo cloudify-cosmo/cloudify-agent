@@ -152,7 +152,7 @@ class CloudifyAgentConfig(dict):
             if self.is_remote:
                 default_pm_name = self._get_process_management(runner)
             else:
-                default_pm_name = 'systemd'
+                default_pm_name = 'init.d'
         self['process_management'].setdefault('name', default_pm_name)
 
     @staticmethod
@@ -162,7 +162,7 @@ class CloudifyAgentConfig(dict):
         except FabricCommandExecutionException as e:
             if e.code != 1:
                 raise
-            return 'initd'
+            return 'init.d'
         else:
             return 'systemd'
 
