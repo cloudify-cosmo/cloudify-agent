@@ -405,12 +405,37 @@ def _validate_amqp_connection(celery_app, agent_name, agent_version=None):
     _assert_agent_alive(agent_name, celery_app, agent_version)
 
 
+def _validate_old_celery(agent):
+    with _celery_app(agent) as app:
+        _validate_amqp_connection(app, agent['name'], agent.get('version'))
+
+
+def _validate_new_celery(agent):
+    app = get_celery_app(tenant=agent.get('rest_tenant'))
+    _validate_amqp_connection(app, agent['name'])
+
+
+def _validate_cloudify_amqp(agent):
+    tenant = agent['rest_tenant']
+    utils.is_agent_alive(
+        agent['name'],
+        username=tenant['rabbitmq_username'],
+        password=tenant['rabbitmq_password'],
+        vhost=tenant['rabbitmq_vhost'])
+
+
+def _uses_cloudify_amqp(agent):
+    version = agent.get('version')
+    return version and ManagerVersion(version) >= ManagerVersion('4.4')
+
+
 def _validate_old_amqp():
     agent = ctx.instance.runtime_properties['cloudify_agent']
+    validator = _validate_cloudify_amqp if _uses_cloudify_amqp() \
+        else _validate_old_celery
     try:
         ctx.logger.info('Trying old AMQP...')
-        with _celery_app(agent) as app:
-            _validate_amqp_connection(app, agent['name'], agent.get('version'))
+        validator(agent)
     except Exception as e:
         ctx.logger.info('Agent unavailable, reason {0}'.format(str(e)))
         return {
@@ -427,10 +452,11 @@ def _validate_old_amqp():
 def _validate_current_amqp():
     agent = ctx.instance.runtime_properties['cloudify_agent']
     _create_broker_config()
+    validator = _validate_cloudify_amqp if _uses_cloudify_amqp() \
+        else _validate_new_celery
     try:
         ctx.logger.info('Trying current AMQP...')
-        app = get_celery_app(tenant=agent.get('rest_tenant'))
-        _validate_amqp_connection(app, agent['name'])
+        validator(agent)
     # Using RecoverableError to allow retries
     except RecoverableError:
         raise
