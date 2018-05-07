@@ -162,7 +162,7 @@ class CloudifyAgentConfig(dict):
         except FabricCommandExecutionException as e:
             if e.code != 1:
                 raise
-            return 'initd'
+            return 'init.d'
         else:
             return 'systemd'
 
