@@ -426,12 +426,12 @@ def _validate_celery(agent):
 
 
 def _validate_cloudify_amqp(agent):
-    tenant = agent['rest_tenant']
+    broker_config = agent.get('broker_config', {})
     utils.is_agent_alive(
         agent['name'],
-        username=tenant['rabbitmq_username'],
-        password=tenant['rabbitmq_password'],
-        vhost=tenant['rabbitmq_vhost'])
+        username=broker_config.get('broker_user', 'guest'),
+        password=broker_config.get('broker_pass', 'guest'),
+        vhost=broker_config.get('broker_vhost', '/'))
 
 
 def _uses_cloudify_amqp(agent):
