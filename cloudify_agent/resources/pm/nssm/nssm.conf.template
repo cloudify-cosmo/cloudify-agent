@@ -21,7 +21,7 @@ AGENT_LOG_DIR="{{ log_dir }}" ^
 CLOUDIFY_DAEMON_USER={{ user }} ^
 AGENT_LOG_LEVEL="{{ log_level }}" ^
 AGENT_WORK_DIR="{{ workdir }}" ^
-CFY_EXEC_TEMP="{{ executable_temp_path }}"
+CFY_EXEC_TEMP="{{ executable_temp_path }}" ^ {{ custom_environment }}
 
 "{{ nssm_path }}" set {{ name }} DisplayName "Cloudify Agent - {{ name }}"
 "{{ nssm_path }}" set {{ name }} Description "Cloudify Agent Service"
