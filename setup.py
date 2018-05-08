@@ -31,7 +31,8 @@ install_requires = [
     'fasteners==0.13.0',
     'pyzmq==15.1.0',
     'virtualenv==15.1.0',
-    'pip==9.0.1'
+    'pip==9.0.1',
+    'PyYAML==3.10'
 ]
 
 setup(
