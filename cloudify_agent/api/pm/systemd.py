@@ -76,7 +76,8 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             queue=self.queue,
             config_path=self.config_path,
             max_workers=self.max_workers,
-            name=self.name
+            name=self.name,
+            extra_env_path=self.extra_env_path,
         )
 
     def _get_rendered_config(self):
@@ -90,9 +91,5 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             local_rest_cert_file=self.local_rest_cert_file,
             log_level=self.log_level.upper(),
             log_dir=self.workdir,
-            # TODO: Do we need those other args?
-            extra_env_path=self.extra_env_path,
-            cluster_settings_path=self.cluster_settings_path,
             executable_temp_path=self.executable_temp_path,
-            heartbeat=self.heartbeat
         )
