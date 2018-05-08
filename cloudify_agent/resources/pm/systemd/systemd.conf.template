@@ -8,9 +8,3 @@ REST_PORT="{{ rest_port }}"
 
 # Executable tempfiles directory override
 CFY_EXEC_TEMP="{{ executable_temp_path }}"
-
-# Extra environment variables provided by users
-EXTRA_ENV_PATH={{ extra_env_path }}
-if [ -f ${EXTRA_ENV_PATH} ]; then
-    . ${EXTRA_ENV_PATH}
-fi
