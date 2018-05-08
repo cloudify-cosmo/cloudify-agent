@@ -23,7 +23,7 @@ from posixpath import join as urljoin
 from contextlib import contextmanager
 
 import cloudify.manager
-from cloudify import ctx
+from cloudify import amqp_client, ctx
 from cloudify.broker_config import broker_hostname
 from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.utils import (ManagerVersion,
@@ -251,18 +251,6 @@ def _celery_task_name(version):
         return 'script_runner.tasks.run'
 
 
-def _assert_agent_alive(name, celery_client, version=None):
-    tasks = utils.get_agent_registered(name, celery_client)
-    # Using RecoverableError to allow retries
-    if not tasks:
-        raise RecoverableError(
-            'Could not access tasks list for agent {0}'.format(name))
-    task_name = _celery_task_name(version)
-    if task_name not in tasks:
-        raise RecoverableError('Task {0} is not available in agent {1}'.
-                               format(task_name, name))
-
-
 def _get_manager_version():
     version_json = cloudify.manager.get_rest_client().manager.get_version()
     return ManagerVersion(version_json['version'])
@@ -312,17 +300,39 @@ def _build_install_script_params(old_agent, script_url):
     return kwargs
 
 
-def _execute_install_script_task(app, params, old_agent, timeout, script_path):
-    task = _celery_task_name(old_agent['version'])
-    try:
-        result = app.send_task(
-            task,
-            kwargs=params,
-            queue=old_agent['queue']
-        )
-        result.get(timeout=timeout)
-    finally:
-        os.remove(script_path)
+def _run_script_celery(agent, params, script_path, timeout):
+    with _celery_app(agent) as celery_app:
+        if not _validate_celery(agent):
+            raise RecoverableError('Agent is not responding')
+        task = _celery_task_name(agent['version'])
+        try:
+            result = celery_app.send_task(
+                task,
+                kwargs=params,
+                queue=agent['queue']
+            )
+            result.get(timeout=timeout)
+        finally:
+            os.remove(script_path)
+
+
+def _run_script_cloudify_amqp(agent, params, script_path, timeout):
+    if not _validate_cloudify_amqp(agent):
+        raise RecoverableError('Agent is not responding')
+    broker_config = agent.get('broker_config', {})
+
+    task = {'cloudify_task': params}
+    handler = amqp_client.BlockingRequestResponseHandler(
+        exchange=agent['queue'])
+    client = amqp_client.get_client(
+        username=broker_config.get('broker_user', 'guest'),
+        password=broker_config.get('broker_pass', 'guest'),
+        vhost=broker_config.get('broker_vhost', '/'))
+    client.add_handler(handler)
+    consumer_thread = client.consume_in_thread()
+    handler.publish(task, routing_key='operation', timeout=timeout)
+    client.close()
+    consumer_thread.join()
 
 
 def _run_install_script(old_agent, timeout, manager_ip=None, manager_cert=None,
@@ -333,18 +343,15 @@ def _run_install_script(old_agent, timeout, manager_ip=None, manager_cert=None,
         # this agent was installed by current manager.
         old_agent['version'] = str(_get_manager_version())
     new_agent = create_new_agent_config(old_agent, manager_ip, transfer_agent)
-    with _celery_app(old_agent) as celery_app:
-        _assert_agent_alive(old_agent['name'], celery_app,
-                            old_agent['version'])
+    script_path, script_url = _get_init_script_path_and_url(
+        new_agent, old_agent['version'], manager_ip, manager_cert,
+        rest_token, transfer_agent=transfer_agent
+    )
+    params = _build_install_script_params(old_agent, script_url)
 
-        script_path, script_url = _get_init_script_path_and_url(
-            new_agent, old_agent['version'], manager_ip, manager_cert,
-            rest_token, transfer_agent=transfer_agent
-        )
-        params = _build_install_script_params(old_agent, script_url)
-        _execute_install_script_task(
-            celery_app, params, old_agent, timeout, script_path
-        )
+    installer = _run_script_cloudify_amqp if _uses_cloudify_amqp(old_agent) \
+        else _run_script_celery
+    installer(old_agent, params, script_path, timeout)
     cleanup_scripts()
     created_agent = _validate_created_agent(new_agent)
     return {'old': old_agent, 'new': created_agent}
@@ -389,30 +396,33 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
     returned_agent = agents['new']
     ctx.logger.info('Installed agent {0}'.format(returned_agent['name']))
 
-    # Make sure that new celery agent was started:
-    app = get_celery_app(tenant=returned_agent['rest_tenant'])
-    _assert_agent_alive(returned_agent['name'], app)
+    result = _validate_current_amqp()
+    if not result['agent_alive']:
+        raise RecoverableError('New agent did not start and connect')
 
     # Setting old_cloudify_agent in order to uninstall it later.
     ctx.instance.runtime_properties['old_cloudify_agent'] = agents['old']
     ctx.instance.runtime_properties['cloudify_agent'] = returned_agent
 
 
-def _validate_amqp_connection(celery_app, agent_name, agent_version=None):
-    broker_url = _conceal_amqp_password(celery_app.conf['BROKER_URL'])
-    ctx.logger.info('Checking if agent can be accessed through: {0}'.format(
-        broker_url))
-    _assert_agent_alive(agent_name, celery_app, agent_version)
-
-
-def _validate_old_celery(agent):
-    with _celery_app(agent) as app:
-        _validate_amqp_connection(app, agent['name'], agent.get('version'))
-
-
-def _validate_new_celery(agent):
-    app = get_celery_app(tenant=agent.get('rest_tenant'))
-    _validate_amqp_connection(app, agent['name'])
+def _validate_celery(agent):
+    agent_name = agent['name']
+    agent_version = agent.get('version')
+    with _celery_app(agent) as celery_app:
+        broker_url = _conceal_amqp_password(celery_app.conf['BROKER_URL'])
+        ctx.logger.info(
+            'Checking if agent can be accessed through celery: {0}'
+            .format(broker_url))
+        tasks = utils.get_agent_registered(agent_name, celery_app)
+        # Using RecoverableError to allow retries
+        if not tasks:
+            raise RecoverableError(
+                'Could not access tasks list for agent {0}'.format(agent_name))
+        task_name = _celery_task_name(agent_version)
+        if task_name not in tasks:
+            raise RecoverableError('Task {0} is not available in agent {1}'.
+                                   format(task_name, agent_name))
+        return True
 
 
 def _validate_cloudify_amqp(agent):
@@ -432,45 +442,43 @@ def _uses_cloudify_amqp(agent):
 def _validate_old_amqp():
     agent = ctx.instance.runtime_properties['cloudify_agent']
     validator = _validate_cloudify_amqp if _uses_cloudify_amqp() \
-        else _validate_old_celery
+        else _validate_celery
     try:
         ctx.logger.info('Trying old AMQP...')
-        validator(agent)
+        is_alive = validator(agent)
     except Exception as e:
-        ctx.logger.info('Agent unavailable, reason {0}'.format(str(e)))
-        return {
-            'agent_alive_crossbroker': False,
-            'agent_alive_crossbroker_error': str(e)
-        }
+        display_err = str(e)
+        ctx.logger.info('Agent unavailable, reason {0}'.format(display_err))
+        is_alive = False
     else:
-        return {
-            'agent_alive_crossbroker': True,
-            'agent_alive_crossbroker_error': ''
-        }
+        display_err = ''
+
+    return {
+        'agent_alive_crossbroker': is_alive,
+        'agent_alive_crossbroker_error': display_err
+    }
 
 
 def _validate_current_amqp():
     agent = ctx.instance.runtime_properties['cloudify_agent']
     _create_broker_config()
-    validator = _validate_cloudify_amqp if _uses_cloudify_amqp() \
-        else _validate_new_celery
     try:
         ctx.logger.info('Trying current AMQP...')
-        validator(agent)
+        is_alive = _validate_cloudify_amqp(agent)
     # Using RecoverableError to allow retries
     except RecoverableError:
         raise
     except Exception as e:
-        ctx.logger.info('Agent unavailable, reason {0}'.format(str(e)))
-        return {
-            'agent_alive': False,
-            'agent_alive_error': str(e)
-        }
+        display_err = str(e)
+        ctx.logger.info('Agent unavailable, reason {0}'.format(display_err))
+        is_alive = False
     else:
-        return {
-            'agent_alive': True,
-            'agent_alive_error': ''
-        }
+        display_err = ''
+
+    return {
+        'agent_alive': is_alive,
+        'agent_alive_error': display_err
+    }
 
 
 @operation
@@ -493,6 +501,7 @@ def validate_agent_amqp(current_amqp=True, manager_ip=None,
             'cloudify_agent key not available in runtime_properties')
     agent = ctx.instance.runtime_properties['cloudify_agent']
     _update_broker_config(agent, manager_ip, manager_certificate)
+
     result = _validate_current_amqp() if current_amqp else _validate_old_amqp()
 
     result['timestamp'] = time.time()
@@ -519,8 +528,9 @@ def transfer_agent_amqp(transfer_agent_timeout=300,
                     format(returned_agent['name']))
 
     # Make sure the agent is alive:
-    app = get_celery_app(tenant=returned_agent['rest_tenant'])
-    _assert_agent_alive(returned_agent['name'], app)
+    result = _validate_current_amqp()
+    if not result['agent_alive']:
+        raise RecoverableError('Agent is not responding')
 
 
 def _create_broker_config(transfer_mode=False):

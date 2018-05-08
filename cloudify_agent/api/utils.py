@@ -227,7 +227,7 @@ def is_agent_alive(name,
     handler = BlockingRequestResponseHandler(exchange=name)
     client = get_client(username=username, password=password, vhost=vhost)
     client.add_handler(handler)
-    client.consume_in_thread()
+    consumer_thread = client.consume_in_thread()
     task = {
         'service_task': {
             'task_name': 'ping',
@@ -235,6 +235,8 @@ def is_agent_alive(name,
         }
     }
     response = handler.publish(task, routing_key='service', timeout=timeout)
+    client.close()
+    consumer_thread.join()
     return 'time' in response
 
 
