@@ -129,7 +129,7 @@ class TestConfiguration(BaseTest):
             'disable_requiretty': True,
             'env': {},
             'fabric_env': {},
-            'max_workers': 5,
+            'max_workers': 20,
             'min_workers': 0,
             'workdir': workdir,
             'broker_ssl_cert_path': os.environ[constants.BROKER_SSL_CERT_PATH],
