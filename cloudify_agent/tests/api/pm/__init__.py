@@ -121,7 +121,8 @@ class BaseDaemonLiveTestCase(BaseTest):
                                 .format(nssm_path, daemon.name),
                                 exit_on_failure=False)
         else:
-            self.runner.run("pkill -9 -f 'celery'", exit_on_failure=False)
+            self.runner.run("pkill -9 -f 'cloudify_agent.worker'",
+                            exit_on_failure=False)
 
     def assert_registered_tasks(self, name):
         destination = 'celery@{0}'.format(name)

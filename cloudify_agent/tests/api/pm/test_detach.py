@@ -65,7 +65,7 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest):
         self.wait_for_daemon_alive(daemon.name, timeout=timeout)
 
         # lets kill the process
-        self.runner.run("pkill -9 -f 'celery'")
+        self.runner.run("pkill -9 -f 'cloudify_agent.worker'")
         self.wait_for_daemon_dead(daemon.name)
 
         # check it was respawned
