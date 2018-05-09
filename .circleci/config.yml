@@ -3,6 +3,7 @@ version: 2
 defaults:
   - &test_defaults
     docker:
+      - image: circleci/python:2.7
       - image: rabbitmq:3.7.4
         ports:
           - "15672:15672"
@@ -18,7 +19,6 @@ defaults:
           fi
 
       - run: |
-          curl -O https://bootstrap.pypa.io/get-pip.py && sudo python get-pip.py
           pip install -U pip==9.0.1
           pip install tox
           tox -e ${TOX_TEST}
