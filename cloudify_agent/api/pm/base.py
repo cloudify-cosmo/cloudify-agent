@@ -291,9 +291,6 @@ class Daemon(object):
         self.cluster_settings_path = params.get('cluster_settings_path')
         self.network = params.get('network') or 'default'
 
-    def _get_celery_conf_path(self):
-        return os.path.join(self.workdir, 'broker_config.json')
-
     def create_celery_conf(self):
         self._logger.info('Deploying broker configuration.')
         config = {
@@ -305,7 +302,8 @@ class Daemon(object):
             'broker_vhost': self.broker_vhost,
             'cluster': self.cluster
         }
-        with open(self._get_celery_conf_path(), 'w') as conf_handle:
+        broker_conf_path = os.path.join(self.workdir, 'broker_config.json')
+        with open(broker_conf_path, 'w') as conf_handle:
             json.dump(config, conf_handle)
 
     def validate_mandatory(self):
