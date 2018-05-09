@@ -27,7 +27,7 @@ from celery import Celery
 from cloudify import constants
 from cloudify.utils import LocalCommandRunner
 
-from cloudify_agent.api import utils, defaults
+from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
 from cloudify_agent.api.plugins.installer import PluginInstaller
 
@@ -131,20 +131,25 @@ class BaseDaemonLiveTestCase(BaseTest):
                            if 'celery' not in t)
         self.assertEqual(set(BUILT_IN_TASKS), daemon_tasks)
 
+    def _is_agent_alive(self, name, timeout=10):
+        return utils.is_agent_alive(
+            name,
+            username='guest',
+            password='guest',
+            vhost='/',
+            timeout=timeout)
+
     def assert_daemon_alive(self, name):
-        registered = utils.get_agent_registered(name, self.celery)
-        self.assertTrue(registered is not None)
+        self.assertTrue(self._is_agent_alive(name))
 
     def assert_daemon_dead(self, name):
-        registered = utils.get_agent_registered(name, self.celery)
-        self.assertTrue(registered is None)
+        self.assertFalse(self._is_agent_alive(name))
 
     def wait_for_daemon_alive(self, name, timeout=10):
         deadline = time.time() + timeout
 
         while time.time() < deadline:
-            registered = utils.get_agent_registered(name, self.celery)
-            if registered:
+            if self._is_agent_alive(name, timeout=1):
                 return
             self.logger.info('Waiting for daemon {0} to start...'
                              .format(name))
@@ -156,8 +161,7 @@ class BaseDaemonLiveTestCase(BaseTest):
         deadline = time.time() + timeout
 
         while time.time() < deadline:
-            registered = utils.get_agent_registered(name, self.celery)
-            if not registered:
+            if not self._is_agent_alive(name, timeout=1):
                 return
             self.logger.info('Waiting for daemon {0} to stop...'
                              .format(name))
@@ -333,7 +337,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
                 'https://{0}:{1}/resources'.format(
                     daemon.rest_host,
                     daemon.rest_port
-                ),
+            ),
             constants.AGENT_WORK_DIR_KEY: daemon.workdir,
             utils.internal.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY:
                 utils.internal.get_storage_directory(),

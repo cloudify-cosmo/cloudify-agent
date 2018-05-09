@@ -235,9 +235,14 @@ def is_agent_alive(name,
             'kwargs': {}
         }
     }
-    response = handler.publish(task, routing_key='service', timeout=timeout)
-    client.close()
-    consumer_thread.join()
+    try:
+        response = handler.publish(task, routing_key='service',
+                                   timeout=timeout)
+    except RuntimeError:
+        return False
+    finally:
+        client.close()
+        consumer_thread.join()
     return 'time' in response
 
 

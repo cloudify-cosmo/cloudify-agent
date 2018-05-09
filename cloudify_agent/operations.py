@@ -292,7 +292,10 @@ def _build_install_script_params(old_agent, script_url):
     cloudify_context = {
         'type': 'operation',
         'task_name': script_runner_task,
-        'task_target': old_agent['queue']
+        'task_target': old_agent['queue'],
+        'node_id': ctx.node.id,
+        'workflow_id': ctx.workflow_id,
+        'execution_id': ctx.execution_id
     }
     kwargs = {'script_path': script_url,
               'ssl_cert_content': _get_ssl_cert_content(old_agent['version']),
@@ -321,7 +324,7 @@ def _run_script_cloudify_amqp(agent, params, script_path, timeout):
         raise RecoverableError('Agent is not responding')
     broker_config = agent.get('broker_config', {})
 
-    task = {'cloudify_task': params}
+    task = {'cloudify_task': {'kwargs': params}}
     handler = amqp_client.BlockingRequestResponseHandler(
         exchange=agent['queue'])
     client = amqp_client.get_client(
@@ -330,9 +333,11 @@ def _run_script_cloudify_amqp(agent, params, script_path, timeout):
         vhost=broker_config.get('broker_vhost', '/'))
     client.add_handler(handler)
     consumer_thread = client.consume_in_thread()
-    handler.publish(task, routing_key='operation', timeout=timeout)
+    result = handler.publish(task, routing_key='operation', timeout=timeout)
     client.close()
     consumer_thread.join()
+    if result.get('error'):
+        raise NonRecoverableError(result['error'])
 
 
 def _run_install_script(old_agent, timeout, manager_ip=None, manager_cert=None,
@@ -427,7 +432,7 @@ def _validate_celery(agent):
 
 def _validate_cloudify_amqp(agent):
     broker_config = agent.get('broker_config', {})
-    utils.is_agent_alive(
+    return utils.is_agent_alive(
         agent['name'],
         username=broker_config.get('broker_user', 'guest'),
         password=broker_config.get('broker_pass', 'guest'),

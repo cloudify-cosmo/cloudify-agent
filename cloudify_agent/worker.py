@@ -64,14 +64,13 @@ class CloudifyOperationConsumer(TaskConsumer):
             suffix += '\n\tStatus: {0}'.format(status)
 
         logger.info(
-            '\n\t{prefix} on queue `{queue}` on tenant `{tenant}`:\n'
+            '\n\t{prefix} on queue `{queue}`:\n'
             '\tTask name: {name}\n'
             '\tExecution ID: {execution_id}\n'
             '\tWorkflow ID: {workflow_id}{suffix}\n'.format(
                 prefix=prefix,
                 name=ctx['task_name'],
                 queue=ctx['task_target'],
-                tenant=ctx['tenant']['name'],
                 execution_id=ctx['execution_id'],
                 workflow_id=ctx['workflow_id'],
                 suffix=suffix

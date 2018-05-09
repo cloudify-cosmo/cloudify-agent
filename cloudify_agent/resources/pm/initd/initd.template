@@ -12,7 +12,7 @@ RUNAS={{ user }}
 
 PIDFILE={{ pidfile }}
 LOGFILE={{ log_file }}
-CMD='{{ virtualenv_path }}/bin/python -m cloudify_agent.worker --queue "{{ queue }}" --max-workers {{ max_workers }} --name "{{ name }}"'
+CMD='{{ virtualenv_path }}/bin/python -m cloudify_agent.worker --queue {{ queue }} --max-workers {{ max_workers }} --name {{ name }}'
 
 start() {
   if [ -f "$PIDFILE" ] && ps -p $(cat "$PIDFILE"); then
