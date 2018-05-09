@@ -276,9 +276,6 @@ class Daemon(object):
 
         self.extra_env_path = params.get('extra_env_path')
         self.log_level = params.get('log_level') or defaults.LOG_LEVEL
-        self.log_file = params.get(
-            'log_file') or os.path.join(self.workdir,
-                                        '{0}.log'.format(self.name))
         self.pid_file = params.get(
             'pid_file') or os.path.join(self.workdir,
                                         '{0}.pid'.format(self.name))
