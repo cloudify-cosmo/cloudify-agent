@@ -115,7 +115,7 @@ class TestConfiguration(BaseTest):
         expected = {
             'agent_dir': agent_dir,
             'process_management':
-                {'name': 'systemd' if os.name == 'posix' else 'nssm'},
+                {'name': 'init.d' if os.name == 'posix' else 'nssm'},
             'basedir': basedir,
             'name': 'test_deployment',
             'rest_host': 'localhost',
@@ -138,7 +138,8 @@ class TestConfiguration(BaseTest):
             'bypass_maintenance': False,
             'rest_token': 'test_token',
             'rest_tenant': {},
-            'network': 'default'
+            'network': 'default',
+            'version': utils.get_agent_version()
         }
         expected.update(expected_values)
 
