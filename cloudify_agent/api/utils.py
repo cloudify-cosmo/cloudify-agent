@@ -228,20 +228,18 @@ def is_agent_alive(name,
     handler = BlockingRequestResponseHandler(exchange=name)
     client = get_client(username=username, password=password, vhost=vhost)
     client.add_handler(handler)
-    client.consume_in_thread()
-    task = {
-        'service_task': {
-            'task_name': 'ping',
-            'kwargs': {}
+    with client.consume_and_close():
+        task = {
+            'service_task': {
+                'task_name': 'ping',
+                'kwargs': {}
+            }
         }
-    }
-    try:
-        response = handler.publish(task, routing_key='service',
-                                   timeout=timeout)
-    except RuntimeError:
-        return False
-    finally:
-        client.close()
+        try:
+            response = handler.publish(task, routing_key='service',
+                                       timeout=timeout)
+        except RuntimeError:
+            return False
     return 'time' in response
 
 
