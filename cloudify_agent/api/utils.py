@@ -23,6 +23,7 @@ import getpass
 import types
 import urllib
 import base64
+import pkgutil
 
 import appdirs
 import pkg_resources
@@ -234,7 +235,13 @@ def is_agent_alive(name,
             'kwargs': {}
         }
     }
-    response = handler.publish(task, routing_key='service', timeout=timeout)
+    try:
+        response = handler.publish(task, routing_key='service',
+                                   timeout=timeout)
+    except RuntimeError:
+        return False
+    finally:
+        client.close()
     return 'time' in response
 
 
@@ -580,3 +587,8 @@ def _parse_cluster_nodes(ctx, param, value):
 def get_manager_file_server_url(hostname, port):
     scheme = 'http' if port == 80 else 'https'
     return '{0}://{1}:{2}/resources'.format(scheme, hostname, port)
+
+
+def get_agent_version():
+    data = pkgutil.get_data('cloudify_agent', 'VERSION')
+    return json.loads(data)['version']

@@ -99,7 +99,7 @@ class TestInitDDaemon(BaseDaemonProcessManagementTest):
         daemon.start()
 
         # lets kill the process
-        self.runner.run("pkill -9 -f 'celery'")
+        self.runner.run("pkill -9 -f 'cloudify_agent.worker'")
         self.wait_for_daemon_dead(daemon.name)
 
         # check it was respawned

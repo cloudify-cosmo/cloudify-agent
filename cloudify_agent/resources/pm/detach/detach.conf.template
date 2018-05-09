@@ -5,6 +5,8 @@ export CLOUDIFY_DAEMON_STORAGE_DIRECTORY={{ storage_dir }}
 export CLOUDIFY_DAEMON_USER={{ user }}
 
 export AGENT_WORK_DIR={{ workdir }}
+export AGENT_LOG_DIR="{{ log_dir }}"
+export AGENT_LOG_LEVEL={{ log_level }}
 export MANAGER_FILE_SERVER_URL="https://{{ rest_host }}:{{ rest_port }}/resources"
 export LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}"
 export REST_HOST="{{ rest_host }}"
