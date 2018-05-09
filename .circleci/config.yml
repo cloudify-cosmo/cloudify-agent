@@ -26,22 +26,22 @@ defaults:
 jobs:
   flake8:
     <<: *test_defaults
-    environtmen:
+    environment:
       TOX_TEST: flake8
 
   docs:
     <<: *test_defaults
-    environtmen:
+    environment:
       TOX_TEST: docs
 
   py26:
     <<: *test_defaults
-    environtmen:
+    environment:
       TOX_TEST: py26
 
   py27:
     <<: *test_defaults
-    environtmen:
+    environment:
       TOX_TEST: py27
 
 workflows:
