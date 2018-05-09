@@ -157,9 +157,9 @@ class Daemon(object):
 
         log level of the daemon process itself. defaults to debug.
 
-    ``log_file``:
+    ``log_dir``:
 
-        location of the daemon log file. defaults to <workdir>/<name>.log
+        location of the directory to store daemon logs. defaults to workdir
 
     ``pid_file``:
 
@@ -276,6 +276,7 @@ class Daemon(object):
 
         self.extra_env_path = params.get('extra_env_path')
         self.log_level = params.get('log_level') or defaults.LOG_LEVEL
+        self.log_dir = params.get('log_dir') or self.workdir
         self.pid_file = params.get(
             'pid_file') or os.path.join(self.workdir,
                                         '{0}.pid'.format(self.name))
