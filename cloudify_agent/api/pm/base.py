@@ -104,7 +104,7 @@ class Daemon(object):
 
     ``heartbeat``
 
-        The AMQP and Celery heartbeats interval to be used by agents,
+        The AMQP heartbeats interval to be used by agents,
         in seconds.
         Defaults to 30.
 
