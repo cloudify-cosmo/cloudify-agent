@@ -115,6 +115,7 @@ class DetachedDaemon(CronRespawnDaemonMixin):
             max_workers=self.max_workers,
             virtualenv_path=VIRTUALENV,
             workdir=self.workdir,
+            pid_file=self.pid_file
         )
 
         # no sudo needed, yey!

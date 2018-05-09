@@ -4,7 +4,8 @@
 . {{ config_path }}
 
 # running the celery worker command directly
-{{ virtualenv_path }}/bin/python -m cloudify_agent.worker \
+nohup {{ virtualenv_path }}/bin/python -m cloudify_agent.worker \
     --queue "{{ queue }}" \
     --max-workers {{ max_workers }} \
-    --name "{{ name }}"
+    --name "{{ name }}"  </dev/null >/dev/null 2>&1 &
+echo $! > {{ pid_file }}
