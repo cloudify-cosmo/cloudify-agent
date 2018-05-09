@@ -289,7 +289,7 @@ class Daemon(object):
         self.cluster_settings_path = params.get('cluster_settings_path')
         self.network = params.get('network') or 'default'
 
-    def create_celery_conf(self):
+    def create_broker_conf(self):
         self._logger.info('Deploying broker configuration.')
         config = {
             'broker_ssl_enabled': self.broker_ssl_enabled,
@@ -413,7 +413,7 @@ class Daemon(object):
         """
         self.create_script()
         self.create_config()
-        self.create_celery_conf()
+        self.create_broker_conf()
 
     def start(self,
               interval=defaults.START_INTERVAL,
