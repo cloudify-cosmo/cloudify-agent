@@ -27,7 +27,7 @@ from cloudify import constants, mocks
 from cloudify.state import current_ctx
 from cloudify.utils import setup_logger
 
-from cloudify_agent.api import utils
+from cloudify_agent.api import utils as agent_utils
 from cloudify_agent.api.defaults import (SSL_CERTS_TARGET_DIR,
                                          AGENT_SSL_CERT_FILENAME)
 
@@ -153,7 +153,7 @@ class BaseTest(unittest.TestCase):
         current_ctx.set(self.original_ctx)
 
     def _is_agent_alive(self, name, timeout=10):
-        return utils.is_agent_alive(
+        return agent_utils.is_agent_alive(
             name,
             username='guest',
             password='guest',
