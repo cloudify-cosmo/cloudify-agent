@@ -133,6 +133,7 @@ class CloudifyAgentConfig(dict):
         self.setdefault('fabric_env', {})
         self.setdefault('system_python', 'python')
         self.setdefault('heartbeat', None)
+        self.setdefault('version', agent_utils.get_agent_version())
 
     def _set_process_management(self, runner):
         """
@@ -152,7 +153,7 @@ class CloudifyAgentConfig(dict):
             if self.is_remote:
                 default_pm_name = self._get_process_management(runner)
             else:
-                default_pm_name = 'systemd'
+                default_pm_name = 'init.d'
         self['process_management'].setdefault('name', default_pm_name)
 
     @staticmethod

@@ -12,16 +12,16 @@ RUNAS={{ user }}
 
 PIDFILE={{ pidfile }}
 LOGFILE={{ log_file }}
-CMD=({{ virtualenv_path }}/bin/python -m cloudify_agent.worker --queue "{{ queue }}" --max-workers {{ max_workers }} --name "{{ name }}")
+CMD='{{ virtualenv_path }}/bin/python -m cloudify_agent.worker --queue {{ queue }} --max-workers {{ max_workers }} --name {{ name }}'
 
 start() {
   if [ -f "$PIDFILE" ] && ps -p $(cat "$PIDFILE"); then
     echo 'Service already running' >&2
     return 1
   fi
-  source {{ config_path }}
+  . {{ config_path }}
   echo 'Starting service...' >&2
-  nohup sudo -Eu ${RUNAS} "${CMD[@]}" </dev/null >/dev/null 2>&1 &
+  nohup sudo -Eu ${RUNAS} ${CMD} </dev/null >/dev/null 2>&1 &
   echo $! > ${PIDFILE}
   echo 'Service started' >&2
 }

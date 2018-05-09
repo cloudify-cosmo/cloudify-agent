@@ -29,9 +29,6 @@ dependencies:
       *)
         echo "Not running in first node. Skipping."
       esac
-  cache_directories:
-    - ~/.cache/pip
-    - .tox
 
 test:
   override:
