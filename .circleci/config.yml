@@ -20,7 +20,7 @@ defaults:
 
       - run: |
           sudo pip install -U pip==9.0.1
-          pip install --user tox
+          sudo pip install tox
           tox -e ${TOX_TEST}
 
 jobs:
