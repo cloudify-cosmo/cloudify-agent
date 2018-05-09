@@ -15,7 +15,6 @@
 
 import os
 import nose.tools
-import time
 import inspect
 import types
 from functools import wraps
@@ -118,44 +117,6 @@ class BaseDaemonLiveTestCase(BaseTest):
         else:
             self.runner.run("pkill -9 -f 'cloudify_agent.worker'",
                             exit_on_failure=False)
-
-    def _is_agent_alive(self, name, timeout=10):
-        return utils.is_agent_alive(
-            name,
-            username='guest',
-            password='guest',
-            vhost='/',
-            timeout=timeout)
-
-    def assert_daemon_alive(self, name):
-        self.assertTrue(self._is_agent_alive(name))
-
-    def assert_daemon_dead(self, name):
-        self.assertFalse(self._is_agent_alive(name))
-
-    def wait_for_daemon_alive(self, name, timeout=10):
-        deadline = time.time() + timeout
-
-        while time.time() < deadline:
-            if self._is_agent_alive(name, timeout=1):
-                return
-            self.logger.info('Waiting for daemon {0} to start...'
-                             .format(name))
-            time.sleep(5)
-        raise RuntimeError('Failed waiting for daemon {0} to start. Waited '
-                           'for {1} seconds'.format(name, timeout))
-
-    def wait_for_daemon_dead(self, name, timeout=10):
-        deadline = time.time() + timeout
-
-        while time.time() < deadline:
-            if not self._is_agent_alive(name, timeout=1):
-                return
-            self.logger.info('Waiting for daemon {0} to stop...'
-                             .format(name))
-            time.sleep(1)
-        raise RuntimeError('Failed waiting for daemon {0} to stop. Waited '
-                           'for {1} seconds'.format(name, timeout))
 
     def get_agent_dict(self, env, name='host'):
         node_instances = env.storage.get_node_instances()
