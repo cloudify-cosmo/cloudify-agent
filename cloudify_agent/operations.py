@@ -295,7 +295,8 @@ def _build_install_script_params(old_agent, script_url):
         'task_target': old_agent['queue'],
         'node_id': ctx.node.id,
         'workflow_id': ctx.workflow_id,
-        'execution_id': ctx.execution_id
+        'execution_id': ctx.execution_id,
+        'tenant': ctx.tenant
     }
     kwargs = {'script_path': script_url,
               'ssl_cert_content': _get_ssl_cert_content(old_agent['version']),
