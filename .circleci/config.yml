@@ -1,0 +1,55 @@
+version: 2
+
+defaults:
+  - &test_defaults
+    docker:
+      - image: circleci/python:2.7
+      - image: rabbitmq:3.7.4
+        ports:
+          - "15672:15672"
+          - "5672:5672"
+
+    steps:
+      - checkout
+      - run: >
+          if [ -n "$CI_PULL_REQUEST" ]; then
+            PR_ID=${CI_PULL_REQUEST##*/}
+            git fetch origin +refs/pull/$PR_ID/merge:
+            git checkout -qf FETCH_HEAD
+          fi
+
+      - run: |
+          sudo pip install -U pip==9.0.1
+          sudo pip install tox
+          tox -e ${TOX_TEST}
+
+jobs:
+  flake8:
+    <<: *test_defaults
+    environment:
+      TOX_TEST: flake8
+
+  docs:
+    <<: *test_defaults
+    environment:
+      TOX_TEST: docs
+
+  py26:
+    <<: *test_defaults
+    environment:
+      TOX_TEST: py26
+
+  py27:
+    <<: *test_defaults
+    environment:
+      TOX_TEST: py27
+
+workflows:
+  version: 2
+
+  run_test:
+    jobs:
+      - flake8
+      - docs
+      - py26
+      - py27
