@@ -18,7 +18,8 @@ defaults:
           fi
 
       - run: |
-          pip install -U pip
+          curl -O https://bootstrap.pypa.io/get-pip.py && sudo python get-pip.py
+          pip install -U pip==9.0.1
           pip install tox
           tox -e ${TOX_TEST}
 
