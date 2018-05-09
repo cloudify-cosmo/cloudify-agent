@@ -158,16 +158,6 @@ class NonSuckingServiceManagerDaemon(Daemon):
             self._logger.debug(str(e))
             return False
 
-    def get_worker_id_placeholder(self):
-
-        """
-        Returns placeholder suitable for windows systems.
-        Due to bug in Celery placeholder %I is not working
-        properly on nt systems.
-
-        """
-        return '{0}'
-
     def _create_env_string(self):
         env_string = ''
         if self.extra_env_path and os.path.exists(self.extra_env_path):

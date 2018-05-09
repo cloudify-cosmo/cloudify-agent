@@ -28,7 +28,7 @@ class DetachedDaemon(CronRespawnDaemonMixin):
 
     """
     This process management is not really a full process management. It
-    merely runs the celery command in detached mode and uses crontab for
+    merely runs the worker command in detached mode and uses crontab for
     re-spawning the daemon on failure. As such, it has the following
     limitations:
 
