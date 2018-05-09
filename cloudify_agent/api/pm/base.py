@@ -13,6 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import errno
 import getpass
 import json
 import os
@@ -28,6 +29,11 @@ from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import defaults
+
+try:
+    import psutil
+except ImportError:
+    psutil = None
 
 
 AGENT_IS_REGISTERED_TIMEOUT = 1
@@ -331,8 +337,25 @@ class Daemon(object):
 
     def _is_daemon_running(self):
         self._logger.debug('Checking if agent daemon is running...')
-        # TODO: Validate that the daemon is not running using the PID file
-        return False
+        try:
+            with open(self.pid_file) as f:
+                pid = int(f.read())
+        except (IOError, ValueError):
+            return False
+        if psutil:
+            return psutil.pid_exists(pid)
+        if os.name == 'nt':
+            # without psutil, we have no way to check.
+            return False
+        # on linux, kill with signal 0 only succeeds if the process exists.
+        # if we get a permission error, then that also must mean the process
+        # exists, and we don't have the privileges to access it
+        try:
+            os.kill(pid, 0)
+        except OSError as e:
+            return e.errno == errno.EPERM
+        else:
+            return True
 
     ########################################################################
     # the following methods must be implemented by the sub-classes as they
