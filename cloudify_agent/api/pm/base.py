@@ -527,29 +527,6 @@ class Daemon(object):
         """
         pass
 
-    def get_logfile(self):
-
-        """
-        Injects worker_id placeholder into logfile. Celery library will replace
-        this placeholder with worker id. It is used to make sure that there is
-        at most one process writing to a specific log file.
-
-        """
-
-        path, extension = os.path.splitext(self.log_file)
-        return '{0}{1}{2}'.format(path,
-                                  self.get_worker_id_placeholder(),
-                                  extension)
-
-    def get_worker_id_placeholder(self):
-
-        """
-        Placeholder suitable for linux systems.
-
-        """
-
-        return '%I'
-
     def _validate_autoscale(self):
         min_workers = self._params.get('min_workers')
         max_workers = self._params.get('max_workers')
