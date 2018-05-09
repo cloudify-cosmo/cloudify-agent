@@ -18,9 +18,9 @@ defaults:
           fi
 
       - run: |
-        pip install -U pip
-        pip install tox
-        tox -e ${TOX_TEST}
+          pip install -U pip
+          pip install tox
+          tox -e ${TOX_TEST}
 
 jobs:
   flake8:
