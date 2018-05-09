@@ -481,7 +481,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             password='guest',
             vhost='/')
         client.add_handler(handler)
-        with client.consume_and_close():
+        with client:
             task = {'cloudify_task': {'kwargs': kwargs}}
             return handler.publish(task, routing_key='operation',
                                    timeout=timeout)

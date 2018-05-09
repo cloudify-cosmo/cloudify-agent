@@ -228,7 +228,7 @@ def is_agent_alive(name,
     handler = BlockingRequestResponseHandler(exchange=name)
     client = get_client(username=username, password=password, vhost=vhost)
     client.add_handler(handler)
-    with client.consume_and_close():
+    with client:
         task = {
             'service_task': {
                 'task_name': 'ping',
