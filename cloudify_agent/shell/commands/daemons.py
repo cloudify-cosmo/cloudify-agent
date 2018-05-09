@@ -128,8 +128,7 @@ from cloudify_agent.shell.decorators import handle_failures
               envvar=env.CLOUDIFY_BROKER_SSL_CERT_PATH
               )
 @click.option('--heartbeat',
-              help='The interval of the AMQP and Celery heartbeat in '
-              'seconds [env {0}]'
+              help='The interval of the AMQP heartbeat in seconds [env {0}]'
               .format(env.CLOUDIFY_HEARTBEAT),
               type=int,
               default=30,
