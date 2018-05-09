@@ -75,7 +75,7 @@ setup(
             'resources/script/windows-download.ps1.template'
         ]
     },
-    description='Cloudify Agent Implementation (Celery based)',
+    description='Cloudify Agent Implementation (pika based)',
     install_requires=install_requires,
     license='LICENSE',
     entry_points={

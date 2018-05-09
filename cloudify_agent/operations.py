@@ -335,9 +335,9 @@ def _run_script_cloudify_amqp(agent, params, script_path, timeout):
         password=broker_config.get('broker_pass', 'guest'),
         vhost=broker_config.get('broker_vhost', '/'))
     client.add_handler(handler)
-    client.consume_in_thread()
-    result = handler.publish(task, routing_key='operation', timeout=timeout)
-    client.close()
+    with client:
+        result = handler.publish(task, routing_key='operation',
+                                 timeout=timeout)
     error = result.get('error')
     if error:
         raise deserialize_known_exception(error)

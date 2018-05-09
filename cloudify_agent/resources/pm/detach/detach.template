@@ -3,7 +3,7 @@
 # sourcing the configuration file
 . {{ config_path }}
 
-# running the celery worker command directly
+# running the agent worker command directly
 nohup {{ virtualenv_path }}/bin/python -m cloudify_agent.worker \
     --queue "{{ queue }}" \
     --max-workers {{ max_workers }} \

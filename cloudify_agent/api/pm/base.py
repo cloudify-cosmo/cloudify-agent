@@ -18,11 +18,9 @@ import json
 import os
 import time
 
-from pika.exceptions import AMQPConnectionError
 from cloudify.utils import (LocalCommandRunner,
                             setup_logger,
                             get_exec_tempdir)
-from cloudify import amqp_client
 from cloudify import constants
 from cloudify.exceptions import CommandExecutionException
 
@@ -106,7 +104,7 @@ class Daemon(object):
 
     ``heartbeat``
 
-        The AMQP and Celery heartbeats interval to be used by agents,
+        The AMQP heartbeats interval to be used by agents,
         in seconds.
         Defaults to 30.
 
@@ -291,10 +289,7 @@ class Daemon(object):
         self.cluster_settings_path = params.get('cluster_settings_path')
         self.network = params.get('network') or 'default'
 
-    def _get_celery_conf_path(self):
-        return os.path.join(self.workdir, 'broker_config.json')
-
-    def create_celery_conf(self):
+    def create_broker_conf(self):
         self._logger.info('Deploying broker configuration.')
         config = {
             'broker_ssl_enabled': self.broker_ssl_enabled,
@@ -305,7 +300,8 @@ class Daemon(object):
             'broker_vhost': self.broker_vhost,
             'cluster': self.cluster
         }
-        with open(self._get_celery_conf_path(), 'w') as conf_handle:
+        broker_conf_path = os.path.join(self.workdir, 'broker_config.json')
+        with open(broker_conf_path, 'w') as conf_handle:
             json.dump(config, conf_handle)
 
     def validate_mandatory(self):
@@ -417,7 +413,7 @@ class Daemon(object):
         """
         self.create_script()
         self.create_config()
-        self.create_celery_conf()
+        self.create_broker_conf()
 
     def start(self,
               interval=defaults.START_INTERVAL,
@@ -530,60 +526,6 @@ class Daemon(object):
         itself and therefore, can be used for cleanup purposes.
         """
         pass
-
-    def get_logfile(self):
-
-        """
-        Injects worker_id placeholder into logfile. Celery library will replace
-        this placeholder with worker id. It is used to make sure that there is
-        at most one process writing to a specific log file.
-
-        """
-
-        path, extension = os.path.splitext(self.log_file)
-        return '{0}{1}{2}'.format(path,
-                                  self.get_worker_id_placeholder(),
-                                  extension)
-
-    def get_worker_id_placeholder(self):
-
-        """
-        Placeholder suitable for linux systems.
-
-        """
-
-        return '%I'
-
-    def _get_amqp_client(self):
-        if self.cluster:
-            # if the active manager dies during agent installation, only then
-            # we will need to look for the new active here; in most cases, the
-            # first one from the self.cluster list will be online, and that
-            # is equal to just using self.broker_url/self.broker_ip
-            err = None
-            for node_ip in self.cluster:
-                try:
-                    return amqp_client.create_client(
-                        amqp_host=node_ip,
-                        amqp_user=self.broker_user,
-                        amqp_pass=self.broker_pass,
-                        amqp_vhost=self.broker_vhost,
-                        ssl_enabled=self.broker_ssl_enabled,
-                        ssl_cert_path=self.broker_ssl_cert_path
-                    )
-                except AMQPConnectionError as err:
-                    continue
-            if err:
-                raise err
-        else:
-            return amqp_client.create_client(
-                amqp_host=self.broker_ip,
-                amqp_user=self.broker_user,
-                amqp_pass=self.broker_pass,
-                amqp_vhost=self.broker_vhost,
-                ssl_enabled=self.broker_ssl_enabled,
-                ssl_cert_path=self.broker_ssl_cert_path
-            )
 
     def _validate_autoscale(self):
         min_workers = self._params.get('min_workers')
