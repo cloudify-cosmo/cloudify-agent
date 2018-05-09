@@ -178,7 +178,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.create()
         daemon.configure()
         daemon.start()
-        self.wait_for_daemon_alive(daemon.queue)
 
     def test_start_delete_amqp_queue(self):
         daemon = self.create_daemon()
@@ -250,7 +249,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         self.installer.install(self.plugin_struct())
         daemon.start()
         daemon.restart()
-        self.wait_for_daemon_alive(daemon.queue)
 
     def test_two_daemons(self):
         daemon1 = self.create_daemon()
@@ -258,14 +256,14 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon1.configure()
 
         daemon1.start()
-        self.wait_for_daemon_alive(daemon1.queue)
+        self.assert_daemon_alive(daemon1.queue)
 
         daemon2 = self.create_daemon()
         daemon2.create()
         daemon2.configure()
 
         daemon2.start()
-        self.wait_for_daemon_alive(daemon1.queue)
+        self.assert_daemon_alive(daemon2.queue)
 
     @patch_get_source
     def test_conf_env_variables(self):
@@ -274,7 +272,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.configure()
         self.installer.install(self.plugin_struct())
         daemon.start()
-        self.wait_for_daemon_alive(daemon.queue)
 
         expected = {
             constants.REST_HOST_KEY: str(daemon.rest_host),
@@ -311,7 +308,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.configure()
         self.installer.install(self.plugin_struct())
         daemon.start()
-        self.wait_for_daemon_alive(daemon.queue)
 
         # check the env file was properly sourced by querying the env
         # variable from the daemon process. this is done by a task
@@ -328,7 +324,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.configure()
         self.installer.install(self.plugin_struct())
         daemon.start()
-        self.wait_for_daemon_alive(daemon.queue)
 
         # check that cloudify.dispatch.dispatch 'execution_env' processing
         # works.
@@ -371,7 +366,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         self.installer.install(self.plugin_struct(),
                                deployment_id=DEPLOYMENT_ID)
         daemon.start()
-        self.wait_for_daemon_alive(daemon.queue)
 
         def log_and_assert(_message, _deployment_id=None):
             self.send_task(
