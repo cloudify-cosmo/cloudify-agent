@@ -333,10 +333,9 @@ def _run_script_cloudify_amqp(agent, params, script_path, timeout):
         password=broker_config.get('broker_pass', 'guest'),
         vhost=broker_config.get('broker_vhost', '/'))
     client.add_handler(handler)
-    consumer_thread = client.consume_in_thread()
+    client.consume_in_thread()
     result = handler.publish(task, routing_key='operation', timeout=timeout)
     client.close()
-    consumer_thread.join()
     if result.get('error'):
         raise NonRecoverableError(result['error'])
 
