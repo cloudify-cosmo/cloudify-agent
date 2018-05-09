@@ -17,7 +17,6 @@ import os
 
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
-from cloudify_agent import VIRTUALENV
 from cloudify_agent.api.pm.base import (
     GenericLinuxDaemonMixin,
     CronRespawnDaemonMixin

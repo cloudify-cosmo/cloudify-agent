@@ -26,6 +26,7 @@ from celery import Celery
 
 from cloudify import amqp_client, constants
 from cloudify.utils import LocalCommandRunner
+from cloudify.error_handling import deserialize_known_exception
 
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
@@ -330,6 +331,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.configure()
         self.installer.install(self.plugin_struct())
         daemon.start()
+        self.wait_for_daemon_alive(daemon.queue)
 
         expected = {
             constants.REST_HOST_KEY: str(daemon.rest_host),
@@ -340,10 +342,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
                     daemon.rest_port
             ),
             constants.AGENT_WORK_DIR_KEY: daemon.workdir,
-            utils.internal.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY:
-                utils.internal.get_storage_directory(),
-            utils.internal.CLOUDIFY_DAEMON_NAME_KEY: daemon.name,
-            utils.internal.CLOUDIFY_DAEMON_USER_KEY: daemon.user
         }
 
         def _get_env_var(var):
@@ -483,5 +481,10 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         client.add_handler(handler)
         with client:
             task = {'cloudify_task': {'kwargs': kwargs}}
-            return handler.publish(task, routing_key='operation',
-                                   timeout=timeout)
+            result = handler.publish(task, routing_key='operation',
+                                     timeout=timeout)
+        error = result.get('error')
+        if error:
+            raise deserialize_known_exception(error)
+        else:
+            return result.get('result')
