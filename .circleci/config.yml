@@ -3,7 +3,7 @@ version: 2
 defaults:
   - &test_defaults
     docker:
-      - image: rabbitmq:centos7
+      - image: rabbitmq:3.7.4
         ports:
           - "15672:15672"
           - "5672:5672"
