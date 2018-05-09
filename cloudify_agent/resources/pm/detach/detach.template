@@ -7,6 +7,4 @@
 {{ virtualenv_path }}/bin/python -m cloudify_agent.worker \
     --queue "{{ queue }}" \
     --max-workers {{ max_workers }} \
-    --log-file "{{ log_file }}" \
-    --log-level {{ log_level }} \
     --name "{{ name }}"
