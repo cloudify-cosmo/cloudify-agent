@@ -466,6 +466,22 @@ class Daemon(object):
         self._logger.info('Starting daemon with command: {0}'
                           .format(start_command))
         self._runner.run(start_command)
+        end_time = time.time() + timeout
+        while time.time() < end_time:
+            alive = utils.is_agent_alive(
+                self.queue,
+                username=self.broker_user,
+                password=self.broker_pass,
+                vhost=self.broker_vhost,
+                timeout=3
+            )
+            if alive:
+                return
+            self._logger.debug('Daemon {0} is still not running. '
+                               'Sleeping for {1} seconds...'
+                               .format(self.name, interval))
+            time.sleep(interval)
+        raise exceptions.DaemonStartupTimeout(timeout, self.name)
 
     def stop(self,
              interval=defaults.STOP_INTERVAL,
@@ -491,7 +507,7 @@ class Daemon(object):
         self._runner.run(stop_command)
         end_time = time.time() + timeout
         while time.time() < end_time:
-            self._logger.debug('Querying daemon {0} registered tasks'.format(
+            self._logger.debug('Querying status of daemon {0}'.format(
                 self.name))
             # make sure the status command also recognizes the
             # daemon is down
