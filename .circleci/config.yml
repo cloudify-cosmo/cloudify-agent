@@ -19,8 +19,8 @@ defaults:
           fi
 
       - run: |
-          pip install -U pip==9.0.1
-          pip install tox
+          pip install --user -U pip==9.0.1
+          pip install --user tox
           tox -e ${TOX_TEST}
 
 jobs:
