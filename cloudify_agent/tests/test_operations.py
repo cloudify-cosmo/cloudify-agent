@@ -117,12 +117,12 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
                 with patch('cloudify_agent.operations._http_rest_host',
                            http_rest_host):
                     env.execute('install', task_retries=0)
-            self.assert_daemon_alive(name=agent_name)
+            self.wait_for_daemon_alive(agent_name)
             agent_dict = self.get_agent_dict(env, 'new_agent_host')
             agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
             new_agent_name = agent_dict['name']
             self.assertNotEqual(new_agent_name, agent_name)
-            self.assert_daemon_alive(name=new_agent_name)
+            self.wait_for_daemon_alive(new_agent_name)
             env.execute('uninstall', task_retries=1)
             self.wait_for_daemon_dead(name=agent_name)
             self.wait_for_daemon_dead(name=new_agent_name)
