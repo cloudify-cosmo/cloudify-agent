@@ -24,7 +24,7 @@ from mock import patch
 
 from celery import Celery
 
-from cloudify import constants
+from cloudify import amqp_client, constants
 from cloudify.utils import LocalCommandRunner
 
 from cloudify_agent.api import utils
@@ -475,8 +475,17 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
                                                  deployment_id=deployment_id)
         kwargs = kwargs or {}
         kwargs['__cloudify_context'] = cloudify_context
-        return self.celery.send_task(
-            name='cloudify.dispatch.dispatch',
-            queue=queue,
-            args=args,
-            kwargs=kwargs).get(timeout=timeout)
+        handler = amqp_client.BlockingRequestResponseHandler(exchange=queue)
+        client = amqp_client.get_client(
+            username='guest',
+            password='guest',
+            vhost='/')
+        client.add_handler(handler)
+        consumer_thread = client.consume_in_thread()
+        task = {'cloudify_task': {'kwargs': kwargs}}
+        try:
+            return handler.publish(task, routing_key='operation',
+                                   timeout=timeout)
+        finally:
+            client.close()
+            consumer_thread.join()
