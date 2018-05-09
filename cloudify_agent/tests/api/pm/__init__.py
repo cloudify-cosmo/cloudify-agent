@@ -125,14 +125,6 @@ class BaseDaemonLiveTestCase(BaseTest):
             self.runner.run("pkill -9 -f 'cloudify_agent.worker'",
                             exit_on_failure=False)
 
-    def assert_registered_tasks(self, name):
-        destination = 'celery@{0}'.format(name)
-        c_inspect = self.celery.control.inspect(destination=[destination])
-        registered = c_inspect.registered() or {}
-        daemon_tasks = set(t for t in registered[destination]
-                           if 'celery' not in t)
-        self.assertEqual(set(BUILT_IN_TASKS), daemon_tasks)
-
     def _is_agent_alive(self, name, timeout=10):
         return utils.is_agent_alive(
             name,
@@ -231,8 +223,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.create()
         daemon.configure()
         daemon.start()
-        self.assert_daemon_alive(daemon.name)
-        self.assert_registered_tasks(daemon.name)
+        self.wait_for_daemon_alive(daemon.queue)
 
     def test_start_delete_amqp_queue(self):
         daemon = self.create_daemon()
@@ -304,8 +295,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         self.installer.install(self.plugin_struct())
         daemon.start()
         daemon.restart()
-        self.assert_daemon_alive(daemon.name)
-        self.assert_registered_tasks(daemon.name)
+        self.wait_for_daemon_alive(daemon.queue)
 
     def test_two_daemons(self):
         daemon1 = self.create_daemon()
@@ -313,16 +303,14 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon1.configure()
 
         daemon1.start()
-        self.assert_daemon_alive(daemon1.name)
-        self.assert_registered_tasks(daemon1.name)
+        self.wait_for_daemon_alive(daemon1.queue)
 
         daemon2 = self.create_daemon()
         daemon2.create()
         daemon2.configure()
 
         daemon2.start()
-        self.assert_daemon_alive(daemon2.name)
-        self.assert_registered_tasks(daemon2.name)
+        self.wait_for_daemon_alive(daemon1.queue)
 
     @patch_get_source
     def test_conf_env_variables(self):
