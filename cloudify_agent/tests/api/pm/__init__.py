@@ -22,8 +22,6 @@ from functools import wraps
 from mock import _get_target
 from mock import patch
 
-from celery import Celery
-
 from cloudify import amqp_client, constants
 from cloudify.utils import LocalCommandRunner
 from cloudify.error_handling import deserialize_known_exception
@@ -102,15 +100,11 @@ class BaseDaemonLiveTestCase(BaseTest):
 
     def setUp(self):
         super(BaseDaemonLiveTestCase, self).setUp()
-        self.celery = Celery(broker='amqp://',
-                             backend='amqp://')
         self.runner = LocalCommandRunner(logger=self.logger)
         self.daemons = []
 
     def tearDown(self):
         super(BaseDaemonLiveTestCase, self).tearDown()
-        if self.celery:
-            self.celery.close()
         if os.name == 'nt':
             # with windows we need to stop and remove the service
             nssm_path = utils.get_absolute_resource_path(
