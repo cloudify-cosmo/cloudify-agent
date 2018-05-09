@@ -29,6 +29,7 @@ from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.utils import (ManagerVersion,
                             get_local_rest_certificate)
 from cloudify.decorators import operation
+from cloudify.error_handling import deserialize_known_exception
 
 from cloudify_agent.celery_app import get_celery_app
 from cloudify_agent.api.plugins.installer import PluginInstaller
@@ -336,8 +337,9 @@ def _run_script_cloudify_amqp(agent, params, script_path, timeout):
     client.consume_in_thread()
     result = handler.publish(task, routing_key='operation', timeout=timeout)
     client.close()
-    if result.get('error'):
-        raise NonRecoverableError(result['error'])
+    error = result.get('error')
+    if error:
+        raise deserialize_known_exception(error)
 
 
 def _run_install_script(old_agent, timeout, manager_ip=None, manager_cert=None,
