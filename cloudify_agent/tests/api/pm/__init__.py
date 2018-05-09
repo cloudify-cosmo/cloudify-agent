@@ -368,6 +368,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.configure()
         self.installer.install(self.plugin_struct())
         daemon.start()
+        self.wait_for_daemon_alive(daemon.queue)
 
         # check the env file was properly sourced by querying the env
         # variable from the daemon process. this is done by a task
@@ -384,6 +385,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.configure()
         self.installer.install(self.plugin_struct())
         daemon.start()
+        self.wait_for_daemon_alive(daemon.queue)
 
         # check that cloudify.dispatch.dispatch 'execution_env' processing
         # works.
@@ -426,6 +428,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         self.installer.install(self.plugin_struct(),
                                deployment_id=DEPLOYMENT_ID)
         daemon.start()
+        self.wait_for_daemon_alive(daemon.queue)
 
         def log_and_assert(_message, _deployment_id=None):
             self.send_task(
