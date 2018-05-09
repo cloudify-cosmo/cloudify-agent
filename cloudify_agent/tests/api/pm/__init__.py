@@ -247,19 +247,19 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
 
     @patch_get_source
     def test_start_with_error(self):
-        log_file = 'H:\\WATT\\lo' if os.name == 'nt' else '/root/no_permission'
-        daemon = self.create_daemon(log_file=log_file)
+        workdir = 'H:\\WATT\\lo' if os.name == 'nt' else '/root/no_permission'
+        daemon = self.create_daemon(workdir=workdir)
         daemon.create()
         daemon.configure()
         try:
             daemon.start()
-            self.fail('Expected start operation to fail due to bad logfile')
+            self.fail('Expected start operation to fail due to bad workdir')
         except exceptions.DaemonError as e:
             if os.name == 'nt':
                 expected_error = "No such file or directory: '"
             else:
                 expected_error = "Permission denied: '{0}"
-            self.assertIn(expected_error.format(log_file), str(e))
+            self.assertIn(expected_error.format(workdir), str(e))
 
     def test_start_short_timeout(self):
         daemon = self.create_daemon()
