@@ -18,11 +18,9 @@ import json
 import os
 import time
 
-from pika.exceptions import AMQPConnectionError
 from cloudify.utils import (LocalCommandRunner,
                             setup_logger,
                             get_exec_tempdir)
-from cloudify import amqp_client
 from cloudify import constants
 from cloudify.exceptions import CommandExecutionException
 
@@ -551,37 +549,6 @@ class Daemon(object):
         """
 
         return '%I'
-
-    def _get_amqp_client(self):
-        if self.cluster:
-            # if the active manager dies during agent installation, only then
-            # we will need to look for the new active here; in most cases, the
-            # first one from the self.cluster list will be online, and that
-            # is equal to just using self.broker_url/self.broker_ip
-            err = None
-            for node_ip in self.cluster:
-                try:
-                    return amqp_client.create_client(
-                        amqp_host=node_ip,
-                        amqp_user=self.broker_user,
-                        amqp_pass=self.broker_pass,
-                        amqp_vhost=self.broker_vhost,
-                        ssl_enabled=self.broker_ssl_enabled,
-                        ssl_cert_path=self.broker_ssl_cert_path
-                    )
-                except AMQPConnectionError as err:
-                    continue
-            if err:
-                raise err
-        else:
-            return amqp_client.create_client(
-                amqp_host=self.broker_ip,
-                amqp_user=self.broker_user,
-                amqp_pass=self.broker_pass,
-                amqp_vhost=self.broker_vhost,
-                ssl_enabled=self.broker_ssl_enabled,
-                ssl_cert_path=self.broker_ssl_cert_path
-            )
 
     def _validate_autoscale(self):
         min_workers = self._params.get('min_workers')
