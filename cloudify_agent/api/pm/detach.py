@@ -138,5 +138,5 @@ class DetachedDaemon(CronRespawnDaemonMixin):
             extra_env_path=self.extra_env_path,
             storage_dir=utils.internal.get_storage_directory(self.user),
             workdir=self.workdir,
-            cluster_settings_path=self.cluster_settings_path
+            executable_temp_path=self.executable_temp_path,
         )
