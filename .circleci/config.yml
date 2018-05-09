@@ -19,7 +19,7 @@ defaults:
           fi
 
       - run: |
-          pip install --user -U pip==9.0.1
+          sudo pip install -U pip==9.0.1
           pip install --user tox
           tox -e ${TOX_TEST}
 
