@@ -105,9 +105,9 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
                              inputs=inputs)
 
         env.execute('install', task_retries=0)
-        self.assert_daemon_alive(name=agent_name)
+        self.wait_for_daemon_alive(agent_queue)
         agent_dict = self.get_agent_dict(env)
         agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
 
         env.execute('uninstall', task_retries=1)
-        self.wait_for_daemon_dead(name=agent_name)
+        self.wait_for_daemon_dead(agent_queue)

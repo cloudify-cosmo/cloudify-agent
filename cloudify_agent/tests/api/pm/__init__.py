@@ -269,7 +269,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.configure()
         daemon.start()
         daemon.stop()
-        self.assert_daemon_dead(daemon.name)
+        self.wait_for_daemon_dead(daemon.queue)
 
     def test_stop_short_timeout(self):
         daemon = self.create_daemon()
@@ -397,7 +397,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.configure()
         daemon.start()
         daemon.delete(force=True)
-        self.assert_daemon_dead(daemon.name)
+        self.wait_for_daemon_dead(daemon.queue)
 
     @patch_get_source
     def test_logging(self):
