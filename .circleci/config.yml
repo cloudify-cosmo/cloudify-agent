@@ -17,6 +17,7 @@ defaults:
 
       - run: |
           sudo apt-get install cron
+          /etc/init.d/cron start
 
       - run: |
           sudo pip install -U pip==9.0.1
