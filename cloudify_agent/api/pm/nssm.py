@@ -80,8 +80,6 @@ class NonSuckingServiceManagerDaemon(Daemon):
         pass
 
     def create_config(self):
-        env_string = self._create_env_string()
-
         # creating the installation script
         self._logger.debug('Rendering configuration script "{0}" from template'
                            .format(self.config_path))
@@ -100,7 +98,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
             max_workers=self.max_workers,
             virtualenv_path=VIRTUALENV,
             name=self.name,
-            custom_environment=env_string,
+            custom_environment=self._create_env_string(),
             executable_temp_path=self.executable_temp_path,
             startup_policy=self.startup_policy,
             failure_reset_timeout=self.failure_reset_timeout,
