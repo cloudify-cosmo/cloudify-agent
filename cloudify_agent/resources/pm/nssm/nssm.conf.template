@@ -20,8 +20,8 @@ MANAGER_FILE_SERVER_URL=https://{{ rest_host }}:{{ rest_port }}/resources ^
 AGENT_LOG_DIR="{{ log_dir }}" ^
 CLOUDIFY_DAEMON_USER={{ user }} ^
 AGENT_LOG_LEVEL="{{ log_level }}" ^
-AGENT_WORK_DIR="{{ workdir }}" ^
-CFY_EXEC_TEMP="{{ executable_temp_path }}" ^ {{ custom_environment }}
+AGENT_WORK_DIR="{{ workdir }}" ^ {{ custom_environment }} ^
+CFY_EXEC_TEMP="{{ executable_temp_path }}"
 
 "{{ nssm_path }}" set {{ name }} DisplayName "Cloudify Agent - {{ name }}"
 "{{ nssm_path }}" set {{ name }} Description "Cloudify Agent Service"

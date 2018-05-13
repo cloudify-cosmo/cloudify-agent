@@ -210,9 +210,9 @@ class TestCreateAgentAmqp(BaseTest):
             agent = operations.create_new_agent_config(new_agent)
             self.assertIn(new_agent['name'], agent['name'])
 
-    @patch('cloudify_agent.operations.get_celery_app', MagicMock())
-    @patch('cloudify_agent.api.utils.get_agent_registered',
-           MagicMock(return_value={'cloudify.dispatch.dispatch': {}}))
+    @patch('cloudify_agent.operations.amqp_client.get_client', MagicMock())
+    @patch('cloudify_agent.api.utils.is_agent_alive',
+           MagicMock(return_value=True))
     def test_create_agent_from_old_agent(self):
         with self._set_context():
             self._create_cloudify_agent_dir()
