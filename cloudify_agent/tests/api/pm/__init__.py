@@ -197,7 +197,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.create()
         daemon.configure()
         try:
-            daemon.start()
+            daemon.start(timeout=5)
             self.fail('Expected start operation to fail due to bad log_dir')
         except exceptions.DaemonError as e:
             if os.name == 'nt':
