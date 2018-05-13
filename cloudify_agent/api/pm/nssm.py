@@ -101,7 +101,8 @@ class NonSuckingServiceManagerDaemon(Daemon):
             virtualenv_path=VIRTUALENV,
             name=self.name,
             custom_environment=env_string,
-            executable_temp_path=self.executable_temp_path
+            executable_temp_path=self.executable_temp_path,
+            startup_policy=self.startup_policy
         )
 
         self._logger.debug('Rendered configuration script: {0}'.format(
