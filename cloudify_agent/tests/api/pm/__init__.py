@@ -15,14 +15,11 @@
 
 import os
 import nose.tools
-import time
 import inspect
 import types
 from functools import wraps
 from mock import _get_target
 from mock import patch
-
-from celery import Celery
 
 from cloudify import amqp_client, constants
 from cloudify.utils import LocalCommandRunner
@@ -102,15 +99,11 @@ class BaseDaemonLiveTestCase(BaseTest):
 
     def setUp(self):
         super(BaseDaemonLiveTestCase, self).setUp()
-        self.celery = Celery(broker='amqp://',
-                             backend='amqp://')
         self.runner = LocalCommandRunner(logger=self.logger)
         self.daemons = []
 
     def tearDown(self):
         super(BaseDaemonLiveTestCase, self).tearDown()
-        if self.celery:
-            self.celery.close()
         if os.name == 'nt':
             # with windows we need to stop and remove the service
             nssm_path = utils.get_absolute_resource_path(
@@ -124,52 +117,6 @@ class BaseDaemonLiveTestCase(BaseTest):
         else:
             self.runner.run("pkill -9 -f 'cloudify_agent.worker'",
                             exit_on_failure=False)
-
-    def assert_registered_tasks(self, name):
-        destination = 'celery@{0}'.format(name)
-        c_inspect = self.celery.control.inspect(destination=[destination])
-        registered = c_inspect.registered() or {}
-        daemon_tasks = set(t for t in registered[destination]
-                           if 'celery' not in t)
-        self.assertEqual(set(BUILT_IN_TASKS), daemon_tasks)
-
-    def _is_agent_alive(self, name, timeout=10):
-        return utils.is_agent_alive(
-            name,
-            username='guest',
-            password='guest',
-            vhost='/',
-            timeout=timeout)
-
-    def assert_daemon_alive(self, name):
-        self.assertTrue(self._is_agent_alive(name))
-
-    def assert_daemon_dead(self, name):
-        self.assertFalse(self._is_agent_alive(name))
-
-    def wait_for_daemon_alive(self, name, timeout=10):
-        deadline = time.time() + timeout
-
-        while time.time() < deadline:
-            if self._is_agent_alive(name, timeout=1):
-                return
-            self.logger.info('Waiting for daemon {0} to start...'
-                             .format(name))
-            time.sleep(5)
-        raise RuntimeError('Failed waiting for daemon {0} to start. Waited '
-                           'for {1} seconds'.format(name, timeout))
-
-    def wait_for_daemon_dead(self, name, timeout=10):
-        deadline = time.time() + timeout
-
-        while time.time() < deadline:
-            if not self._is_agent_alive(name, timeout=1):
-                return
-            self.logger.info('Waiting for daemon {0} to stop...'
-                             .format(name))
-            time.sleep(1)
-        raise RuntimeError('Failed waiting for daemon {0} to stop. Waited '
-                           'for {1} seconds'.format(name, timeout))
 
     def get_agent_dict(self, env, name='host'):
         node_instances = env.storage.get_node_instances()
@@ -231,8 +178,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.create()
         daemon.configure()
         daemon.start()
-        self.assert_daemon_alive(daemon.name)
-        self.assert_registered_tasks(daemon.name)
 
     def test_start_delete_amqp_queue(self):
         daemon = self.create_daemon()
@@ -247,19 +192,19 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
 
     @patch_get_source
     def test_start_with_error(self):
-        log_file = 'H:\\WATT\\lo' if os.name == 'nt' else '/root/no_permission'
-        daemon = self.create_daemon(log_file=log_file)
+        log_dir = 'H:\\WATT\\lo' if os.name == 'nt' else '/root/no_permission'
+        daemon = self.create_daemon(log_dir=log_dir)
         daemon.create()
         daemon.configure()
         try:
             daemon.start()
-            self.fail('Expected start operation to fail due to bad logfile')
+            self.fail('Expected start operation to fail due to bad log_dir')
         except exceptions.DaemonError as e:
             if os.name == 'nt':
                 expected_error = "No such file or directory: '"
             else:
                 expected_error = "Permission denied: '{0}"
-            self.assertIn(expected_error.format(log_file), str(e))
+            self.assertIn(expected_error.format(log_dir), str(e))
 
     def test_start_short_timeout(self):
         daemon = self.create_daemon()
@@ -284,7 +229,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.configure()
         daemon.start()
         daemon.stop()
-        self.assert_daemon_dead(daemon.name)
+        self.wait_for_daemon_dead(daemon.queue)
 
     def test_stop_short_timeout(self):
         daemon = self.create_daemon()
@@ -304,8 +249,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         self.installer.install(self.plugin_struct())
         daemon.start()
         daemon.restart()
-        self.assert_daemon_alive(daemon.name)
-        self.assert_registered_tasks(daemon.name)
 
     def test_two_daemons(self):
         daemon1 = self.create_daemon()
@@ -313,16 +256,14 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon1.configure()
 
         daemon1.start()
-        self.assert_daemon_alive(daemon1.name)
-        self.assert_registered_tasks(daemon1.name)
+        self.assert_daemon_alive(daemon1.queue)
 
         daemon2 = self.create_daemon()
         daemon2.create()
         daemon2.configure()
 
         daemon2.start()
-        self.assert_daemon_alive(daemon2.name)
-        self.assert_registered_tasks(daemon2.name)
+        self.assert_daemon_alive(daemon2.queue)
 
     @patch_get_source
     def test_conf_env_variables(self):
@@ -331,7 +272,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.configure()
         self.installer.install(self.plugin_struct())
         daemon.start()
-        self.wait_for_daemon_alive(daemon.queue)
 
         expected = {
             constants.REST_HOST_KEY: str(daemon.rest_host),
@@ -413,7 +353,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.configure()
         daemon.start()
         daemon.delete(force=True)
-        self.assert_daemon_dead(daemon.name)
+        self.wait_for_daemon_dead(daemon.queue)
 
     @patch_get_source
     def test_logging(self):

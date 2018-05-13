@@ -90,6 +90,6 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             rest_port=self.rest_port,
             local_rest_cert_file=self.local_rest_cert_file,
             log_level=self.log_level.upper(),
-            log_dir=self.workdir,
+            log_dir=self.log_dir,
             executable_temp_path=self.executable_temp_path,
         )

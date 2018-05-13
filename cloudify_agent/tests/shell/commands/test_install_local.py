@@ -18,8 +18,6 @@ import tempfile
 import uuid
 import shutil
 
-from celery import Celery
-
 from cloudify import ctx
 from cloudify.utils import LocalCommandRunner
 from cloudify.state import current_ctx
@@ -39,13 +37,9 @@ class TestInstaller(BaseTest):
         new_ctx = mock_context()
         current_ctx.set(new_ctx)
 
-        celery = Celery()
-        worker_name = 'celery@{0}'.format(agent_config['name'])
-        inspect = celery.control.inspect(destination=[worker_name])
-
-        self.assertFalse(inspect.active())
+        self.assert_daemon_dead(agent_config['name'])
         create_agent(agent_config=agent_config)
-        self.assertTrue(inspect.active())
+        self.wait_for_daemon_alive(agent_config['name'])
 
         new_agent = ctx.instance.runtime_properties['cloudify_agent']
 
@@ -58,7 +52,7 @@ class TestInstaller(BaseTest):
         runner.run(command_format.format('stop'))
         runner.run(command_format.format('delete'))
 
-        self.assertFalse(inspect.active())
+        self.assert_daemon_dead(agent_config['name'])
         return new_agent
 
     def _get_agent_config(self):
