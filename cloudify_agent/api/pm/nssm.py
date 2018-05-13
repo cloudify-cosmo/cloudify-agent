@@ -102,7 +102,9 @@ class NonSuckingServiceManagerDaemon(Daemon):
             name=self.name,
             custom_environment=env_string,
             executable_temp_path=self.executable_temp_path,
-            startup_policy=self.startup_policy
+            startup_policy=self.startup_policy,
+            failure_reset_timeout=self.failure_reset_timeout,
+            failure_restart_delay=self.failure_restart_delay
         )
 
         self._logger.debug('Rendered configuration script: {0}'.format(
