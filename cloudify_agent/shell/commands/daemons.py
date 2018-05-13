@@ -153,11 +153,11 @@ from cloudify_agent.shell.decorators import handle_failures
                    'stored. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_PID_FILE),
               envvar=env.CLOUDIFY_DAEMON_PID_FILE)
-@click.option('--log-file',
-              help='Path to a location where the daemon log file will be '
+@click.option('--log-dir',
+              help='Path to a location where the daemon log files will be '
                    'stored. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_LOG_FILE),
-              envvar=env.CLOUDIFY_DAEMON_LOG_FILE)
+              .format(env.CLOUDIFY_DAEMON_LOG_DIR),
+              envvar=env.CLOUDIFY_DAEMON_LOG_DIR)
 @click.option('--extra-env-path',
               help='Path to an environment file to be added to the daemon. ['
                    'env {0}]'

@@ -158,6 +158,8 @@ class CloudifyAgentConfig(dict):
 
     @staticmethod
     def _get_process_management(runner):
+        if not runner:
+            return 'init.d'
         try:
             runner.run('which systemctl')
         except FabricCommandExecutionException as e:

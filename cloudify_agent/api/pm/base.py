@@ -13,6 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import errno
 import getpass
 import json
 import os
@@ -28,6 +29,11 @@ from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import defaults
+
+try:
+    import psutil
+except ImportError:
+    psutil = None
 
 
 AGENT_IS_REGISTERED_TIMEOUT = 1
@@ -151,9 +157,9 @@ class Daemon(object):
 
         log level of the daemon process itself. defaults to debug.
 
-    ``log_file``:
+    ``log_dir``:
 
-        location of the daemon log file. defaults to <workdir>/<name>.log
+        location of the directory to store daemon logs. defaults to workdir
 
     ``pid_file``:
 
@@ -270,9 +276,7 @@ class Daemon(object):
 
         self.extra_env_path = params.get('extra_env_path')
         self.log_level = params.get('log_level') or defaults.LOG_LEVEL
-        self.log_file = params.get(
-            'log_file') or os.path.join(self.workdir,
-                                        '{0}.log'.format(self.name))
+        self.log_dir = params.get('log_dir') or self.workdir
         self.pid_file = params.get(
             'pid_file') or os.path.join(self.workdir,
                                         '{0}.pid'.format(self.name))
@@ -331,8 +335,25 @@ class Daemon(object):
 
     def _is_daemon_running(self):
         self._logger.debug('Checking if agent daemon is running...')
-        # TODO: Validate that the daemon is not running using the PID file
-        return False
+        try:
+            with open(self.pid_file) as f:
+                pid = int(f.read())
+        except (IOError, ValueError):
+            return False
+        if psutil:
+            return psutil.pid_exists(pid)
+        if os.name == 'nt':
+            # without psutil, we have no way to check.
+            return False
+        # on linux, kill with signal 0 only succeeds if the process exists.
+        # if we get a permission error, then that also must mean the process
+        # exists, and we don't have the privileges to access it
+        try:
+            os.kill(pid, 0)
+        except OSError as e:
+            return e.errno == errno.EPERM
+        else:
+            return True
 
     ########################################################################
     # the following methods must be implemented by the sub-classes as they
@@ -446,6 +467,22 @@ class Daemon(object):
         self._logger.info('Starting daemon with command: {0}'
                           .format(start_command))
         self._runner.run(start_command)
+        end_time = time.time() + timeout
+        while time.time() < end_time:
+            alive = utils.is_agent_alive(
+                self.queue,
+                username=self.broker_user,
+                password=self.broker_pass,
+                vhost=self.broker_vhost,
+                timeout=3
+            )
+            if alive:
+                return
+            self._logger.debug('Daemon {0} is still not running. '
+                               'Sleeping for {1} seconds...'
+                               .format(self.name, interval))
+            time.sleep(interval)
+        raise exceptions.DaemonStartupTimeout(timeout, self.name)
 
     def stop(self,
              interval=defaults.STOP_INTERVAL,
@@ -471,7 +508,7 @@ class Daemon(object):
         self._runner.run(stop_command)
         end_time = time.time() + timeout
         while time.time() < end_time:
-            self._logger.debug('Querying daemon {0} registered tasks'.format(
+            self._logger.debug('Querying status of daemon {0}'.format(
                 self.name))
             # make sure the status command also recognizes the
             # daemon is down
