@@ -1,6 +1,4 @@
-https://github.com/cloudify-cosmo/cloudify-rest-client/archive/master.zip
-https://github.com/cloudify-cosmo/cloudify-plugins-common/archive/master.zip
-https://github.com/cloudify-cosmo/cloudify-script-plugin/archive/1.5.3.zip
+https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip
 
 # The Diamond plugin is not included as a dependency in the setup.py since it breaks
 # backwards compatibility with blueprints that require using an older version of the diamond-plugin.
@@ -8,4 +6,4 @@ https://github.com/cloudify-cosmo/cloudify-script-plugin/archive/1.5.3.zip
 # requires having compilation tools such as gcc, that we could not assume exist on any agent machine.
 # Since the actual diamond version is consistent across all diamond-plugin versions,
 # it would allow us to install any version of the diamond plugin, without needing gcc to recompile diamond.
-https://github.com/cloudify-cosmo/cloudify-diamond-plugin/archive/1.3.6.zip
+https://github.com/cloudify-cosmo/cloudify-diamond-plugin/archive/1.3.9.zip
