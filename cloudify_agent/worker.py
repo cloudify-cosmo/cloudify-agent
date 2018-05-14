@@ -14,14 +14,18 @@
 # limitations under the License.
 ############
 
+import os
+import sys
 import time
 import logging
 import argparse
+import traceback
 
 from cloudify import dispatch, exceptions
 from cloudify.logs import setup_agent_logger
 from cloudify.amqp_client import AMQPConnection, TaskConsumer
 from cloudify.error_handling import serialize_known_exception
+from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
 
 
@@ -141,7 +145,34 @@ class ServiceTaskConsumer(TaskConsumer):
         factory.save(daemon)
 
 
+def _setup_excepthook(daemon_name):
+    # Setting a new exception hook to catch any exceptions
+    # on agent startup and write them to a file. This file
+    # is later read for querying if celery has started successfully.
+    current_excepthook = sys.excepthook
+
+    def new_excepthook(exception_type, value, the_traceback):
+        # use the storage directory because the work directory might have
+        # been created under a different user, in which case we don't have
+        # permissions to write to it.
+        storage = utils.internal.get_daemon_storage_dir()
+        if not os.path.exists(storage):
+            os.makedirs(storage)
+        error_dump_path = os.path.join(
+            utils.internal.get_daemon_storage_dir(),
+            '{0}.err'.format(daemon_name))
+        with open(error_dump_path, 'w') as f:
+            f.write('Type: {0}\n'.format(exception_type))
+            f.write('Value: {0}\n'.format(value))
+            traceback.print_tb(the_traceback, file=f)
+        current_excepthook(exception_type, value, the_traceback)
+
+    sys.excepthook = new_excepthook
+
+
 def make_amqp_worker(args):
+    if args.name:
+        _setup_excepthook(args.name)
     _setup_logger(args.name)
 
     handlers = [

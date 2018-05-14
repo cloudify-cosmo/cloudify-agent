@@ -102,7 +102,8 @@ class NonSuckingServiceManagerDaemon(Daemon):
             executable_temp_path=self.executable_temp_path,
             startup_policy=self.startup_policy,
             failure_reset_timeout=self.failure_reset_timeout,
-            failure_restart_delay=self.failure_restart_delay
+            failure_restart_delay=self.failure_restart_delay,
+            storage_dir=utils.internal.get_storage_directory(self.user),
         )
 
         self._logger.debug('Rendered configuration script: {0}'.format(

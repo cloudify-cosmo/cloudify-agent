@@ -149,7 +149,7 @@ class TestCreateAgentAmqp(BaseTest):
             'windows': False,
             'package_url': 'http://10.0.4.46:53229/packages/agents/'
                            'ubuntu-trusty-agent.tar.gz',
-            'version': '3.4',
+            'version': '4.4',
             'broker_config': {
                 'broker_ip': '10.0.4.46',
                 'broker_pass': 'test_pass',
@@ -210,10 +210,10 @@ class TestCreateAgentAmqp(BaseTest):
             agent = operations.create_new_agent_config(new_agent)
             self.assertIn(new_agent['name'], agent['name'])
 
-    @patch('cloudify_agent.operations.amqp_client.get_client', MagicMock())
+    @patch('cloudify_agent.operations._run_script_cloudify_amqp')
     @patch('cloudify_agent.api.utils.is_agent_alive',
            MagicMock(return_value=True))
-    def test_create_agent_from_old_agent(self):
+    def test_create_agent_from_old_agent(self, *mocks):
         with self._set_context():
             self._create_cloudify_agent_dir()
             old_name = ctx.instance.runtime_properties[

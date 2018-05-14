@@ -457,7 +457,6 @@ class Daemon(object):
         startup.
 
         """
-
         if delete_amqp_queue:
             self._logger.warning('Deprecation warning:\n'
                                  'The `delete_amqp_queue` param is no '
@@ -482,6 +481,7 @@ class Daemon(object):
                                'Sleeping for {1} seconds...'
                                .format(self.name, interval))
             time.sleep(interval)
+        self._verify_no_error()
         raise exceptions.DaemonStartupTimeout(timeout, self.name)
 
     def stop(self,
@@ -521,6 +521,7 @@ class Daemon(object):
                                'Sleeping for {1} seconds...'
                                .format(self.name, interval))
             time.sleep(interval)
+        self._verify_no_error()
         raise exceptions.DaemonShutdownTimeout(timeout, self.name)
 
     def restart(self,
@@ -563,6 +564,21 @@ class Daemon(object):
         itself and therefore, can be used for cleanup purposes.
         """
         pass
+
+    def _verify_no_error(self):
+        error_dump_path = os.path.join(
+            utils.internal.get_storage_directory(self.user),
+            '{0}.err'.format(self.name))
+
+        # this means the agent worker had an uncaught
+        # exception and it wrote its content
+        # to the file above because of our custom exception
+        # handler (see worker.py)
+        if os.path.exists(error_dump_path):
+            with open(error_dump_path) as f:
+                error = f.read()
+            os.remove(error_dump_path)
+            raise exceptions.DaemonError(error)
 
     def _validate_autoscale(self):
         min_workers = self._params.get('min_workers')
