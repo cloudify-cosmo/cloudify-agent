@@ -22,7 +22,7 @@ install_requires = [
     'click==6.7',
     'celery==3.1.17',
     'jinja2==2.7.2',
-    'pywinrm==0.0.3',
+    'pywinrm==0.3.0',
     'paramiko==1.18.3',
     'fabric==1.13.1',
     'wagon[venv]==0.6.3',
