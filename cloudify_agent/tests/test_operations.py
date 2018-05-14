@@ -106,7 +106,7 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
 
         # Necessary to patch, because by default https will be used
         def file_server_url(*args, **kwargs):
-            return '{0}/resources'.format(http_rest_host())
+            return '{0}/resources'.format(http_rest_host({}))
 
         with self._manager_env():
             with patch('cloudify_agent.api.utils.get_manager_file_server_url',
