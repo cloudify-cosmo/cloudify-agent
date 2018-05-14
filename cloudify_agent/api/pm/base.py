@@ -23,7 +23,6 @@ from cloudify.utils import (LocalCommandRunner,
                             setup_logger,
                             get_exec_tempdir)
 from cloudify import constants
-from cloudify.logs import setup_agent_logger
 from cloudify.exceptions import CommandExecutionException
 
 from cloudify_agent import VIRTUALENV
