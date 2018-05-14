@@ -192,9 +192,11 @@ end;
 
 function runVenvInitialization(): Boolean;
 var
+  VirtualenvArgs: String;
   ErrorCode: Integer;
 begin
-  Exec(getVenvPath, Expandconstant('--clear "{app}"'), Expandconstant('{tmp}'), SW_SHOW, ewWaituntilterminated, ErrorCode);
+  VirtualenvArgs := ExpandConstant('--no-download --clear "{app}"')
+  Exec(getVenvPath, VirtualenvArgs, Expandconstant('{tmp}'), SW_SHOW, ewWaituntilterminated, ErrorCode);
 
   if Errorcode <> 0 then
     Result := False
