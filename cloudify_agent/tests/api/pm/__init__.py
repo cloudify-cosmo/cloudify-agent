@@ -192,7 +192,10 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
 
     @patch_get_source
     def test_start_with_error(self):
-        log_dir = 'H:\\WATT\\lo' if os.name == 'nt' else '/root/no_permission'
+        if os.name == 'nt':
+            log_dir = 'H:\\WATT_NONEXISTENT_DIR\\lo'
+        else:
+            log_dir = '/root/no_permission'
         daemon = self.create_daemon(log_dir=log_dir)
         daemon.create()
         daemon.configure()
@@ -201,7 +204,9 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             self.fail('Expected start operation to fail due to bad log_dir')
         except exceptions.DaemonError as e:
             if os.name == 'nt':
-                expected_error = "No such file or directory: '"
+                # windows messages vary, and will be escaped, so let's just
+                # check that the dir name is there
+                expected_error = 'WATT_NONEXISTENT_DIR'
             else:
                 expected_error = "Permission denied: '{0}"
             self.assertIn(expected_error.format(log_dir), str(e))

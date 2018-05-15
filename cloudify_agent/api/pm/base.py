@@ -30,11 +30,6 @@ from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import defaults
 
-try:
-    import psutil
-except ImportError:
-    psutil = None
-
 
 AGENT_IS_REGISTERED_TIMEOUT = 1
 
@@ -335,16 +330,25 @@ class Daemon(object):
 
     def _is_daemon_running(self):
         self._logger.debug('Checking if agent daemon is running...')
+        alive = utils.is_agent_alive(
+            self.queue,
+            username=self.broker_user,
+            password=self.broker_pass,
+            vhost=self.broker_vhost,
+            timeout=3
+        )
+        if alive:
+            return True
+        if os.name == 'nt':
+            # windows has no pidfiles, so if the agent wasn't alive via
+            # the amqp check, we must assume it's down.
+            return False
         try:
             with open(self.pid_file) as f:
                 pid = int(f.read())
         except (IOError, ValueError):
             return False
-        if psutil:
-            return psutil.pid_exists(pid)
-        if os.name == 'nt':
-            # without psutil, we have no way to check.
-            return False
+
         # on linux, kill with signal 0 only succeeds if the process exists.
         # if we get a permission error, then that also must mean the process
         # exists, and we don't have the privileges to access it
@@ -468,14 +472,7 @@ class Daemon(object):
         self._runner.run(start_command)
         end_time = time.time() + timeout
         while time.time() < end_time:
-            alive = utils.is_agent_alive(
-                self.queue,
-                username=self.broker_user,
-                password=self.broker_pass,
-                vhost=self.broker_vhost,
-                timeout=3
-            )
-            if alive:
+            if self._is_daemon_running():
                 return
             self._logger.debug('Daemon {0} is still not running. '
                                'Sleeping for {1} seconds...'

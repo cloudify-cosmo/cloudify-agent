@@ -89,7 +89,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
             queue=self.queue,
             nssm_path=self.nssm_path,
             log_level=self.log_level.upper(),
-            log_dir=self.workdir,
+            log_dir=self.log_dir,
             workdir=self.workdir,
             user=self.user,
             rest_host=self.rest_host,
