@@ -26,6 +26,7 @@ import unittest2 as unittest
 from cloudify import constants, mocks
 from cloudify.state import current_ctx
 from cloudify.utils import setup_logger
+from cloudify.amqp_client import get_client
 
 from cloudify_agent.api import utils as agent_utils
 from cloudify_agent.api.defaults import (SSL_CERTS_TARGET_DIR,
@@ -155,9 +156,7 @@ class BaseTest(unittest.TestCase):
     def _is_agent_alive(self, name, timeout=10):
         return agent_utils.is_agent_alive(
             name,
-            username='guest',
-            password='guest',
-            vhost='/',
+            get_client(),
             timeout=timeout)
 
     def assert_daemon_alive(self, name):
