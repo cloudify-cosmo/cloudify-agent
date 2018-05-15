@@ -329,9 +329,8 @@ class Daemon(object):
         self._validate_autoscale()
         self._validate_host()
 
-    def _is_daemon_running(self):
-        self._logger.debug('Checking if agent daemon is running...')
-        client = get_client(
+    def _get_client(self):
+        return get_client(
             self.broker_ip,
             self.broker_user,
             self.broker_pass,
@@ -340,7 +339,10 @@ class Daemon(object):
             self.broker_ssl_enabled,
             self.broker_ssl_cert_path
         )
-        if utils.is_agent_alive(self.queue, client, timeout=3):
+
+    def _is_daemon_running(self):
+        self._logger.debug('Checking if agent daemon is running...')
+        if utils.is_agent_alive(self.queue, self._get_client(), timeout=3):
             return True
         if os.name == 'nt':
             # windows has no pidfiles, so if the agent wasn't alive via
