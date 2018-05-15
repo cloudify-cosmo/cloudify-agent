@@ -27,7 +27,6 @@ node_templates:
               broker_ip: 127.0.0.1
               broker_config:
                 broker_ip: 127.0.0.1
-                broker_ssl_enabled: false
               extra:
                 ssl_cert_path: { get_input: ssl_cert_path}
                 install_with_sudo: true
