@@ -38,9 +38,6 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
         super(SystemDDaemon, self).configure()
         self._runner.run('sudo systemctl daemon-reload')
 
-    def start(self, *args, **kwargs):
-        self._runner.run(self.start_command())
-
     def _delete(self):
         self._runner.run(self._systemctl_command('disable'))
 
