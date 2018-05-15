@@ -23,6 +23,7 @@ from cloudify.utils import (LocalCommandRunner,
                             setup_logger,
                             get_exec_tempdir)
 from cloudify import constants
+from cloudify.amqp_client import get_client
 from cloudify.exceptions import CommandExecutionException
 
 from cloudify_agent import VIRTUALENV
@@ -328,16 +329,20 @@ class Daemon(object):
         self._validate_autoscale()
         self._validate_host()
 
+    def _get_client(self):
+        return get_client(
+            self.broker_ip,
+            self.broker_user,
+            self.broker_pass,
+            self.broker_port,
+            self.broker_vhost,
+            self.broker_ssl_enabled,
+            self.broker_ssl_cert_path
+        )
+
     def _is_daemon_running(self):
         self._logger.debug('Checking if agent daemon is running...')
-        alive = utils.is_agent_alive(
-            self.queue,
-            username=self.broker_user,
-            password=self.broker_pass,
-            vhost=self.broker_vhost,
-            timeout=3
-        )
-        if alive:
+        if utils.is_agent_alive(self.queue, self._get_client(), timeout=3):
             return True
         if os.name == 'nt':
             # windows has no pidfiles, so if the agent wasn't alive via
