@@ -30,11 +30,6 @@ from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import defaults
 
-try:
-    import psutil
-except ImportError:
-    psutil = None
-
 
 AGENT_IS_REGISTERED_TIMEOUT = 1
 
@@ -353,8 +348,7 @@ class Daemon(object):
                 pid = int(f.read())
         except (IOError, ValueError):
             return False
-        if psutil:
-            return psutil.pid_exists(pid)
+
         # on linux, kill with signal 0 only succeeds if the process exists.
         # if we get a permission error, then that also must mean the process
         # exists, and we don't have the privileges to access it
