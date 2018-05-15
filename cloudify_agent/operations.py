@@ -324,9 +324,6 @@ def _run_script_celery(agent, params, script_path, timeout):
 
 def _get_amqp_client(agent):
     broker_config = agent.get('broker_config', {})
-    # TODO: Remove!
-    ctx.logger.error('#' * 80)
-    ctx.logger.error('Broker config: {0}'.format(broker_config))
     return amqp_client.get_client(
         amqp_host=broker_config.get('broker_ip'),
         amqp_user=broker_config.get('broker_user'),

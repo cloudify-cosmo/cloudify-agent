@@ -26,6 +26,7 @@ from cloudify import mocks
 
 from cloudify.state import current_ctx
 from cloudify.workflows import local
+from cloudify.amqp_client import get_client
 
 from cloudify_agent import operations
 from cloudify_agent.api import utils
@@ -108,6 +109,10 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
         def file_server_url(*args, **kwargs):
             return '{0}/resources'.format(http_rest_host({}))
 
+        # Need to patch, to avoid broker_ssl_enabled being True
+        def get_amqp_client(agent):
+            return get_client()
+
         with self._manager_env():
             with patch('cloudify_agent.api.utils.get_manager_file_server_url',
                        file_server_url):
@@ -116,7 +121,9 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
                                      inputs=inputs)
                 with patch('cloudify_agent.operations._http_rest_host',
                            http_rest_host):
-                    env.execute('install', task_retries=0)
+                    with patch('cloudify_agent.operations._get_amqp_client',
+                               get_amqp_client):
+                        env.execute('install', task_retries=0)
             agent_dict = self.get_agent_dict(env, 'new_agent_host')
             agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
             new_agent_name = agent_dict['name']
