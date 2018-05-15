@@ -330,10 +330,7 @@ def _run_script_cloudify_amqp(agent, params, script_path, timeout):
     task = {'cloudify_task': {'kwargs': params}}
     handler = amqp_client.BlockingRequestResponseHandler(
         exchange=agent['queue'])
-    client = amqp_client.get_client(
-        username=broker_config.get('broker_user', 'guest'),
-        password=broker_config.get('broker_pass', 'guest'),
-        vhost=broker_config.get('broker_vhost', '/'))
+    client = amqp_client.get_client(**broker_config)
     client.add_handler(handler)
     with client:
         result = handler.publish(task, routing_key='operation',
@@ -435,11 +432,7 @@ def _validate_celery(agent):
 
 def _validate_cloudify_amqp(agent):
     broker_config = agent.get('broker_config', {})
-    return utils.is_agent_alive(
-        agent['name'],
-        username=broker_config.get('broker_user', 'guest'),
-        password=broker_config.get('broker_pass', 'guest'),
-        vhost=broker_config.get('broker_vhost', '/'))
+    return utils.is_agent_alive(agent['name'], **broker_config)
 
 
 def _uses_cloudify_amqp(agent):
