@@ -322,15 +322,27 @@ def _run_script_celery(agent, params, script_path, timeout):
             os.remove(script_path)
 
 
+def _get_amqp_client(agent):
+    broker_config = agent.get('broker_config', {})
+    return amqp_client.get_client(
+        amqp_host=broker_config.get('broker_ip'),
+        amqp_user=broker_config.get('broker_user'),
+        amqp_port=broker_config.get('broker_port'),
+        amqp_pass=broker_config.get('broker_pass'),
+        amqp_vhost=broker_config.get('broker_vhost'),
+        ssl_enabled=broker_config.get('broker_ssl_enabled'),
+        ssl_cert_path=broker_config.get('broker_ssl_cert')
+    )
+
+
 def _run_script_cloudify_amqp(agent, params, script_path, timeout):
     if not _validate_cloudify_amqp(agent):
         raise RecoverableError('Agent is not responding')
-    broker_config = agent.get('broker_config', {})
 
     task = {'cloudify_task': {'kwargs': params}}
     handler = amqp_client.BlockingRequestResponseHandler(
         exchange=agent['queue'])
-    client = amqp_client.get_client(**broker_config)
+    client = _get_amqp_client(agent)
     client.add_handler(handler)
     with client:
         result = handler.publish(task, routing_key='operation',
@@ -431,8 +443,8 @@ def _validate_celery(agent):
 
 
 def _validate_cloudify_amqp(agent):
-    broker_config = agent.get('broker_config', {})
-    return utils.is_agent_alive(agent['name'], **broker_config)
+    client = _get_amqp_client(agent)
+    return utils.is_agent_alive(agent['name'], client)
 
 
 def _uses_cloudify_amqp(agent):
