@@ -414,7 +414,7 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
     new_agent = agents['new']
     ctx.logger.info('Installed agent {0}'.format(new_agent['name']))
 
-    result = _validate_current_amqp()
+    result = _validate_current_amqp(new_agent)
     if not result['agent_alive']:
         raise RecoverableError('New agent did not start and connect')
 
@@ -454,8 +454,7 @@ def _uses_cloudify_amqp(agent):
     return version and ManagerVersion(version) >= ManagerVersion('4.4')
 
 
-def _validate_old_amqp():
-    agent = ctx.instance.runtime_properties['cloudify_agent']
+def _validate_old_amqp(agent):
     validator = _validate_cloudify_amqp if _uses_cloudify_amqp(agent) \
         else _validate_celery
     try:
@@ -474,9 +473,7 @@ def _validate_old_amqp():
     }
 
 
-def _validate_current_amqp():
-    _create_broker_config()
-    agent = ctx.instance.runtime_properties['cloudify_agent']
+def _validate_current_amqp(agent):
     try:
         ctx.logger.info('Trying current AMQP...')
         is_alive = _validate_cloudify_amqp(agent)
@@ -517,7 +514,8 @@ def validate_agent_amqp(current_amqp=True, manager_ip=None,
     agent = ctx.instance.runtime_properties['cloudify_agent']
     _update_broker_config(agent, manager_ip, manager_certificate)
 
-    result = _validate_current_amqp() if current_amqp else _validate_old_amqp()
+    validator = _validate_current_amqp if current_amqp else _validate_old_amqp
+    result = validator(agent)
 
     result['timestamp'] = time.time()
     ctx.instance.runtime_properties['agent_status'] = result
