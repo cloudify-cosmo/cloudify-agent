@@ -374,7 +374,7 @@ def _run_install_script(old_agent, timeout, manager_ip=None, manager_cert=None,
     return {'old': old_agent, 'new': created_agent}
 
 
-def _validate_agent():
+def _validate_agent(transfer_mode=False):
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
@@ -383,15 +383,17 @@ def _validate_agent():
         raise NonRecoverableError(
             'broker_config key not available in cloudify_agent'
         )
-    if 'agent_status' not in ctx.instance.runtime_properties:
-        raise NonRecoverableError(
-            ('agent_status key not available in runtime_properties, '
-             'validation needs to be performed before new agent installation'))
-    status = ctx.instance.runtime_properties['agent_status']
-    if not status['agent_alive_crossbroker']:
-        raise NonRecoverableError(
-            ('Last validation attempt has shown that agent is dead. '
-             'Rerun validation.'))
+    if not transfer_mode:
+        if 'agent_status' not in ctx.instance.runtime_properties:
+            raise NonRecoverableError(
+                ('agent_status key not available in runtime_properties, '
+                 'validation needs to be performed before '
+                 'new agent installation'))
+        status = ctx.instance.runtime_properties['agent_status']
+        if not status['agent_alive_crossbroker']:
+            raise NonRecoverableError(
+                ('Last validation attempt has shown that agent is dead. '
+                 'Rerun validation.'))
     return agent
 
 
@@ -403,9 +405,9 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
     :param install_agent_timeout: operation's timeout.
     :param manager_ip: the private IP of the current leader (master) Manager.
      This IP is used to connect to the Manager's RabbitMQ.
-     (relevant only in HA cluser)
+     (relevant only in HA cluster)
     :param manager_certificate: the SSL certificate of the current leader
-    (master) Manager. (relevant only in HA cluser)
+    (master) Manager. (relevant only in HA cluster)
     """
     old_agent = _validate_agent()
     _update_broker_config(old_agent, manager_ip, manager_certificate)
@@ -504,7 +506,7 @@ def validate_agent_amqp(current_amqp=True, manager_ip=None,
     old manager's AMQP to which the agent is currently connected.
     Note: in case of an in-place upgrade, both AMQP servers should be identical
     :param manager_ip: the IP of the current leader (master) Manager, relevant
-    only in HA cluser. This IP is used to validate that an agent is connected
+    only in HA cluster. This IP is used to validate that an agent is connected
     to the Manager's RabbitMQ.
     :param manager_certificate: the SSL certificate of the current leader
     (master) Manager.
@@ -530,8 +532,10 @@ def validate_agent_amqp(current_amqp=True, manager_ip=None,
 def transfer_agent_amqp(transfer_agent_timeout=300,
                         manager_ip=None, manager_certificate=None,
                         manager_rest_token=None, **_):
-    _create_broker_config(transfer_mode=True)
-    old_agent = _validate_agent()
+    old_agent = _validate_agent(transfer_mode=True)
+
+    # Since we haven't restored a snapshot on the current (old) manager, the
+    # agent doesn't have the `broker_config` dict, and so we need to create it
     manager_ip = _get_network_ip(manager_ip, old_agent)
     agents = _run_install_script(old_agent, transfer_agent_timeout, manager_ip,
                                  manager_certificate, manager_rest_token,
