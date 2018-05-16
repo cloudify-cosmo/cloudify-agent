@@ -3,7 +3,7 @@ version: 2
 defaults:
   - &test_defaults
     docker:
-      - image: circleci/python:2.7
+      - image: phusion/baseimage
       - image: rabbitmq:3.7.4
 
     steps:
@@ -16,7 +16,7 @@ defaults:
           fi
 
       - run: |
-          sudo apt-get install cron
+          sudo apt-get install -y cron
 
       - run: |
           sudo /etc/init.d/cron start
