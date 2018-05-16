@@ -30,6 +30,7 @@ from cloudify import utils as cloudify_utils
 
 from .installer_config import create_runner, get_installer
 from .config_errors import raise_missing_attribute, raise_missing_attributes
+from ..runners.fabric_runner import FabricCommandExecutionException
 
 
 def create_agent_config_and_installer(func=None,
@@ -116,7 +117,6 @@ class CloudifyAgentConfig(dict):
         return self['windows']
 
     def set_default_values(self):
-        self._set_process_management()
         self._set_name()
         self._set_network()
         self.setdefault('queue', self['name'])
@@ -127,17 +127,51 @@ class CloudifyAgentConfig(dict):
         self.setdefault('bypass_maintenance',
                         cloudify_utils.get_is_bypass_maintenance())
         self.setdefault('min_workers', 0)
-        self.setdefault('max_workers', 5)
+        self.setdefault('max_workers', 20)
         self.setdefault('disable_requiretty', True)
         self.setdefault('env', {})
         self.setdefault('fabric_env', {})
         self.setdefault('system_python', 'python')
         self.setdefault('heartbeat', None)
+        self.setdefault('version', agent_utils.get_agent_version())
 
-    def _set_process_management(self):
+    def _set_process_management(self, runner):
+        """
+        Determine the process management system to use for the agent.
+        * If working with windows, the only option is nssm
+        * If working with linux then:
+            * If the install method is remote (SSH) we try to determine
+              the default system automatically
+            * If the install method is not remote, we default to systemd
+            * If process_management was explicitly provided, it supersedes
+              the default
+        """
         self.setdefault('process_management', {})
-        default_pm_name = 'nssm' if self.is_windows else 'init.d'
+
+        # If we already have a value set, don't bother trying to set it again
+        if self['process_management'].get('name'):
+            return
+        if self.is_windows:
+            default_pm_name = 'nssm'
+        else:
+            if self.is_remote:
+                default_pm_name = self._get_process_management(runner)
+            else:
+                default_pm_name = 'init.d'
         self['process_management'].setdefault('name', default_pm_name)
+
+    @staticmethod
+    def _get_process_management(runner):
+        if not runner:
+            return 'init.d'
+        try:
+            runner.run('which systemctl')
+        except FabricCommandExecutionException as e:
+            if e.code != 1:
+                raise
+            return 'init.d'
+        else:
+            return 'systemd'
 
     def _set_name(self):
         # service_name takes precedence over name (which is deprecated)
@@ -189,6 +223,7 @@ class CloudifyAgentConfig(dict):
                 self._validate_key_or_password()
 
     def set_installation_params(self, runner):
+        self._set_process_management(runner)
         self._set_basedir(runner)
         self.set_config_paths()
         self._set_package_url(runner)

@@ -6,7 +6,7 @@
 [![PypI](http://img.shields.io/pypi/v/cloudify-agent.svg)](http://img.shields.io/pypi/v/cloudify-agent.svg)
 
 
-The Cloudify Agent is a [celery](http://www.celeryproject.org/) based daemon that can run on both Linux
+The Cloudify Agent is a daemon that can run on both Linux
 and Windows boxes. It is available as a Command Line Tool that allows to
 easily manipulate all of the necessary agent lifecycle operations.
 

@@ -2,23 +2,10 @@
 
 echo Installing the agent as a windows service...
 
-"{{ nssm_path }}" install {{ name }} "{{ virtualenv_path }}\Scripts\celeryd.exe" ^
---events -Q {{ queue }} ^
---hostname={{ name }} ^
---concurrency={{ max_workers }} ^
---maxtasksperchild=10 ^
---without-gossip ^
---without-mingle ^
---loglevel={{ log_level }} ^
---logfile="""{{ log_file }}""" ^
---include=cloudify.dispatch ^
---config=cloudify.broker_config ^
--Ofair ^
---with-gate-keeper ^
---gate-keeper-bucket-size={{ max_workers }} ^
---with-logging-server ^
---logging-server-logdir="""{{ workdir }}\logs""" ^
-{% if heartbeat %}--heartbeat-interval={{ heartbeat }}{% else %}--without-heartbeat{% endif %}
+"{{ nssm_path }}" install {{ name }} "{{ virtualenv_path }}\Scripts\python.exe" -m cloudify_agent.worker ^
+    --queue "{{ queue }}" ^
+    --max-workers {{ max_workers }} ^
+    --name "{{ name }}"
 
 
 if %errorlevel% neq 0 exit /b %errorlevel%
@@ -29,16 +16,13 @@ echo Setting service environment
 REST_HOST={{ rest_host }} ^
 REST_PORT={{ rest_port }} ^
 LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}" ^
-CLOUDIFY_CLUSTER_SETTINGS_PATH="{{ cluster_settings_path|default('') }}" ^
 MANAGER_FILE_SERVER_URL=https://{{ rest_host }}:{{ rest_port }}/resources ^
-CLOUDIFY_DAEMON_NAME="{{ name }}" ^
-CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}" ^
+AGENT_LOG_DIR="{{ log_dir }}" ^
 CLOUDIFY_DAEMON_USER={{ user }} ^
-CELERY_WORK_DIR="{{ workdir }}" ^
-CELERY_APP=cloudify_agent.app.app ^
-CELERY_TASK_SERIALIZER=json ^
-CELERY_RESULT_SERIALIZER=json ^ {{ custom_environment }} ^
-CFY_EXEC_TEMP="{{ executable_temp_path }}"
+AGENT_LOG_LEVEL="{{ log_level }}" ^
+AGENT_WORK_DIR="{{ workdir }}" ^ {{ custom_environment }} ^
+CFY_EXEC_TEMP="{{ executable_temp_path }}" ^
+CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}"
 
 "{{ nssm_path }}" set {{ name }} DisplayName "Cloudify Agent - {{ name }}"
 "{{ nssm_path }}" set {{ name }} Description "Cloudify Agent Service"

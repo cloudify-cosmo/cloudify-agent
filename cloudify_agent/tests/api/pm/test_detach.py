@@ -62,20 +62,20 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest):
 
         # check it started
         timeout = daemon.cron_respawn_delay * 60 + 10
-        self.wait_for_daemon_alive(daemon.name, timeout=timeout)
+        self.wait_for_daemon_alive(daemon.queue, timeout=timeout)
 
         # lets kill the process
-        self.runner.run("pkill -9 -f 'celery'")
-        self.wait_for_daemon_dead(daemon.name)
+        self.runner.run("pkill -9 -f 'cloudify_agent.worker'")
+        self.wait_for_daemon_dead(daemon.queue)
 
         # check it was respawned
         timeout = daemon.cron_respawn_delay * 60 + 10
-        self.wait_for_daemon_alive(daemon.name, timeout=timeout)
+        self.wait_for_daemon_alive(daemon.queue, timeout=timeout)
 
         # this should also disable the crontab entry
         daemon.stop()
-        self.wait_for_daemon_dead(daemon.name)
+        self.wait_for_daemon_dead(daemon.queue)
 
         # sleep the cron delay time and make sure the daemon is still dead
         time.sleep(daemon.cron_respawn_delay * 60 + 5)
-        self.assert_daemon_dead(daemon.name)
+        self.assert_daemon_dead(daemon.queue)

@@ -1,0 +1,18 @@
+[Unit]
+Description=Cloudify Agent Worker Service
+
+[Service]
+TimeoutStartSec=0
+Restart=on-failure
+EnvironmentFile={{ config_path }}
+{% if extra_env_path -%} EnvironmentFile=-{{ extra_env_path }} {% endif %}
+User={{ user }}
+Group={{ user }}
+ExecStart={{ virtualenv_path }}/bin/python -m cloudify_agent.worker \
+    --queue "{{ queue }}" \
+    --max-workers {{ max_workers }} \
+    --name "{{ name }}"
+
+
+[Install]
+WantedBy=multi-user.target

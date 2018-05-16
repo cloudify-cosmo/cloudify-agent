@@ -129,7 +129,7 @@ class TestConfiguration(BaseTest):
             'disable_requiretty': True,
             'env': {},
             'fabric_env': {},
-            'max_workers': 5,
+            'max_workers': 20,
             'min_workers': 0,
             'workdir': workdir,
             'broker_ssl_cert_path': os.environ[constants.BROKER_SSL_CERT_PATH],
@@ -138,7 +138,8 @@ class TestConfiguration(BaseTest):
             'bypass_maintenance': False,
             'rest_token': 'test_token',
             'rest_tenant': {},
-            'network': 'default'
+            'network': 'default',
+            'version': utils.get_agent_version()
         }
         expected.update(expected_values)
 

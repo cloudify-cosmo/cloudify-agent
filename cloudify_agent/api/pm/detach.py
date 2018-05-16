@@ -21,14 +21,14 @@ from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
-from cloudify_agent.api.pm.base import CronRespawnDaemon
+from cloudify_agent.api.pm.base import CronRespawnDaemonMixin
 
 
-class DetachedDaemon(CronRespawnDaemon):
+class DetachedDaemon(CronRespawnDaemonMixin):
 
     """
     This process management is not really a full process management. It
-    merely runs the celery command in detached mode and uses crontab for
+    merely runs the worker command in detached mode and uses crontab for
     re-spawning the daemon on failure. As such, it has the following
     limitations:
 
@@ -64,7 +64,7 @@ class DetachedDaemon(CronRespawnDaemon):
         super(DetachedDaemon, self).stop(interval, timeout)
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        if self._is_agent_registered():
+        if self._is_daemon_running():
             if not force:
                 raise exceptions.DaemonStillRunningException(self.name)
             self.stop()
@@ -112,15 +112,10 @@ class DetachedDaemon(CronRespawnDaemon):
             config_path=self.config_path,
             queue=self.queue,
             name=self.name,
-            log_level=self.log_level,
-            log_file=self.get_logfile(),
-            pid_file=self.pid_file,
-            broker_url=self.broker_url,
-            min_workers=self.min_workers,
             max_workers=self.max_workers,
             virtualenv_path=VIRTUALENV,
             workdir=self.workdir,
-            heartbeat=self.heartbeat
+            pid_file=self.pid_file
         )
 
         # no sudo needed, yey!
@@ -136,12 +131,13 @@ class DetachedDaemon(CronRespawnDaemon):
             file_path=self.config_path,
             user=self.user,
             name=self.name,
-            broker_url=self.broker_url,
             rest_host=self.rest_host,
             rest_port=self.rest_port,
             local_rest_cert_file=self.local_rest_cert_file,
+            log_level=self.log_level.upper(),
+            log_dir=self.log_dir,
             extra_env_path=self.extra_env_path,
             storage_dir=utils.internal.get_storage_directory(self.user),
             workdir=self.workdir,
-            cluster_settings_path=self.cluster_settings_path
+            executable_temp_path=self.executable_temp_path,
         )

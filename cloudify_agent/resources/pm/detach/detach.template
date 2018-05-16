@@ -3,24 +3,9 @@
 # sourcing the configuration file
 . {{ config_path }}
 
-# running the celery worker command directly
-{{ virtualenv_path }}/bin/celery worker \
---events \
---queues={{ queue }} \
---hostname={{ name }} \
---autoscale={{ max_workers }},{{ min_workers }} \
---maxtasksperchild=10 \
---without-gossip \
---without-mingle \
---loglevel={{ log_level }} \
---pidfile={{ pid_file }} \
---logfile={{ log_file }} \
---include=cloudify.dispatch \
---detach \
---config=cloudify.broker_config \
--Ofair \
---with-gate-keeper \
---gate-keeper-bucket-size={{ max_workers }} \
---with-logging-server \
---logging-server-logdir={{ workdir }}/logs \
-{% if heartbeat %}--heartbeat-interval={{ heartbeat }}{% else %}--without-heartbeat{% endif %}
+# running the agent worker command directly
+nohup {{ virtualenv_path }}/bin/python -m cloudify_agent.worker \
+    --queue "{{ queue }}" \
+    --max-workers {{ max_workers }} \
+    --name "{{ name }}"  </dev/null >/dev/null 2>&1 &
+echo $! > {{ pid_file }}

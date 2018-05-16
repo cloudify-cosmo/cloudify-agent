@@ -80,8 +80,6 @@ class NonSuckingServiceManagerDaemon(Daemon):
         pass
 
     def create_config(self):
-        env_string = self._create_env_string()
-
         # creating the installation script
         self._logger.debug('Rendering configuration script "{0}" from template'
                            .format(self.config_path))
@@ -90,26 +88,22 @@ class NonSuckingServiceManagerDaemon(Daemon):
             file_path=self.config_path,
             queue=self.queue,
             nssm_path=self.nssm_path,
-            log_level=self.log_level,
-            log_file=self.get_logfile(),
+            log_level=self.log_level.upper(),
+            log_dir=self.log_dir,
             workdir=self.workdir,
             user=self.user,
             rest_host=self.rest_host,
             rest_port=self.rest_port,
             local_rest_cert_file=self.local_rest_cert_file,
-            broker_url=self.broker_url,
-            min_workers=self.min_workers,
             max_workers=self.max_workers,
             virtualenv_path=VIRTUALENV,
             name=self.name,
-            storage_dir=utils.internal.get_storage_directory(self.user),
-            custom_environment=env_string,
+            custom_environment=self._create_env_string(),
+            executable_temp_path=self.executable_temp_path,
             startup_policy=self.startup_policy,
             failure_reset_timeout=self.failure_reset_timeout,
             failure_restart_delay=self.failure_restart_delay,
-            cluster_settings_path=self.cluster_settings_path,
-            executable_temp_path=self.executable_temp_path,
-            heartbeat=self.heartbeat
+            storage_dir=utils.internal.get_storage_directory(self.user),
         )
 
         self._logger.debug('Rendered configuration script: {0}'.format(
@@ -126,7 +120,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
             self._runner.run('sc config {0} start= disabled'.format(self.name))
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        if self._is_agent_registered():
+        if self._is_daemon_running():
             if not force:
                 raise exceptions.DaemonStillRunningException(self.name)
             self.stop()
@@ -165,16 +159,6 @@ class NonSuckingServiceManagerDaemon(Daemon):
         except CommandExecutionException as e:
             self._logger.debug(str(e))
             return False
-
-    def get_worker_id_placeholder(self):
-
-        """
-        Returns placeholder suitable for windows systems.
-        Due to bug in Celery placeholder %I is not working
-        properly on nt systems.
-
-        """
-        return '{0}'
 
     def _create_env_string(self):
         env_string = ''

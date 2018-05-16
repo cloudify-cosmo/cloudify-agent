@@ -19,13 +19,16 @@ import logging
 import tempfile
 import getpass
 import shutil
+import time
 
 import unittest2 as unittest
 
 from cloudify import constants, mocks
 from cloudify.state import current_ctx
 from cloudify.utils import setup_logger
+from cloudify.amqp_client import get_client
 
+from cloudify_agent.api import utils as agent_utils
 from cloudify_agent.api.defaults import (SSL_CERTS_TARGET_DIR,
                                          AGENT_SSL_CERT_FILENAME)
 
@@ -149,6 +152,42 @@ class BaseTest(unittest.TestCase):
 
     def _restore_ctx(self):
         current_ctx.set(self.original_ctx)
+
+    def _is_agent_alive(self, name, timeout=10):
+        return agent_utils.is_agent_alive(
+            name,
+            get_client(),
+            timeout=timeout)
+
+    def assert_daemon_alive(self, name):
+        self.assertTrue(self._is_agent_alive(name))
+
+    def assert_daemon_dead(self, name):
+        self.assertFalse(self._is_agent_alive(name))
+
+    def wait_for_daemon_alive(self, name, timeout=10):
+        deadline = time.time() + timeout
+
+        while time.time() < deadline:
+            if self._is_agent_alive(name, timeout=1):
+                return
+            self.logger.info('Waiting for daemon {0} to start...'
+                             .format(name))
+            time.sleep(5)
+        raise RuntimeError('Failed waiting for daemon {0} to start. Waited '
+                           'for {1} seconds'.format(name, timeout))
+
+    def wait_for_daemon_dead(self, name, timeout=10):
+        deadline = time.time() + timeout
+
+        while time.time() < deadline:
+            if not self._is_agent_alive(name, timeout=1):
+                return
+            self.logger.info('Waiting for daemon {0} to stop...'
+                             .format(name))
+            time.sleep(1)
+        raise RuntimeError('Failed waiting for daemon {0} to stop. Waited '
+                           'for {1} seconds'.format(name, timeout))
 
 
 class _AgentPackageGenerator(object):

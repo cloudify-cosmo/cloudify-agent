@@ -13,18 +13,18 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import errno
 import getpass
 import json
 import os
 import time
 
-from pika.exceptions import AMQPConnectionError
 from cloudify.utils import (LocalCommandRunner,
                             setup_logger,
                             get_exec_tempdir)
-from cloudify import amqp_client
 from cloudify import constants
-from cloudify.celery.app import get_celery_app, get_cluster_celery_app
+from cloudify.amqp_client import get_client
+from cloudify.exceptions import CommandExecutionException
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import utils
@@ -106,7 +106,7 @@ class Daemon(object):
 
     ``heartbeat``
 
-        The AMQP and Celery heartbeats interval to be used by agents,
+        The AMQP heartbeats interval to be used by agents,
         in seconds.
         Defaults to 30.
 
@@ -153,9 +153,9 @@ class Daemon(object):
 
         log level of the daemon process itself. defaults to debug.
 
-    ``log_file``:
+    ``log_dir``:
 
-        location of the daemon log file. defaults to <workdir>/<name>.log
+        location of the directory to store daemon logs. defaults to workdir
 
     ``pid_file``:
 
@@ -243,27 +243,6 @@ class Daemon(object):
         self.deployment_id = params.get('deployment_id')
         self.queue = params.get('queue') or self._get_queue_from_manager()
 
-        # This is not retrieved by param as an option any more as it then
-        # introduces ambiguity over which values should be used if the
-        # components of this differ from the passed in broker_user, pass, etc
-        # These components need to be known for the _delete_amqp_queues
-        # function.
-        if self.cluster:
-            self.broker_url = [defaults.BROKER_URL.format(
-                host=node_ip,
-                port=self.broker_port,
-                username=self.broker_user,
-                password=self.broker_pass,
-                vhost=self.broker_vhost
-            ) for node_ip in self.cluster]
-        else:
-            self.broker_url = defaults.BROKER_URL.format(
-                host=self.broker_ip,
-                port=self.broker_port,
-                username=self.broker_user,
-                password=self.broker_pass,
-                vhost=self.broker_vhost
-            )
         self.min_workers = params.get('min_workers') or defaults.MIN_WORKERS
         self.max_workers = params.get('max_workers') or defaults.MAX_WORKERS
         self.workdir = params.get('workdir') or os.getcwd()
@@ -272,9 +251,7 @@ class Daemon(object):
 
         self.extra_env_path = params.get('extra_env_path')
         self.log_level = params.get('log_level') or defaults.LOG_LEVEL
-        self.log_file = params.get(
-            'log_file') or os.path.join(self.workdir,
-                                        '{0}.log'.format(self.name))
+        self.log_dir = params.get('log_dir') or self.workdir
         self.pid_file = params.get(
             'pid_file') or os.path.join(self.workdir,
                                         '{0}.pid'.format(self.name))
@@ -291,11 +268,8 @@ class Daemon(object):
         self.cluster_settings_path = params.get('cluster_settings_path')
         self.network = params.get('network') or 'default'
 
-    def _get_celery_conf_path(self):
-        return os.path.join(self.workdir, 'broker_config.json')
-
-    def create_celery_conf(self):
-        self._logger.info('Deploying celery configuration.')
+    def create_broker_conf(self):
+        self._logger.info('Deploying broker configuration.')
         config = {
             'broker_ssl_enabled': self.broker_ssl_enabled,
             'broker_cert_path': self.broker_ssl_cert_path,
@@ -305,7 +279,8 @@ class Daemon(object):
             'broker_vhost': self.broker_vhost,
             'cluster': self.cluster
         }
-        with open(self._get_celery_conf_path(), 'w') as conf_handle:
+        broker_conf_path = os.path.join(self.workdir, 'broker_config.json')
+        with open(broker_conf_path, 'w') as conf_handle:
             json.dump(config, conf_handle)
 
     def validate_mandatory(self):
@@ -333,27 +308,40 @@ class Daemon(object):
         self._validate_autoscale()
         self._validate_host()
 
-    def _is_agent_registered(self):
-        if self.cluster:
-            # only used for manager failures during installation - see
-            # detailed comment in the ._get_amqp_client method
-            celery_client = get_cluster_celery_app(
-                self.broker_url, self.cluster, self.broker_ssl_enabled,
-                broker_ssl_cert_path=self.broker_ssl_cert_path)
-        else:
-            celery_client = get_celery_app(
-                broker_url=self.broker_url,
-                broker_ssl_enabled=self.broker_ssl_enabled,
-                broker_ssl_cert_path=self.broker_ssl_cert_path)
+    def _get_client(self):
+        return get_client(
+            self.broker_ip,
+            self.broker_user,
+            self.broker_pass,
+            self.broker_port,
+            self.broker_vhost,
+            self.broker_ssl_enabled,
+            self.broker_ssl_cert_path
+        )
+
+    def _is_daemon_running(self):
+        self._logger.debug('Checking if agent daemon is running...')
+        if utils.is_agent_alive(self.queue, self._get_client(), timeout=3):
+            return True
+        if os.name == 'nt':
+            # windows has no pidfiles, so if the agent wasn't alive via
+            # the amqp check, we must assume it's down.
+            return False
         try:
-            self._logger.debug('Retrieving daemon registered tasks')
-            return utils.get_agent_registered(
-                self.name,
-                celery_client,
-                timeout=AGENT_IS_REGISTERED_TIMEOUT)
-        finally:
-            if celery_client:
-                celery_client.close()
+            with open(self.pid_file) as f:
+                pid = int(f.read())
+        except (IOError, ValueError):
+            return False
+
+        # on linux, kill with signal 0 only succeeds if the process exists.
+        # if we get a permission error, then that also must mean the process
+        # exists, and we don't have the privileges to access it
+        try:
+            os.kill(pid, 0)
+        except OSError as e:
+            return e.errno == errno.EPERM
+        else:
+            return True
 
     ########################################################################
     # the following methods must be implemented by the sub-classes as they
@@ -434,7 +422,7 @@ class Daemon(object):
         """
         self.create_script()
         self.create_config()
-        self.create_celery_conf()
+        self.create_broker_conf()
 
     def start(self,
               interval=defaults.START_INTERVAL,
@@ -457,32 +445,24 @@ class Daemon(object):
         startup.
 
         """
-
         if delete_amqp_queue:
-            self._logger.debug('Deleting AMQP queues')
-            self._delete_amqp_queues()
+            self._logger.warning('Deprecation warning:\n'
+                                 'The `delete_amqp_queue` param is no '
+                                 'longer used, and it is only left for '
+                                 'backwards compatibility')
         start_command = self.start_command()
         self._logger.info('Starting daemon with command: {0}'
                           .format(start_command))
         self._runner.run(start_command)
         end_time = time.time() + timeout
         while time.time() < end_time:
-            self._logger.debug('Querying daemon {0} registered tasks'.format(
-                self.name))
-            if self._is_agent_registered():
-                # make sure the status command recognizes the daemon is up
-                status = self.status()
-                if status:
-                    self._logger.debug('Daemon {0} has started'
-                                       .format(self.name))
-                    return
-            self._logger.debug('Daemon {0} has not started yet. '
+            if self._is_daemon_running():
+                return
+            self._logger.debug('Daemon {0} is still not running. '
                                'Sleeping for {1} seconds...'
                                .format(self.name, interval))
             time.sleep(interval)
-        self._logger.debug('Verifying there were no un-handled '
-                           'exception during startup')
-        self._verify_no_celery_error()
+        self._verify_no_error()
         raise exceptions.DaemonStartupTimeout(timeout, self.name)
 
     def stop(self,
@@ -509,26 +489,20 @@ class Daemon(object):
         self._runner.run(stop_command)
         end_time = time.time() + timeout
         while time.time() < end_time:
-            self._logger.debug('Querying daemon {0} registered tasks'.format(
+            self._logger.debug('Querying status of daemon {0}'.format(
                 self.name))
-            # check the process has shutdown
-            if not self._is_agent_registered():
-                # make sure the status command also recognizes the
-                # daemon is down
-                status = self.status()
-                if not status:
-                    self._logger.debug('Daemon {0} has shutdown'
-                                       .format(self.name, interval))
-                    self._logger.debug('Deleting AMQP queues')
-                    self._delete_amqp_queues()
-                    return
+            # make sure the status command also recognizes the
+            # daemon is down
+            status = self.status()
+            if not status:
+                self._logger.debug('Daemon {0} has shutdown'
+                                   .format(self.name, interval))
+                return
             self._logger.debug('Daemon {0} is still running. '
                                'Sleeping for {1} seconds...'
                                .format(self.name, interval))
             time.sleep(interval)
-        self._logger.debug('Verifying there were no un-handled '
-                           'exception during startup')
-        self._verify_no_celery_error()
+        self._verify_no_error()
         raise exceptions.DaemonShutdownTimeout(timeout, self.name)
 
     def restart(self,
@@ -572,92 +546,20 @@ class Daemon(object):
         """
         pass
 
-    def get_logfile(self):
-
-        """
-        Injects worker_id placeholder into logfile. Celery library will replace
-        this placeholder with worker id. It is used to make sure that there is
-        at most one process writing to a specific log file.
-
-        """
-
-        path, extension = os.path.splitext(self.log_file)
-        return '{0}{1}{2}'.format(path,
-                                  self.get_worker_id_placeholder(),
-                                  extension)
-
-    def get_worker_id_placeholder(self):
-
-        """
-        Placeholder suitable for linux systems.
-
-        """
-
-        return '%I'
-
-    def _verify_no_celery_error(self):
-
+    def _verify_no_error(self):
         error_dump_path = os.path.join(
             utils.internal.get_storage_directory(self.user),
             '{0}.err'.format(self.name))
 
-        # this means the celery worker had an uncaught
+        # this means the agent worker had an uncaught
         # exception and it wrote its content
         # to the file above because of our custom exception
-        # handler (see app.py)
+        # handler (see worker.py)
         if os.path.exists(error_dump_path):
             with open(error_dump_path) as f:
                 error = f.read()
             os.remove(error_dump_path)
             raise exceptions.DaemonError(error)
-
-    def _delete_amqp_queues(self):
-        client = self._get_amqp_client()
-        try:
-            channel = client.connection.channel()
-            self._logger.debug('Deleting queue: {0}'.format(self.queue))
-
-            channel.queue_delete(self.queue)
-            pid_box_queue = 'celery@{0}.celery.pidbox'.format(self.name)
-            self._logger.debug('Deleting queue: {0}'.format(pid_box_queue))
-            channel.queue_delete(pid_box_queue)
-        finally:
-            try:
-                client.close()
-            except Exception as e:
-                self._logger.warning('Failed closing amqp client: {0}'
-                                     .format(e))
-
-    def _get_amqp_client(self):
-        if self.cluster:
-            # if the active manager dies during agent installation, only then
-            # we will need to look for the new active here; in most cases, the
-            # first one from the self.cluster list will be online, and that
-            # is equal to just using self.broker_url/self.broker_ip
-            err = None
-            for node_ip in self.cluster:
-                try:
-                    return amqp_client.create_client(
-                        amqp_host=node_ip,
-                        amqp_user=self.broker_user,
-                        amqp_pass=self.broker_pass,
-                        amqp_vhost=self.broker_vhost,
-                        ssl_enabled=self.broker_ssl_enabled,
-                        ssl_cert_path=self.broker_ssl_cert_path
-                    )
-                except AMQPConnectionError as err:
-                    continue
-            if err:
-                raise err
-        else:
-            return amqp_client.create_client(
-                amqp_host=self.broker_ip,
-                amqp_user=self.broker_user,
-                amqp_pass=self.broker_pass,
-                amqp_vhost=self.broker_vhost,
-                ssl_enabled=self.broker_ssl_enabled,
-                ssl_cert_path=self.broker_ssl_cert_path
-            )
 
     def _validate_autoscale(self):
         min_workers = self._params.get('min_workers')
@@ -783,7 +685,72 @@ class Daemon(object):
         return True
 
 
-class CronRespawnDaemon(Daemon):
+class GenericLinuxDaemonMixin(Daemon):
+    SCRIPT_DIR = None
+    CONFIG_DIR = None
+
+    def status_command(self):
+        raise NotImplementedError('Must be implemented by a subclass')
+
+    def _delete(self):
+        raise NotImplementedError('Must be implemented by a subclass')
+
+    def _get_rendered_script(self):
+        raise NotImplementedError('Must be implemented by a subclass')
+
+    def _get_rendered_config(self):
+        raise NotImplementedError('Must be implemented by a subclass')
+
+    def _get_script_path(self):
+        raise NotImplementedError('Must be implemented by a subclass')
+
+    def __init__(self, logger=None, **params):
+        super(GenericLinuxDaemonMixin, self).__init__(logger=logger, **params)
+
+        self.service_name = 'cloudify-worker-{0}'.format(self.name)
+        self.script_path = self._get_script_path()
+        self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
+
+    def status(self):
+        try:
+            self._runner.run(self.status_command())
+            return True
+        except CommandExecutionException as e:
+            self._logger.debug(str(e))
+            return False
+
+    def create_script(self):
+        rendered = self._get_rendered_script()
+        self._runner.run('sudo mkdir -p {0}'.format(
+            os.path.dirname(self.script_path)))
+        self._runner.run(
+            'sudo cp {0} {1}'.format(rendered, self.script_path))
+        self._runner.run('sudo rm {0}'.format(rendered))
+
+    def create_config(self):
+        rendered = self._get_rendered_config()
+        self._runner.run('sudo mkdir -p {0}'.format(
+            os.path.dirname(self.config_path)))
+        self._runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))
+        self._runner.run('sudo rm {0}'.format(rendered))
+
+    def delete(self, force=defaults.DAEMON_FORCE_DELETE):
+        if self._is_daemon_running():
+            if not force:
+                raise exceptions.DaemonStillRunningException(self.name)
+            self.stop()
+
+        self._delete()
+
+        if os.path.exists(self.script_path):
+            self._logger.debug('Deleting {0}'.format(self.script_path))
+            self._runner.run('sudo rm {0}'.format(self.script_path))
+        if os.path.exists(self.config_path):
+            self._logger.debug('Deleting {0}'.format(self.config_path))
+            self._runner.run('sudo rm {0}'.format(self.config_path))
+
+
+class CronRespawnDaemonMixin(Daemon):
 
     """
     This Mixin exposes capabilities for adding a cron job that re-spawns
@@ -808,7 +775,7 @@ class CronRespawnDaemon(Daemon):
     """
 
     def __init__(self, logger=None, **params):
-        super(CronRespawnDaemon, self).__init__(logger, **params)
+        super(CronRespawnDaemonMixin, self).__init__(logger, **params)
         self.cron_respawn_delay = params.get('cron_respawn_delay', 1)
         self.cron_respawn = params.get('cron_respawn', False)
 

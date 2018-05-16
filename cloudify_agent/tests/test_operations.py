@@ -26,6 +26,7 @@ from cloudify import mocks
 
 from cloudify.state import current_ctx
 from cloudify.workflows import local
+from cloudify.amqp_client import get_client
 
 from cloudify_agent import operations
 from cloudify_agent.api import utils
@@ -108,6 +109,11 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
         def file_server_url(*args, **kwargs):
             return '{0}/resources'.format(http_rest_host({}))
 
+        # Need to patch, to avoid broker_ssl_enabled being True
+        @contextmanager
+        def get_amqp_client(agent):
+            yield get_client()
+
         with self._manager_env():
             with patch('cloudify_agent.api.utils.get_manager_file_server_url',
                        file_server_url):
@@ -116,13 +122,14 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
                                      inputs=inputs)
                 with patch('cloudify_agent.operations._http_rest_host',
                            http_rest_host):
-                    env.execute('install', task_retries=0)
-            self.assert_daemon_alive(name=agent_name)
+                    with patch('cloudify_agent.operations._get_amqp_client',
+                               get_amqp_client):
+                        env.execute('install', task_retries=0)
             agent_dict = self.get_agent_dict(env, 'new_agent_host')
             agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
             new_agent_name = agent_dict['name']
             self.assertNotEqual(new_agent_name, agent_name)
-            self.assert_daemon_alive(name=new_agent_name)
+            self.assert_daemon_alive(new_agent_name)
             env.execute('uninstall', task_retries=1)
             self.wait_for_daemon_dead(name=agent_name)
             self.wait_for_daemon_dead(name=new_agent_name)
@@ -150,7 +157,7 @@ class TestCreateAgentAmqp(BaseTest):
             'windows': False,
             'package_url': 'http://10.0.4.46:53229/packages/agents/'
                            'ubuntu-trusty-agent.tar.gz',
-            'version': '3.4',
+            'version': '4.4',
             'broker_config': {
                 'broker_ip': '10.0.4.46',
                 'broker_pass': 'test_pass',
@@ -211,10 +218,10 @@ class TestCreateAgentAmqp(BaseTest):
             agent = operations.create_new_agent_config(new_agent)
             self.assertIn(new_agent['name'], agent['name'])
 
-    @patch('cloudify_agent.operations.get_celery_app', MagicMock())
-    @patch('cloudify_agent.api.utils.get_agent_registered',
-           MagicMock(return_value={'cloudify.dispatch.dispatch': {}}))
-    def test_create_agent_from_old_agent(self):
+    @patch('cloudify_agent.operations._run_script_cloudify_amqp')
+    @patch('cloudify_agent.api.utils.is_agent_alive',
+           MagicMock(return_value=True))
+    def test_create_agent_from_old_agent(self, *mocks):
         with self._set_context():
             self._create_cloudify_agent_dir()
             old_name = ctx.instance.runtime_properties[

@@ -50,7 +50,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             workdir=None,
             log_level=None,
             pid_file=None,
-            log_file=None,
+            log_dir=None,
             max_workers=None,
             min_workers=None,
             rest_port='80',
@@ -103,7 +103,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
             deployment_id=None,
             log_level=None,
             pid_file=None,
-            log_file=None,
+            log_dir=None,
             rest_port='80',
             extra_env_path=None,
             logger=get_logger(),
@@ -154,7 +154,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
         daemon.start.assert_called_once_with(
             interval=5,
             timeout=20,
-            delete_amqp_queue=False,
+            delete_amqp_queue=True,
         )
 
     def test_stop(self, *factory_methods):

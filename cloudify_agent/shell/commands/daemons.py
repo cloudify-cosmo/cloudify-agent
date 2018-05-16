@@ -28,7 +28,7 @@ from cloudify_agent.shell.decorators import handle_failures
               help='The process management system to use '
                    'when creating the daemon. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_PROCESS_MANAGEMENT),
-              type=click.Choice(['init.d', 'nssm', 'detach']),
+              type=click.Choice(['init.d', 'nssm', 'detach', 'systemd']),
               required=True,
               envvar=env.CLOUDIFY_DAEMON_PROCESS_MANAGEMENT)
 @click.option('--rest-host',
@@ -128,8 +128,7 @@ from cloudify_agent.shell.decorators import handle_failures
               envvar=env.CLOUDIFY_BROKER_SSL_CERT_PATH
               )
 @click.option('--heartbeat',
-              help='The interval of the AMQP and Celery heartbeat in '
-              'seconds [env {0}]'
+              help='The interval of the AMQP heartbeat in seconds [env {0}]'
               .format(env.CLOUDIFY_HEARTBEAT),
               type=int,
               default=30,
@@ -154,11 +153,11 @@ from cloudify_agent.shell.decorators import handle_failures
                    'stored. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_PID_FILE),
               envvar=env.CLOUDIFY_DAEMON_PID_FILE)
-@click.option('--log-file',
-              help='Path to a location where the daemon log file will be '
+@click.option('--log-dir',
+              help='Path to a location where the daemon log files will be '
                    'stored. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_LOG_FILE),
-              envvar=env.CLOUDIFY_DAEMON_LOG_FILE)
+              .format(env.CLOUDIFY_DAEMON_LOG_DIR),
+              envvar=env.CLOUDIFY_DAEMON_LOG_DIR)
 @click.option('--extra-env-path',
               help='Path to an environment file to be added to the daemon. ['
                    'env {0}]'

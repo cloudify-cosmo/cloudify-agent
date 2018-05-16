@@ -15,12 +15,12 @@
 
 from cloudify import ctx
 from cloudify.decorators import operation
-from cloudify.celery.app import get_celery_app
+from cloudify.amqp_client import get_client
 from cloudify.exceptions import CommandExecutionError
 
 from cloudify_agent.api import utils
-
 from cloudify_agent.installer import script
+
 from .config.agent_config import update_agent_runtime_properties
 from .config.agent_config import create_agent_config_and_installer
 
@@ -74,13 +74,15 @@ def start(cloudify_agent, **_):
     Only called in "init_script"/"plugin" mode, where the agent is started
     externally (e.g. userdata script), and all we have to do is wait for it
     """
-    celery_client = get_celery_app(
-        tenant=cloudify_agent['rest_tenant'],
-        target=cloudify_agent['queue']
+    tenant = cloudify_agent['rest_tenant']
+    client = get_client(
+        amqp_user=tenant['rabbitmq_username'],
+        amqp_pass=tenant['rabbitmq_password'],
+        amqp_vhost=tenant['rabbitmq_vhost']
     )
-    registered = utils.get_agent_registered(cloudify_agent['name'],
-                                            celery_client)
-    if not registered:
+    agent_alive = utils.is_agent_alive(cloudify_agent['queue'], client)
+
+    if not agent_alive:
         return ctx.operation.retry(
             message='Waiting for Agent to start...')
 
@@ -104,10 +106,13 @@ def stop(cloudify_agent, installer, **_):
 @create_agent_config_and_installer(validate_connection=False)
 def delete(cloudify_agent, installer, **_):
     # delete the runtime properties set on create
-    ctx.instance.runtime_properties.pop('cloudify_agent', None)
     if cloudify_agent.has_installer:
         ctx.logger.info('Deleting Agent {0}'.format(cloudify_agent['name']))
         installer.delete_agent()
+    ctx.instance.runtime_properties.pop('cloudify_agent', None)
+    ctx.instance.update()
+
+    # TODO: Delete the RabbitMQ queue after deleting the agent
 
 
 @operation

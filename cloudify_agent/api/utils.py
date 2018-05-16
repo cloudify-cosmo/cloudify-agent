@@ -23,6 +23,7 @@ import getpass
 import types
 import urllib
 import base64
+import pkgutil
 
 import appdirs
 import pkg_resources
@@ -35,6 +36,7 @@ from cloudify.constants import (SECURED_PROTOCOL,
                                 BROKER_PORT_NO_SSL)
 
 from cloudify.utils import setup_logger, get_exec_tempdir
+from cloudify.amqp_client import BlockingRequestResponseHandler
 
 from cloudify_rest_client import CloudifyClient
 
@@ -212,6 +214,30 @@ def get_agent_registered(name,
     if registered is None or destination not in registered:
         return None
     return set(registered[destination])
+
+
+def is_agent_alive(name,
+                   client,
+                   timeout=workflows_tasks.INSPECT_TIMEOUT):
+    """
+    Send a `ping` service task to an agent, and validate that a correct
+    response is received
+    """
+    handler = BlockingRequestResponseHandler(exchange=name)
+    client.add_handler(handler)
+    with client:
+        task = {
+            'service_task': {
+                'task_name': 'ping',
+                'kwargs': {}
+            }
+        }
+        try:
+            response = handler.publish(task, routing_key='service',
+                                       timeout=timeout)
+        except RuntimeError:
+            return False
+    return 'time' in response
 
 
 def get_windows_home_dir(username):
@@ -556,3 +582,8 @@ def _parse_cluster_nodes(ctx, param, value):
 def get_manager_file_server_url(hostname, port):
     scheme = 'http' if port == 80 else 'https'
     return '{0}://{1}:{2}/resources'.format(scheme, hostname, port)
+
+
+def get_agent_version():
+    data = pkgutil.get_data('cloudify_agent', 'VERSION')
+    return json.loads(data)['version']

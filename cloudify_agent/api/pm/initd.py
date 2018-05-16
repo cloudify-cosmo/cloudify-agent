@@ -15,16 +15,15 @@
 
 import os
 
-from cloudify.exceptions import CommandExecutionException
-
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
-from cloudify_agent import VIRTUALENV
-from cloudify_agent.api import defaults
-from cloudify_agent.api.pm.base import CronRespawnDaemon
+from cloudify_agent.api.pm.base import (
+    GenericLinuxDaemonMixin,
+    CronRespawnDaemonMixin
+)
 
 
-class GenericLinuxDaemon(CronRespawnDaemon):
+class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
 
     """
     Implementation for the init.d process management.
@@ -43,40 +42,24 @@ class GenericLinuxDaemon(CronRespawnDaemon):
     PROCESS_MANAGEMENT = 'init.d'
 
     def __init__(self, logger=None, **params):
-        super(GenericLinuxDaemon, self).__init__(logger=logger, **params)
-
-        self.service_name = 'celeryd-{0}'.format(self.name)
-        self.script_path = os.path.join(self.SCRIPT_DIR, self.service_name)
-        self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
+        super(InitDDaemon, self).__init__(logger=logger, **params)
 
         # initd specific configuration
         self.start_on_boot = str(params.get(
             'start_on_boot', 'true')).lower() == 'true'
-        self._start_on_boot_handler = _StartOnBootHandler(self.service_name,
-                                                          self._runner)
+        self._start_on_boot_handler = StartOnBootHandler(self.service_name,
+                                                         self._runner)
 
     def configure(self):
-        super(GenericLinuxDaemon, self).configure()
+        super(InitDDaemon, self).configure()
         if self.start_on_boot:
             self._logger.info('Creating start-on-boot entry')
             self._start_on_boot_handler.create()
 
-    def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        if self._is_agent_registered():
-            if not force:
-                raise exceptions.DaemonStillRunningException(self.name)
-            self.stop()
-
+    def _delete(self):
         if self.start_on_boot:
             self._logger.info('Deleting start-on-boot entry')
             self._start_on_boot_handler.delete()
-
-        if os.path.exists(self.script_path):
-            self._logger.debug('Deleting {0}'.format(self.script_path))
-            self._runner.run('sudo rm {0}'.format(self.script_path))
-        if os.path.exists(self.config_path):
-            self._logger.debug('Deleting {0}'.format(self.config_path))
-            self._runner.run('sudo rm {0}'.format(self.config_path))
 
     def before_self_stop(self):
         if self.start_on_boot:
@@ -94,59 +77,46 @@ class GenericLinuxDaemon(CronRespawnDaemon):
     def status_command(self):
         return status_command(self)
 
-    def status(self):
-        try:
-            self._runner.run(self.status_command())
-            return True
-        except CommandExecutionException as e:
-            self._logger.debug(str(e))
-            return False
+    def _get_script_path(self):
+        return os.path.join(self.SCRIPT_DIR, self.service_name)
+
+    def _get_rendered_script(self):
+        self._logger.debug('Rendering init.d script from template')
+        return utils.render_template_to_file(
+            template_path='pm/initd/initd.template',
+            service_name=self.service_name,
+            config_path=self.config_path,
+            user=self.user,
+            queue=self.queue,
+            max_workers=self.max_workers,
+            pidfile=self.pid_file,
+            name=self.name,
+            virtualenv_path=self.virtualenv,
+        )
 
     def create_script(self):
-        self._logger.debug('Rendering init.d script from template')
-        rendered = utils.render_template_to_file(
-            template_path='pm/initd/initd.template',
-            daemon_name=self.name,
-            config_path=self.config_path
-        )
-        self._runner.run('sudo mkdir -p {0}'.format(
-            os.path.dirname(self.script_path)))
-        self._runner.run('sudo cp {0} {1}'.format(rendered, self.script_path))
-        self._runner.run('sudo rm {0}'.format(rendered))
+        super(InitDDaemon, self).create_script()
         self._runner.run('sudo chmod +x {0}'.format(self.script_path))
 
-    def create_config(self):
+    def _get_rendered_config(self):
         self._logger.debug('Rendering configuration script "{0}" from template'
                            .format(self.config_path))
-        rendered = utils.render_template_to_file(
+        return utils.render_template_to_file(
             template_path='pm/initd/initd.conf.template',
             queue=self.queue,
             workdir=self.workdir,
             rest_host=self.rest_host,
             rest_port=self.rest_port,
             local_rest_cert_file=self.local_rest_cert_file,
-            broker_url=self.broker_url,
-            user=self.user,
-            min_workers=self.min_workers,
-            max_workers=self.max_workers,
-            virtualenv_path=VIRTUALENV,
-            extra_env_path=self.extra_env_path,
-            name=self.name,
-            storage_dir=utils.internal.get_storage_directory(self.user),
-            log_level=self.log_level,
-            log_file=self.get_logfile(),
-            pid_file=self.pid_file,
+            log_level=self.log_level.upper(),
+            log_dir=self.log_dir,
             cron_respawn=str(self.cron_respawn).lower(),
             enable_cron_script=self.create_enable_cron_script(),
             disable_cron_script=self.create_disable_cron_script(),
-            cluster_settings_path=self.cluster_settings_path,
             executable_temp_path=self.executable_temp_path,
-            heartbeat=self.heartbeat
+            extra_env_path=self.extra_env_path,
+            storage_dir=utils.internal.get_storage_directory(self.user),
         )
-        self._runner.run('sudo mkdir -p {0}'.format(
-            os.path.dirname(self.config_path)))
-        self._runner.run('sudo cp {0} {1}'.format(rendered, self.config_path))
-        self._runner.run('sudo rm {0}'.format(rendered))
 
 
 def start_command(daemon):
@@ -161,7 +131,7 @@ def status_command(daemon):
     return 'sudo service {0} status'.format(daemon.service_name)
 
 
-class _StartOnBootHandler(object):
+class StartOnBootHandler(object):
 
     def __init__(self, service_name, runner):
         self._name = service_name

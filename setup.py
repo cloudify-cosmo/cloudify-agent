@@ -27,9 +27,9 @@ install_requires = [
     'fabric==1.13.1',
     'wagon[venv]==0.6.3',
     'fasteners==0.13.0',
-    'pyzmq==15.1.0',
     'virtualenv==15.1.0',
     'pip==9.0.1',
+    'pika==0.11.2',
     'PyYAML==3.10'
 ]
 
@@ -66,18 +66,21 @@ setup(
             'resources/pm/detach/detach.template',
             'resources/pm/nssm/nssm.exe',
             'resources/pm/nssm/nssm.conf.template',
+            'resources/pm/systemd/systemd.conf.template',
+            'resources/pm/systemd/systemd.template',
             'resources/script/linux.sh.template',
             'resources/script/windows.ps1.template',
             'resources/script/linux-download.sh.template',
             'resources/script/windows-download.ps1.template'
         ]
     },
-    description='Cloudify Agent Implementation (Celery based)',
+    description='Cloudify Agent Implementation (pika based)',
     install_requires=install_requires,
     license='LICENSE',
     entry_points={
         'console_scripts': [
             'cfy-agent = cloudify_agent.shell.main:main',
+            'worker = cloudify_agent.worker:main'
         ]
     }
 )
