@@ -3,7 +3,7 @@ version: 2
 defaults:
   - &test_defaults
     docker:
-      - image: phusion/baseimage
+      - image: solita/ubuntu-systemd
       - image: rabbitmq:3.7.4
 
     steps:
