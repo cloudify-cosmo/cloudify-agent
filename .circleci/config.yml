@@ -50,7 +50,7 @@ workflows:
 
   run_test:
     jobs:
-      - flake8
-      - docs
-      - py26
+#      - flake8
+#      - docs
+#      - py26
       - py27
