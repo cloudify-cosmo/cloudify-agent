@@ -25,6 +25,7 @@ from contextlib import contextmanager
 
 import cloudify.manager
 from cloudify import amqp_client, ctx
+from cloudify.constants import BROKER_PORT_SSL
 from cloudify.broker_config import broker_hostname
 from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.utils import (ManagerVersion,
@@ -318,17 +319,33 @@ def _run_script_celery(agent, params, timeout):
         result.get(timeout=timeout)
 
 
+@contextmanager
 def _get_amqp_client(agent):
-    broker_config = agent.get('broker_config', {})
-    return amqp_client.get_client(
-        amqp_host=broker_config.get('broker_ip'),
-        amqp_user=broker_config.get('broker_user'),
-        amqp_port=broker_config.get('broker_port'),
-        amqp_pass=broker_config.get('broker_pass'),
-        amqp_vhost=broker_config.get('broker_vhost'),
-        ssl_enabled=broker_config.get('broker_ssl_enabled'),
-        ssl_cert_path=_get_ssl_cert_path(broker_config)
-    )
+    delete_cert_path = False
+    if agent.get('broker_config'):
+        broker_config = agent['broker_config']
+        ssl_cert_path = _get_ssl_cert_path(broker_config)
+        # Using a temp path, so we need to delete it
+        delete_cert_path = True
+    else:
+        broker_config = _get_broker_config(agent)
+        ssl_cert_path = get_local_rest_certificate()
+
+    # TODO: Remove!
+    ctx.logger.error('Broker_config: {0}'.format(broker_config))
+    try:
+        yield amqp_client.get_client(
+            amqp_host=broker_config.get('broker_ip'),
+            amqp_user=broker_config.get('broker_user'),
+            amqp_port=broker_config.get('broker_port'),
+            amqp_pass=broker_config.get('broker_pass'),
+            amqp_vhost=broker_config.get('broker_vhost'),
+            ssl_enabled=broker_config.get('broker_ssl_enabled'),
+            ssl_cert_path=ssl_cert_path
+        )
+    finally:
+        if delete_cert_path and ssl_cert_path:
+            os.remove(ssl_cert_path)
 
 
 def _run_script_cloudify_amqp(agent, params, timeout):
@@ -338,11 +355,12 @@ def _run_script_cloudify_amqp(agent, params, timeout):
     task = {'cloudify_task': {'kwargs': params}}
     handler = amqp_client.BlockingRequestResponseHandler(
         exchange=agent['queue'])
-    client = _get_amqp_client(agent)
-    client.add_handler(handler)
-    with client:
-        result = handler.publish(task, routing_key='operation',
-                                 timeout=timeout)
+
+    with _get_amqp_client(agent) as client:
+        client.add_handler(handler)
+        with client:
+            result = handler.publish(task, routing_key='operation',
+                                     timeout=timeout)
     error = result.get('error')
     if error:
         raise deserialize_known_exception(error)
@@ -445,8 +463,8 @@ def _validate_celery(agent):
 
 
 def _validate_cloudify_amqp(agent):
-    client = _get_amqp_client(agent)
-    return utils.is_agent_alive(agent['name'], client)
+    with _get_amqp_client(agent) as client:
+        return utils.is_agent_alive(agent['name'], client)
 
 
 def _uses_cloudify_amqp(agent):
