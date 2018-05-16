@@ -286,6 +286,7 @@ def _validate_created_agent(new_agent):
                 new_agent['name'], created_agent['name'])
         )
     created_agent.pop('old_agent_version', None)
+    created_agent.pop('broker_config', None)
     return created_agent
 
 
