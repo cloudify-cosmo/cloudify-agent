@@ -411,8 +411,8 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
     old_agent = _validate_agent()
     _update_broker_config(old_agent, manager_ip, manager_certificate)
     agents = _run_install_script(old_agent, install_agent_timeout)
-    returned_agent = agents['new']
-    ctx.logger.info('Installed agent {0}'.format(returned_agent['name']))
+    new_agent = agents['new']
+    ctx.logger.info('Installed agent {0}'.format(new_agent['name']))
 
     result = _validate_current_amqp()
     if not result['agent_alive']:
@@ -420,7 +420,8 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
 
     # Setting old_cloudify_agent in order to uninstall it later.
     ctx.instance.runtime_properties['old_cloudify_agent'] = agents['old']
-    ctx.instance.runtime_properties['cloudify_agent'] = returned_agent
+    ctx.instance.runtime_properties['cloudify_agent'] = new_agent
+    ctx.instance.update()
 
 
 def _validate_celery(agent):
