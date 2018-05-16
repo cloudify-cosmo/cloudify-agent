@@ -15,6 +15,7 @@
 
 from cloudify import ctx
 from cloudify.decorators import operation
+from cloudify.amqp_client import get_client
 from cloudify.exceptions import CommandExecutionError
 
 from cloudify_agent.api import utils
@@ -74,12 +75,12 @@ def start(cloudify_agent, **_):
     externally (e.g. userdata script), and all we have to do is wait for it
     """
     tenant = cloudify_agent['rest_tenant']
-    agent_alive = utils.is_agent_alive(
-        name=cloudify_agent['queue'],
-        username=tenant['rabbitmq_username'],
-        password=tenant['rabbitmq_password'],
-        vhost=tenant['rabbitmq_vhost']
+    client = get_client(
+        amqp_user=tenant['rabbitmq_username'],
+        amqp_pass=tenant['rabbitmq_password'],
+        amqp_vhost=tenant['rabbitmq_vhost']
     )
+    agent_alive = utils.is_agent_alive(cloudify_agent['queue'], client)
 
     if not agent_alive:
         return ctx.operation.retry(
