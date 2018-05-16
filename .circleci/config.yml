@@ -16,12 +16,12 @@ defaults:
           fi
 
       - run: |
-          sudo apt-get install -y cron
+          apt-get install -y cron
 
       - run: |
-          sudo /etc/init.d/cron start
-          sudo pip install -U pip==9.0.1
-          sudo pip install tox
+          /etc/init.d/cron start
+          pip install -U pip==9.0.1
+          pip install tox
           tox -e ${TOX_TEST}
 
 jobs:
