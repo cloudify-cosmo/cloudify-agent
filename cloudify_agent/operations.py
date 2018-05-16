@@ -331,7 +331,7 @@ def _get_amqp_client(agent):
         amqp_pass=broker_config.get('broker_pass'),
         amqp_vhost=broker_config.get('broker_vhost'),
         ssl_enabled=broker_config.get('broker_ssl_enabled'),
-        ssl_cert_path=broker_config.get('broker_ssl_cert')
+        ssl_cert_path=_get_ssl_cert_path(broker_config)
     )
 
 
