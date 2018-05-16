@@ -45,8 +45,6 @@ class TestDaemonFactory(BaseTest):
         self.assertEqual(self.daemon_name, daemon.name)
         self.assertEqual('queue', daemon.queue)
         self.assertEqual('127.0.0.1', daemon.rest_host)
-        self.assertEqual('amqp://guest:guest@127.0.0.1:5671//',
-                         daemon.broker_url)
         self.assertEqual('user', daemon.user)
         self.assertEqual(self._rest_cert_path,
                          daemon.local_rest_cert_file)
@@ -77,8 +75,6 @@ class TestDaemonFactory(BaseTest):
         self.assertEqual('queue', loaded.queue)
         self.assertEqual('127.0.0.1', loaded.rest_host)
         self.assertEqual('user', loaded.user)
-        self.assertEqual('amqp://guest:guest@127.0.0.1:5671//',
-                         daemon.broker_url)
         self.factory.delete(daemon.name)
         self.assertRaises(exceptions.DaemonNotFoundError,
                           self.factory.load, daemon.name)

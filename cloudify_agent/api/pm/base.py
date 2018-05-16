@@ -243,27 +243,6 @@ class Daemon(object):
         self.deployment_id = params.get('deployment_id')
         self.queue = params.get('queue') or self._get_queue_from_manager()
 
-        # This is not retrieved by param as an option any more as it then
-        # introduces ambiguity over which values should be used if the
-        # components of this differ from the passed in broker_user, pass, etc
-        # These components need to be known for the _delete_amqp_queues
-        # function.
-        if self.cluster:
-            self.broker_url = [defaults.BROKER_URL.format(
-                host=node_ip,
-                port=self.broker_port,
-                username=self.broker_user,
-                password=self.broker_pass,
-                vhost=self.broker_vhost
-            ) for node_ip in self.cluster]
-        else:
-            self.broker_url = defaults.BROKER_URL.format(
-                host=self.broker_ip,
-                port=self.broker_port,
-                username=self.broker_user,
-                password=self.broker_pass,
-                vhost=self.broker_vhost
-            )
         self.min_workers = params.get('min_workers') or defaults.MIN_WORKERS
         self.max_workers = params.get('max_workers') or defaults.MAX_WORKERS
         self.workdir = params.get('workdir') or os.getcwd()
