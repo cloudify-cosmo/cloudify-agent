@@ -306,20 +306,17 @@ def _build_install_script_params(old_agent, script_url):
     return kwargs
 
 
-def _run_script_celery(agent, params, script_path, timeout):
+def _run_script_celery(agent, params, timeout):
     with _celery_app(agent) as celery_app:
         if not _validate_celery(agent):
             raise RecoverableError('Agent is not responding')
         task = _celery_task_name(agent['version'])
-        try:
-            result = celery_app.send_task(
-                task,
-                kwargs=params,
-                queue=agent['queue']
-            )
-            result.get(timeout=timeout)
-        finally:
-            os.remove(script_path)
+        result = celery_app.send_task(
+            task,
+            kwargs=params,
+            queue=agent['queue']
+        )
+        result.get(timeout=timeout)
 
 
 def _get_amqp_client(agent):
@@ -335,7 +332,7 @@ def _get_amqp_client(agent):
     )
 
 
-def _run_script_cloudify_amqp(agent, params, script_path, timeout):
+def _run_script_cloudify_amqp(agent, params, timeout):
     if not _validate_cloudify_amqp(agent):
         raise RecoverableError('Agent is not responding')
 
@@ -368,7 +365,10 @@ def _run_install_script(old_agent, timeout, manager_ip=None, manager_cert=None,
 
     installer = _run_script_cloudify_amqp if _uses_cloudify_amqp(old_agent) \
         else _run_script_celery
-    installer(old_agent, params, script_path, timeout)
+    try:
+        installer(old_agent, params, timeout)
+    finally:
+        os.remove(script_path)
     cleanup_scripts()
     created_agent = _validate_created_agent(new_agent)
     return {'old': old_agent, 'new': created_agent}
