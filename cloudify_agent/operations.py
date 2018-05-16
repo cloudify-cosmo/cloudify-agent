@@ -535,17 +535,12 @@ def transfer_agent_amqp(transfer_agent_timeout=300,
     # Since we haven't restored a snapshot on the current (old) manager, the
     # agent doesn't have the `broker_config` dict, and so we need to create it
     manager_ip = _get_network_ip(manager_ip, old_agent)
-    agents = _run_install_script(old_agent, transfer_agent_timeout, manager_ip,
-                                 manager_certificate, manager_rest_token,
-                                 transfer_agent=True)
-    returned_agent = agents['new']
-    ctx.logger.info('Configured agent {0} to work with the new Manager'.
-                    format(returned_agent['name']))
+    _run_install_script(old_agent, transfer_agent_timeout, manager_ip,
+                        manager_certificate, manager_rest_token,
+                        transfer_agent=True)
+    ctx.logger.info('Configured agent {0} to work with the new Manager [{1}]'.
+                    format(old_agent['name'], manager_ip))
 
-    # Make sure the agent is alive:
-    result = _validate_current_amqp()
-    if not result['agent_alive']:
-        raise RecoverableError('Agent is not responding')
 
 def _get_broker_config(agent):
     """
