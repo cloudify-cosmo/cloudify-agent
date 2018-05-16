@@ -438,7 +438,6 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
     # Setting old_cloudify_agent in order to uninstall it later.
     ctx.instance.runtime_properties['old_cloudify_agent'] = agents['old']
     ctx.instance.runtime_properties['cloudify_agent'] = new_agent
-    ctx.instance.update()
 
 
 def _validate_celery(agent):
