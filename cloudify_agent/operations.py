@@ -547,36 +547,19 @@ def transfer_agent_amqp(transfer_agent_timeout=300,
     if not result['agent_alive']:
         raise RecoverableError('Agent is not responding')
 
-
-def _create_broker_config(transfer_mode=False):
+def _get_broker_config(agent):
     """
-    This function creates a dictionary called 'broker_config' within the
-    'cloudify_agent' dict, that contains all the required information that will
-     later be used to create a Celery client
-    :return:
+    Return a dictionary with params used to connect to AMQP
     """
-    if 'cloudify_agent' not in ctx.instance.runtime_properties:
-        raise NonRecoverableError(
-            'cloudify_agent key not available in runtime_properties')
-    agent = ctx.instance.runtime_properties['cloudify_agent']
-    if 'broker_config' not in agent:
-        agent['broker_config'] = dict()
-    broker_conf = agent['broker_config']
-    broker_conf['broker_ip'] = agent.get('broker_ip')
     tenant = agent.get('rest_tenant', {})
-    broker_conf['broker_user'] = tenant.get('rabbitmq_username')
-    broker_conf['broker_vhost'] = tenant.get('rabbitmq_vhost')
-    broker_conf['broker_pass'] = tenant.get('rabbitmq_password')
-    broker_conf['broker_ssl_enabled'] = True
-    if transfer_mode:
-        status = ctx.instance.runtime_properties['agent_status']
-        status['agent_alive_crossbroker'] = True
-        ssl_path = agent.get('broker_ssl_cert_path')
-        with open(ssl_path, 'r') as ssl_file:
-            ssl_cert = ssl_file.read()
-        broker_conf['broker_ssl_cert'] = ssl_cert
-    ctx.instance.runtime_properties['cloudify_agent'] = agent
-    ctx.instance.update()
+    return {
+        'broker_ip': agent.get('broker_ip'),
+        'broker_port': BROKER_PORT_SSL,
+        'broker_user': tenant.get('rabbitmq_username'),
+        'broker_vhost': tenant.get('rabbitmq_vhost'),
+        'broker_pass': tenant.get('rabbitmq_password'),
+        'broker_ssl_enabled': True
+    }
 
 
 def _update_broker_config(agent, manager_ip, manager_cert):
