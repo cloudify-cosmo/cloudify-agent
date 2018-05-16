@@ -17,6 +17,7 @@ defaults:
 
       - run: |
           apt-get install -y cron
+          curl -O https://bootstrap.pypa.io/get-pip.py && python get-pip.py
 
       - run: |
           /etc/init.d/cron start
