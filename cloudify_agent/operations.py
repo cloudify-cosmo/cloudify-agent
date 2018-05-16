@@ -331,8 +331,6 @@ def _get_amqp_client(agent):
         broker_config = _get_broker_config(agent)
         ssl_cert_path = get_local_rest_certificate()
 
-    # TODO: Remove!
-    ctx.logger.error('Broker_config: {0}'.format(broker_config))
     try:
         yield amqp_client.get_client(
             amqp_host=broker_config.get('broker_ip'),
