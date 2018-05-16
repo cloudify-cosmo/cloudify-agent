@@ -168,9 +168,11 @@ def _save_daemon(daemon):
 
 def _set_default_new_agent_config_values(
         old_agent, new_agent, transfer_agent=False):
-    if not transfer_agent:
-        new_agent['name'] = utils.internal.generate_new_agent_name(
-            old_agent['name'])
+    if transfer_agent:
+        name = old_agent['name']
+    else:
+        name = utils.internal.generate_new_agent_name(old_agent['name'])
+    new_agent['name'] = name
     # Set the broker IP explicitly to the current manager's IP
     new_agent['broker_ip'] = broker_hostname
     new_agent['old_agent_version'] = old_agent['version']
@@ -180,14 +182,11 @@ def _set_default_new_agent_config_values(
     new_agent['cluster'] = ctx.bootstrap_context.cloudify_agent.cluster or []
 
 
-def _copy_values_from_old_agent_config(
-        old_agent, new_agent, transfer_agent=False):
+def _copy_values_from_old_agent_config(old_agent, new_agent):
     fields_to_copy = ['windows', 'ip', 'basedir', 'user', 'distro_codename',
                       'distro', 'broker_ssl_cert_path', 'agent_rest_cert_path',
                       'network', 'local', 'install_method',
                       'process_management']
-    if transfer_agent:
-        fields_to_copy.append('name')
     for field in fields_to_copy:
         if field in old_agent:
             new_agent[field] = old_agent[field]
@@ -196,7 +195,7 @@ def _copy_values_from_old_agent_config(
 def create_new_agent_config(old_agent, manager_ip=None, transfer_agent=False):
     new_agent = CloudifyAgentConfig()
     _set_default_new_agent_config_values(old_agent, new_agent, transfer_agent)
-    _copy_values_from_old_agent_config(old_agent, new_agent, transfer_agent)
+    _copy_values_from_old_agent_config(old_agent, new_agent)
     new_agent.set_default_values()
     new_agent.set_installation_params(runner=None)
     new_agent['broker_ip'] = manager_ip
