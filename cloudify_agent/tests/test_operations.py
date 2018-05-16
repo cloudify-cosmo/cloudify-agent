@@ -110,8 +110,12 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase):
             return '{0}/resources'.format(http_rest_host({}))
 
         # Need to patch, to avoid broker_ssl_enabled being True
+        @contextmanager
         def get_amqp_client(agent):
-            return get_client()
+            try:
+                yield get_client()
+            finally:
+                pass
 
         with self._manager_env():
             with patch('cloudify_agent.api.utils.get_manager_file_server_url',
