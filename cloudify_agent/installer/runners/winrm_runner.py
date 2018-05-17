@@ -13,7 +13,10 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import winrm
+try:
+    import winrm
+except Exception:
+    winrm = None
 import ntpath
 
 from cloudify.exceptions import CommandExecutionException
@@ -80,7 +83,11 @@ class WinRMRunner(object):
         self.logger.debug('WinRM connection is ready')
 
     def _create_session(self):
-
+        if not winrm:
+            raise CommandExecutionError(
+                command='winrm',
+                error='winrm not installed'
+            )
         winrm_url = '{0}://{1}:{2}/{3}'.format(
             self.session_config['protocol'],
             self.session_config['host'],
