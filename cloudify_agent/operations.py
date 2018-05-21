@@ -28,7 +28,8 @@ from cloudify import amqp_client, ctx
 from cloudify.constants import BROKER_PORT_SSL
 from cloudify.broker_config import broker_hostname
 from cloudify.exceptions import NonRecoverableError, RecoverableError
-from cloudify.utils import (ManagerVersion,
+from cloudify.utils import (get_tenant,
+                            ManagerVersion,
                             get_local_rest_certificate)
 from cloudify.decorators import operation
 from cloudify.error_handling import deserialize_known_exception
@@ -41,6 +42,8 @@ from cloudify_agent.api import utils
 from cloudify_agent.installer.script import \
     init_script_download_link, cleanup_scripts
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
+from cloudify_agent.installer.config.agent_config import \
+    update_agent_runtime_properties
 
 CELERY_TASK_RESULT_EXPIRES = 600
 
@@ -87,18 +90,15 @@ def restart(new_name=None, delay_period=5, **_):
     # the update cannot be done by setting a nested property directly
     # because they are not recognized as 'dirty'
     cloudify_agent['name'] = new_name
-    ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
-
-    # must update instance here because the process may shutdown before
-    # the decorator has a chance to do it.
-    ctx.instance.update()
+    update_agent_runtime_properties(cloudify_agent)
 
     daemon = _load_daemon(logger=ctx.logger)
 
     # make the current master stop listening to the current queue
     # to avoid a situation where we have two masters listening on the
     # same queue.
-    app = get_celery_app(tenant=cloudify_agent['rest_tenant'])
+    rest_tenant = get_tenant()
+    app = get_celery_app(tenant=rest_tenant)
     app.control.cancel_consumer(
         queue=daemon.queue,
         destination=['celery@{0}'.format(daemon.name)]
@@ -332,13 +332,14 @@ def _get_amqp_client(agent):
         broker_config = _get_broker_config(agent)
         ssl_cert_path = get_local_rest_certificate()
 
+    tenant = get_tenant()
     try:
         yield amqp_client.get_client(
             amqp_host=broker_config.get('broker_ip'),
-            amqp_user=broker_config.get('broker_user'),
+            amqp_user=tenant.get('rabbitmq_username'),
             amqp_port=broker_config.get('broker_port'),
-            amqp_pass=broker_config.get('broker_pass'),
-            amqp_vhost=broker_config.get('broker_vhost'),
+            amqp_pass=tenant.get('rabbitmq_password'),
+            amqp_vhost=tenant.get('rabbitmq_vhost'),
             ssl_enabled=broker_config.get('broker_ssl_enabled'),
             ssl_cert_path=ssl_cert_path
         )
@@ -437,7 +438,7 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
 
     # Setting old_cloudify_agent in order to uninstall it later.
     ctx.instance.runtime_properties['old_cloudify_agent'] = agents['old']
-    ctx.instance.runtime_properties['cloudify_agent'] = new_agent
+    update_agent_runtime_properties(new_agent)
 
 
 def _validate_celery(agent):
@@ -562,13 +563,9 @@ def _get_broker_config(agent):
     """
     Return a dictionary with params used to connect to AMQP
     """
-    tenant = agent.get('rest_tenant', {})
     return {
         'broker_ip': agent.get('broker_ip'),
         'broker_port': BROKER_PORT_SSL,
-        'broker_user': tenant.get('rabbitmq_username'),
-        'broker_vhost': tenant.get('rabbitmq_vhost'),
-        'broker_pass': tenant.get('rabbitmq_password'),
         'broker_ssl_enabled': True
     }
 
@@ -585,8 +582,7 @@ def _update_broker_config(agent, manager_ip, manager_cert):
         broker_conf['broker_ip'] = manager_ip
     if manager_cert:
         broker_conf['broker_ssl_cert'] = manager_cert
-    ctx.instance.runtime_properties['cloudify_agent'] = agent
-    ctx.instance.update()
+    update_agent_runtime_properties(agent)
 
 
 def _conceal_amqp_password(url):

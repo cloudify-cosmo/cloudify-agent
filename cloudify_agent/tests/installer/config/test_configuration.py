@@ -137,7 +137,6 @@ class TestConfiguration(BaseTest):
             'system_python': 'python',
             'bypass_maintenance': False,
             'rest_token': 'test_token',
-            'rest_tenant': {},
             'network': 'default',
             'version': utils.get_agent_version()
         }

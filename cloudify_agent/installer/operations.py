@@ -16,6 +16,7 @@
 from cloudify import ctx
 from cloudify.decorators import operation
 from cloudify.amqp_client import get_client
+from cloudify import utils as cloudify_utils
 from cloudify.exceptions import CommandExecutionError
 
 from cloudify_agent.api import utils
@@ -74,7 +75,7 @@ def start(cloudify_agent, **_):
     Only called in "init_script"/"plugin" mode, where the agent is started
     externally (e.g. userdata script), and all we have to do is wait for it
     """
-    tenant = cloudify_agent['rest_tenant']
+    tenant = cloudify_utils.get_tenant()
     client = get_client(
         amqp_user=tenant['rabbitmq_username'],
         amqp_pass=tenant['rabbitmq_password'],
