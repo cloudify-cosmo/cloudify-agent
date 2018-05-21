@@ -20,7 +20,7 @@ import ntpath
 import copy
 import base64
 
-from cloudify.utils import setup_logger
+from cloudify.utils import setup_logger, get_tenant
 from cloudify_agent.installer.runners.local_runner import LocalCommandRunner
 from cloudify.utils import get_is_bypass_maintenance
 
@@ -114,7 +114,7 @@ class AgentInstaller(object):
     def _create_agent_env(self, manager_ip=None, rest_token=None):
         # Try to get broker credentials from the tenant. If they aren't set
         # get them from the broker_config module
-        tenant = self.cloudify_agent.get('rest_tenant', {})
+        tenant = get_tenant()
         tenant_name = tenant.get('name', defaults.DEFAULT_TENANT_NAME)
         broker_user = tenant.get('rabbitmq_username',
                                  broker_config.broker_username)
