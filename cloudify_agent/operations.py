@@ -390,26 +390,29 @@ def _run_install_script(old_agent, timeout, manager_ip=None, manager_cert=None,
     return {'old': old_agent, 'new': created_agent}
 
 
-def _validate_agent(transfer_mode=False):
+def _get_agent():
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
-    agent = ctx.instance.runtime_properties['cloudify_agent']
+    return ctx.instance.runtime_properties['cloudify_agent']
+
+
+def _get_and_validate_agent():
+    agent = _get_agent()
     if 'broker_config' not in agent:
         raise NonRecoverableError(
             'broker_config key not available in cloudify_agent'
         )
-    if not transfer_mode:
-        if 'agent_status' not in ctx.instance.runtime_properties:
-            raise NonRecoverableError(
-                ('agent_status key not available in runtime_properties, '
-                 'validation needs to be performed before '
-                 'new agent installation'))
-        status = ctx.instance.runtime_properties['agent_status']
-        if not status['agent_alive_crossbroker']:
-            raise NonRecoverableError(
-                ('Last validation attempt has shown that agent is dead. '
-                 'Rerun validation.'))
+    if 'agent_status' not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            ('agent_status key not available in runtime_properties, '
+             'validation needs to be performed before '
+             'new agent installation'))
+    status = ctx.instance.runtime_properties['agent_status']
+    if not status['agent_alive_crossbroker']:
+        raise NonRecoverableError(
+            ('Last validation attempt has shown that agent is dead. '
+             'Rerun validation.'))
     return agent
 
 
@@ -425,7 +428,7 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
     :param manager_certificate: the SSL certificate of the current leader
     (master) Manager. (relevant only in HA cluster)
     """
-    old_agent = _validate_agent()
+    old_agent = _get_and_validate_agent()
     _update_broker_config(old_agent, manager_ip, manager_certificate)
     agents = _run_install_script(old_agent, install_agent_timeout)
     new_agent = agents['new']
@@ -546,7 +549,7 @@ def validate_agent_amqp(current_amqp=True, manager_ip=None,
 def transfer_agent_amqp(transfer_agent_timeout=300,
                         manager_ip=None, manager_certificate=None,
                         manager_rest_token=None, **_):
-    old_agent = _validate_agent(transfer_mode=True)
+    old_agent = _get_agent()
 
     # Since we haven't restored a snapshot on the current (old) manager, the
     # agent doesn't have the `broker_config` dict, and so we need to create it
