@@ -30,6 +30,8 @@ from cloudify.exceptions import CommandExecutionError
 from cloudify_agent.installer import exceptions
 from cloudify_agent.api import utils as api_utils
 
+from cloudify_rest_client.utils import is_kerberos_env
+
 DEFAULT_REMOTE_EXECUTION_PORT = 22
 RSA_PRIVATE_KEY_PREFIX = '-----BEGIN RSA PRIVATE KEY-----'
 
@@ -98,6 +100,11 @@ class FabricRunner(object):
                 env['key_filename'] = self.key
         if self.password:
             env['password'] = self.password
+        if is_kerberos_env():
+            # For GSSAPI, the fabric env just needs to have
+            # gss_auth and gss_kex set to True
+            env['gss_auth'] = True
+            env['gss_kex'] = True
 
         env.update(COMMON_ENV)
         return env

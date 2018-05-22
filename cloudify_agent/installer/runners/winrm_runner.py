@@ -27,6 +27,8 @@ from cloudify.utils import setup_logger
 from cloudify_agent.installer import utils
 from cloudify_agent.api import utils as api_utils
 
+from cloudify_rest_client.utils import is_kerberos_env
+
 DEFAULT_WINRM_PORT = '5985'
 DEFAULT_WINRM_URI = 'wsman'
 DEFAULT_WINRM_PROTOCOL = 'http'
@@ -93,10 +95,20 @@ class WinRMRunner(object):
             self.session_config['host'],
             self.session_config['port'],
             self.session_config['uri'])
-        return winrm.Session(
-            target=winrm_url,
-            auth=(self.session_config['user'],
-                  self.session_config['password']))
+        if is_kerberos_env():
+            # The change is simply setting the transport to kerberos
+            # and setting the kerberos_hostname_override parameter
+            # to the destination hostname.
+            return winrm.Session(
+                target=winrm_url,
+                auth=(self.session_config['user'], None),
+                transport='kerberos',
+                kerberos_hostname_override=self.session_config['host'])
+        else:
+            return winrm.Session(
+                target=winrm_url,
+                auth=(self.session_config['user'],
+                      self.session_config['password']))
 
     def run(self, command, raise_on_failure=True, execution_env=None,
             powershell=False):
