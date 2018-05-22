@@ -83,6 +83,9 @@ setup(
         ]
     },
     extras_require={
-        'kerberos': ['pywinrm[Kerberos]==0.3.0']
+        'kerberos': [
+            'pywinrm[Kerberos]==0.3.0',
+            'python-gssapi==0.6.4'
+        ]
     }
 )
