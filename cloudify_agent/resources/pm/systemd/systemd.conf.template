@@ -5,6 +5,7 @@ MANAGER_FILE_SERVER_URL="https://{{ rest_host }}:{{ rest_port }}/resources"
 LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}"
 REST_HOST="{{ rest_host }}"
 REST_PORT="{{ rest_port }}"
+AGENT_NAME="{{ name }}"
 
 # Executable tempfiles directory override
 CFY_EXEC_TEMP="{{ executable_temp_path }}"
