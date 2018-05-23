@@ -29,7 +29,8 @@ from cloudify.constants import BROKER_PORT_SSL
 from cloudify.broker_config import broker_hostname
 from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.utils import (ManagerVersion,
-                            get_local_rest_certificate)
+                            get_local_rest_certificate,
+                            get_manager_rest_service_host)
 from cloudify.decorators import operation
 from cloudify.error_handling import deserialize_known_exception
 
@@ -514,7 +515,8 @@ def _validate_current_amqp(agent):
 
 @operation
 def validate_agent_amqp(current_amqp=True, manager_ip=None,
-                        manager_certificate=None, **_):
+                        manager_certificate=None,
+                        update_runtime_properties=False, **_):
     """
     Validate connectivity between a cloudify agent and an AMQP server
     :param current_amqp: If set to True, validation is done against the
@@ -526,11 +528,23 @@ def validate_agent_amqp(current_amqp=True, manager_ip=None,
     to the Manager's RabbitMQ.
     :param manager_certificate: the SSL certificate of the current leader
     (master) Manager.
+    :param update_runtime_properties: If set, the agent's config in the node
+    instance's runtime properties will be updated with the current manager's
+    host and cluster settings (where applicable)
     """
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
     agent = ctx.instance.runtime_properties['cloudify_agent']
+    if update_runtime_properties:
+        if manager_ip or manager_certificate:
+            raise NonRecoverableError(
+                "`update_runtime_properties` can't be set together with "
+                "either the `manager_ip` or `manager_certificate` params"
+            )
+        manager_ip = get_manager_rest_service_host()
+        manager_certificate = _get_ssl_cert_content(_get_manager_version())
+
     _update_broker_config(agent, manager_ip, manager_certificate)
 
     validator = _validate_current_amqp if current_amqp else _validate_old_amqp
