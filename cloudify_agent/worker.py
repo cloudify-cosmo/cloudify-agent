@@ -114,6 +114,10 @@ class CloudifyWorkflowConsumer(CloudifyOperationConsumer):
 class ServiceTaskConsumer(TaskConsumer):
     routing_key = 'service'
 
+    def __init__(self, name, *args, **kwargs):
+        self.name = name
+        super(ServiceTaskConsumer, self).__init__(*args, **kwargs)
+
     def handle_task(self, full_task):
         service_tasks = {
             'ping': self.ping_task,
@@ -137,6 +141,8 @@ class ServiceTaskConsumer(TaskConsumer):
         return {'time': time.time()}
 
     def cluster_update_task(self, nodes):
+        if not self.name:
+            raise RuntimeError('cluster-update sent to agent with no name set')
         factory = DaemonFactory()
         daemon = factory.load(self.name)
         network_name = daemon.network
@@ -178,7 +184,7 @@ def make_amqp_worker(args):
     handlers = [
         CloudifyOperationConsumer(args.queue, args.max_workers),
         CloudifyWorkflowConsumer(args.queue, args.max_workers),
-        ServiceTaskConsumer(args.queue, args.max_workers),
+        ServiceTaskConsumer(args.name, args.queue, args.max_workers),
     ]
     return AMQPConnection(handlers=handlers, name=args.name)
 
