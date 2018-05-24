@@ -316,7 +316,8 @@ class Daemon(object):
             self.broker_port,
             self.broker_vhost,
             self.broker_ssl_enabled,
-            self.broker_ssl_cert_path
+            self.broker_ssl_cert_path,
+            name=self.name
         )
 
     def _is_daemon_running(self):
