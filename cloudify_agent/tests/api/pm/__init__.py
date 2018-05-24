@@ -27,6 +27,7 @@ from cloudify.error_handling import deserialize_known_exception
 
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
+from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.api.plugins.installer import PluginInstaller
 
 from cloudify_agent.tests import BaseTest
@@ -162,7 +163,10 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         }
         params.update(attributes)
 
+        factory = DaemonFactory()
         daemon = self.daemon_cls(**params)
+        factory.save(daemon)
+        self.addCleanup(factory.delete, daemon.name)
         self.daemons.append(daemon)
         return daemon
 
