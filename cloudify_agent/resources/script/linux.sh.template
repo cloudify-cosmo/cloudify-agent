@@ -72,6 +72,7 @@ download_and_extract_agent_package()
     download $(package_url) {{ conf.basedir }}/agent.tar.gz
     mkdir -p {{ conf.agent_dir }}
     tar xzf {{ conf.basedir }}/agent.tar.gz --strip=1 -C {{ conf.agent_dir }}
+    rm -f {{ conf.basedir }}/agent.tar.gz
 }
 export -f download_and_extract_agent_package
 
