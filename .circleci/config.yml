@@ -3,7 +3,7 @@ version: 2
 defaults:
   - &test_defaults
     docker:
-      - image: circleci/python:2.7
+      - image: circleci/python:2.7.14
       - image: rabbitmq:3.7.4
 
     steps:
