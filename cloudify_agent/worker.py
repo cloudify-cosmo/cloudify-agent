@@ -186,7 +186,8 @@ def make_amqp_worker(args):
         CloudifyWorkflowConsumer(args.queue, args.max_workers),
         ServiceTaskConsumer(args.name, args.queue, args.max_workers),
     ]
-    return AMQPConnection(handlers=handlers, name=args.name)
+    return AMQPConnection(handlers=handlers, name=args.name,
+                          connect_timeout=None)
 
 
 def main():
