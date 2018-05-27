@@ -1,5 +1,6 @@
 #! /bin/bash -e
 
+
 {% if add_ssl_cert %}
 add_ssl_cert()
 {
