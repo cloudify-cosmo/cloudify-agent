@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import errno
 import getpass
 import json
 import os
@@ -322,27 +321,7 @@ class Daemon(object):
 
     def _is_daemon_running(self):
         self._logger.debug('Checking if agent daemon is running...')
-        if utils.is_agent_alive(self.queue, self._get_client(), timeout=3):
-            return True
-        if os.name == 'nt':
-            # windows has no pidfiles, so if the agent wasn't alive via
-            # the amqp check, we must assume it's down.
-            return False
-        try:
-            with open(self.pid_file) as f:
-                pid = int(f.read())
-        except (IOError, ValueError):
-            return False
-
-        # on linux, kill with signal 0 only succeeds if the process exists.
-        # if we get a permission error, then that also must mean the process
-        # exists, and we don't have the privileges to access it
-        try:
-            os.kill(pid, 0)
-        except OSError as e:
-            return e.errno == errno.EPERM
-        else:
-            return True
+        return utils.is_agent_alive(self.queue, self._get_client(), timeout=3)
 
     ########################################################################
     # the following methods must be implemented by the sub-classes as they
