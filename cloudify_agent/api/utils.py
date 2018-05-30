@@ -28,6 +28,7 @@ import pkgutil
 import appdirs
 import pkg_resources
 
+import pika
 from jinja2 import Template
 
 from cloudify.workflows import tasks as workflows_tasks
@@ -235,7 +236,8 @@ def is_agent_alive(name,
         try:
             response = handler.publish(task, routing_key='service',
                                        timeout=timeout)
-        except RuntimeError:
+        except (RuntimeError, pika.exceptions.AMQPError) as e:
+            logger.error('Error sending a ping task to {0}: {1}'.format(e))
             return False
     return 'time' in response
 
