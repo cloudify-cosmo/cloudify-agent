@@ -61,7 +61,7 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest):
         daemon.start()
 
         # check it started
-        timeout = daemon.cron_respawn_delay * 60 + 10
+        timeout = daemon.cron_respawn_delay * 60 + 20
         self.wait_for_daemon_alive(daemon.queue, timeout=timeout)
 
         # lets kill the process
@@ -69,7 +69,7 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest):
         self.wait_for_daemon_dead(daemon.queue)
 
         # check it was respawned
-        timeout = daemon.cron_respawn_delay * 60 + 10
+        timeout = daemon.cron_respawn_delay * 60 + 20
         self.wait_for_daemon_alive(daemon.queue, timeout=timeout)
 
         # this should also disable the crontab entry
@@ -77,5 +77,5 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest):
         self.wait_for_daemon_dead(daemon.queue)
 
         # sleep the cron delay time and make sure the daemon is still dead
-        time.sleep(daemon.cron_respawn_delay * 60 + 5)
+        time.sleep(daemon.cron_respawn_delay * 60 + 20)
         self.assert_daemon_dead(daemon.queue)

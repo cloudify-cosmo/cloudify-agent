@@ -169,11 +169,11 @@ class BaseTest(unittest.TestCase):
         deadline = time.time() + timeout
 
         while time.time() < deadline:
-            if self._is_agent_alive(name, timeout=1):
+            if self._is_agent_alive(name, timeout=5):
                 return
             self.logger.info('Waiting for daemon {0} to start...'
                              .format(name))
-            time.sleep(5)
+            time.sleep(1)
         raise RuntimeError('Failed waiting for daemon {0} to start. Waited '
                            'for {1} seconds'.format(name, timeout))
 
@@ -181,7 +181,7 @@ class BaseTest(unittest.TestCase):
         deadline = time.time() + timeout
 
         while time.time() < deadline:
-            if not self._is_agent_alive(name, timeout=1):
+            if not self._is_agent_alive(name, timeout=5):
                 return
             self.logger.info('Waiting for daemon {0} to stop...'
                              .format(name))
