@@ -226,6 +226,9 @@ def is_agent_alive(name,
     """
     handler = BlockingRequestResponseHandler(exchange=name)
     client.add_handler(handler)
+    # messages expire shortly before we hit the timeout - if they haven't
+    # been handled by then, they won't make the timeout
+    expiration = (timeout * 1000) - 200  # milliseconds
     with client:
         task = {
             'service_task': {
@@ -235,7 +238,7 @@ def is_agent_alive(name,
         }
         try:
             response = handler.publish(task, routing_key='service',
-                                       timeout=timeout)
+                                       timeout=timeout, expiration=expiration)
         except (RuntimeError, pika.exceptions.AMQPError) as e:
             logger.error('Error sending a ping task to {0}: {1}'
                          .format(name, e))
