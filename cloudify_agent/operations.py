@@ -560,9 +560,7 @@ def transfer_agent_amqp(transfer_agent_timeout=300,
                         manager_rest_token=None, **_):
     old_agent = _validate_agent(transfer_mode=True)
 
-    # Since we haven't restored a snapshot on the current (old) manager, the
-    # agent doesn't have the `broker_config` dict, and so we need to create it
-    manager_ip = _get_network_ip(manager_ip, old_agent)
+    manager_ip = _get_manager_ip_for_transfer(manager_ip, old_agent)
     _run_install_script(old_agent, transfer_agent_timeout, manager_ip,
                         manager_certificate, manager_rest_token,
                         transfer_agent=True)
@@ -613,15 +611,16 @@ def _create_package_url(url, ip):
     return new
 
 
-def _get_network_ip(manager_ip, agent):
+def _get_manager_ip_for_transfer(manager_ip, agent):
+    """ Return the IP of the new manager to which we transfer the agent """
+
     manager_ip = yaml.safe_load(manager_ip)
     # Multi-network mode: a dict containing networks and ips was passed
     if isinstance(manager_ip, dict):
         network_ip_mapping = manager_ip
         network_name = agent['network']
-        new_network_ip = network_ip_mapping[network_name]
-        return new_network_ip
-    # Regular mode: the only ip of the new manager was passed
+        return network_ip_mapping[network_name]
+    # Regular mode: only the ip of the new manager was passed
     elif isinstance(manager_ip, basestring):
         return manager_ip
     else:
