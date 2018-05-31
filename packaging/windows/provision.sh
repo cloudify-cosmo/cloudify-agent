@@ -39,7 +39,7 @@ export BRANCH=$6
 
 curl -u $GITHUB_USERNAME:$GITHUB_PASSWORD https://raw.githubusercontent.com/cloudify-cosmo/${REPO}/${CORE_BRANCH}/packages-urls/common_build_env.sh -o ./common_build_env.sh &&
 source common_build_env.sh &&
-curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-packager/${CORE_BRANCH}/common/provision.sh -o ./common-provision.sh &&
+curl https://raw.githubusercontent.com/cloudify-cosmo/cloudify-common/${CORE_BRANCH}/packaging/common/provision.sh -o ./common-provision.sh &&
 source common-provision.sh
 
 AGENT_BRANCH="$CORE_BRANCH"
@@ -59,7 +59,7 @@ if [[ ! -z $BRANCH ]] && [[ "$BRANCH" != "master" ]];then
 fi
 
 install_common_prereqs &&
-#install_requirements && # moved to cloudify-packager
+#install_requirements && # moved to cloudify-common
 download_wheels &&
 download_resources &&
 iscc packaging/create_install_wizard.iss &&
