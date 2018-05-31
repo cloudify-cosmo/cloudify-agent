@@ -28,6 +28,7 @@ import pkgutil
 import appdirs
 import pkg_resources
 
+import pika
 from jinja2 import Template
 
 from cloudify.workflows import tasks as workflows_tasks
@@ -225,6 +226,9 @@ def is_agent_alive(name,
     """
     handler = BlockingRequestResponseHandler(exchange=name)
     client.add_handler(handler)
+    # messages expire shortly before we hit the timeout - if they haven't
+    # been handled by then, they won't make the timeout
+    expiration = (timeout * 1000) - 200  # milliseconds
     with client:
         task = {
             'service_task': {
@@ -234,8 +238,10 @@ def is_agent_alive(name,
         }
         try:
             response = handler.publish(task, routing_key='service',
-                                       timeout=timeout)
-        except RuntimeError:
+                                       timeout=timeout, expiration=expiration)
+        except (RuntimeError, pika.exceptions.AMQPError) as e:
+            logger.error('Error sending a ping task to {0}: {1}'
+                         .format(name, e))
             return False
     return 'time' in response
 
