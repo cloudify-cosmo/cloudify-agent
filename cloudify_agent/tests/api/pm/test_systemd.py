@@ -13,12 +13,14 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import nose.tools
 from cloudify_agent.api.pm.systemd import SystemDDaemon
 
 from cloudify_agent.tests.api.pm import BaseDaemonProcessManagementTest
 from cloudify_agent.tests.api.pm import only_os
 
 
+@nose.tools.istest
 @only_os('posix')
 class TestSystemDDaemon(BaseDaemonProcessManagementTest):
 
