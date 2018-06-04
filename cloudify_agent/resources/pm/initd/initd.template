@@ -32,7 +32,7 @@ disable_cron_respawn () {
 start() {
   if [ -f "$PIDFILE" ] && ps -p $(cat "$PIDFILE"); then
     echo 'Service already running' >&2
-    return 1
+    return 0
   fi
   . {{ config_path }}
   enable_cron_respawn
@@ -47,7 +47,7 @@ stop() {
   disable_cron_respawn
   if [ ! -f "$PIDFILE" ] || ! ps -p $(cat "$PIDFILE"); then
     echo 'Service not running' >&2
-    return 1
+    return 0
   fi
   echo 'Stopping service...' >&2
   kill -15 $(cat "$PIDFILE") && rm -f "$PIDFILE"
