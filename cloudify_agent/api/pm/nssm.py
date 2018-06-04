@@ -143,6 +143,15 @@ class NonSuckingServiceManagerDaemon(Daemon):
     def stop_command(self):
         return 'sc stop {0}'.format(self.name)
 
+    def start(self, *args, **kwargs):
+        try:
+            super(NonSuckingServiceManagerDaemon, self).start(*args, **kwargs)
+        except CommandExecutionException as e:
+            if e.code == 1056:
+                self._logger.info('Service already started')
+            else:
+                raise
+
     def status(self):
         try:
             command = '{0} status {1}'.format(self.nssm_path, self.name)

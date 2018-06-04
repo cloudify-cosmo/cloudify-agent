@@ -30,6 +30,7 @@ install:
   # Download and install RabbitMQ
   #################################
   - echo Downloading Rabbit...
+
   - ps: |
         $webclient = New-Object System.Net.WebClient
         if (-Not (Test-Path "$env:rabbitmq_installer_path")) {
