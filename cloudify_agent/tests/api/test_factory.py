@@ -29,19 +29,20 @@ class TestDaemonFactory(BaseTest):
         super(TestDaemonFactory, self).setUp()
         self.daemon_name = 'test-daemon-{0}'.format(uuid.uuid4())
         self.factory = DaemonFactory(storage=get_storage_directory())
+        self.daemon_params = {
+            'process_management': 'init.d',
+            'name': self.daemon_name,
+            'queue': 'queue',
+            'rest_host': '127.0.0.1',
+            'broker_ip': '127.0.0.1',
+            'user': 'user',
+            'broker_url': '127.0.0.1',
+            'broker_ssl_enabled': True,
+            'local_rest_cert_file': self._rest_cert_path
+        }
 
     def test_new_initd(self):
-        daemon = self.factory.new(
-            process_management='init.d',
-            name=self.daemon_name,
-            queue='queue',
-            rest_host='127.0.0.1',
-            broker_ip='127.0.0.1',
-            user='user',
-            broker_url='127.0.0.1',
-            broker_ssl_enabled=True,
-            local_rest_cert_file=self._rest_cert_path
-        )
+        daemon = self.factory.new(**self.daemon_params)
         self.assertEqual(self.daemon_name, daemon.name)
         self.assertEqual('queue', daemon.queue)
         self.assertEqual('127.0.0.1', daemon.rest_host)
@@ -56,17 +57,7 @@ class TestDaemonFactory(BaseTest):
 
     def test_save_load_delete(self):
 
-        daemon = self.factory.new(
-            process_management='init.d',
-            name=self.daemon_name,
-            queue='queue',
-            rest_host='127.0.0.1',
-            broker_ip='127.0.0.1',
-            user='user',
-            broker_url='127.0.0.1',
-            broker_ssl_enabled=True,
-            local_rest_cert_file=self._rest_cert_path
-        )
+        daemon = self.factory.new(**self.daemon_params)
 
         self.factory.save(daemon)
         loaded = self.factory.load(self.daemon_name)
@@ -87,16 +78,9 @@ class TestDaemonFactory(BaseTest):
     def test_load_all(self):
 
         def _save_daemon(name):
-            daemon = self.factory.new(
-                process_management='init.d',
-                name=name,
-                queue='queue',
-                rest_host='127.0.0.1',
-                broker_ip='127.0.0.1',
-                user='user',
-                broker_url='127.0.0.1',
-                local_rest_cert_file=self._rest_cert_path
-            )
+            params = self.daemon_params.copy()
+            params['name'] = name
+            daemon = self.factory.new(**params)
             self.factory.save(daemon)
 
         if os.path.exists(get_storage_directory()):
@@ -104,7 +88,6 @@ class TestDaemonFactory(BaseTest):
 
         daemons = self.factory.load_all()
         self.assertEquals(0, len(daemons))
-
         _save_daemon(utils.internal.generate_agent_name())
         _save_daemon(utils.internal.generate_agent_name())
         _save_daemon(utils.internal.generate_agent_name())
@@ -113,27 +96,24 @@ class TestDaemonFactory(BaseTest):
         self.assertEquals(3, len(daemons))
 
     def test_new_existing_agent(self):
-
-        daemon = self.factory.new(
-            process_management='init.d',
-            name=self.daemon_name,
-            queue='queue',
-            rest_host='127.0.0.1',
-            broker_ip='127.0.0.1',
-            user='user',
-            broker_url='127.0.0.1',
-            local_rest_cert_file=self._rest_cert_path
-        )
+        daemon = self.factory.new(**self.daemon_params)
 
         self.factory.save(daemon)
 
+        # without no_overwrite, this will overwrite the existing daemon
+        daemon = self.factory.new(**self.daemon_params)
+
         self.assertRaises(exceptions.DaemonAlreadyExistsError,
                           self.factory.new,
-                          process_management='init.d',
-                          name=self.daemon_name,
-                          queue='queue',
-                          rest_host='127.0.0.1',
-                          broker_ip='127.0.0.1',
-                          user='user',
-                          broker_url='127.0.0.1',
-                          local_rest_cert_file=self._rest_cert_path)
+                          no_overwrite=True,
+                          **self.daemon_params)
+
+    def test_new_existing_agent_transfer_mode(self):
+        daemon = self.factory.new(**self.daemon_params)
+
+        self.factory.save(daemon)
+
+        # with no_overwrite, the agent is still overwritten if
+        # agents_transfer_mode is set
+        daemon = self.factory.new(no_overwrite=True, agents_transfer_mode=True,
+                                  **self.daemon_params)

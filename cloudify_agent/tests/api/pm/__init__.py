@@ -174,6 +174,21 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon = self.create_daemon()
         daemon.create()
 
+    def test_create_overwrite(self):
+        daemon = self.create_daemon()
+        daemon.create()
+        daemon.configure()
+        daemon.start()
+        self.wait_for_daemon_alive(daemon.queue)
+
+        daemon.create()
+        daemon.configure()
+        daemon.start()
+
+        self.wait_for_daemon_alive(daemon.queue)
+        daemon.stop()
+        self.wait_for_daemon_dead(daemon.queue)
+
     def test_configure(self):
         raise NotImplementedError('Must be implemented by sub-class')
 

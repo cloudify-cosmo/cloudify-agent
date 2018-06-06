@@ -103,14 +103,8 @@ class DaemonFactory(object):
         :return: A daemon instance.
         :rtype: cloudify_agent.api.pm.base.Daemon
         """
-        name = attributes.get('name')
-        is_agents_transfer = attributes.get('agents_transfer_mode')
-        if name and not is_agents_transfer:
-            # an explicit name was passed, and we are not in 'agents transfer
-            # mode': make sure we don't already have a daemon with that name.
-            # If the executed workflow is 'agents transfer' we skip the
-            # daemon name validation (since we intend to create another daemon
-            # object with the same name)
+        if self._check_existing(attributes):
+            name = attributes.get('name')
             try:
                 self.load(name, logger=logger)
                 # this means we do have one, raise an error
@@ -236,3 +230,20 @@ class DaemonFactory(object):
         cluster_path = os.path.join(
             self.storage, 'cluster-{0}.json'.format(name))
         cluster_settings.delete_cluster_settings(filename=cluster_path)
+
+    def _check_existing(self, attributes):
+        """Should we verify that the agent does not exist yet?
+
+        If this returns True, agent service will be overwritten during
+        installation if it exists.
+        """
+        if not attributes.get('name'):
+            # no name set - can't check
+            return False
+        if attributes.get('no_overwrite'):
+            # if the no_overwrite flag is set, then we need to check the
+            # existing agent. Unless the agent_transfer_mode is set, in
+            # which case we skip the daemon name validation (since we intend
+            # to create another daemon object with the same name)
+            return not attributes.get('agents_transfer_mode')
+        return False
