@@ -218,7 +218,7 @@ class TestCreateAgentAmqp(BaseTest):
             agent = operations.create_new_agent_config(new_agent)
             self.assertIn(new_agent['name'], agent['name'])
 
-    @patch('cloudify_agent.operations._run_script_cloudify_amqp')
+    @patch('cloudify_agent.operations._send_amqp_task')
     @patch('cloudify_agent.api.utils.is_agent_alive',
            MagicMock(return_value=True))
     def test_create_agent_from_old_agent(self, *mocks):
