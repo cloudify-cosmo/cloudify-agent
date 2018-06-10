@@ -1,4 +1,4 @@
-https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip
+https://github.com/cloudify-cosmo/cloudify-common/archive/cy-199-logger-open-first-use.zip
 
 # The Diamond plugin is not included as a dependency in the setup.py since it breaks
 # backwards compatibility with blueprints that require using an older version of the diamond-plugin.
