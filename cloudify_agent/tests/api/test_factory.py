@@ -107,13 +107,3 @@ class TestDaemonFactory(BaseTest):
                           self.factory.new,
                           no_overwrite=True,
                           **self.daemon_params)
-
-    def test_new_existing_agent_transfer_mode(self):
-        daemon = self.factory.new(**self.daemon_params)
-
-        self.factory.save(daemon)
-
-        # with no_overwrite, the agent is still overwritten if
-        # agents_transfer_mode is set
-        daemon = self.factory.new(no_overwrite=True, agents_transfer_mode=True,
-                                  **self.daemon_params)
