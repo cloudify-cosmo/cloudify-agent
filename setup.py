@@ -20,7 +20,6 @@ install_requires = [
     'cloudify-common==4.4.dev1',
     'appdirs==1.4.3',
     'click==6.7',
-    'celery==3.1.17',
     'jinja2==2.7.2',
     'paramiko==1.18.3',
     'fabric==1.13.1',
@@ -86,6 +85,9 @@ setup(
         'kerberos': [
             'pywinrm[Kerberos]==0.3.0',
             'python-gssapi==0.6.4'
+        ],
+        'celery': [
+            'celery==3.1.17',
         ]
     }
 )
