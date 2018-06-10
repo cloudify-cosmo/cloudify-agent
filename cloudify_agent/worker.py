@@ -28,7 +28,7 @@ from cloudify.error_handling import serialize_known_exception
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
 
-
+SYSTEM_DEPLOYMENT = '__system__'
 LOGFILE_BACKUP_COUNT = 5
 LOGFILE_SIZE_BYTES = 5 * 1024 * 1024
 
@@ -87,7 +87,8 @@ class CloudifyOperationConsumer(TaskConsumer):
         task = full_task['cloudify_task']
         ctx = task['kwargs'].pop('__cloudify_context')
         self._print_task(ctx, 'Started handling')
-        handler = self.handler(cloudify_context=ctx, args=task.get('args', []),
+        handler = self.handler(cloudify_context=ctx,
+                               args=task.get('args', []),
                                kwargs=task['kwargs'])
         try:
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
@@ -121,7 +122,7 @@ class ServiceTaskConsumer(TaskConsumer):
     def handle_task(self, full_task):
         service_tasks = {
             'ping': self.ping_task,
-            'cluster-update': self.cluster_update_task
+            'cluster-update': self.cluster_update_task,
         }
 
         task = full_task['service_task']
@@ -184,7 +185,7 @@ def make_amqp_worker(args):
     handlers = [
         CloudifyOperationConsumer(args.queue, args.max_workers),
         CloudifyWorkflowConsumer(args.queue, args.max_workers),
-        ServiceTaskConsumer(args.name, args.queue, args.max_workers),
+        ServiceTaskConsumer(args.name, args.queue, args.max_workers)
     ]
     return AMQPConnection(handlers=handlers, name=args.name,
                           connect_timeout=None)
