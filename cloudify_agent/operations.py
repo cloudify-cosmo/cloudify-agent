@@ -310,7 +310,7 @@ def _build_install_script_params(old_agent, script_url):
     return kwargs
 
 
-def _run_script_celery(agent, params, timeout):
+def _send_celery_task(agent, params, timeout):
     with _celery_app(agent) as celery_app:
         if not _validate_celery(agent):
             raise RecoverableError('Agent is not responding')
@@ -351,7 +351,7 @@ def _get_amqp_client(agent):
             os.remove(ssl_cert_path)
 
 
-def _run_script_cloudify_amqp(agent, params, timeout):
+def _send_amqp_task(agent, params, timeout):
     if not _validate_cloudify_amqp(agent):
         raise RecoverableError('Agent is not responding')
 
@@ -369,6 +369,13 @@ def _run_script_cloudify_amqp(agent, params, timeout):
         raise deserialize_known_exception(error)
 
 
+def _send_task(old_agent, params, timeout):
+    if _uses_cloudify_amqp(old_agent):
+        _send_amqp_task(old_agent, params, timeout)
+    else:
+        _send_celery_task(old_agent, params, timeout)
+
+
 def _run_install_script(old_agent, timeout):
     old_agent = copy.deepcopy(old_agent)
     if 'version' not in old_agent:
@@ -381,10 +388,8 @@ def _run_install_script(old_agent, timeout):
     )
     params = _build_install_script_params(old_agent, script_url)
 
-    installer = _run_script_cloudify_amqp if _uses_cloudify_amqp(old_agent) \
-        else _run_script_celery
     try:
-        installer(old_agent, params, timeout)
+        _send_task(old_agent, params, timeout)
     finally:
         os.remove(script_path)
     cleanup_scripts()
