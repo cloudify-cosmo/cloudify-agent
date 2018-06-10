@@ -397,6 +397,20 @@ def _run_install_script(old_agent, timeout):
     return {'old': old_agent, 'new': created_agent}
 
 
+def _stop_old_agent_and_diamond(old_agent, timeout):
+    stop_monitoring_params = _get_cloudify_context(
+        queue=old_agent['queue'],
+        task_name='diamond_agent.tasks.stop'
+    )
+    stop_agent_params = _get_cloudify_context(
+        queue=old_agent['queue'],
+        task_name='cloudify_agent.operations.stop'
+    )
+
+    _send_task(old_agent, stop_monitoring_params, timeout)
+    _send_task(old_agent, stop_agent_params, timeout)
+
+
 def _validate_agent():
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
@@ -421,7 +435,7 @@ def _validate_agent():
 
 @operation
 def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
-                      manager_certificate=None, **_):
+                      manager_certificate=None, stop_old_agent=False, **_):
     """
     Installs a new agent on a host machine.
     :param install_agent_timeout: operation's timeout.
@@ -430,6 +444,8 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
      (relevant only in HA cluster)
     :param manager_certificate: the SSL certificate of the current leader
     (master) Manager. (relevant only in HA cluster)
+    :param stop_old_agent: if set, stop the old agent after successfully
+    installing the new one
     """
     old_agent = _validate_agent()
     _update_broker_config(old_agent, manager_ip, manager_certificate)
@@ -440,6 +456,9 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
     result = _validate_current_amqp(new_agent)
     if not result['agent_alive']:
         raise RecoverableError('New agent did not start and connect')
+
+    if stop_old_agent:
+        _stop_old_agent_and_diamond(old_agent, install_agent_timeout)
 
     # Setting old_cloudify_agent in order to uninstall it later.
     ctx.instance.runtime_properties['old_cloudify_agent'] = agents['old']
