@@ -407,7 +407,12 @@ def _run_install_script(old_agent, timeout):
 
 
 def _stop_old_diamond(old_agent, timeout):
-    ctx.logger.info('Stopping old Diamond agent (if applicable)...')
+    # This is an imperfect way to check whether Diamond is installed
+    if 'diamond_paths' not in ctx.instance.runtime_properties:
+        ctx.logger.info('Diamond not installed. Skipping stopping it')
+        return
+
+    ctx.logger.info('Stopping old Diamond agent...')
     stop_monitoring_params = _get_cloudify_context(
         agent=old_agent,
         task_name='diamond_agent.tasks.stop'
