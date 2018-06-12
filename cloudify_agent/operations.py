@@ -370,11 +370,20 @@ def _send_amqp_task(agent, params, timeout):
         raise deserialize_known_exception(error)
 
 
-def _send_task(old_agent, params, timeout):
-    if _uses_cloudify_amqp(old_agent):
-        _send_amqp_task(old_agent, params, timeout)
+def _send_task(agent, params, timeout):
+    if _uses_cloudify_amqp(agent):
+        _send_amqp_task(agent, params, timeout)
     else:
-        _send_celery_task(old_agent, params, timeout)
+        _send_celery_task(agent, params, timeout)
+
+
+def _run_script(agent, script_url, timeout):
+    params = _build_install_script_params(agent, script_url)
+
+    try:
+        _send_task(agent, params, timeout)
+    finally:
+        cleanup_scripts()
 
 
 def _run_install_script(old_agent, timeout):
@@ -384,16 +393,12 @@ def _run_install_script(old_agent, timeout):
         # this agent was installed by current manager.
         old_agent['version'] = str(_get_manager_version())
     new_agent = create_new_agent_config(old_agent)
-    script_path, script_url = _get_init_script_path_and_url(
+    _, script_url = _get_init_script_path_and_url(
         new_agent, old_agent['version']
     )
-    params = _build_install_script_params(old_agent, script_url)
 
-    try:
-        _send_task(old_agent, params, timeout)
-    finally:
-        os.remove(script_path)
-    cleanup_scripts()
+    _run_script(old_agent, script_url, timeout)
+
     created_agent = _validate_created_agent(new_agent)
     return {'old': old_agent, 'new': created_agent}
 
