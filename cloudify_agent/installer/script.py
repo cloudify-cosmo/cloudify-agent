@@ -55,6 +55,8 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             self.install_script_filename = '{0}.sh'.format(uuid.uuid4())
             self.init_script_filename = '{0}.sh'.format(uuid.uuid4())
             self.custom_env_path = '{0}/custom_agent_env.sh'.format(basedir)
+        self.stop_old_agent_template = 'script/stop-agent.py.template'
+        self.stop_old_agent_filename = '{0}.py'.format(uuid.uuid4())
 
     def install_script(self, add_ssl_cert=True):
         """Render the agent installation script.
@@ -188,6 +190,15 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         self.cloudify_agent[LOCAL_CLEANUP_PATHS_KEY] = cleanup
         update_agent_runtime_properties(self.cloudify_agent)
 
+    def stop_old_agent(self, old_agent_name):
+        template = self._get_template(self.stop_old_agent_template)
+        return template.render(agent_name=old_agent_name)
+
+    def stop_old_agent_script_download_link(self, old_agent_name):
+        script_filename = self.stop_old_agent_filename
+        script_content = self.stop_old_agent(old_agent_name=old_agent_name)
+        return self._get_script_path_and_url(script_filename, script_content)
+
 
 @create_agent_config_and_installer(validate_connection=False,
                                    new_agent_config=True)
@@ -208,6 +219,11 @@ def init_script(cloudify_agent=None, **_):
 def init_script_download_link(cloudify_agent=None, **_):
     script_builder = _get_script_builder(cloudify_agent=cloudify_agent)
     return script_builder.init_script_download_link()
+
+
+def stop_agent_script_download_link(cloudify_agent, old_agent_name, **_):
+    script_builder = _get_script_builder(cloudify_agent=cloudify_agent)
+    return script_builder.stop_old_agent_script_download_link(old_agent_name)
 
 
 @contextmanager
