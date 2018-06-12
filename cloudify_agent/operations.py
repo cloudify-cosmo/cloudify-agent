@@ -38,8 +38,11 @@ from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
-from cloudify_agent.installer.script import \
-    init_script_download_link, cleanup_scripts
+from cloudify_agent.installer.script import (
+    init_script_download_link,
+    stop_agent_script_download_link,
+    cleanup_scripts
+)
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 from cloudify_agent.installer.config.agent_config import \
     update_agent_runtime_properties
@@ -403,18 +406,26 @@ def _run_install_script(old_agent, timeout):
     return {'old': old_agent, 'new': created_agent}
 
 
-def _stop_old_agent_and_diamond(old_agent, timeout):
+def _stop_old_diamond(old_agent, timeout):
+    ctx.logger.info('Stopping old Diamond agent (if applicable)...')
     stop_monitoring_params = _get_cloudify_context(
-        queue=old_agent['queue'],
+        agent=old_agent,
         task_name='diamond_agent.tasks.stop'
-    )
-    stop_agent_params = _get_cloudify_context(
-        queue=old_agent['queue'],
-        task_name='cloudify_agent.operations.stop'
     )
 
     _send_task(old_agent, stop_monitoring_params, timeout)
-    _send_task(old_agent, stop_agent_params, timeout)
+    ctx.logger.info('Old Diamond agent stopped')
+
+
+def _stop_old_agent(new_agent, old_agent, timeout):
+    ctx.logger.info('Stopping old Cloudify agent...')
+    _, script_url = stop_agent_script_download_link(
+        new_agent,
+        old_agent_name=old_agent['name']
+    )
+
+    _run_script(new_agent, script_url, timeout)
+    ctx.logger.info('Old Cloudify agent stopped')
 
 
 def _validate_agent():
@@ -464,7 +475,8 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
         raise RecoverableError('New agent did not start and connect')
 
     if stop_old_agent:
-        _stop_old_agent_and_diamond(old_agent, install_agent_timeout)
+        _stop_old_diamond(old_agent, install_agent_timeout)
+        _stop_old_agent(new_agent, old_agent, install_agent_timeout)
 
     # Setting old_cloudify_agent in order to uninstall it later.
     ctx.instance.runtime_properties['old_cloudify_agent'] = agents['old']
