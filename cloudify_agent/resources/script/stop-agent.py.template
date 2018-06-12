@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+# This script is intended to be run by the new agent (after upgrading)
+# to stop the old agent
+
+from cloudify_agent.api.factory import DaemonFactory
+
+
+if __name__ == '__main__':
+    factory = DaemonFactory()
+    daemon = factory.load(name='{{ agent_name }}')
+    daemon.before_self_stop()
+    daemon.stop()
