@@ -282,7 +282,7 @@ def _validate_created_agent(new_agent):
     return created_agent
 
 
-def _get_cloudify_context(queue, task_name):
+def _get_cloudify_context(agent, task_name):
     """
     Return the cloudify context that would be set in tasks sent to the old
     agent
@@ -291,22 +291,23 @@ def _get_cloudify_context(queue, task_name):
         '__cloudify_context': {
             'type': 'operation',
             'task_name': task_name,
-            'task_target': queue,
-            'node_id': ctx.node.id,
+            'task_target': agent['queue'],
+            'node_id': ctx.instance.id,
             'workflow_id': ctx.workflow_id,
             'execution_id': ctx.execution_id,
-            'tenant': ctx.tenant
+            'tenant': ctx.tenant,
+            'rest_token': agent['rest_token']
         }
     }
 
 
-def _build_install_script_params(old_agent, script_url):
+def _build_install_script_params(agent, script_url):
     kwargs = _get_cloudify_context(
-        queue=old_agent['queue'],
+        agent=agent,
         task_name='script_runner.tasks.run'
     )
     kwargs['script_path'] = script_url
-    kwargs['ssl_cert_content'] = _get_ssl_cert_content(old_agent['version'])
+    kwargs['ssl_cert_content'] = _get_ssl_cert_content(agent['version'])
     return kwargs
 
 
