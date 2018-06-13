@@ -7,3 +7,9 @@ https://github.com/cloudify-cosmo/cloudify-common/archive/4.4.zip
 # Since the actual diamond version is consistent across all diamond-plugin versions,
 # it would allow us to install any version of the diamond plugin, without needing gcc to recompile diamond.
 https://github.com/cloudify-cosmo/cloudify-diamond-plugin/archive/1.3.12.zip
+
+# Install stubs of cloudify packages that were merged into cloudify-common
+git+https://github.com/cloudify-cosmo/cloudify-agent@4.4#egg=cloudify-rest-client&subdirectory=packaging/stub_packages/cloudify-rest-client
+git+https://github.com/cloudify-cosmo/cloudify-agent@4.4#egg=cloudify-plugins-common&subdirectory=packaging/stub_packages/cloudify-plugins-common
+git+https://github.com/cloudify-cosmo/cloudify-agent@4.4#egg=cloudify-dsl-parser&subdirectory=packaging/stub_packages/cloudify-dsl-parser
+git+https://github.com/cloudify-cosmo/cloudify-agent@4.4#egg=cloudify-script-plugin&subdirectory=packaging/stub_packages/cloudify-script-plugin
