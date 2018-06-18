@@ -189,6 +189,46 @@ def _setup_excepthook(daemon_name):
     sys.excepthook = new_excepthook
 
 
+class ProcessRegistry(object):
+    """A registry for dispatch subprocesses.
+
+    The dispatch TaskHandler uses this to register the subprocesses that
+    are running and executing a task, so that they can be cancelled/killed
+    from outside.
+    """
+    def __init__(self):
+        self._processes = {}
+
+    def register(self, handler, process):
+        self._processes.setdefault(self.make_key(handler), []).append(process)
+
+    def unregister(self, handler, process):
+        try:
+            self._processes[self.make_key(handler)].remove(process)
+        except (KeyError, ValueError):
+            pass
+
+    def cancel(self, task_id):
+        for p in self._processes.get(task_id, []):
+            t = threading.Thread(target=self._stop_process, args=(p, ))
+            t.start()
+
+    def _stop_process(self, process):
+        """Stop the process: SIGTERM, and after 5 seconds, SIGKILL
+
+        Note that on windows, both terminate and kill are effectively
+        the same operation."""
+        process.terminate()
+        for i in range(10):
+            if process.poll() is not None:
+                return
+            time.sleep(0.5)
+        process.kill()
+
+    def make_key(self, handler):
+        return handler.ctx.execution_id
+
+
 def make_amqp_worker(args):
     if args.name:
         _setup_excepthook(args.name)
