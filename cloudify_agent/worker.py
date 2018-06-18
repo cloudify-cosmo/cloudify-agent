@@ -40,6 +40,7 @@ from cloudify.error_handling import serialize_known_exception
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_rest_client.executions import Execution
+from cloudify_rest_client.exceptions import InvalidExecutionUpdateStatus
 
 
 LOGFILE_BACKUP_COUNT = 5
@@ -142,6 +143,7 @@ class ServiceTaskConsumer(TaskConsumer):
         service_tasks = {
             'ping': self.ping_task,
             'cluster-update': self.cluster_update_task,
+            'cancel-workflow': self.cancel_workflow_task,
             'cancel-operation': self.cancel_operation_task
         }
 
@@ -174,6 +176,80 @@ class ServiceTaskConsumer(TaskConsumer):
     def cancel_operation_task(self, execution_id):
         logger.info('Cancelling task {0}'.format(execution_id))
         self._operation_registry.cancel(execution_id)
+
+    def cancel_workflow_task(self, execution_id, rest_token, tenant):
+        logger.info('Cancelling workflow {0}'.format(execution_id))
+
+        class CancelCloudifyContext(object):
+            """A CloudifyContext that has just enough data to cancel workflows
+            """
+            def __init__(self):
+                self.tenant = tenant['name']
+                self.tenant_name = tenant['name']
+                self.rest_token = rest_token
+
+        with current_workflow_ctx.push(CancelCloudifyContext()):
+            self._workflow_registry.cancel(execution_id)
+            self._cancel_agent_operations(execution_id)
+            try:
+                update_execution_status(execution_id, Execution.CANCELLED)
+            except InvalidExecutionUpdateStatus:
+                # the workflow process might have cleaned up, and marked the
+                # workflow failed or cancelled already
+                logger.info('Failed to update execution status: {0}'
+                            .format(execution_id))
+
+    def _cancel_agent_operations(self, execution_id):
+        """Send a cancel-operation task to all agents for this deployment"""
+        rest_client = get_rest_client()
+        for target in self._get_agents(rest_client, execution_id):
+            self._send_cancel_task(target, execution_id)
+
+    def _send_cancel_task(self, target, execution_id):
+        """Send a cancel-operation task to the agent given by `target`"""
+        message = {
+            'service_task': {
+                'task_name': 'cancel-operation',
+                'kwargs': {'execution_id': execution_id}
+            }
+        }
+        if target == MGMTWORKER_QUEUE:
+            client = get_client()
+        else:
+            tenant = current_workflow_ctx.tenant
+            client = get_client(
+                amqp_user=tenant['rabbitmq_username'],
+                amqp_pass=tenant['rabbitmq_password'],
+                vhost=tenant['rabbitmq_vhost']
+            )
+
+        handler = SendHandler(exchange=target, routing_key='service')
+        client.add_handler(handler)
+        with client:
+            handler.publish(message)
+
+    def _get_agents(self, rest_client, execution_id):
+        """Get exchange names for agents related to this execution.
+
+        Note that mgmtworker is related to all executions, since every
+        execution might have a central_deployment_agent operation.
+        """
+        yield MGMTWORKER_QUEUE
+        execution = rest_client.executions.get(execution_id)
+        node_instances = rest_client.node_instances.list(
+            deployment_id=execution.deployment_id)
+        for instance in node_instances:
+            if self._is_agent(instance):
+                yield instance.runtime_properties['cloudify_agent']['queue']
+
+    def _is_agent(self, node_instance):
+        """Does the node_instance have an agent?"""
+        # Compute nodes are hosts, so checking if host_id is the same as id
+        # is a way to check if the node instance is a Compute without
+        # querying for the actual Node
+        is_compute = node_instance.id == node_instance.host_id
+        return (is_compute and
+                'cloudify_agent' in node_instance.runtime_properties)
 
 
 def _setup_excepthook(daemon_name):
