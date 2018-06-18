@@ -141,7 +141,8 @@ class ServiceTaskConsumer(TaskConsumer):
     def handle_task(self, full_task):
         service_tasks = {
             'ping': self.ping_task,
-            'cluster-update': self.cluster_update_task
+            'cluster-update': self.cluster_update_task,
+            'cancel-operation': self.cancel_operation_task
         }
 
         task = full_task['service_task']
@@ -169,6 +170,10 @@ class ServiceTaskConsumer(TaskConsumer):
         nodes = [n['networks'][network_name] for n in nodes]
         daemon.cluster = nodes
         factory.save(daemon)
+
+    def cancel_operation_task(self, execution_id):
+        logger.info('Cancelling task {0}'.format(execution_id))
+        self._operation_registry.cancel(execution_id)
 
 
 def _setup_excepthook(daemon_name):
