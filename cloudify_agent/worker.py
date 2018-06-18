@@ -20,13 +20,26 @@ import time
 import logging
 import argparse
 import traceback
+import threading
 
 from cloudify import dispatch, exceptions
+from cloudify.state import current_workflow_ctx
+from cloudify.manager import (
+    update_execution_status,
+    get_rest_client
+)
 from cloudify.logs import setup_agent_logger
-from cloudify.amqp_client import AMQPConnection, TaskConsumer
+from cloudify.amqp_client import (
+    AMQPConnection,
+    TaskConsumer,
+    SendHandler,
+    get_client
+)
+from cloudify.constants import MGMTWORKER_QUEUE
 from cloudify.error_handling import serialize_known_exception
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
+from cloudify_rest_client.executions import Execution
 
 
 LOGFILE_BACKUP_COUNT = 5
