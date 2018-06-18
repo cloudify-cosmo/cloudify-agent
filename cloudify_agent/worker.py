@@ -69,6 +69,10 @@ class CloudifyOperationConsumer(TaskConsumer):
     routing_key = 'operation'
     handler = dispatch.OperationHandler
 
+    def __init__(self, *args, **kwargs):
+        self._registry = kwargs.pop('registry')
+        super(CloudifyOperationConsumer, self).__init__(*args, **kwargs)
+
     def _print_task(self, ctx, action, status=None):
         if ctx['type'] == 'workflow':
             prefix = '{0} workflow'.format(action)
@@ -101,7 +105,8 @@ class CloudifyOperationConsumer(TaskConsumer):
         ctx = task['kwargs'].pop('__cloudify_context')
         self._print_task(ctx, 'Started handling')
         handler = self.handler(cloudify_context=ctx, args=task.get('args', []),
-                               kwargs=task['kwargs'])
+                               kwargs=task['kwargs'],
+                               process_registry=self._registry)
         try:
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
             result = {'ok': True, 'result': rv}
@@ -129,6 +134,8 @@ class ServiceTaskConsumer(TaskConsumer):
 
     def __init__(self, name, *args, **kwargs):
         self.name = name
+        self._operation_registry = kwargs.pop('operation_registry')
+        self._workflow_registry = kwargs.pop('workflow_registry')
         super(ServiceTaskConsumer, self).__init__(*args, **kwargs)
 
     def handle_task(self, full_task):
@@ -234,10 +241,16 @@ def make_amqp_worker(args):
         _setup_excepthook(args.name)
     _setup_logger(args.name)
 
+    operation_registry = ProcessRegistry()
+    workflow_registry = ProcessRegistry()
     handlers = [
-        CloudifyOperationConsumer(args.queue, args.max_workers),
-        CloudifyWorkflowConsumer(args.queue, args.max_workers),
-        ServiceTaskConsumer(args.name, args.queue, args.max_workers),
+        CloudifyOperationConsumer(args.queue, args.max_workers,
+                                  registry=operation_registry),
+        CloudifyWorkflowConsumer(args.queue, args.max_workers,
+                                 registry=workflow_registry),
+        ServiceTaskConsumer(args.name, args.queue, args.max_workers,
+                            operation_registry=operation_registry,
+                            workflow_registry=workflow_registry),
     ]
     return AMQPConnection(handlers=handlers, name=args.name,
                           connect_timeout=None)
