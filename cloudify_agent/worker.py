@@ -20,13 +20,27 @@ import time
 import logging
 import argparse
 import traceback
+import threading
 
 from cloudify import dispatch, exceptions
+from cloudify.state import current_workflow_ctx
+from cloudify.manager import (
+    update_execution_status,
+    get_rest_client
+)
 from cloudify.logs import setup_agent_logger
-from cloudify.amqp_client import AMQPConnection, TaskConsumer
+from cloudify.amqp_client import (
+    AMQPConnection,
+    TaskConsumer,
+    SendHandler,
+    get_client
+)
+from cloudify.constants import MGMTWORKER_QUEUE
 from cloudify.error_handling import serialize_known_exception
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
+from cloudify_rest_client.executions import Execution
+from cloudify_rest_client.exceptions import InvalidExecutionUpdateStatus
 
 
 LOGFILE_BACKUP_COUNT = 5
@@ -55,6 +69,10 @@ def _setup_logger(name):
 class CloudifyOperationConsumer(TaskConsumer):
     routing_key = 'operation'
     handler = dispatch.OperationHandler
+
+    def __init__(self, *args, **kwargs):
+        self._registry = kwargs.pop('registry')
+        super(CloudifyOperationConsumer, self).__init__(*args, **kwargs)
 
     def _print_task(self, ctx, action, status=None):
         if ctx['type'] == 'workflow':
@@ -88,7 +106,8 @@ class CloudifyOperationConsumer(TaskConsumer):
         ctx = task['kwargs'].pop('__cloudify_context')
         self._print_task(ctx, 'Started handling')
         handler = self.handler(cloudify_context=ctx, args=task.get('args', []),
-                               kwargs=task['kwargs'])
+                               kwargs=task['kwargs'],
+                               process_registry=self._registry)
         try:
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
             result = {'ok': True, 'result': rv}
@@ -116,12 +135,16 @@ class ServiceTaskConsumer(TaskConsumer):
 
     def __init__(self, name, *args, **kwargs):
         self.name = name
+        self._operation_registry = kwargs.pop('operation_registry')
+        self._workflow_registry = kwargs.pop('workflow_registry')
         super(ServiceTaskConsumer, self).__init__(*args, **kwargs)
 
     def handle_task(self, full_task):
         service_tasks = {
             'ping': self.ping_task,
-            'cluster-update': self.cluster_update_task
+            'cluster-update': self.cluster_update_task,
+            'cancel-workflow': self.cancel_workflow_task,
+            'cancel-operation': self.cancel_operation_task
         }
 
         task = full_task['service_task']
@@ -150,6 +173,84 @@ class ServiceTaskConsumer(TaskConsumer):
         daemon.cluster = nodes
         factory.save(daemon)
 
+    def cancel_operation_task(self, execution_id):
+        logger.info('Cancelling task {0}'.format(execution_id))
+        self._operation_registry.cancel(execution_id)
+
+    def cancel_workflow_task(self, execution_id, rest_token, tenant):
+        logger.info('Cancelling workflow {0}'.format(execution_id))
+
+        class CancelCloudifyContext(object):
+            """A CloudifyContext that has just enough data to cancel workflows
+            """
+            def __init__(self):
+                self.tenant = tenant['name']
+                self.tenant_name = tenant['name']
+                self.rest_token = rest_token
+
+        with current_workflow_ctx.push(CancelCloudifyContext()):
+            self._workflow_registry.cancel(execution_id)
+            self._cancel_agent_operations(execution_id)
+            try:
+                update_execution_status(execution_id, Execution.CANCELLED)
+            except InvalidExecutionUpdateStatus:
+                # the workflow process might have cleaned up, and marked the
+                # workflow failed or cancelled already
+                logger.info('Failed to update execution status: {0}'
+                            .format(execution_id))
+
+    def _cancel_agent_operations(self, execution_id):
+        """Send a cancel-operation task to all agents for this deployment"""
+        rest_client = get_rest_client()
+        for target in self._get_agents(rest_client, execution_id):
+            self._send_cancel_task(target, execution_id)
+
+    def _send_cancel_task(self, target, execution_id):
+        """Send a cancel-operation task to the agent given by `target`"""
+        message = {
+            'service_task': {
+                'task_name': 'cancel-operation',
+                'kwargs': {'execution_id': execution_id}
+            }
+        }
+        if target == MGMTWORKER_QUEUE:
+            client = get_client()
+        else:
+            tenant = current_workflow_ctx.tenant
+            client = get_client(
+                amqp_user=tenant['rabbitmq_username'],
+                amqp_pass=tenant['rabbitmq_password'],
+                vhost=tenant['rabbitmq_vhost']
+            )
+
+        handler = SendHandler(exchange=target, routing_key='service')
+        client.add_handler(handler)
+        with client:
+            handler.publish(message)
+
+    def _get_agents(self, rest_client, execution_id):
+        """Get exchange names for agents related to this execution.
+
+        Note that mgmtworker is related to all executions, since every
+        execution might have a central_deployment_agent operation.
+        """
+        yield MGMTWORKER_QUEUE
+        execution = rest_client.executions.get(execution_id)
+        node_instances = rest_client.node_instances.list(
+            deployment_id=execution.deployment_id)
+        for instance in node_instances:
+            if self._is_agent(instance):
+                yield instance.runtime_properties['cloudify_agent']['queue']
+
+    def _is_agent(self, node_instance):
+        """Does the node_instance have an agent?"""
+        # Compute nodes are hosts, so checking if host_id is the same as id
+        # is a way to check if the node instance is a Compute without
+        # querying for the actual Node
+        is_compute = node_instance.id == node_instance.host_id
+        return (is_compute and
+                'cloudify_agent' in node_instance.runtime_properties)
+
 
 def _setup_excepthook(daemon_name):
     # Setting a new exception hook to catch any exceptions
@@ -176,15 +277,61 @@ def _setup_excepthook(daemon_name):
     sys.excepthook = new_excepthook
 
 
+class ProcessRegistry(object):
+    """A registry for dispatch subprocesses.
+
+    The dispatch TaskHandler uses this to register the subprocesses that
+    are running and executing a task, so that they can be cancelled/killed
+    from outside.
+    """
+    def __init__(self):
+        self._processes = {}
+
+    def register(self, handler, process):
+        self._processes.setdefault(self.make_key(handler), []).append(process)
+
+    def unregister(self, handler, process):
+        try:
+            self._processes[self.make_key(handler)].remove(process)
+        except (KeyError, ValueError):
+            pass
+
+    def cancel(self, task_id):
+        for p in self._processes.get(task_id, []):
+            t = threading.Thread(target=self._stop_process, args=(p, ))
+            t.start()
+
+    def _stop_process(self, process):
+        """Stop the process: SIGTERM, and after 5 seconds, SIGKILL
+
+        Note that on windows, both terminate and kill are effectively
+        the same operation."""
+        process.terminate()
+        for i in range(10):
+            if process.poll() is not None:
+                return
+            time.sleep(0.5)
+        process.kill()
+
+    def make_key(self, handler):
+        return handler.ctx.execution_id
+
+
 def make_amqp_worker(args):
     if args.name:
         _setup_excepthook(args.name)
     _setup_logger(args.name)
 
+    operation_registry = ProcessRegistry()
+    workflow_registry = ProcessRegistry()
     handlers = [
-        CloudifyOperationConsumer(args.queue, args.max_workers),
-        CloudifyWorkflowConsumer(args.queue, args.max_workers),
-        ServiceTaskConsumer(args.name, args.queue, args.max_workers),
+        CloudifyOperationConsumer(args.queue, args.max_workers,
+                                  registry=operation_registry),
+        CloudifyWorkflowConsumer(args.queue, args.max_workers,
+                                 registry=workflow_registry),
+        ServiceTaskConsumer(args.name, args.queue, args.max_workers,
+                            operation_registry=operation_registry,
+                            workflow_registry=workflow_registry),
     ]
     return AMQPConnection(handlers=handlers, name=args.name,
                           connect_timeout=None)
