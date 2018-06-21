@@ -136,7 +136,6 @@ class TestConfiguration(BaseTest):
             'windows': os.name == 'nt',
             'system_python': 'python',
             'bypass_maintenance': False,
-            'rest_token': 'test_token',
             'network': 'default',
             'version': utils.get_agent_version()
         }
