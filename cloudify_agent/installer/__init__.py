@@ -20,9 +20,11 @@ import ntpath
 import copy
 import base64
 
-from cloudify.utils import setup_logger, get_tenant
 from cloudify_agent.installer.runners.local_runner import LocalCommandRunner
-from cloudify.utils import get_is_bypass_maintenance
+from cloudify.utils import (get_tenant,
+                            setup_logger,
+                            get_rest_token,
+                            get_is_bypass_maintenance)
 
 from cloudify_agent.shell import env
 from cloudify_agent.api import utils, defaults
@@ -124,7 +126,7 @@ class AgentInstaller(object):
                                   broker_config.broker_vhost)
         rest_host = manager_ip or self.cloudify_agent['rest_host']
         broker_ip = manager_ip or self.cloudify_agent['broker_ip']
-        rest_token = rest_token or self.cloudify_agent.get('rest_token')
+        rest_token = rest_token or get_rest_token()
 
         execution_env = {
             # mandatory values calculated before the agent

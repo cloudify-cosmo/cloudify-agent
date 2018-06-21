@@ -120,7 +120,6 @@ class CloudifyAgentConfig(dict):
         self._set_name()
         self._set_network()
         self.setdefault('queue', self['name'])
-        self.setdefault('rest_token', cloudify_utils.get_rest_token())
         self.setdefault('rest_port',
                         cloudify_utils.get_manager_rest_service_port())
         self.setdefault('bypass_maintenance',
@@ -440,5 +439,6 @@ def update_agent_runtime_properties(cloudify_agent):
     operations
     """
     cloudify_agent.pop('rest_tenant', None)
+    cloudify_agent.pop('rest_token', None)
     ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
     ctx.instance.update()
