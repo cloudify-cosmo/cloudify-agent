@@ -23,7 +23,7 @@ import traceback
 import threading
 
 from cloudify import dispatch, exceptions
-from cloudify.state import current_workflow_ctx
+from cloudify.state import current_workflow_ctx, workflow_ctx
 from cloudify.manager import (
     update_execution_status,
     get_rest_client
@@ -216,7 +216,7 @@ class ServiceTaskConsumer(TaskConsumer):
         if target == MGMTWORKER_QUEUE:
             client = get_client()
         else:
-            tenant = current_workflow_ctx.tenant
+            tenant = workflow_ctx.tenant
             client = get_client(
                 amqp_user=tenant['rabbitmq_username'],
                 amqp_pass=tenant['rabbitmq_password'],
