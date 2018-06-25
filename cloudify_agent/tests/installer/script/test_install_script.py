@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import os
+import unittest
 
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
@@ -25,7 +26,7 @@ from cloudify_agent.tests import BaseTest, utils, agent_ssl_cert
 from cloudify_agent.tests.api.pm import only_os
 
 
-class BaseInstallScriptTest(BaseTest):
+class BaseInstallScriptTest(BaseTest, unittest.TestCase):
 
     windows = None
 
@@ -91,7 +92,7 @@ class BaseInstallScriptTest(BaseTest):
 
 
 @only_os('posix')
-class TestLinuxInstallScript(BaseInstallScriptTest):
+class TestLinuxInstallScript(BaseInstallScriptTest, unittest.TestCase):
 
     def setUp(self):
         self.windows = False
@@ -164,7 +165,7 @@ class TestLinuxInstallScript(BaseInstallScriptTest):
 
 
 @only_os('nt')
-class TestWindowsInstallScript(BaseInstallScriptTest):
+class TestWindowsInstallScript(BaseInstallScriptTest, unittest.TestCase):
 
     def setUp(self):
         self.windows = True

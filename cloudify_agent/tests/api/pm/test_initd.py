@@ -14,8 +14,9 @@
 #  * limitations under the License.
 
 import os
-import nose.tools
 import time
+import unittest
+
 from mock import patch
 
 from cloudify_agent.api.pm.initd import InitDDaemon
@@ -60,9 +61,8 @@ CONFIG_DIR = '/tmp/etc/default'
 @patch_unless_ci(
     'cloudify_agent.api.pm.initd.stop_command',
     _non_service_stop_command)
-@nose.tools.istest
 @only_os('posix')
-class TestInitDDaemon(BaseDaemonProcessManagementTest):
+class TestInitDDaemon(BaseDaemonProcessManagementTest, unittest.TestCase):
 
     @property
     def daemon_cls(self):

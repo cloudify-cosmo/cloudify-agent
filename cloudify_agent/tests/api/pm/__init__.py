@@ -14,12 +14,13 @@
 #  * limitations under the License.
 
 import os
-import nose.tools
-import inspect
 import types
+import inspect
+import unittest
+
+from mock import patch
 from functools import wraps
 from mock import _get_target
-from mock import patch
 
 from cloudify import amqp_client, constants
 from cloudify.utils import LocalCommandRunner
@@ -74,22 +75,19 @@ def only_ci(func):
 
 
 def only_os(os_type):
-
     def decorator(test):
-
         if isinstance(test, (types.MethodType, types.FunctionType)):
-            if os.name != os_type:
-                return lambda: None
-            else:
-                return test
-
+            @unittest.skipIf(os.name != os_type,
+                             reason='Not relevant OS to run the test.')
+            def run_test(*args, **kwargs):
+                test(*args, **kwargs)
+            return run_test
         if isinstance(test, type):
             for name, fn in inspect.getmembers(test):
                 if isinstance(fn, types.UnboundMethodType):
                     if name.startswith('test') or name.endswith('test'):
                         setattr(test, name, decorator(fn))
             return test
-
         raise ValueError("'test' argument is of an unsupported type: {0}. "
                          "supported types are: 'type', 'FunctionType',"
                          " 'MethodType'".format(type(test)))
@@ -130,7 +128,6 @@ def patch_get_source(fn):
                  lambda plugin, blueprint_id: plugin.get('source'))(fn)
 
 
-@nose.tools.nottest
 class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
 
     def setUp(self):

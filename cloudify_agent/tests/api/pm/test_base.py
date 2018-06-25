@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import getpass
+import unittest
 from mock import patch
 
 from cloudify_agent.api.pm.base import Daemon
@@ -25,7 +26,7 @@ from cloudify_agent.tests import get_storage_directory
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-class TestDaemonDefaults(BaseTest):
+class TestDaemonDefaults(BaseTest, unittest.TestCase):
 
     def setUp(self):
         super(TestDaemonDefaults, self).setUp()
@@ -57,7 +58,9 @@ class TestDaemonDefaults(BaseTest):
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-class TestDaemonValidations(BaseTest):
+class TestDaemonValidations(BaseTest, unittest.TestCase):
+    def setUp(self):
+        super(TestDaemonValidations, self).setUp()
 
     def test_missing_rest_host(self):
         try:
@@ -132,7 +135,7 @@ class TestDaemonValidations(BaseTest):
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-class TestNotImplemented(BaseTest):
+class TestNotImplemented(BaseTest, unittest.TestCase):
 
     def setUp(self):
         super(TestNotImplemented, self).setUp()

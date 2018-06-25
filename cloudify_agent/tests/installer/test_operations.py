@@ -16,6 +16,7 @@
 import shutil
 import tempfile
 import uuid
+import unittest
 
 from mock import patch
 
@@ -43,7 +44,7 @@ from cloudify_agent.tests.api.pm import (
 # actually launching VM's from the test.
 ##############################################################################
 
-class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
+class TestAgentInstallerLocal(BaseDaemonLiveTestCase, unittest.TestCase):
 
     """
     these tests run local workflows in order to invoke the installer
@@ -57,7 +58,7 @@ class AgentInstallerLocalTest(BaseDaemonLiveTestCase):
         cls.requirements_file = get_requirements_uri()
 
     def setUp(self):
-        super(AgentInstallerLocalTest, self).setUp()
+        super(TestAgentInstallerLocal, self).setUp()
 
         self.resource_base = tempfile.mkdtemp(
             prefix='file-server-resource-base')

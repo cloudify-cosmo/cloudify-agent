@@ -13,7 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from unittest import TestCase
+import unittest
 
 from cloudify_agent.installer.runners import winrm_runner
 from cloudify_agent.installer.runners.winrm_runner import split_into_chunks
@@ -28,7 +28,9 @@ from cloudify_agent.tests import BaseTest
 ##############################################################################
 
 
-class TestValidations(BaseTest):
+class TestValidations(BaseTest, unittest.TestCase):
+    def setUp(self):
+        super(TestValidations, self).setUp()
 
     def test_validate_host(self):
 
@@ -73,7 +75,7 @@ class TestValidations(BaseTest):
             self.assertIn('Invalid password', e.message)
 
 
-class TestDefaults(BaseTest):
+class TestDefaults(BaseTest, unittest.TestCase):
 
     def test_defaults(self):
 
@@ -94,7 +96,7 @@ class TestDefaults(BaseTest):
             winrm_runner.DEFAULT_WINRM_PORT)
 
 
-class TestSplitIntoChunks(TestCase):
+class TestSplitIntoChunks(unittest.TestCase):
     """Test content splitting into chunks."""
 
     def test_empty_string(self):

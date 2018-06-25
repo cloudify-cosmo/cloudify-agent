@@ -15,6 +15,7 @@
 import os
 import platform
 import shutil
+import unittest
 from contextlib import contextmanager
 
 from mock import patch, MagicMock
@@ -52,7 +53,9 @@ class _MockRestclient(object):
         return _MockManagerClient()
 
 
-class TestInstallNewAgent(BaseDaemonLiveTestCase):
+class TestInstallNewAgent(BaseDaemonLiveTestCase, unittest.TestCase):
+    def setUp(self):
+        super(TestInstallNewAgent, self).setUp()
 
     @contextmanager
     def _manager_env(self):
@@ -140,7 +143,7 @@ rest_mock.manager = MagicMock()
 rest_mock.manager.get_version = lambda: '3.3'
 
 
-class TestCreateAgentAmqp(BaseTest):
+class TestCreateAgentAmqp(BaseTest, unittest.TestCase):
     @staticmethod
     @patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())
     @patch('cloudify.utils.ctx', mock_context())

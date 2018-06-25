@@ -21,8 +21,6 @@ import getpass
 import shutil
 import time
 
-import unittest2 as unittest
-
 from cloudify import constants, mocks
 from cloudify.state import current_ctx
 from cloudify.utils import setup_logger
@@ -93,7 +91,7 @@ LeQrlI6ZGJVyqflWbTF7pos1V7/TAW6kDlUK
 agent_ssl_cert = _AgentSSLCert()
 
 
-class BaseTest(unittest.TestCase):
+class BaseTest(object):
     def setUp(self):
         self.temp_folder = tempfile.mkdtemp(prefix='cfy-agent-tests-')
         self._rest_cert_path = agent_ssl_cert.get_local_cert_path(
