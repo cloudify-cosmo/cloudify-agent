@@ -17,6 +17,7 @@ import os
 import tempfile
 import uuid
 import shutil
+import unittest
 
 from cloudify import ctx
 from cloudify.utils import LocalCommandRunner
@@ -28,7 +29,8 @@ from cloudify_agent.installer.operations import create as create_agent
 from cloudify_agent.tests.installer.config import mock_context
 
 
-class TestInstaller(BaseTest):
+class TestInstaller(BaseTest, unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         cls._package_url = agent_package.get_package_url()

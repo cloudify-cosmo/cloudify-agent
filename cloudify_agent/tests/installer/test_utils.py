@@ -13,13 +13,16 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import unittest
 
 from cloudify_agent.installer import utils
 
 from cloudify_agent.tests import BaseTest
 
 
-class TestUtils(BaseTest):
+class TestUtils(BaseTest, unittest.TestCase):
+    def setUp(self):
+        super(TestUtils, self).setUp()
 
     def test_env_to_file(self):
         file_path = utils.env_to_file({'key': 'value', 'key2': 'value2'})

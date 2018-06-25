@@ -13,6 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import unittest
 from mock import patch
 
 from cloudify_agent.installer import exceptions
@@ -40,7 +41,9 @@ from cloudify_agent.tests.api.pm import only_os
 ##############################################################################
 
 @only_os('posix')
-class TestDefaults(BaseTest):
+class TestDefaults(BaseTest, unittest.TestCase):
+    def setUp(self):
+        super(TestDefaults, self).setUp()
 
     def test_default_port(self):
         runner = FabricRunner(
@@ -52,7 +55,9 @@ class TestDefaults(BaseTest):
 
 
 @only_os('posix')
-class TestValidations(BaseTest):
+class TestValidations(BaseTest, unittest.TestCase):
+    def setUp(self):
+        super(TestValidations, self).setUp()
 
     def test_no_host(self):
         self.assertRaisesRegexp(
@@ -83,9 +88,12 @@ class TestValidations(BaseTest):
 
 
 @only_os('posix')
-class TestAbortException(BaseTest):
+class TestAbortException(BaseTest, unittest.TestCase):
 
     """Test behavior on fabric abort."""
+
+    def setUp(self):
+        super(TestAbortException, self).setUp()
 
     def test_exception_message(self):
         """Exception message is the same one used by fabric."""

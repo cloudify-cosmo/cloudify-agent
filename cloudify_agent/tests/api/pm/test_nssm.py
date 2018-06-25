@@ -14,7 +14,8 @@
 #  * limitations under the License.
 
 import os
-import nose.tools
+import unittest
+
 from mock import patch
 
 from cloudify.exceptions import CommandExecutionException
@@ -28,9 +29,9 @@ from cloudify_agent.tests import get_storage_directory
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-@nose.tools.istest
 @only_os('nt')
-class TestNonSuckingServiceManagerDaemon(BaseDaemonProcessManagementTest):
+class TestNonSuckingServiceManagerDaemon(BaseDaemonProcessManagementTest,
+                                         unittest.TestCase):
 
     @property
     def daemon_cls(self):

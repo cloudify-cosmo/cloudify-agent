@@ -16,6 +16,7 @@
 import getpass
 import os
 import platform
+import unittest
 from mock import patch
 
 from cloudify import constants
@@ -25,7 +26,10 @@ from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests.installer.config import mock_context
 
 
-class TestConfiguration(BaseTest):
+class TestConfiguration(BaseTest, unittest.TestCase):
+    def setUp(self):
+        super(TestConfiguration, self).setUp()
+
     def test_prepare(self):
         expected = self._get_distro_package_url(rest_port=80)
         expected['rest_port'] = 80

@@ -19,6 +19,8 @@ import os
 import platform
 import shutil
 import multiprocessing
+import unittest
+
 from contextlib import contextmanager
 
 import wagon
@@ -46,15 +48,10 @@ PACKAGE_NAME = 'mock-plugin'
 PACKAGE_VERSION = '1.0'
 
 
-class PluginInstallerTest(BaseTest):
-
-    fs = None
-    file_server_resource_base = None
-    plugins_work_dir = None
+class PluginInstallerTest(BaseTest, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-
         cls.logger = setup_logger(cls.__name__, logger_level=logging.DEBUG)
         cls.runner = LocalCommandRunner(cls.logger)
 
@@ -84,6 +81,7 @@ class PluginInstallerTest(BaseTest):
                 target_directory=cls.file_server_resource_base)
 
     def setUp(self):
+        super(PluginInstallerTest, self).setUp()
         self.installer = installer.PluginInstaller(logger=self.logger)
         self.mock_ctx_with_tenant()
 
@@ -354,7 +352,7 @@ class PluginInstallerTest(BaseTest):
         self.assertEqual(before_requests_version, after_requests_version)
 
 
-class TestGetSourceAndGetArgs(BaseTest):
+class TestGetSourceAndGetArgs(BaseTest, unittest.TestCase):
 
     def test_get_url_and_args_http_no_args(self):
         plugin = {'source': 'http://google.com'}
@@ -391,7 +389,7 @@ class TestGetSourceAndGetArgs(BaseTest):
         self.assertEqual('file:///tmp/plugin-dir-name.zip', source)
 
 
-class TestGetManagedPlugin(BaseTest):
+class TestGetManagedPlugin(BaseTest, unittest.TestCase):
 
     def test_no_package_name(self):
         with _patch_client(plugins=[]) as client:
