@@ -44,14 +44,16 @@ def validate(session_config):
 
     _validate('host')
     _validate('user')
-    _validate('password')
+    if not is_kerberos_env():
+        # no need to supply password in Kerberos env
+        _validate('password')
 
 
 class WinRMRunner(object):
 
     def __init__(self,
                  user,
-                 password,
+                 password=None,
                  protocol=None,
                  host=None,
                  port=None,

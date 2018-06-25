@@ -56,7 +56,7 @@ def create_runner(agent_config, validate_connection):
                     host=host,
                     port=agent_config.get('port'),
                     user=agent_config['user'],
-                    password=agent_config['password'],
+                    password=agent_config.get('password'),
                     protocol=agent_config.get('protocol'),
                     uri=agent_config.get('uri'),
                     logger=ctx.logger,
