@@ -242,8 +242,6 @@ class DaemonFactory(object):
             return False
         if attributes.get('no_overwrite'):
             # if the no_overwrite flag is set, then we need to check the
-            # existing agent. Unless the agent_transfer_mode is set, in
-            # which case we skip the daemon name validation (since we intend
-            # to create another daemon object with the same name)
-            return not attributes.get('agents_transfer_mode')
+            # existing agent
+            return True
         return False

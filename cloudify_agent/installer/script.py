@@ -33,8 +33,7 @@ LOCAL_CLEANUP_PATHS_KEY = 'local_cleanup_paths'
 
 
 class AgentInstallationScriptBuilder(AgentInstaller):
-    def __init__(self, cloudify_agent, manager_ip=None, manager_cert=None,
-                 rest_token=None, transfer_agent=False):
+    def __init__(self, cloudify_agent):
         super(AgentInstallationScriptBuilder, self).__init__(cloudify_agent)
         self.custom_env = None
         self.file_server_root = cloudify_utils.get_manager_file_server_root()
@@ -42,13 +41,6 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             cloudify_agent['rest_host'],
             cloudify_agent['rest_port']
         )
-        # When transfer_agent is set to True the script will only configure the
-        # agent to work with a new Manager (instead of downloading and
-        # installing the agent from scratch).
-        self.transfer_agent = transfer_agent
-        self.manager_ip = manager_ip
-        self.manager_cert = manager_cert
-        self.rest_token = rest_token
 
         basedir = self.cloudify_agent['basedir']
         if cloudify_agent.is_windows:
@@ -63,19 +55,20 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             self.install_script_filename = '{0}.sh'.format(uuid.uuid4())
             self.init_script_filename = '{0}.sh'.format(uuid.uuid4())
             self.custom_env_path = '{0}/custom_agent_env.sh'.format(basedir)
+        self.stop_old_agent_template = 'script/stop-agent.py.template'
+        self.stop_old_agent_filename = '{0}.py'.format(uuid.uuid4())
 
     def install_script(self, add_ssl_cert=True):
         """Render the agent installation script.
         :return: Install script content
         :rtype: str
         """
-        cert_content = self._get_cert_content(add_ssl_cert)
-        should_install_agent = self._should_install_agent()
         template = self._get_template(self.install_script_template)
         # Called before creating the agent env to populate all the variables
+        cert_content = self._get_local_cert_content() if add_ssl_cert else ''
         remote_ssl_cert_path = self._get_remote_ssl_cert_path()
         # Called before rendering the template to populate all the variables
-        daemon_env = self._create_agent_env(self.manager_ip, self.rest_token)
+        daemon_env = self._create_agent_env()
         return template.render(
             conf=self.cloudify_agent,
             daemon_env=daemon_env,
@@ -88,26 +81,11 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             ssl_cert_path=remote_ssl_cert_path,
             auth_token_header=CLOUDIFY_TOKEN_AUTHENTICATION_HEADER,
             auth_token_value=ctx.rest_token,
-            install=should_install_agent,
-            configure=False if self.transfer_agent else True,
+            install=not self.cloudify_agent.is_provided,
+            configure=True,
             start=True,
-            transfer_agent=self.transfer_agent,
             add_ssl_cert=add_ssl_cert
         )
-
-    def _should_install_agent(self):
-        install_agent = False
-        if not self.transfer_agent:
-            install_agent = not self.cloudify_agent.is_provided
-        return install_agent
-
-    def _get_cert_content(self, add_ssl_cert):
-        cert_content = ''
-        if add_ssl_cert:
-            cert_content = self._get_local_cert_content()
-        if self.manager_cert:
-            cert_content = self.manager_cert
-        return cert_content
 
     def _get_local_cert_content(self):
         local_cert_path = os.path.expanduser(self._get_local_ssl_cert_path())
@@ -186,9 +164,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         :return: Install script downloader content
         :rtype: str
         """
-        add_ssl_cert = True if self.transfer_agent else False
-        _, script_url = self.install_script_download_link(
-            add_ssl_cert=add_ssl_cert)
+        _, script_url = self.install_script_download_link(add_ssl_cert=False)
 
         template = self._get_template(self.init_script_template)
         use_sudo = self.cloudify_agent.get('install_with_sudo')
@@ -214,17 +190,20 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         self.cloudify_agent[LOCAL_CLEANUP_PATHS_KEY] = cleanup
         update_agent_runtime_properties(self.cloudify_agent)
 
+    def stop_old_agent(self, old_agent_name):
+        template = self._get_template(self.stop_old_agent_template)
+        return template.render(agent_name=old_agent_name)
+
+    def stop_old_agent_script_download_link(self, old_agent_name):
+        script_filename = self.stop_old_agent_filename
+        script_content = self.stop_old_agent(old_agent_name=old_agent_name)
+        return self._get_script_path_and_url(script_filename, script_content)
+
 
 @create_agent_config_and_installer(validate_connection=False,
                                    new_agent_config=True)
-def _get_script_builder(
-        cloudify_agent, transfer_agent=False, manager_ip=None,
-        manager_cert=None, rest_token=None, **_):
-    return AgentInstallationScriptBuilder(manager_ip=manager_ip,
-                                          manager_cert=manager_cert,
-                                          rest_token=rest_token,
-                                          cloudify_agent=cloudify_agent,
-                                          transfer_agent=transfer_agent)
+def _get_script_builder(cloudify_agent, **_):
+    return AgentInstallationScriptBuilder(cloudify_agent=cloudify_agent)
 
 
 def install_script_download_link(cloudify_agent=None, **_):
@@ -237,17 +216,14 @@ def init_script(cloudify_agent=None, **_):
     return script_builder.init_script()
 
 
-def init_script_download_link(
-        cloudify_agent=None, manager_ip=None, manager_cert=None,
-        rest_token=None, transfer_agent=False, **_):
-
-    script_builder = _get_script_builder(cloudify_agent=cloudify_agent,
-                                         transfer_agent=transfer_agent,
-                                         manager_ip=manager_ip,
-                                         manager_cert=manager_cert,
-                                         rest_token=rest_token)
-
+def init_script_download_link(cloudify_agent=None, **_):
+    script_builder = _get_script_builder(cloudify_agent=cloudify_agent)
     return script_builder.init_script_download_link()
+
+
+def stop_agent_script_download_link(cloudify_agent, old_agent_name, **_):
+    script_builder = _get_script_builder(cloudify_agent=cloudify_agent)
+    return script_builder.stop_old_agent_script_download_link(old_agent_name)
 
 
 @contextmanager

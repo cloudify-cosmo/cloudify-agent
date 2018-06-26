@@ -19,7 +19,6 @@ import threading
 import sys
 import os
 import copy
-import yaml
 from posixpath import join as urljoin
 from contextlib import contextmanager
 
@@ -29,6 +28,7 @@ from cloudify.constants import BROKER_PORT_SSL
 from cloudify.broker_config import broker_hostname
 from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.utils import (get_tenant,
+                            get_rest_token,
                             ManagerVersion,
                             get_local_rest_certificate)
 from cloudify.decorators import operation
@@ -39,8 +39,11 @@ from cloudify_agent.api.plugins.installer import PluginInstaller
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
-from cloudify_agent.installer.script import \
-    init_script_download_link, cleanup_scripts
+from cloudify_agent.installer.script import (
+    init_script_download_link,
+    stop_agent_script_download_link,
+    cleanup_scripts
+)
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 from cloudify_agent.installer.config.agent_config import \
     update_agent_runtime_properties
@@ -167,13 +170,10 @@ def _save_daemon(daemon):
     factory.save(daemon)
 
 
-def _set_default_new_agent_config_values(
-        old_agent, new_agent, transfer_agent=False):
-    if transfer_agent:
-        name = old_agent['name']
-    else:
-        name = utils.internal.generate_new_agent_name(old_agent['name'])
-    new_agent['name'] = name
+def _set_default_new_agent_config_values(old_agent, new_agent):
+    new_agent['name'] = utils.internal.generate_new_agent_name(
+        old_agent['name']
+    )
     # Set the broker IP explicitly to the current manager's IP
     new_agent['broker_ip'] = broker_hostname
     new_agent['old_agent_version'] = old_agent['version']
@@ -193,13 +193,12 @@ def _copy_values_from_old_agent_config(old_agent, new_agent):
             new_agent[field] = old_agent[field]
 
 
-def create_new_agent_config(old_agent, manager_ip=None, transfer_agent=False):
+def create_new_agent_config(old_agent):
     new_agent = CloudifyAgentConfig()
-    _set_default_new_agent_config_values(old_agent, new_agent, transfer_agent)
+    _set_default_new_agent_config_values(old_agent, new_agent)
     _copy_values_from_old_agent_config(old_agent, new_agent)
     new_agent.set_default_values()
     new_agent.set_installation_params(runner=None)
-    new_agent['broker_ip'] = manager_ip
     return new_agent
 
 
@@ -262,11 +261,8 @@ def _http_rest_host(cloudify_agent):
     return 'http://{0}/'.format(cloudify_agent['rest_host'])
 
 
-def _get_init_script_path_and_url(new_agent, old_agent_version,
-                                  manager_ip=None, manager_cert=None,
-                                  rest_token=None, transfer_agent=False):
-    script_path, script_url = init_script_download_link(
-        new_agent, manager_ip, manager_cert, rest_token, transfer_agent)
+def _get_init_script_path_and_url(new_agent, old_agent_version):
+    script_path, script_url = init_script_download_link(new_agent)
     # Prior to 4.2 (and script plugin 1.5.1) there was no way to pass
     # a certificate to the script plugin, so the initial script must be
     # passed over http
@@ -290,24 +286,36 @@ def _validate_created_agent(new_agent):
     return created_agent
 
 
-def _build_install_script_params(old_agent, script_url):
-    script_runner_task = 'script_runner.tasks.run'
-    cloudify_context = {
-        'type': 'operation',
-        'task_name': script_runner_task,
-        'task_target': old_agent['queue'],
-        'node_id': ctx.node.id,
-        'workflow_id': ctx.workflow_id,
-        'execution_id': ctx.execution_id,
-        'tenant': ctx.tenant
+def _get_cloudify_context(agent, task_name):
+    """
+    Return the cloudify context that would be set in tasks sent to the old
+    agent
+    """
+    return {
+        '__cloudify_context': {
+            'type': 'operation',
+            'task_name': task_name,
+            'task_target': agent['queue'],
+            'node_id': ctx.instance.id,
+            'workflow_id': ctx.workflow_id,
+            'execution_id': ctx.execution_id,
+            'tenant': ctx.tenant,
+            'rest_token': get_rest_token()
+        }
     }
-    kwargs = {'script_path': script_url,
-              'ssl_cert_content': _get_ssl_cert_content(old_agent['version']),
-              '__cloudify_context': cloudify_context}
+
+
+def _build_install_script_params(agent, script_url):
+    kwargs = _get_cloudify_context(
+        agent=agent,
+        task_name='script_runner.tasks.run'
+    )
+    kwargs['script_path'] = script_url
+    kwargs['ssl_cert_content'] = _get_ssl_cert_content(agent['version'])
     return kwargs
 
 
-def _run_script_celery(agent, params, timeout):
+def _send_celery_task(agent, params, timeout):
     with _celery_app(agent) as celery_app:
         if not _validate_celery(agent):
             raise RecoverableError('Agent is not responding')
@@ -348,7 +356,7 @@ def _get_amqp_client(agent):
             os.remove(ssl_cert_path)
 
 
-def _run_script_cloudify_amqp(agent, params, timeout):
+def _send_amqp_task(agent, params, timeout):
     if not _validate_cloudify_amqp(agent):
         raise RecoverableError('Agent is not responding')
 
@@ -366,32 +374,67 @@ def _run_script_cloudify_amqp(agent, params, timeout):
         raise deserialize_known_exception(error)
 
 
-def _run_install_script(old_agent, timeout, manager_ip=None, manager_cert=None,
-                        rest_token=None, transfer_agent=False):
+def _send_task(agent, params, timeout):
+    if _uses_cloudify_amqp(agent):
+        _send_amqp_task(agent, params, timeout)
+    else:
+        _send_celery_task(agent, params, timeout)
+
+
+def _run_script(agent, script_url, timeout):
+    params = _build_install_script_params(agent, script_url)
+
+    try:
+        _send_task(agent, params, timeout)
+    finally:
+        cleanup_scripts()
+
+
+def _run_install_script(old_agent, timeout):
     old_agent = copy.deepcopy(old_agent)
     if 'version' not in old_agent:
         # Assuming that if there is no version info in the agent then
         # this agent was installed by current manager.
         old_agent['version'] = str(_get_manager_version())
-    new_agent = create_new_agent_config(old_agent, manager_ip, transfer_agent)
-    script_path, script_url = _get_init_script_path_and_url(
-        new_agent, old_agent['version'], manager_ip, manager_cert,
-        rest_token, transfer_agent=transfer_agent
+    new_agent = create_new_agent_config(old_agent)
+    _, script_url = _get_init_script_path_and_url(
+        new_agent, old_agent['version']
     )
-    params = _build_install_script_params(old_agent, script_url)
 
-    installer = _run_script_cloudify_amqp if _uses_cloudify_amqp(old_agent) \
-        else _run_script_celery
-    try:
-        installer(old_agent, params, timeout)
-    finally:
-        os.remove(script_path)
-    cleanup_scripts()
+    _run_script(old_agent, script_url, timeout)
+
     created_agent = _validate_created_agent(new_agent)
     return {'old': old_agent, 'new': created_agent}
 
 
-def _validate_agent(transfer_mode=False):
+def _stop_old_diamond(old_agent, timeout):
+    # This is an imperfect way to check whether Diamond is installed
+    if 'diamond_paths' not in ctx.instance.runtime_properties:
+        ctx.logger.info('Diamond not installed. Skipping stopping it')
+        return
+
+    ctx.logger.info('Stopping old Diamond agent...')
+    stop_monitoring_params = _get_cloudify_context(
+        agent=old_agent,
+        task_name='diamond_agent.tasks.stop'
+    )
+
+    _send_task(old_agent, stop_monitoring_params, timeout)
+    ctx.logger.info('Old Diamond agent stopped')
+
+
+def _stop_old_agent(new_agent, old_agent, timeout):
+    ctx.logger.info('Stopping old Cloudify agent...')
+    _, script_url = stop_agent_script_download_link(
+        new_agent,
+        old_agent_name=old_agent['name']
+    )
+
+    _run_script(new_agent, script_url, timeout)
+    ctx.logger.info('Old Cloudify agent stopped')
+
+
+def _validate_agent():
     if 'cloudify_agent' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
@@ -400,23 +443,22 @@ def _validate_agent(transfer_mode=False):
         raise NonRecoverableError(
             'broker_config key not available in cloudify_agent'
         )
-    if not transfer_mode:
-        if 'agent_status' not in ctx.instance.runtime_properties:
-            raise NonRecoverableError(
-                ('agent_status key not available in runtime_properties, '
-                 'validation needs to be performed before '
-                 'new agent installation'))
-        status = ctx.instance.runtime_properties['agent_status']
-        if not status['agent_alive_crossbroker']:
-            raise NonRecoverableError(
-                ('Last validation attempt has shown that agent is dead. '
-                 'Rerun validation.'))
+    if 'agent_status' not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            ('agent_status key not available in runtime_properties, '
+             'validation needs to be performed before '
+             'new agent installation'))
+    status = ctx.instance.runtime_properties['agent_status']
+    if not status['agent_alive_crossbroker']:
+        raise NonRecoverableError(
+            ('Last validation attempt has shown that agent is dead. '
+             'Rerun validation.'))
     return agent
 
 
 @operation
 def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
-                      manager_certificate=None, **_):
+                      manager_certificate=None, stop_old_agent=False, **_):
     """
     Installs a new agent on a host machine.
     :param install_agent_timeout: operation's timeout.
@@ -425,6 +467,8 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
      (relevant only in HA cluster)
     :param manager_certificate: the SSL certificate of the current leader
     (master) Manager. (relevant only in HA cluster)
+    :param stop_old_agent: if set, stop the old agent after successfully
+    installing the new one
     """
     old_agent = _validate_agent()
     _update_broker_config(old_agent, manager_ip, manager_certificate)
@@ -435,6 +479,10 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
     result = _validate_current_amqp(new_agent)
     if not result['agent_alive']:
         raise RecoverableError('New agent did not start and connect')
+
+    if stop_old_agent:
+        _stop_old_diamond(old_agent, install_agent_timeout)
+        _stop_old_agent(new_agent, old_agent, install_agent_timeout)
 
     # Setting old_cloudify_agent in order to uninstall it later.
     ctx.instance.runtime_properties['old_cloudify_agent'] = agents['old']
@@ -543,22 +591,6 @@ def validate_agent_amqp(current_amqp=True, manager_ip=None,
         raise NonRecoverableError(result['agent_alive_crossbroker_error'])
 
 
-@operation
-def transfer_agent_amqp(transfer_agent_timeout=300,
-                        manager_ip=None, manager_certificate=None,
-                        manager_rest_token=None, **_):
-    old_agent = _validate_agent(transfer_mode=True)
-
-    # Since we haven't restored a snapshot on the current (old) manager, the
-    # agent doesn't have the `broker_config` dict, and so we need to create it
-    manager_ip = _get_network_ip(manager_ip, old_agent)
-    _run_install_script(old_agent, transfer_agent_timeout, manager_ip,
-                        manager_certificate, manager_rest_token,
-                        transfer_agent=True)
-    ctx.logger.info('Configured agent {0} to work with the new Manager [{1}]'.
-                    format(old_agent['name'], manager_ip))
-
-
 def _get_broker_config(agent):
     """
     Return a dictionary with params used to connect to AMQP
@@ -600,21 +632,3 @@ def _create_package_url(url, ip):
     after = rest.split(':')[1]
     new = '{before}//{ip}:{after}'.format(before=before, ip=ip, after=after)
     return new
-
-
-def _get_network_ip(manager_ip, agent):
-    manager_ip = yaml.safe_load(manager_ip)
-    # Multi-network mode: a dict containing networks and ips was passed
-    if isinstance(manager_ip, dict):
-        network_ip_mapping = manager_ip
-        network_name = agent['network']
-        new_network_ip = network_ip_mapping[network_name]
-        return new_network_ip
-    # Regular mode: the only ip of the new manager was passed
-    elif isinstance(manager_ip, basestring):
-        return manager_ip
-    else:
-        raise NonRecoverableError(
-            '`Agents transfer` command received invalid manager_ip value:'
-            ' expected dict or str and received: {0}, of type {1}'.format(
-                manager_ip, type(manager_ip)))

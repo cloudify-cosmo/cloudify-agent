@@ -143,12 +143,10 @@ export -f create_custom_env_file
 start_daemon()
 {
     export_daemon_env
-    cfy-agent daemons create {{ pm_options }} {% if transfer_agent %}--agents-transfer-mode {% endif %}
+    cfy-agent daemons create {{ pm_options }}
 
     cfy-agent daemons configure
-    {% if not transfer_agent %}
     cfy-agent daemons start
-    {% endif %}
 }
 export -f start_daemon
 
@@ -162,10 +160,6 @@ export -f start_agent
 
 main()
 {
-    {% if transfer_agent %}
-    echo "Starting agents transfer..."
-    su {{ conf.user }} --shell /bin/bash -c "set -e; add_ssl_cert"
-    {% endif %}
     {% if install %}
     install_agent
     {% endif %}
@@ -175,7 +169,6 @@ main()
     {% if start %}
     start_agent
     {% endif %}
-
 }
 export -f main
 
