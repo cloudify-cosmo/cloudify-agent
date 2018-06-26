@@ -284,7 +284,7 @@ class PluginInstaller(object):
              'egg={0}'.format(package_name.replace('-', '_')) in c.lower())
             for c in constraints)
 
-    def uninstall(self, plugin, deployment_id=None):
+    def uninstall_source(self, plugin, deployment_id=None):
         """Uninstall a previously installed plugin (only supports source
         plugins) """
         deployment_id = deployment_id or SYSTEM_DEPLOYMENT
@@ -300,6 +300,19 @@ class PluginInstaller(object):
         dst_dir = self._full_dst_dir(dst_dir)
         if os.path.isdir(dst_dir):
             self._rmtree(dst_dir)
+
+        lock_file = '{0}.lock'.format(dst_dir)
+        if os.path.exists(lock_file):
+            os.remove(lock_file)
+
+    def uninstall(self, plugin):
+        if get_managed_plugin(plugin):
+            self.uninstall_wagon(
+                plugin['package_name'],
+                plugin['package_version']
+            )
+        else:
+            self.uninstall_source(plugin, ctx.deployment.id)
 
     @staticmethod
     def _create_plugins_dir_if_missing():

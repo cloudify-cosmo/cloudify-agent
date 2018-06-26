@@ -88,9 +88,9 @@ class PluginInstallerTest(BaseTest):
         self.mock_ctx_with_tenant()
 
     def tearDown(self):
-        self.installer.uninstall(plugin=self._plugin_struct(''))
-        self.installer.uninstall(plugin=self._plugin_struct(''),
-                                 deployment_id='deployment')
+        self.installer.uninstall_source(plugin=self._plugin_struct(''))
+        self.installer.uninstall_source(plugin=self._plugin_struct(''),
+                                        deployment_id='deployment')
         self.installer.uninstall_wagon(PACKAGE_NAME, PACKAGE_VERSION)
 
     @classmethod
@@ -174,7 +174,7 @@ class PluginInstallerTest(BaseTest):
         self.installer.install(self._plugin_struct(source='mock-plugin.tar'))
         self._assert_task_runnable('mock_plugin.tasks.run',
                                    expected_return='run')
-        self.installer.uninstall(plugin=self._plugin_struct())
+        self.installer.uninstall_source(plugin=self._plugin_struct())
         self._assert_task_not_runnable('mock_plugin.tasks.run')
 
     def test_uninstall_from_source_with_deployment_id(self):
@@ -185,8 +185,8 @@ class PluginInstallerTest(BaseTest):
         self._assert_task_runnable('mock_plugin.tasks.run',
                                    expected_return='run',
                                    deployment_id=deployment_id)
-        self.installer.uninstall(plugin=self._plugin_struct(),
-                                 deployment_id=deployment_id)
+        self.installer.uninstall_source(plugin=self._plugin_struct(),
+                                        deployment_id=deployment_id)
         self._assert_task_not_runnable('mock_plugin.tasks.run',
                                        deployment_id=deployment_id)
 
@@ -342,7 +342,7 @@ class PluginInstallerTest(BaseTest):
             self.installer.install(plugin_struct)
             after_requests_version = extract_requests_version()
         finally:
-            self.installer.uninstall(plugin=plugin_struct)
+            self.installer.uninstall_source(plugin=plugin_struct)
         self.assertEqual(before_requests_version, after_requests_version)
         try:
             with _patch_for_install_wagon(requests_plugin, '0.1',
