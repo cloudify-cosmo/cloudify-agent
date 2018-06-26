@@ -139,9 +139,9 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
 
     def tearDown(self):
         super(BaseDaemonProcessManagementTest, self).tearDown()
-        self.installer.uninstall(plugin=self.plugin_struct())
-        self.installer.uninstall(plugin=self.plugin_struct(),
-                                 deployment_id=DEPLOYMENT_ID)
+        self.installer.uninstall_source(plugin=self.plugin_struct())
+        self.installer.uninstall_source(plugin=self.plugin_struct(),
+                                        deployment_id=DEPLOYMENT_ID)
 
     @property
     def daemon_cls(self):
