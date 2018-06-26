@@ -184,7 +184,7 @@ class ServiceTaskConsumer(TaskConsumer):
             """A CloudifyContext that has just enough data to cancel workflows
             """
             def __init__(self):
-                self.tenant = tenant['name']
+                self.tenant = tenant
                 self.tenant_name = tenant['name']
                 self.rest_token = rest_token
 
@@ -220,7 +220,7 @@ class ServiceTaskConsumer(TaskConsumer):
             client = get_client(
                 amqp_user=tenant['rabbitmq_username'],
                 amqp_pass=tenant['rabbitmq_password'],
-                vhost=tenant['rabbitmq_vhost']
+                amqp_vhost=tenant['rabbitmq_vhost']
             )
 
         handler = SendHandler(exchange=target, routing_key='service')
