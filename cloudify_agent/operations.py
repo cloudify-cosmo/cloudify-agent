@@ -28,6 +28,7 @@ from cloudify.constants import BROKER_PORT_SSL
 from cloudify.broker_config import broker_hostname
 from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.utils import (get_tenant,
+                            get_rest_token,
                             ManagerVersion,
                             get_local_rest_certificate)
 from cloudify.decorators import operation
@@ -299,7 +300,7 @@ def _get_cloudify_context(agent, task_name):
             'workflow_id': ctx.workflow_id,
             'execution_id': ctx.execution_id,
             'tenant': ctx.tenant,
-            'rest_token': agent['rest_token']
+            'rest_token': get_rest_token()
         }
     }
 
