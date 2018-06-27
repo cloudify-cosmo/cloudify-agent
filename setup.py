@@ -69,7 +69,8 @@ setup(
             'resources/script/linux.sh.template',
             'resources/script/windows.ps1.template',
             'resources/script/linux-download.sh.template',
-            'resources/script/windows-download.ps1.template'
+            'resources/script/windows-download.ps1.template',
+            'resources/script/stop-agent.py.template'
         ]
     },
     description='Cloudify Agent Implementation (pika based)',
