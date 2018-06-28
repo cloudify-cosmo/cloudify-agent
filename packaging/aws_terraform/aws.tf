@@ -31,15 +31,15 @@ resource "aws_instance" "centos_core_agent-test" {
   }
 
   provisioner "file" {
-      source = "linux/provision.sh"
-      destination = "~/provision.sh"
+      source = "../"
+      destination = "~"
 
   }
 
   provisioner "remote-exec" {
       inline = [
-        "chmod +x ~/provision.sh",
-        "~/provision.sh ${var.GITHUB_USERNAME} ${var.GITHUB_PASSWORD} ${var.AWS_ACCESS_KEY_ID} ${var.AWS_SECRET_ACCESS_KEY} ${var.REPO} ${var.BRANCH}"
+        "chmod +x ~/linux/provision.sh",
+        "~/linux/provision.sh ${var.GITHUB_USERNAME} ${var.GITHUB_PASSWORD} ${var.AWS_ACCESS_KEY_ID} ${var.AWS_SECRET_ACCESS_KEY} ${var.REPO} ${var.BRANCH}"
       ]
   }
 
