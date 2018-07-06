@@ -67,11 +67,12 @@ def install_plugins(plugins, **_):
 
 
 @operation
-def uninstall_plugins(plugins, **_):
+def uninstall_plugins(plugins, delete_managed_plugins=True, **_):
     installer = PluginInstaller(logger=ctx.logger)
     for plugin in plugins:
         ctx.logger.info('Uninstalling plugin: {0}'.format(plugin['name']))
-        installer.uninstall(plugin)
+        installer.uninstall(plugin,
+                            delete_managed_plugins=delete_managed_plugins)
 
 
 @operation
