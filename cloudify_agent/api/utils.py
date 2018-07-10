@@ -239,9 +239,12 @@ def is_agent_alive(name,
         try:
             response = handler.publish(task, routing_key='service',
                                        timeout=timeout, expiration=expiration)
-        except (RuntimeError, pika.exceptions.AMQPError) as e:
-            logger.error('Error sending a ping task to {0}: {1}'
-                         .format(name, e))
+        except pika.exceptions.AMQPError as e:
+            logger.warning('Could not send a ping task to {0}: {1}'
+                           .format(name, e))
+            return False
+        except RuntimeError as e:
+            logger.info('No ping response from {0}: {1}'.format(name, e))
             return False
     return 'time' in response
 
