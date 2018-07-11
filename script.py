@@ -152,22 +152,11 @@ def to_upgrade(verbose, all_tenants, dry_run):
     node_instances = _get_node_instances(rest_client, all_tenants)
     agent_instances = itertools.ifilter(is_agent_instance, node_instances)
 
-    upgrades = {}
-    upgraded_agents = set()
     for inst in agent_instances:
-        agent = inst.runtime_properties['cloudify_agent']
-        upgrades.setdefault(
-            agent['name'], (None, agent.get('version')))
-        old_agent = inst.runtime_properties.get('old_cloudify_agent')
-        if old_agent:
-            upgrades[old_agent['name']] = agent['name'], agent.get('version')
-            upgraded_agents.add(agent['name'])
-    for a in upgraded_agents:
-        upgrades.pop(a, None)
-
-    for k, v in upgrades.items():
-        name, version = v
-        print '{0} {1} version={2}'.format(k, name or '', version)
+        # agent = inst.runtime_properties['cloudify_agent']
+        if 'old_cloudify_agent' not in inst.runtime_properties:
+            print '{0} {1} {2}'.format(
+                inst['tenant_id'], inst.deployment_id, inst.id)
 
 
 @main.command()
