@@ -156,7 +156,7 @@ def to_upgrade(verbose, all_tenants, dry_run):
         # agent = inst.runtime_properties['cloudify_agent']
         if 'old_cloudify_agent' not in inst.runtime_properties:
             print '{0} {1} {2}'.format(
-                inst['tenant'], inst.deployment_id, inst.id)
+                inst['tenant_name'], inst.deployment_id, inst.id)
 
 
 @main.command()
