@@ -1,6 +1,7 @@
 #!/opt/mgmtworker/env/bin/python
 
 import os
+import json
 import click
 import logging
 import itertools
@@ -169,6 +170,33 @@ def check(node_instance, queue, verbose):
     ni = rest_client.node_instances.get(node_instance)
     agent = ni.runtime_properties['cloudify_agent']
     _output_agent(agent, queue=queue)
+
+
+@main.command()
+@click.argument('node_instance')
+def get(node_instance):
+    rest_client = get_rest_client()
+    ni = rest_client.node_instances.get(node_instance)
+    print json.dumps(ni.runtime_properties, indent=4, sort_keys=True)
+
+
+@main.command()
+@click.argument('node_instance')
+@click.option('--path')
+def put(node_instance, path, verbose):
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
+    with open(path) as f:
+        rp = json.load(f)
+
+    rest_client = get_rest_client()
+    ni = rest_client.node_instances.get(node_instance)
+    with tempfile.NamedTemporaryFile(
+            prefix='runtime-props-', delete=False) as f:
+        json.dumps(ni.runtime_properties, f, indent=4, sort_keys=True)
+    logging.info('Backing up %s runtime properties to %s', ni.id, f.name)
+    rest_client.node_instance.update(
+        node_instance, runtime_properties=rp, version=ni.version)
+
 
 if __name__ == '__main__':
     main()
