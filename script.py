@@ -1,14 +1,16 @@
 #!/opt/mgmtworker/env/bin/python
 
+import os
+import json
 import click
 import logging
 import itertools
+import tempfile
+from contextlib import contextmanager
 
-from cloudify.state import current_ctx
 from cloudify_cli.env import get_rest_client, profile
-from cloudify_agent.operations import _celery_app
 from cloudify_agent.api import utils
-
+from cloudify.celery.app import get_celery_app
 
 CHUNK_SIZE = 1000
 
@@ -56,17 +58,49 @@ class C(object):
     bootstrap_context = B()
 
 
+@contextmanager
+def _celery_app(agent):
+    broker_config = agent['broker_config']
+    ssl_cert_path = _get_ssl_cert_path(broker_config)
+    c = get_celery_app(
+        broker_url=utils.internal.get_broker_url(broker_config),
+        broker_ssl_enabled=broker_config.get('broker_ssl_enabled'),
+        broker_ssl_cert_path=ssl_cert_path
+    )
+    try:
+        yield c
+    finally:
+        if ssl_cert_path:
+            os.remove(ssl_cert_path)
+
+
 def _output_agent(agent):
     with _celery_app(agent) as c:
         print agent['queue'], utils.get_agent_registered(agent['queue'], c)
 
 
-@click.command()
+def _get_ssl_cert_path(broker_config):
+    if broker_config.get('broker_ssl_enabled'):
+        fd, ssl_cert_path = tempfile.mkstemp()
+        os.close(fd)
+        with open(ssl_cert_path, 'w') as cert_file:
+            cert_file.write(broker_config.get('broker_ssl_cert', ''))
+        return ssl_cert_path
+    else:
+        return None
+
+
+@click.group()
+def main():
+    pass
+
+
+@main.command()
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('--all-tenants/--no-all-tenants', is_flag=True, default=True,
               help='Update node instances of all tenants')
 @click.option('--dry-run', is_flag=True, help="Don't actually update anything")
-def main(verbose, all_tenants, dry_run):
+def find(verbose, all_tenants, dry_run):
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
     rest_client = get_rest_client()
     _check_status(rest_client)
@@ -74,12 +108,26 @@ def main(verbose, all_tenants, dry_run):
     agent_instances = itertools.ifilter(is_agent_instance, node_instances)
 
     agents = {}
+    upgrades = {}
     for inst in agent_instances:
         agent = inst.runtime_properties['cloudify_agent']
         agents.setdefault(agent['name'], {}).update(agent)
         old_agent = inst.runtime_properties.get('old_cloudify_agent')
+        if old_agent:
+            upgrades[old_agent['name']] = agent['name']
         agents.setdefault(old_agent['name'], {}).update(old_agent)
-    print agents
+    print json.dumps(upgrades, indent=4)
+
+
+@main.command()
+@click.argument('node_instance')
+@click.option('-v', '--verbose', is_flag=True)
+def check(node_instance, verbose):
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
+    rest_client = get_rest_client()
+    ni = rest_client.node_instances.get(node_instance)
+    agent = ni.runtime_properties['cloudify_agent']
+    _output_agent(agent)
 
 if __name__ == '__main__':
     main()
