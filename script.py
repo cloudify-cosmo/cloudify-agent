@@ -1,7 +1,6 @@
 #!/opt/mgmtworker/env/bin/python
 
 import os
-import json
 import click
 import logging
 import itertools
@@ -47,15 +46,6 @@ def _get_node_instances(rest_client, all_tenants):
 
 def is_agent_instance(node_instance):
     return 'cloudify_agent' in node_instance.runtime_properties
-
-
-class C(object):
-    logger = logging.getLogger()
-
-    class B(object):
-        def broker_config(self):
-            return {}
-    bootstrap_context = B()
 
 
 @contextmanager
@@ -114,7 +104,8 @@ def find(verbose, all_tenants, dry_run):
     upgraded_agents = set()
     for inst in agent_instances:
         agent = inst.runtime_properties['cloudify_agent']
-        upgrades.setdefault(agent['name'], None)
+        upgrades.setdefault(
+            agent['name'], (agent['name'], agent.get('version')))
         old_agent = inst.runtime_properties.get('old_cloudify_agent')
         if old_agent:
             upgrades[old_agent['name']] = agent['name'], agent.get('version')
