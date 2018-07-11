@@ -74,9 +74,12 @@ def _celery_app(agent):
             os.remove(ssl_cert_path)
 
 
-def _output_agent(agent):
+def _output_agent(agent, queue=None, timeout=5):
     with _celery_app(agent) as c:
-        print agent['queue'], utils.get_agent_registered(agent['queue'], c)
+        queue = queue or agent['queue']
+        r = utils.get_agent_registered(queue, c, timeout=timeout)
+        print 'name={0} queue={1} result={0}'.format(
+            agent['name'], queue, bool(r))
 
 
 def _get_ssl_cert_path(broker_config):
@@ -108,23 +111,29 @@ def find(verbose, all_tenants, dry_run):
     agent_instances = itertools.ifilter(is_agent_instance, node_instances)
 
     upgrades = {}
+    upgraded_agents = set()
     for inst in agent_instances:
         agent = inst.runtime_properties['cloudify_agent']
+        upgrades.setdefault(agent['name'], None)
         old_agent = inst.runtime_properties.get('old_cloudify_agent')
         if old_agent:
             upgrades[old_agent['name']] = agent['name']
+            upgraded_agents.add(agent['name'])
+    for a in upgraded_agents:
+        upgrades.pop(a, None)
     print json.dumps(upgrades, indent=4)
 
 
 @main.command()
 @click.argument('node_instance')
 @click.option('-v', '--verbose', is_flag=True)
-def check(node_instance, verbose):
+@click.option('-q', '--queue')
+def check(node_instance, queue, verbose):
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
     rest_client = get_rest_client()
     ni = rest_client.node_instances.get(node_instance)
     agent = ni.runtime_properties['cloudify_agent']
-    _output_agent(agent)
+    _output_agent(agent, queue=queue)
 
 if __name__ == '__main__':
     main()
