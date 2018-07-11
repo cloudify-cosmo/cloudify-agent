@@ -105,7 +105,7 @@ def find(verbose, all_tenants, dry_run):
     for inst in agent_instances:
         agent = inst.runtime_properties['cloudify_agent']
         upgrades.setdefault(
-            agent['name'], (agent['name'], agent.get('version')))
+            agent['name'], (None, agent.get('version')))
         old_agent = inst.runtime_properties.get('old_cloudify_agent')
         if old_agent:
             upgrades[old_agent['name']] = agent['name'], agent.get('version')
@@ -115,7 +115,7 @@ def find(verbose, all_tenants, dry_run):
 
     for k, v in upgrades.items():
         name, version = v
-        print '{0} {1} version={2}'.format(k, name, version)
+        print '{0} {1} version={2}'.format(k, name or '', version)
 
 
 @main.command()
