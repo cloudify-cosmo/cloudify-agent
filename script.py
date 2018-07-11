@@ -93,7 +93,59 @@ def main():
 @click.option('--all-tenants/--no-all-tenants', is_flag=True, default=True,
               help='Update node instances of all tenants')
 @click.option('--dry-run', is_flag=True, help="Don't actually update anything")
-def find(verbose, all_tenants, dry_run):
+def show_agents(verbose, all_tenants, dry_run):
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
+    rest_client = get_rest_client()
+    _check_status(rest_client)
+    node_instances = _get_node_instances(rest_client, all_tenants)
+    agent_instances = itertools.ifilter(is_agent_instance, node_instances)
+
+    upgrades = {}
+    upgraded_agents = set()
+    for inst in agent_instances:
+        agent = inst.runtime_properties['cloudify_agent']
+        upgrades.setdefault(
+            agent['name'], (None, agent.get('version')))
+        old_agent = inst.runtime_properties.get('old_cloudify_agent')
+        if old_agent:
+            upgrades[old_agent['name']] = agent['name'], agent.get('version')
+            upgraded_agents.add(agent['name'])
+    for a in upgraded_agents:
+        upgrades.pop(a, None)
+
+    for k, v in upgrades.items():
+        name, version = v
+        print '{0} {1} version={2}'.format(k, name or '', version)
+
+
+@main.command()
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('--all-tenants/--no-all-tenants', is_flag=True, default=True,
+              help='Update node instances of all tenants')
+@click.option('--dry-run', is_flag=True, help="Don't actually update anything")
+def upgraded(verbose, all_tenants, dry_run):
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
+    rest_client = get_rest_client()
+    _check_status(rest_client)
+    node_instances = _get_node_instances(rest_client, all_tenants)
+    agent_instances = itertools.ifilter(is_agent_instance, node_instances)
+
+    upgrades = {}
+    for inst in agent_instances:
+        if 'old_cloudify_agent' in inst.runtime_properties:
+            agent = inst.runtime_properties['cloudify_agent']
+            upgrades[inst.id] = agent['queue'], agent.get('version')
+
+    for k, (queue, ver) in upgrades.items():
+        print 'node-instance={0} queue={1} version={2}'.format(k, queue, ver)
+
+
+@main.command()
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('--all-tenants/--no-all-tenants', is_flag=True, default=True,
+              help='Update node instances of all tenants')
+@click.option('--dry-run', is_flag=True, help="Don't actually update anything")
+def to_upgrade(verbose, all_tenants, dry_run):
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
     rest_client = get_rest_client()
     _check_status(rest_client)
