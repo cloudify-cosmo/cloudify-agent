@@ -182,6 +182,7 @@ def get(node_instance):
 
 @main.command()
 @click.argument('node_instance')
+@click.option('-v', '--verbose', is_flag=True)
 @click.option('--path')
 def put(node_instance, path, verbose):
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
