@@ -4,8 +4,11 @@ import click
 import logging
 import itertools
 
+from cloudify.state import current_ctx
 from cloudify_cli.env import get_rest_client, profile
 from cloudify_agent.operations import _celery_app
+from cloudify_agent.api import utils
+
 
 CHUNK_SIZE = 1000
 
@@ -44,6 +47,15 @@ def is_agent_instance(node_instance):
     return 'cloudify_agent' in node_instance.runtime_properties
 
 
+class C(object):
+    logger = logging.getLogger()
+
+    class B(object):
+        def broker_config(self):
+            return {}
+    bootstrap_context = B()
+
+
 @click.command()
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('--all-tenants/--no-all-tenants', is_flag=True, default=True,
@@ -55,10 +67,11 @@ def main(verbose, all_tenants, dry_run):
     _check_status(rest_client)
     node_instances = _get_node_instances(rest_client, all_tenants)
     agent_instances = itertools.ifilter(is_agent_instance, node_instances)
-
-    for agent in agent_instances:
-        with _celery_app(agent.runtime_properties['cloudify_agent']) as c:
-            print c
+    with current_ctx.push(C()):
+        for inst in agent_instances:
+            agent = inst.runtime_properties['cloudify_agent']
+            with _celery_app(agent) as c:
+                print utils.get_agent_registered(agent['queue'], c)
 
 
 if __name__ == '__main__':
