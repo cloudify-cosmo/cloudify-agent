@@ -78,7 +78,7 @@ def _output_agent(agent, queue=None, timeout=5):
     with _celery_app(agent) as c:
         queue = queue or agent['queue']
         r = utils.get_agent_registered(queue, c, timeout=timeout)
-        print 'name={0} queue={1} result={0}'.format(
+        print 'name={0} queue={1} result={2}'.format(
             agent['name'], queue, bool(r))
 
 
