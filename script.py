@@ -56,6 +56,11 @@ class C(object):
     bootstrap_context = B()
 
 
+def _output_agent(agent):
+    with _celery_app(agent) as c:
+        print agent['queue'], utils.get_agent_registered(agent['queue'], c)
+
+
 @click.command()
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('--all-tenants/--no-all-tenants', is_flag=True, default=True,
@@ -67,15 +72,14 @@ def main(verbose, all_tenants, dry_run):
     _check_status(rest_client)
     node_instances = _get_node_instances(rest_client, all_tenants)
     agent_instances = itertools.ifilter(is_agent_instance, node_instances)
-    with current_ctx.push(C()):
-        for inst in agent_instances:
-            agent = inst.runtime_properties['cloudify_agent']
-            with _celery_app(agent) as c:
-                print agent['queue'], utils.get_agent_registered(agent['queue'], c)
-            old_agent = inst.runtime_properties.get('old_cloudify_agent')
-            if old_agent:
-                agent = old_agent
-                with _celery_app(agent) as c:
-                    print agent['queue'], utils.get_agent_registered(agent['queue'], c)
+
+    agents = {}
+    for inst in agent_instances:
+        agent = inst.runtime_properties['cloudify_agent']
+        agents.setdefault(agent['name'], {}).update(agent)
+        old_agent = inst.runtime_properties.get('old_cloudify_agent')
+        agents.setdefault(old_agent['name'], {}).update(old_agent)
+    print agents
+
 if __name__ == '__main__':
     main()
