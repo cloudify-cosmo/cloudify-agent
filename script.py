@@ -107,15 +107,12 @@ def find(verbose, all_tenants, dry_run):
     node_instances = _get_node_instances(rest_client, all_tenants)
     agent_instances = itertools.ifilter(is_agent_instance, node_instances)
 
-    agents = {}
     upgrades = {}
     for inst in agent_instances:
         agent = inst.runtime_properties['cloudify_agent']
-        agents.setdefault(agent['name'], {}).update(agent)
         old_agent = inst.runtime_properties.get('old_cloudify_agent')
         if old_agent:
             upgrades[old_agent['name']] = agent['name']
-        agents.setdefault(old_agent['name'], {}).update(old_agent)
     print json.dumps(upgrades, indent=4)
 
 
