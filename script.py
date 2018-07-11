@@ -193,7 +193,7 @@ def put(node_instance, path, verbose):
     ni = rest_client.node_instances.get(node_instance)
     with tempfile.NamedTemporaryFile(
             prefix='runtime-props-', delete=False) as f:
-        json.dumps(ni.runtime_properties, f, indent=4, sort_keys=True)
+        json.dump(ni.runtime_properties, f, indent=4, sort_keys=True)
     logging.info('Backing up %s runtime properties to %s', ni.id, f.name)
     rest_client.node_instances.update(
         node_instance, runtime_properties=rp, version=ni.version)
