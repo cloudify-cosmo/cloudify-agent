@@ -71,8 +71,11 @@ def main(verbose, all_tenants, dry_run):
         for inst in agent_instances:
             agent = inst.runtime_properties['cloudify_agent']
             with _celery_app(agent) as c:
-                print utils.get_agent_registered(agent['queue'], c)
-
-
+                print agent['queue'], utils.get_agent_registered(agent['queue'], c)
+            old_agent = inst.runtime_properties.get('old_cloudify_agent')
+            if old_agent:
+                agent = old_agent
+                with _celery_app(agent) as c:
+                    print agent['queue'], utils.get_agent_registered(agent['queue'], c)
 if __name__ == '__main__':
     main()
