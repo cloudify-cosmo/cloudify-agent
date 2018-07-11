@@ -195,7 +195,7 @@ def put(node_instance, path, verbose):
             prefix='runtime-props-', delete=False) as f:
         json.dumps(ni.runtime_properties, f, indent=4, sort_keys=True)
     logging.info('Backing up %s runtime properties to %s', ni.id, f.name)
-    rest_client.node_instance.update(
+    rest_client.node_instances.update(
         node_instance, runtime_properties=rp, version=ni.version)
 
 
