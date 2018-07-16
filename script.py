@@ -1,18 +1,28 @@
-#!/opt/mgmtworker/env/bin/python
+#!/opt/cfy/embedded/bin/python
 
 import os
+import sys
 import json
 import click
 import logging
 import itertools
 import tempfile
 from contextlib import contextmanager
+from distutils.version import LooseVersion
 
-from cloudify_cli.env import get_rest_client, profile
-from cloudify_agent.api import utils
+try:
+    from cloudify_cli.env import get_rest_client, profile
+except ImportError:
+    get_rest_client = None
+    profile = None
+try:
+    from cloudify_agent.api import utils
+except ImportError:
+    utils = None
 from cloudify.celery.app import get_celery_app
 
 CHUNK_SIZE = 1000
+DEPLOYMENT_PROXY = 'cloudify.nodes.DeploymentProxy'
 
 
 def _check_status(rest_client):
@@ -141,12 +151,51 @@ def upgraded(verbose, all_tenants, dry_run):
         print 'node-instance={0} queue={1} version={2}'.format(k, queue, ver)
 
 
+def is_upgraded(instance):
+    return 'old_cloudify_agent' in instance.runtime_properties
+
+NODES_CACHE = {}
+
+
+def _get_node(node_id, instance, rest_client):
+    tenant_name = instance['tenant_name']
+    deployment_id = instance.deployment_id
+    node_name = node_id
+    key = (tenant_name, deployment_id, node_name)
+    if key not in NODES_CACHE:
+         NODES_CACHE[key] = rest_client.nodes.get(node_id=node_id, deployment_id=deployment_id)
+    return NODES_CACHE[key]
+
+
+def find_deployment_proxy(instance, rest_client):
+    tenant_name = instance['tenant_name']
+    deployment_id = instance.deployment_id
+    for rel in instance.relationships:
+        rel_node = _get_node(rel['target_name'], instance, rest_client)
+        if DEPLOYMENT_PROXY in rel_node['type_hierarchy']:
+            return rel_node
+
+
+def is_proxied(instance, rest_client, host_type='cloudify.foreman.nodes.Host'):
+    node = _get_node(instance['node_id'], instance, rest_client)
+    if bool(find_deployment_proxy(instance, rest_client)):
+         return True
+    return not host_type in node['type_hierarchy']
+
+
+def _output_instance(instance):
+    queue = instance.runtime_properties['cloudify_agent'].get('queue')
+    print instance.deployment_id, instance.id, queue
+
+
 @main.command()
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('--all-tenants/--no-all-tenants', is_flag=True, default=True,
               help='Update node instances of all tenants')
-@click.option('--dry-run', is_flag=True, help="Don't actually update anything")
-def to_upgrade(verbose, all_tenants, dry_run):
+@click.option('--ignore-version-check', is_flag=True, default=True,
+              help='Update node instances of all tenants')
+@click.option('--host-type', default='cloudify.foreman.nodes.Host')
+def to_upgrade(verbose, all_tenants, ignore_version_check, host_type):
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
     rest_client = get_rest_client()
     _check_status(rest_client)
@@ -154,30 +203,96 @@ def to_upgrade(verbose, all_tenants, dry_run):
     agent_instances = itertools.ifilter(is_agent_instance, node_instances)
 
     for inst in agent_instances:
-        # agent = inst.runtime_properties['cloudify_agent']
-        if 'old_cloudify_agent' not in inst.runtime_properties:
-            print '{0} {1} {2}'.format(
-                inst['tenant_name'], inst.deployment_id, inst.id)
+        if is_upgraded(inst):
+            continue
+        if is_proxied(inst, rest_client, host_type=host_type):
+            continue
+        if not ignore_version_check:
+            version = inst.runtime_properties['cloudify_agent'].get('version')
+            if version and LooseVersion(version) >= LooseVersion('4.3'):
+                continue
+        _output_instance(inst)
 
 
 @main.command()
-@click.argument('node_instance')
 @click.option('-v', '--verbose', is_flag=True)
-@click.option('-q', '--queue')
-def check(node_instance, queue, verbose):
+@click.option('--all-tenants/--no-all-tenants', is_flag=True, default=True,
+              help='Update node instances of all tenants')
+@click.option('--host-type', default='cloudify.foreman.nodes.Host')
+def find_proxied(verbose, all_tenants, host_type):
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
     rest_client = get_rest_client()
-    ni = rest_client.node_instances.get(node_instance)
-    agent = ni.runtime_properties['cloudify_agent']
+    _check_status(rest_client)
+    node_instances = _get_node_instances(rest_client, all_tenants)
+    agent_instances = itertools.ifilter(is_agent_instance, node_instances)
+
+    for inst in agent_instances:
+        if is_upgraded(inst):
+            continue
+        if not is_proxied(inst, rest_client, host_type=host_type):
+            continue
+        _output_instance(inst)
+
+
+@main.command()
+@click.argument('node_instance_id')
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('--dry-run', is_flag=True, help="Don't actually update anything")
+def fix_proxied(node_instance_id, verbose, dry_run):
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
+    rest_client = get_rest_client()
+    _check_status(rest_client)
+
+    node_instance = rest_client.node_instances.get(node_instance_id)
+    original_agent = node_instance.runtime_properties['cloudify_agent']
+    original_queue = original_agent['queue']
+    original_name = original_agent['name']
+
+    # proxy = find_deployment_proxy(node_instance, rest_client)
+    # deployment_id = proxy.properties['resource_config']['deployment']['id']
+    agent_id = node_instance.runtime_properties['cloudify_agent']['queue']
+    agent_node_instance = rest_client.node_instances.get(agent_id)
+    agent = agent_node_instance.runtime_properties['cloudify_agent']
+
+    queue, name = agent['queue'], agent['name']
+
+    logging.info('%s: changing name from %s to %s',
+                 node_instance.id, original_name, name)
+    logging.info('%s: changing queue from %s to %s',
+                 node_instance.id, original_queue, queue)
+    node_instance.runtime_properties['cloudify_agent']['queue'] = queue
+    node_instance.runtime_properties['cloudify_agent']['name'] = name
+    if not dry_run:
+        rest_client.node_instances.update(
+            node_instance_id,
+            runtime_properties=node_instance.runtime_properties,
+            version=node_instance.version)
+
+
+@main.command()
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-queue', '--queue')
+@click.argument('infile', type=click.File())
+def check(infile, queue, verbose):
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
+    runtime_properties = json.load(infile)
+    agent = runtime_properties['cloudify_agent']
     _output_agent(agent, queue=queue)
 
 
 @main.command()
 @click.argument('node_instance')
-def get(node_instance):
+@click.option('--directory', help='Store runtime props as a <ID>.json file '
+                                  'in this directory; otherwise output '
+                                  'to stdout')
+def get(node_instance, directory):
     rest_client = get_rest_client()
     ni = rest_client.node_instances.get(node_instance)
-    print json.dumps(ni.runtime_properties, indent=4, sort_keys=True)
+    if directory:
+        with open(os.path.join(directory, '{0}.json'.format(ni.id)), 'w') as f:
+            json.dump(ni.runtime_properties, f, indent=4, sort_keys=True)
+    else:
+        print json.dumps(ni.runtime_properties, indent=4, sort_keys=True)
 
 
 @main.command()
@@ -199,5 +314,26 @@ def put(node_instance, path, verbose):
         node_instance, runtime_properties=rp, version=ni.version)
 
 
+@main.command()
+@click.argument('infile', type=click.File())
+def format_install_exec(infile):
+    for i in infile:
+        dep, inst, rest = i.split(' ', 2)
+        click.echo('cfy executions start -d {0} install_new_agents -p node_instance_ids={1}'  # noqa
+                  .format(dep, inst))
+
+
+@main.command()
+@click.argument('infile', type=click.File())
+@click.option('--dry-run', is_flag=True, help="Don't actually update anything")
+def format_update_proxy(infile, dry_run):
+    for i in infile:
+        dep, inst, rest = i.split(' ', 2)
+        click.echo(
+            '{0} fix_proxied {1}{2}'
+            .format(sys.argv[1], '--dry-run ' if dry_run else '', inst))
+
+
 if __name__ == '__main__':
     main()
+
