@@ -15,6 +15,7 @@ try:
 except ImportError:
     get_rest_client = None
     profile = None
+
 try:
     from cloudify_agent.api import utils
 except ImportError:
@@ -175,7 +176,6 @@ def find_deployment_proxy(instance, rest_client):
         if DEPLOYMENT_PROXY in rel_node['type_hierarchy']:
             return rel_node
 
-
 def is_proxied(instance, rest_client, host_type='cloudify.foreman.nodes.Host'):
     node = _get_node(instance['node_id'], instance, rest_client)
     if bool(find_deployment_proxy(instance, rest_client)):
@@ -212,7 +212,6 @@ def to_upgrade(verbose, all_tenants, ignore_version_check, host_type):
             if version and LooseVersion(version) >= LooseVersion('4.3'):
                 continue
         _output_instance(inst)
-
 
 @main.command()
 @click.option('-v', '--verbose', is_flag=True)
@@ -331,7 +330,7 @@ def format_update_proxy(infile, dry_run):
         dep, inst, rest = i.split(' ', 2)
         click.echo(
             '{0} fix_proxied {1}{2}'
-            .format(sys.argv[1], '--dry-run ' if dry_run else '', inst))
+            .format(sys.argv[0], '--dry-run ' if dry_run else '', inst))
 
 
 if __name__ == '__main__':
