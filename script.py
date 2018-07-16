@@ -308,7 +308,7 @@ def format_update_proxy(infile, dry_run):
         dep, inst, rest = i.split(' ', 2)
         click.echo(
             '{0} fix_proxied {1}{2}'
-            .format(sys.argv[1], '--dry-run ' if dry_run else '', inst))
+            .format(sys.argv[0], '--dry-run ' if dry_run else '', inst))
 
 
 if __name__ == '__main__':
