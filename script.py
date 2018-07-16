@@ -57,7 +57,7 @@ def _get_node_instances(rest_client, all_tenants):
 
 
 def is_agent_instance(node_instance):
-    return 'cloudify_agent' in node_instance.runtime_properties
+    return node_instance.state == 'started' and 'cloudify_agent' in node_instance.runtime_properties
 
 
 @contextmanager
