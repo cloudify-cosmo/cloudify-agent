@@ -306,7 +306,7 @@ class PluginInstaller(object):
             os.remove(lock_file)
 
     def uninstall(self, plugin, delete_managed_plugins=True):
-        if get_managed_plugin(plugin):
+        if plugin.get('wagon'):
             if delete_managed_plugins:
                 self.uninstall_wagon(
                     plugin['package_name'],
