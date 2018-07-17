@@ -32,6 +32,7 @@ try:
     from manager_rest.storage.management_models import Tenant
     from manager_rest.config import instance
     from manager_rest.server import CloudifyFlaskApp
+    from manager_rest.storage.resource_models import NodeInstance
 except ImportError:
     has_storage_manager = False
 else:
@@ -368,7 +369,6 @@ def evaluate_deployment_outputs(sm, deployment):
         raise DeploymentOutputsEvaluationError(str(e))
 
 
-from manager_rest.storage.resource_models import NodeInstance
 def _get_methods(deployment, storage_manager):
     """Retrieve a dict of all the callbacks necessary for function evaluation
     """
@@ -429,8 +429,6 @@ def update_deployment_outputs(deployment_id, verbose, config_file, tenant_id):
         tenant = sm.get(Tenant, None, filters={'name': tenant_id})
         dep = sm.get(Deployment, None, filters={'id': deployment_id, '_tenant_id': tenant.id})
         node_instances = {ni.id: ni for ni in sm.list(NodeInstance, filters={'_tenant_id': dep._tenant_id, 'deployment_id': dep.id})}
-        print json.dumps(dep.outputs, indent=4, sort_keys=True)
-        print
         dep_outs = copy.deepcopy(dep.outputs)
         outs = evaluate_deployment_outputs(sm, dep)
         for out, value in outs.items():
@@ -442,8 +440,7 @@ def update_deployment_outputs(deployment_id, verbose, config_file, tenant_id):
                            dep_outs[out]['value'][subkey] = {'get_attribute': [ni.node_id, 'cloudify_agent', 'queue']}
                        except KeyError:
                            logger.warning('KeyError for %s/%s', out, subkey)
-#        sm.update(dep, modified_attrs=('outputs', ))
-        print json.dumps(dep_outs, indent=4, sort_keys=True)
+        sm.update(dep, modified_attrs=('outputs', ))
 
 
 @main.command()
