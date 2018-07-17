@@ -352,21 +352,33 @@ def format_update_proxy(infile, dry_run):
 @click.option('-t', '--tenant-id', required=True)
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('--config-file', default='/opt/manager/cloudify-rest.conf')
-def set_node_install_method(node_id, deployment_id, tenant_id, install_method, verbose, config_file):
+def set_node_install_method(node_id, deployment_id, tenant_id, install_method,
+                            verbose, config_file):
+    if not has_storage_manager:
+        raise RuntimeError('Use the restservice virtualenv')
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
     instance.load_from_file(config_file)
     app = CloudifyFlaskApp()
+
     with app.app_context():
         sm = get_storage_manager()
         tenant = sm.get(Tenant, None, filters={'name': tenant_id})
-        nodes = sm.list(Node, filters={'id': node_id, 'deployment_id': deployment_id, '_tenant_id': tenant.id})
+        nodes = sm.list(Node, filters={
+            'id': node_id,
+            'deployment_id': deployment_id,
+            '_tenant_id': tenant.id
+        })
         if len(nodes) != 1:
             raise ValueError('Expected one node, found {0}'.format(len(nodes)))
         node = nodes[0]
 
         old_install_method = node.properties['agent_config']['install_method']
         node.properties['agent_config']['install_method'] = install_method
-        logging.info('%s: changing install_method from %s to %s', node_id, old_install_method, install_method)
+        logging.info(
+            '%s: changing install_method from %s to %s',
+            node_id,
+            old_install_method,
+            install_method)
         sm.update(node, modified_attrs=('properties', ))
 
 
