@@ -430,6 +430,7 @@ def update_deployment_outputs(deployment_id, verbose, config_file, tenant_id):
         dep = sm.get(Deployment, None, filters={'id': deployment_id, '_tenant_id': tenant.id})
         node_instances = {ni.id: ni for ni in sm.list(NodeInstance, filters={'_tenant_id': dep._tenant_id, 'deployment_id': dep.id})}
         dep_outs = copy.deepcopy(dep.outputs)
+        print json.dumps(dep_outs, indent=4)
         outs = evaluate_deployment_outputs(sm, dep)
         for out, value in outs.items():
            if isinstance(value, dict):
@@ -440,7 +441,9 @@ def update_deployment_outputs(deployment_id, verbose, config_file, tenant_id):
                            dep_outs[out]['value'][subkey] = {'get_attribute': [ni.node_id, 'cloudify_agent', 'queue']}
                        except KeyError:
                            logger.warning('KeyError for %s/%s', out, subkey)
+        dep.outputs = dep_outs
         sm.update(dep, modified_attrs=('outputs', ))
+        print json.dumps(dep_outs, indent=4)
 
 
 @main.command()
