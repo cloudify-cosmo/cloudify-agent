@@ -69,7 +69,8 @@ def _get_node_instances(rest_client, all_tenants):
 
 
 def is_agent_instance(node_instance):
-    return node_instance.state == 'started' and 'cloudify_agent' in node_instance.runtime_properties
+    return (node_instance.state == 'started' and
+            'cloudify_agent' in node_instance.runtime_properties)
 
 
 @contextmanager
@@ -176,23 +177,24 @@ def _get_node(node_id, instance, rest_client):
     node_name = node_id
     key = (tenant_name, deployment_id, node_name)
     if key not in NODES_CACHE:
-         NODES_CACHE[key] = rest_client.nodes.get(node_id=node_id, deployment_id=deployment_id)
+        NODES_CACHE[key] = rest_client.nodes.get(
+            node_id=node_id,
+            deployment_id=deployment_id)
     return NODES_CACHE[key]
 
 
 def find_deployment_proxy(instance, rest_client):
-    tenant_name = instance['tenant_name']
-    deployment_id = instance.deployment_id
     for rel in instance.relationships:
         rel_node = _get_node(rel['target_name'], instance, rest_client)
         if DEPLOYMENT_PROXY in rel_node['type_hierarchy']:
             return rel_node
 
+
 def is_proxied(instance, rest_client, host_type='cloudify.foreman.nodes.Host'):
     node = _get_node(instance['node_id'], instance, rest_client)
     if bool(find_deployment_proxy(instance, rest_client)):
-         return True
-    return not host_type in node['type_hierarchy']
+        return True
+    return host_type not in node['type_hierarchy']
 
 
 def _output_instance(instance):
@@ -224,6 +226,7 @@ def to_upgrade(verbose, all_tenants, ignore_version_check, host_type):
             if version and LooseVersion(version) >= LooseVersion('4.3'):
                 continue
         _output_instance(inst)
+
 
 @main.command()
 @click.option('-v', '--verbose', is_flag=True)
