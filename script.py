@@ -416,7 +416,8 @@ def _get_methods(deployment, storage_manager):
 @click.option('-t', '--tenant-id')
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('--config-file', default='/opt/manager/cloudify-rest.conf')
-def update_deployment_outputs(deployment_id, verbose, config_file, tenant_id):
+@click.option('--dry-run', is_flag=True, help="Don't actually update anything")
+def update_deployment_outputs(deployment_id, verbose, config_file, tenant_id, dry_run):
     from manager_rest.storage.resource_models import Deployment
     if not has_storage_manager:
         raise RuntimeError('Use the restservice virtualenv')
@@ -442,7 +443,8 @@ def update_deployment_outputs(deployment_id, verbose, config_file, tenant_id):
                        except KeyError:
                            logger.warning('KeyError for %s/%s', out, subkey)
         dep.outputs = dep_outs
-        sm.update(dep, modified_attrs=('outputs', ))
+        if not dry_run:
+            sm.update(dep, modified_attrs=('outputs', ))
         print json.dumps(dep_outs, indent=4)
 
 
