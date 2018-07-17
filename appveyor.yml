@@ -6,7 +6,7 @@ environment:
   TOX_ENV: pywin
 
   choco_cache_location: C:\Temp\choco
-  rabbitmq_download_url: https://www.rabbitmq.com/releases/rabbitmq-server/v3.5.2/rabbitmq-server-3.5.2.exe
+  rabbitmq_download_url: https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.7.7/rabbitmq-server-3.7.7.exe
   rabbitmq_installer_path: C:\Users\appveyor\rabbitmq.exe
 
   matrix:
