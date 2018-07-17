@@ -20,7 +20,10 @@ try:
     from cloudify_agent.api import utils
 except ImportError:
     utils = None
-from cloudify.celery.app import get_celery_app
+try:
+    from cloudify.celery.app import get_celery_app
+except ImportError:
+    get_celery_app = None
 
 try:
     from manager_rest.storage.storage_manager import get_storage_manager
