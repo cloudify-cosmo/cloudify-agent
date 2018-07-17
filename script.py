@@ -441,7 +441,7 @@ def update_deployment_outputs(deployment_id, verbose, config_file, tenant_id, dr
                           ni = node_instances[subvalue]
                           dep_outs[out]['value'][subkey] = {'get_attribute': [ni.node_id, 'cloudify_agent', 'queue']}
                   except (TypeError, ValueError, KeyError):
-                      logger.warning('error for %s/%s', out, subkey)
+                      logging.warning('error for %s/%s', out, subkey)
 
         dep.outputs = dep_outs
         if not dry_run:
