@@ -351,6 +351,97 @@ def format_update_proxy(infile, dry_run):
             .format(sys.argv[0], '--dry-run ' if dry_run else '', inst))
 
 
+def evaluate_deployment_outputs(sm, deployment):
+    from dsl_parser import functions
+    from manager_rest.storage.resource_models import Deployment
+    from dsl_parser import exceptions as parser_exceptions
+
+    methods = _get_methods(deployment, sm)
+
+    try:
+        return functions.evaluate_outputs(
+            outputs_def=deployment.outputs,
+            **methods
+            )
+    except parser_exceptions.FunctionEvaluationError, e:
+        raise DeploymentOutputsEvaluationError(str(e))
+
+
+from manager_rest.storage.resource_models import NodeInstance
+def _get_methods(deployment, storage_manager):
+    """Retrieve a dict of all the callbacks necessary for function evaluation
+    """
+    tenant_id = deployment._tenant_id
+    def get_node_instances(node_id=None):
+        filters = {'deployment_id': deployment.id, '_tenant_id': tenant_id}
+        if node_id:
+            filters['node_id'] = node_id
+        return storage_manager.list(NodeInstance, filters=filters).items
+
+    def get_node_instance(node_instance_id):
+        return storage_manager.get(NodeInstance, node_instance_id)
+
+    def get_node(node_id):
+        filters = {'deployment_id': deployment.id, '_tenant_id': tenant_id}
+        if node_id:
+            filters['node_id'] = node_id
+        nodes = storage_manager.list(
+            Node,
+            filters=filters
+        )
+        if not nodes:
+            raise RuntimeError(
+                'Requested Node with ID `{0}` on Deployment `{1}` '
+                'was not found'.format(node_id, deployment_id)
+            )
+        return nodes[0]
+
+
+    def get_secret(secret_key):
+        secret = storage_manager.get(Secret, secret_key)
+        decrypted_value = cryptography_utils.decrypt(secret.value)
+        return SecretType(secret_key, decrypted_value)
+
+    return dict(
+        get_node_instances_method=get_node_instances,
+        get_node_instance_method=get_node_instance,
+        get_node_method=get_node,
+        get_secret_method=get_secret
+    )
+
+
+@main.command()
+@click.option('-d', '--deployment-id')
+@click.option('-t', '--tenant-id')
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('--config-file', default='/opt/manager/cloudify-rest.conf')
+def update_deployment_outputs(deployment_id, verbose, config_file, tenant_id):
+    from manager_rest.storage.resource_models import Deployment
+    if not has_storage_manager:
+        raise RuntimeError('Use the restservice virtualenv')
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
+    instance.load_from_file(config_file)
+    app = CloudifyFlaskApp()
+
+    with app.app_context():
+        sm = get_storage_manager()
+        tenant = sm.get(Tenant, None, filters={'name': tenant_id})
+        dep = sm.get(Deployment, None, filters={'id': deployment_id, '_tenant_id': tenant.id})
+        outs = evaluate_deployment_outputs(sm, dep)
+        node_instances = {ni.id: ni for ni in sm.list(NodeInstance, filters={'_tenant_id': dep._tenant_id, 'deployment_id': dep.id})}
+        print json.dumps(dep.outputs, indent=4, sort_keys=True)
+        for out, value in outs.items():
+           if isinstance(value, dict):
+              for subkey, subvalue in value.items():
+                  if subvalue in node_instances:
+                       try:
+                           dep.outputs[out]['value'][subkey] = node_instances[subvalue].runtime_properties['cloudify_agent']['queue']
+                       except KeyError:
+                           logger.warning('KeyError for %s/%s', out, subkey)
+#        sm.update(dep, modified_attrs=('outputs', ))
+        print json.dumps(dep.outputs, indent=4, sort_keys=True)
+
+
 @main.command()
 @click.argument('node-id')
 @click.option('--install-method', default='provided')
