@@ -436,12 +436,13 @@ def update_deployment_outputs(deployment_id, verbose, config_file, tenant_id, dr
         for out, value in outs.items():
            if isinstance(value, dict):
               for subkey, subvalue in value.items():
-                  if subvalue in node_instances:
-                       ni = node_instances[subvalue]
-                       try:
-                           dep_outs[out]['value'][subkey] = {'get_attribute': [ni.node_id, 'cloudify_agent', 'queue']}
-                       except KeyError:
-                           logger.warning('KeyError for %s/%s', out, subkey)
+                  try:
+                      if subvalue in node_instances:
+                          ni = node_instances[subvalue]
+                          dep_outs[out]['value'][subkey] = {'get_attribute': [ni.node_id, 'cloudify_agent', 'queue']}
+                  except (ValueError, KeyError):
+                      logger.warning('error for %s/%s', out, subkey)
+
         dep.outputs = dep_outs
         if not dry_run:
             sm.update(dep, modified_attrs=('outputs', ))
