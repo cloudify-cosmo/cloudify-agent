@@ -9,6 +9,7 @@ export REST_HOST="{{ rest_host }}"
 export REST_PORT="{{ rest_port }}"
 export CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}"
 export AGENT_NAME="{{ name }}"
+export CLOUDIFY_CLUSTER_SETTINGS_PATH="{{ cluster_settings_path }}"
 
 # Executable tempfiles directory override
 export CFY_EXEC_TEMP="{{ executable_temp_path }}"
