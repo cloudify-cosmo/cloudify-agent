@@ -11,6 +11,7 @@ export MANAGER_FILE_SERVER_URL="https://{{ rest_host }}:{{ rest_port }}/resource
 export LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}"
 export REST_HOST="{{ rest_host }}"
 export REST_PORT="{{ rest_port }}"
+export CLOUDIFY_CLUSTER_SETTINGS_PATH="{{ cluster_settings_path }}"
 
 # Executable tempfiles directory override
 export CFY_EXEC_TEMP="{{ executable_temp_path }}"
