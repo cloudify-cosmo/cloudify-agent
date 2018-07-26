@@ -8,6 +8,7 @@ import click
 import logging
 import itertools
 import tempfile
+from collections import namedtuple
 from contextlib import contextmanager
 from distutils.version import LooseVersion
 
@@ -28,11 +29,15 @@ except ImportError:
 
 try:
     from manager_rest.storage.storage_manager import get_storage_manager
-    from manager_rest.storage.resource_models import Node
+    from manager_rest.storage.resource_models import Node, Secret
     from manager_rest.storage.management_models import Tenant
     from manager_rest.config import instance
     from manager_rest.server import CloudifyFlaskApp
     from manager_rest.storage.resource_models import NodeInstance
+    from manager_rest import cryptography_utils
+    from manager_rest.manager_exceptions import (
+        DeploymentOutputsEvaluationError
+    )
 except ImportError:
     has_storage_manager = False
 else:
@@ -41,6 +46,7 @@ else:
 
 CHUNK_SIZE = 1000
 DEPLOYMENT_PROXY = 'cloudify.nodes.DeploymentProxy'
+SecretType = namedtuple('Secret', 'key value')
 
 
 def _check_status(rest_client):
@@ -355,7 +361,6 @@ def format_update_proxy(infile, dry_run):
 
 def evaluate_deployment_outputs(sm, deployment):
     from dsl_parser import functions
-    from manager_rest.storage.resource_models import Deployment
     from dsl_parser import exceptions as parser_exceptions
 
     methods = _get_methods(deployment, sm)
@@ -363,8 +368,7 @@ def evaluate_deployment_outputs(sm, deployment):
     try:
         return functions.evaluate_outputs(
             outputs_def=deployment.outputs,
-            **methods
-            )
+            **methods)
     except parser_exceptions.FunctionEvaluationError, e:
         raise DeploymentOutputsEvaluationError(str(e))
 
@@ -373,6 +377,7 @@ def _get_methods(deployment, storage_manager):
     """Retrieve a dict of all the callbacks necessary for function evaluation
     """
     tenant_id = deployment._tenant_id
+
     def get_node_instances(node_id=None):
         filters = {'deployment_id': deployment.id, '_tenant_id': tenant_id}
         if node_id:
@@ -393,10 +398,9 @@ def _get_methods(deployment, storage_manager):
         if not nodes:
             raise RuntimeError(
                 'Requested Node with ID `{0}` on Deployment `{1}` '
-                'was not found'.format(node_id, deployment_id)
+                'was not found'.format(node_id, deployment.id)
             )
         return nodes[0]
-
 
     def get_secret(secret_key):
         secret = storage_manager.get(Secret, secret_key)
@@ -417,7 +421,14 @@ def _get_methods(deployment, storage_manager):
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('--config-file', default='/opt/manager/cloudify-rest.conf')
 @click.option('--dry-run', is_flag=True, help="Don't actually update anything")
-def update_deployment_outputs(deployment_id, verbose, config_file, tenant_id, dry_run):
+def update_deployment_outputs(deployment_id, verbose, config_file, tenant_id,
+                              dry_run):
+    """Change deployment outputs from node instance id, to queue
+
+    Some deployment outputs contain a node instance id, but they really
+    should contain the runtime_properties[cloudify_agent][queue]
+    of those node instances.
+    """
     from manager_rest.storage.resource_models import Deployment
     if not has_storage_manager:
         raise RuntimeError('Use the restservice virtualenv')
@@ -428,20 +439,35 @@ def update_deployment_outputs(deployment_id, verbose, config_file, tenant_id, dr
     with app.app_context():
         sm = get_storage_manager()
         tenant = sm.get(Tenant, None, filters={'name': tenant_id})
-        dep = sm.get(Deployment, None, filters={'id': deployment_id, '_tenant_id': tenant.id})
-        node_instances = {ni.id: ni for ni in sm.list(NodeInstance, filters={'_tenant_id': dep._tenant_id, 'deployment_id': dep.id})}
+        dep = sm.get(Deployment, None,
+                     filters={'id': deployment_id, '_tenant_id': tenant.id})
+        node_instances = {
+            ni.id: ni
+            for ni in sm.list(
+                NodeInstance,
+                filters={
+                    '_tenant_id': dep._tenant_id,
+                    'deployment_id': dep.id
+                })
+        }
         dep_outs = copy.deepcopy(dep.outputs)
         print json.dumps(dep_outs, indent=4)
         outs = evaluate_deployment_outputs(sm, dep)
         for out, value in outs.items():
-           if isinstance(value, dict):
-              for subkey, subvalue in value.items():
-                  try:
-                      if subvalue in node_instances:
-                          ni = node_instances[subvalue]
-                          dep_outs[out]['value'][subkey] = {'get_attribute': [ni.node_id, 'cloudify_agent', 'queue']}
-                  except (TypeError, ValueError, KeyError):
-                      logging.warning('error for %s/%s', out, subkey)
+            if isinstance(value, dict):
+                for subkey, subvalue in value.items():
+                    try:
+                        if subvalue in node_instances:
+                            ni = node_instances[subvalue]
+                            dep_outs[out]['value'][subkey] = {
+                                'get_attribute': [
+                                    ni.node_id,
+                                    'cloudify_agent',
+                                    'queue'
+                                ]
+                            }
+                    except (TypeError, ValueError, KeyError):
+                        logging.warning('error for %s/%s', out, subkey)
 
         dep.outputs = dep_outs
         if not dry_run:
@@ -458,6 +484,7 @@ def update_deployment_outputs(deployment_id, verbose, config_file, tenant_id, dr
 @click.option('--config-file', default='/opt/manager/cloudify-rest.conf')
 def set_node_install_method(node_id, deployment_id, tenant_id, install_method,
                             verbose, config_file):
+    """Set install_method in node properties of the given deployment/tenant"""
     if not has_storage_manager:
         raise RuntimeError('Use the restservice virtualenv')
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
