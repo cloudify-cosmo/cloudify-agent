@@ -16,12 +16,14 @@
 
 import os
 import sys
+import yaml
 import time
 import logging
 import argparse
 import traceback
 import threading
 
+from cloudify.utils import get_func
 from cloudify import dispatch, exceptions
 from cloudify.state import current_workflow_ctx, workflow_ctx
 from cloudify.manager import (
@@ -35,12 +37,13 @@ from cloudify.amqp_client import (
     SendHandler,
     get_client
 )
-from cloudify.constants import MGMTWORKER_QUEUE
-from cloudify.error_handling import serialize_known_exception
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_rest_client.executions import Execution
+from cloudify.error_handling import serialize_known_exception
 from cloudify_rest_client.exceptions import InvalidExecutionUpdateStatus
+from cloudify.constants import (MGMTWORKER_QUEUE,
+                                EVENTS_EXCHANGE_NAME)
 
 
 LOGFILE_BACKUP_COUNT = 5
@@ -252,6 +255,51 @@ class ServiceTaskConsumer(TaskConsumer):
                 'cloudify_agent' in node_instance.runtime_properties)
 
 
+class HookConsumer(TaskConsumer):
+    routing_key = 'events.hooks'
+    HOOKS_CONFIG_PATH = '/opt/mgmtworker/config/hooks.conf'
+
+    def __init__(self, queue_name):
+        super(HookConsumer, self).__init__(queue_name, exchange_type='topic')
+        self.queue = queue_name
+        self.exchange = EVENTS_EXCHANGE_NAME
+
+    def handle_task(self, full_task):
+        event_type = full_task['event_type']
+        hook = self._get_hook(event_type)
+        if not hook:
+            return
+        logger.info('The hook consumer received `{0}` event and the hook '
+                    'type is: `{1}`'.format(event_type, hook['hook_type']))
+
+        try:
+            kwargs = hook['inputs']
+            context = full_task['context']
+            hook_function = get_func(hook['implementation'])
+            result = hook_function(context, **kwargs)
+            result = {'ok': True, 'result': result}
+        except Exception as e:
+            result = {'ok': False, 'error': e.message}
+            logger.error('{0!r}, while running hook: {1} triggered by the '
+                         'event: {2}'.format(e, hook['hook_type'], event_type))
+        return result
+
+    def _get_hook(self, event_type):
+        if not os.path.exists(self.HOOKS_CONFIG_PATH):
+            logger.info("The hook consumer received `{0}` event but the "
+                        "hook config file doesn't exist".format(event_type))
+            return None
+        with open(self.HOOKS_CONFIG_PATH) as hooks_conf_file:
+            hooks_conf = yaml.safe_load(hooks_conf_file)['hooks']
+
+        for hook in hooks_conf:
+            if hook['event_type'] == event_type:
+                return hook
+        logger.info("The hook consumer received `{0}` event but didn't find a "
+                    "compatible hook in the configuration".format(event_type))
+        return None
+
+
 def _setup_excepthook(daemon_name):
     # Setting a new exception hook to catch any exceptions
     # on agent startup and write them to a file. This file
@@ -333,6 +381,10 @@ def make_amqp_worker(args):
                             operation_registry=operation_registry,
                             workflow_registry=workflow_registry),
     ]
+
+    if args.hooks_queue:
+        handlers.append(HookConsumer(args.hooks_queue))
+
     return AMQPConnection(handlers=handlers, name=args.name,
                           connect_timeout=None)
 
@@ -342,6 +394,7 @@ def main():
     parser.add_argument('--queue')
     parser.add_argument('--max-workers', default=DEFAULT_MAX_WORKERS, type=int)
     parser.add_argument('--name')
+    parser.add_argument('--hooks-queue')
     args = parser.parse_args()
     worker = make_amqp_worker(args)
     worker.consume()
