@@ -20,14 +20,14 @@ install_requires = [
     'cloudify-common==4.5.dev1',
     'appdirs==1.4.3',
     'click==6.7',
-    'jinja2==2.7.2',
+    'jinja2==2.10',
     'paramiko==1.18.3',
     'fabric==1.13.1',
     'wagon[venv]==0.6.3',
     'fasteners==0.13.0',
     'virtualenv==15.1.0',
-    'pip==9.0.1',
     'pika==0.11.2',
+    'pip==9.0.1',
     'PyYAML==3.10'
 ]
 
