@@ -270,11 +270,12 @@ class HookConsumer(TaskConsumer):
         if not hook:
             return
         logger.info('The hook consumer received `{0}` event and the hook '
-                    'type is: `{1}`'.format(event_type, hook['hook_type']))
+                    'type is: `{1}`'.format(event_type, hook.get('hook_type')))
 
         try:
-            kwargs = hook['inputs']
+            kwargs = hook.get('inputs') or {}
             context = full_task['context']
+            context['event_type'] = event_type
             hook_function = get_func(hook['implementation'])
             result = hook_function(context, **kwargs)
             result = {'ok': True, 'result': result}
@@ -289,11 +290,20 @@ class HookConsumer(TaskConsumer):
             logger.info("The hook consumer received `{0}` event but the "
                         "hook config file doesn't exist".format(event_type))
             return None
+        hooks_conf = None
         with open(self.HOOKS_CONFIG_PATH) as hooks_conf_file:
-            hooks_conf = yaml.safe_load(hooks_conf_file)['hooks']
+            try:
+                hooks_conf = yaml.safe_load(hooks_conf_file).get('hooks')
+            except yaml.YAMLError:
+                pass
+
+        if not hooks_conf:
+            logger.error("The hook consumer received `{0}` event but the "
+                         "hook config file is invalid".format(event_type))
+            return None
 
         for hook in hooks_conf:
-            if hook['event_type'] == event_type:
+            if hook.get('event_type') == event_type:
                 return hook
         logger.info("The hook consumer received `{0}` event but didn't find a "
                     "compatible hook in the configuration".format(event_type))
