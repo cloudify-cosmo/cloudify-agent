@@ -276,6 +276,7 @@ class HookConsumer(TaskConsumer):
             kwargs = hook.get('inputs') or {}
             context = full_task['context']
             context['event_type'] = event_type
+            context['timestamp'] = full_task['timestamp']
             hook_function = get_func(hook['implementation'])
             result = hook_function(context, **kwargs)
             result = {'ok': True, 'result': result}
