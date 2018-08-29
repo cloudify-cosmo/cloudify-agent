@@ -269,39 +269,43 @@ class HookConsumer(TaskConsumer):
         hook = self._get_hook(event_type)
         if not hook:
             return
-        logger.info('The hook consumer received `{0}` event and the hook '
-                    'type is: `{1}`'.format(event_type, hook.get('hook_type')))
+        logger.info(
+            'The hook consumer received `{0}` event and the hook '
+            'implementation is: `{1}`'.format(event_type,
+                                              hook.get('implementation'))
+        )
 
         try:
             kwargs = hook.get('inputs') or {}
             context = full_task['context']
             context['event_type'] = event_type
             context['timestamp'] = full_task['timestamp']
+            context['arguments'] = full_task['message']['arguments']
             hook_function = get_func(hook['implementation'])
             result = hook_function(context, **kwargs)
             result = {'ok': True, 'result': result}
         except Exception as e:
             result = {'ok': False, 'error': e.message}
-            logger.error('{0!r}, while running hook: {1} triggered by the '
-                         'event: {2}'.format(e, hook['hook_type'], event_type))
+            logger.error('{0!r}, while running the hook triggered by the '
+                         'event: {1}'.format(e, event_type))
         return result
 
     def _get_hook(self, event_type):
         if not os.path.exists(self.HOOKS_CONFIG_PATH):
             logger.info("The hook consumer received `{0}` event but the "
-                        "hook config file doesn't exist".format(event_type))
+                        "hooks config file doesn't exist".format(event_type))
             return None
-        hooks_conf = None
+
         with open(self.HOOKS_CONFIG_PATH) as hooks_conf_file:
             try:
-                hooks_conf = yaml.safe_load(hooks_conf_file).get('hooks')
+                hooks_yaml = yaml.safe_load(hooks_conf_file)
+                hooks_conf = hooks_yaml.get('hooks', {}) if hooks_yaml else {}
             except yaml.YAMLError:
-                pass
-
-        if not hooks_conf:
-            logger.error("The hook consumer received `{0}` event but the "
-                         "hook config file is invalid".format(event_type))
-            return None
+                logger.error(
+                    "The hook consumer received `{0}` event but the hook "
+                    "config file is invalid yaml".format(event_type)
+                )
+                return None
 
         for hook in hooks_conf:
             if hook.get('event_type') == event_type:
