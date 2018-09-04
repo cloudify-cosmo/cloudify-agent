@@ -59,7 +59,10 @@ def create_agent_config_and_installer(func=None,
             return
         cloudify_agent.set_installation_params(runner)
 
-        installer = get_installer(cloudify_agent, runner)
+        if cloudify_agent.has_installer:
+            installer = get_installer(cloudify_agent, runner)
+        else:
+            installer = None
         kwargs['installer'] = installer
         kwargs['cloudify_agent'] = cloudify_agent
 
@@ -106,11 +109,15 @@ class CloudifyAgentConfig(dict):
         return self.get('local', False)
 
     @property
+    def is_proxied(self):
+        return self.get('proxy') is not None
+
+    @property
     def has_installer(self):
         """
         This is useful when deciding whether to run local/remote commands
         """
-        return self.is_remote or self.is_local
+        return not self.is_proxied and self.is_remote or self.is_local
 
     @property
     def is_windows(self):
@@ -172,6 +179,11 @@ class CloudifyAgentConfig(dict):
             return 'systemd'
 
     def _set_name(self):
+        # proxied agents dont have a name/queue of their own
+        if self.is_proxied:
+            self['name'] = None
+            return
+
         # service_name takes precedence over name (which is deprecated)
         self.setdefault('name', self.get('service_name'))
 
@@ -317,6 +329,9 @@ class CloudifyAgentConfig(dict):
         self['basedir'] = basedir
 
     def set_config_paths(self):
+        # proxied agents don't have a name - don't set paths either
+        if self.is_proxied:
+            return
         join = nt_join if self.is_windows else posix_join
 
         if not self.get('agent_dir'):

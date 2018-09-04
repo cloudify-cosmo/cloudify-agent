@@ -47,6 +47,8 @@ def create(cloudify_agent, installer, **_):
             ctx.logger.info(
                 'Agent created, configured and started successfully'
             )
+    elif cloudify_agent.is_proxied:
+        ctx.logger.info('Working in "proxied" mode')
     elif cloudify_agent.is_provided:
         ctx.logger.info('Working in "provided" mode')
         _, install_script_download_link = script.install_script_download_link(
