@@ -1,0 +1,98 @@
+version: '3'
+services:
+  centos6_agent:
+    build:
+      context: ./
+      dockerfile: docker-files/centos_rhel/Dockerfile
+      args:
+        BASE_IMAGE: centos:6
+    image: centos6_agent_img
+    container_name: centos6_agent
+    environment:
+      - GITHUB_USERNAME=${GITHUB_USERNAME}
+      - GITHUB_PASSWORD=${GITHUB_PASSWORD}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - REPO=${REPO}
+      - BRANCH=${BRANCH}
+    network_mode: host
+  centos7_agent:
+      build:
+        context: ./
+        dockerfile: docker-files/centos_rhel/Dockerfile
+        args:
+          BASE_IMAGE: centos:7
+      image: centos7_agent_img
+      container_name: centos7_agent
+      environment:
+        - GITHUB_USERNAME=${GITHUB_USERNAME}
+        - GITHUB_PASSWORD=${GITHUB_PASSWORD}
+        - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+        - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+        - REPO=${REPO}
+        - BRANCH=${BRANCH}
+      network_mode: host
+  redhat7_agent:
+      build:
+        context: ./
+        dockerfile: docker-files/centos_rhel/Dockerfile
+        args:
+          BASE_IMAGE: rhel-subs:7
+      image: redhat7_agent_img
+      container_name: redhat7_agent
+      environment:
+        - GITHUB_USERNAME=${GITHUB_USERNAME}
+        - GITHUB_PASSWORD=${GITHUB_PASSWORD}
+        - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+        - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+        - REPO=${REPO}
+        - BRANCH=${BRANCH}
+      network_mode: host
+  ubuntu_trusty_agent:
+    build:
+      context: ./
+      dockerfile: docker-files/ubuntu/Dockerfile
+      args:
+        BASE_IMAGE: ubuntu:14.04
+    image: ubuntu_trusty_agent_img
+    container_name: ubuntu_trusty_agent
+    environment:
+      - GITHUB_USERNAME=${GITHUB_USERNAME}
+      - GITHUB_PASSWORD=${GITHUB_PASSWORD}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - REPO=${REPO}
+      - BRANCH=${BRANCH}
+    network_mode: host
+  ubuntu_xenial_agent:
+    build:
+      context: ./
+      dockerfile: docker-files/ubuntu/Dockerfile
+      args:
+        BASE_IMAGE: ubuntu:16.04
+    image: ubuntu_xenial_agent_img
+    container_name: ubuntu_xenial_agent
+    environment:
+      - GITHUB_USERNAME=${GITHUB_USERNAME}
+      - GITHUB_PASSWORD=${GITHUB_PASSWORD}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - REPO=${REPO}
+      - BRANCH=${BRANCH}
+    network_mode: host
+  ubuntu_bionic_agent:
+    build:
+      context: ./
+      dockerfile: docker-files/ubuntu/Dockerfile
+      args:
+        BASE_IMAGE: ubuntu:18.04
+    image: ubuntu_bionic_agent_img
+    container_name: ubuntu_bionic_agent
+    environment:
+      - GITHUB_USERNAME=${GITHUB_USERNAME}
+      - GITHUB_PASSWORD=${GITHUB_PASSWORD}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - REPO=${REPO}
+      - BRANCH=${BRANCH}
+    network_mode: host
