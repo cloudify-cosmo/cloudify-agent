@@ -20,6 +20,7 @@ import shutil
 import tempfile
 import platform
 import logging
+import fcntl
 
 from distutils.version import LooseVersion
 
@@ -248,7 +249,13 @@ class PluginInstaller(object):
                 plugin_dir = source
             else:
                 self.logger.debug('Extracting archive: {0}'.format(source))
-                plugin_dir = extract_package_to_dir(source)
+                with open('/tmp/plugin-installer.lock', 'w') as lock_fd:
+                    fcntl.lockf(lock_fd, fcntl.LOCK_EX)
+                    try:
+                        plugin_dir = extract_package_to_dir(source)
+                    finally:
+                        fcntl.lockf(lock_fd, fcntl.LOCK_UN)
+                self.logger.debug('Extracted to {}'.format(plugin_dir))
             package_name = extract_package_name(plugin_dir)
             if self._package_installed_in_agent_env(constraint, package_name):
                 self.logger.warn('Skipping source plugin {0} installation, '

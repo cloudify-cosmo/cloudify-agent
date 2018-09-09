@@ -89,7 +89,8 @@ class WinRMRunner(object):
         return winrm.Session(
             target=winrm_url,
             auth=(self.session_config['user'],
-                  self.session_config['password']))
+                  self.session_config['password']),
+            transport='ntlm')
 
     def run(self, command, raise_on_failure=True, execution_env=None,
             powershell=False):
