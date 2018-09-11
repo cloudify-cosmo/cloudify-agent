@@ -261,8 +261,10 @@ class PluginInstaller(object):
             self.logger.debug('Installing from directory: {0} '
                               '[args={1}, package_name={2}]'
                               .format(plugin_dir, args, package_name))
-            command = [get_pip_path(), 'install', plugin_dir]
+            command = [get_pip_path(), 'install']
+            # in case args are an empty list
             command.extend(args)
+            command.extend([plugin_dir])
             self.runner.run(command=command, cwd=plugin_dir)
             self.logger.debug('Retrieved package name: {0}'
                               .format(package_name))
