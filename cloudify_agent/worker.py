@@ -412,6 +412,7 @@ def main():
     parser.add_argument('--hooks-queue')
     args = parser.parse_args()
     worker = make_amqp_worker(args)
+    raise RuntimeError('STOP! HAMMERTIME')
     worker.consume()
 
 
