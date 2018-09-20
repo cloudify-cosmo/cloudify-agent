@@ -262,7 +262,7 @@ def start(name, interval, timeout, no_delete_amqp_queue, user=None):
     Starts the daemon.
 
     """
-
+    raise RuntimeError('Cant touch this')
     click.echo('Starting...')
     daemon = _load_daemon(name, user=user)
     daemon.start(
