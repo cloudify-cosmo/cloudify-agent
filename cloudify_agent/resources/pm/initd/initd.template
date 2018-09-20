@@ -37,7 +37,7 @@ start() {
   . {{ config_path }}
   enable_cron_respawn
   echo 'Starting service...' >&2
-  nohup sudo -Eu ${RUNAS} ${CMD} </dev/null >/dev/null 2>&1 &
+  nohup sudo -Eu ${RUNAS} ${CMD} </dev/null >"{{ log_dir }}/process.log" 2>&1 &
   echo $! > ${PIDFILE}
   echo 'Service started' >&2
 }

@@ -92,6 +92,7 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
             pidfile=self.pid_file,
             name=self.name,
             virtualenv_path=self.virtualenv,
+            log_dir=self.log_dir
         )
 
     def create_script(self):
