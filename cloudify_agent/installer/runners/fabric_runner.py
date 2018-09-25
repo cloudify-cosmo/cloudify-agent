@@ -83,7 +83,7 @@ class FabricRunner(object):
             raise exceptions.AgentInstallerConfigurationError('Missing host')
         if not self.user:
             raise exceptions.AgentInstallerConfigurationError('Missing user')
-        if not self.password and not self.key:
+        if not is_kerberos_env() and not self.password and not self.key:
             raise exceptions.AgentInstallerConfigurationError(
                 'Must specify either key or password')
 
