@@ -28,7 +28,6 @@ import pkgutil
 import appdirs
 import pkg_resources
 
-import pika
 from jinja2 import Template
 
 from cloudify.workflows import tasks as workflows_tasks
@@ -37,8 +36,8 @@ from cloudify.constants import (SECURED_PROTOCOL,
                                 BROKER_PORT_NO_SSL)
 
 from cloudify.utils import setup_logger, get_exec_tempdir
-from cloudify.amqp_client import BlockingRequestResponseHandler
-
+# imported here for backwards compat
+from cloudify.utils import is_agent_alive  # noqa
 from cloudify_rest_client import CloudifyClient
 
 import cloudify_agent
@@ -215,38 +214,6 @@ def get_agent_registered(name,
     if registered is None or destination not in registered:
         return None
     return set(registered[destination])
-
-
-def is_agent_alive(name,
-                   client,
-                   timeout=workflows_tasks.INSPECT_TIMEOUT):
-    """
-    Send a `ping` service task to an agent, and validate that a correct
-    response is received
-    """
-    handler = BlockingRequestResponseHandler(exchange=name)
-    client.add_handler(handler)
-    # messages expire shortly before we hit the timeout - if they haven't
-    # been handled by then, they won't make the timeout
-    expiration = (timeout * 1000) - 200  # milliseconds
-    with client:
-        task = {
-            'service_task': {
-                'task_name': 'ping',
-                'kwargs': {}
-            }
-        }
-        try:
-            response = handler.publish(task, routing_key='service',
-                                       timeout=timeout, expiration=expiration)
-        except pika.exceptions.AMQPError as e:
-            logger.warning('Could not send a ping task to {0}: {1}'
-                           .format(name, e))
-            return False
-        except RuntimeError as e:
-            logger.info('No ping response from {0}: {1}'.format(name, e))
-            return False
-    return 'time' in response
 
 
 def get_windows_home_dir(username):
