@@ -51,6 +51,7 @@ class WinRMRunner(object):
                  host=None,
                  port=None,
                  uri=None,
+                 transport=None,
                  validate_connection=True,
                  logger=None):
 
@@ -62,6 +63,7 @@ class WinRMRunner(object):
             'port': port or DEFAULT_WINRM_PORT,
             'uri': uri or DEFAULT_WINRM_URI,
             'user': user,
+            'transport': transport,
             'password': password
         }
 
@@ -89,7 +91,8 @@ class WinRMRunner(object):
         return winrm.Session(
             target=winrm_url,
             auth=(self.session_config['user'],
-                  self.session_config['password']))
+                  self.session_config['password']),
+            transport=self.session_config['transport'])
 
     def run(self, command, raise_on_failure=True, execution_env=None,
             powershell=False):

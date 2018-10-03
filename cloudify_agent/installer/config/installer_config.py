@@ -59,6 +59,7 @@ def create_runner(agent_config, validate_connection):
                     password=agent_config['password'],
                     protocol=agent_config.get('protocol'),
                     uri=agent_config.get('uri'),
+                    transport=agent_config.get('transport'),
                     logger=ctx.logger,
                     validate_connection=validate_connection)
             else:
