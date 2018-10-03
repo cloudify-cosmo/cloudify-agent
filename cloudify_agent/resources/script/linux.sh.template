@@ -40,6 +40,10 @@ download_and_extract_agent_package()
     download $(package_url) {{ conf.basedir }}/agent.tar.gz
     mkdir -p {{ conf.agent_dir }}
     tar xzf {{ conf.basedir }}/agent.tar.gz --strip=1 -C {{ conf.agent_dir }}
+    sudo mkdir /etc/cloudify
+    sudo chmod 755 /etc/cloudify
+    echo 'INFO cloudify.rest_client.http' > /etc/cloudify/logging.conf
+    sudo chmod 644 /etc/cloudify/logging.conf
 }
 export -f download_and_extract_agent_package
 
