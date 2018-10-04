@@ -2,7 +2,7 @@ testtools
 mock==1.0.1
 unittest2
 FileServer
-https://github.com/cloudify-cosmo/cloudify-common/archive/4.5.zip
+https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip
 pywinrm==0.3.0
 
 # for creating the agent package in tests
