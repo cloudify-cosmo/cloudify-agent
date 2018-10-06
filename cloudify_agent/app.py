@@ -38,8 +38,8 @@ from cloudify_agent.api.factory import DaemonFactory
 
 
 logger = get_logger(__name__)
-LOGFILE_SIZE_BYTES = 5 * 1024 * 1024
-LOGFILE_BACKUP_COUNT = 5
+LOGFILE_SIZE_BYTES = 20 * 1024 * 1024
+LOGFILE_BACKUP_COUNT = 10
 
 
 @signals.setup_logging.connect
@@ -47,10 +47,30 @@ def setup_logging_handler(loglevel, logfile, format, colorize, **kwargs):
     if logfile:
         if os.name == 'nt':
             logfile = logfile.format(os.getpid())
-        handler = logging.handlers.RotatingFileHandler(
-            logfile,
-            maxBytes=LOGFILE_SIZE_BYTES,
-            backupCount=LOGFILE_BACKUP_COUNT)
+
+        # CYBL-605, 4.3.3 post installation: On the manager side, we know we are on Linux,
+        # and we know we have a logrotate policy for the celery app log (the logrotate
+        # policy is added post-installation as well). Therefore, using a WatchedFileHandler
+        # in this case is the best approach.
+        #
+        # On agent hosts, we don't have a logrotate policy:
+        # 1. On Linux, we could have it, but this requires re-packaging the agent packages,
+        #    which we are (at the time of writing) don't intend to do
+        # 2. There is no logrotate for Windows
+        #
+        # Therefore, on the agent hosts, keep things the way they were - a rotating
+        # file handler - but we now use bigger files and a longer retention policy.
+        #
+        # The expectation is that 4.5.5 onwards will provide a consistent solution for all
+        # platforms.
+        if os.environ.get('MGMTWORKER_HOME'):
+            handler = logging.handlers.WatchedFileHandler(logfile)
+        else:
+            handler = logging.handlers.RotatingFileHandler(
+                logfile,
+                maxBytes=LOGFILE_SIZE_BYTES,
+                backupCount=LOGFILE_BACKUP_COUNT)
+
         handler.setFormatter(logging.Formatter(fmt=format))
     else:
         handler = logging.StreamHandler(sys.stdout)
