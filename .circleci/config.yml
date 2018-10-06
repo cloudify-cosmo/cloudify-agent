@@ -32,9 +32,7 @@ defaults:
                    python -m tox -e ${TOX_TEST}
       - run:
           name: Push coverage data to codecov
-          command: |
-                   sudo pip install codecov
-                   codecov -F $TOX_TEST
+          command: bash <(curl -s https://codecov.io/bash) -F $TOX_TEST
 
   - &test_defaults_for_python26
     # We use specifically this python image version, because there is a conflicting change in the latest python image
@@ -67,9 +65,7 @@ defaults:
           command: tox -e $TOX_TEST
       - run:
           name: Push coverage data to codecov
-          command: |
-            sudo pip install codecov
-            codecov -F $TOX_TEST
+          command: bash <(curl -s https://codecov.io/bash) -F $TOX_TEST
 
 jobs:
   flake8:
