@@ -114,16 +114,17 @@ class AgentInstaller(object):
         raise NotImplementedError('Must be implemented by sub-class')
 
     def _create_agent_env(self):
-        # Try to get broker credentials from the tenant. If they aren't set
-        # get them from the broker_config module
         tenant = get_tenant()
         tenant_name = tenant.get('name', defaults.DEFAULT_TENANT_NAME)
-        broker_user = tenant.get('rabbitmq_username',
+        tenant_user = tenant.get('rabbitmq_username',
                                  broker_config.broker_username)
-        broker_pass = tenant.get('rabbitmq_password',
+        tenant_pass = tenant.get('rabbitmq_password',
                                  broker_config.broker_password)
         broker_vhost = tenant.get('rabbitmq_vhost',
                                   broker_config.broker_vhost)
+        # Get the agent's broker credentials
+        broker_user = self.cloudify_agent.get('broker_user', tenant_user)
+        broker_pass = self.cloudify_agent.get('broker_pass', tenant_pass)
 
         manager_ip = self.cloudify_agent.get_manager_ip()
         execution_env = {

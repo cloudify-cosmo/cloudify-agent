@@ -55,7 +55,7 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest, unittest.TestCase):
         self.assertFalse(os.path.exists(daemon.pid_file))
 
     def test_cron_respawn(self):
-        daemon = self.create_daemon(cron_respawn=True, respawn_delay=1)
+        daemon = self.create_daemon(cron_respawn=True, cron_respawn_delay=1)
         daemon.create()
         daemon.configure()
         daemon.start()

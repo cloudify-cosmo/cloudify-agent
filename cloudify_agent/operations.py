@@ -24,14 +24,13 @@ from contextlib import contextmanager
 
 from cloudify import amqp_client, ctx
 from cloudify.decorators import operation
+from cloudify.manager import get_rest_client
 from cloudify.models_states import AgentState
 from cloudify.constants import BROKER_PORT_SSL
 from cloudify.broker_config import broker_hostname
 from cloudify.error_handling import deserialize_known_exception
 from cloudify.exceptions import NonRecoverableError, RecoverableError
-from cloudify.manager import (get_rest_client,
-                              create_agent_record,
-                              update_agent_record)
+from cloudify.agent_utils import create_agent_record, update_agent_record
 from cloudify.utils import (get_tenant,
                             get_rest_token,
                             ManagerVersion,

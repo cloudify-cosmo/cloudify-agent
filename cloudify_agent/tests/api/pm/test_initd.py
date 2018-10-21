@@ -16,16 +16,14 @@
 import os
 import time
 import unittest
-
 from mock import patch
 
 from cloudify_agent.api.pm.initd import InitDDaemon
-
-from cloudify_agent.tests.api.pm import BaseDaemonProcessManagementTest
-from cloudify_agent.tests.api.pm import patch_unless_ci
-from cloudify_agent.tests.api.pm import only_ci
-from cloudify_agent.tests.api.pm import only_os
 from cloudify_agent.tests import get_storage_directory
+from cloudify_agent.tests.api.pm import (only_ci,
+                                         only_os,
+                                         patch_unless_ci,
+                                         BaseDaemonProcessManagementTest)
 
 
 def _non_service_start_command(daemon):
@@ -93,7 +91,7 @@ class TestInitDDaemon(BaseDaemonProcessManagementTest, unittest.TestCase):
         daemon.configure()
 
     def test_cron_respawn(self):
-        daemon = self.create_daemon(cron_respawn=True, respawn_delay=1)
+        daemon = self.create_daemon(cron_respawn=True, cron_respawn_delay=1)
         daemon.create()
         daemon.configure()
         daemon.start()
