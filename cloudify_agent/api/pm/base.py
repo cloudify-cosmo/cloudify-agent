@@ -602,7 +602,8 @@ class Daemon(object):
             ssl_cert_path=self.local_rest_cert_file
         )
         node_instances = client.node_instances.list(
-            deployment_id=self.deployment_id)
+            deployment_id=self.deployment_id,
+            _get_all_results=True)
 
         def match_ip(node_instance):
             host_id = node_instance.host_id

@@ -240,7 +240,8 @@ class ServiceTaskConsumer(TaskConsumer):
         yield MGMTWORKER_QUEUE
         execution = rest_client.executions.get(execution_id)
         node_instances = rest_client.node_instances.list(
-            deployment_id=execution.deployment_id)
+            deployment_id=execution.deployment_id,
+            _get_all_results=True)
         for instance in node_instances:
             if self._is_agent(instance):
                 yield instance.runtime_properties['cloudify_agent']['queue']
