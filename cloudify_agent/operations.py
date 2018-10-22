@@ -51,6 +51,7 @@ from cloudify_agent.installer.config.agent_config import \
 CELERY_TASK_RESULT_EXPIRES = 600
 
 
+
 @operation
 def install_plugins(plugins, **_):
     installer = PluginInstaller(logger=ctx.logger)
