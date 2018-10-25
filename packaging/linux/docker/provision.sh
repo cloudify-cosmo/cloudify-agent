@@ -21,7 +21,7 @@ if [[ ! -z $BRANCH ]] && [[ "$BRANCH" != "master" ]];then
          if [ "$test_gzip_file" == "0" ] && [ "$test_tar_file_inside" == "0" ]; then
             rm -rf $BRANCH.tar.gz
             sed -i "s|cloudify-agent\/archive\/.*\.zip|cloudify-agent\/archive\/$BRANCH\.zip|" /opt/packager.yaml
-            sed -i "s|cloudify-agent\/.*\/dev-requirements.txt|cloudify-agent\/$BRANCH\/dev-requirements.txt|" /opt/dopackager.yaml
+            sed -i "s|cloudify-agent\/.*\/dev-requirements.txt|cloudify-agent\/$BRANCH\/dev-requirements.txt|" /opt/packager.yaml
             export AWS_S3_PATH="$AWS_S3_PATH/$BRANCH"
          fi
     popd
@@ -30,6 +30,3 @@ cd /tmp && cfy-ap -c /opt/packager.yaml -f -v &&
 create_md5 "tar.gz" &&
 [ -z ${AWS_ACCESS_KEY} ] || upload_to_s3 "tar.gz" && upload_to_s3 "md5" &&
 touch /opt/complete
-
-
-
