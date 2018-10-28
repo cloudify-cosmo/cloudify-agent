@@ -69,10 +69,12 @@ export -f package_url
 
 download_and_extract_agent_package()
 {
-    download $(package_url) {{ conf.basedir }}/agent.tar.gz
+    temp_pkg_dir=$(mktemp -d)
+    pkg_loc=${temp_pkg_dir}/agent.tar.gz
+    download $(package_url) ${pkg_loc}
     mkdir -p {{ conf.agent_dir }}
-    tar xzf {{ conf.basedir }}/agent.tar.gz --strip=1 -C {{ conf.agent_dir }}
-    rm -f {{ conf.basedir }}/agent.tar.gz
+    tar xzf ${pkg_loc} --strip=1 -C {{ conf.agent_dir }}
+    rm -rf ${temp_pkg_dir}
 }
 export -f download_and_extract_agent_package
 
