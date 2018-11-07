@@ -104,6 +104,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
             failure_reset_timeout=self.failure_reset_timeout,
             failure_restart_delay=self.failure_restart_delay,
             storage_dir=utils.internal.get_storage_directory(self.user),
+            cluster_settings_path=self.cluster_settings_path
         )
 
         self._logger.debug('Rendered configuration script: {0}'.format(
