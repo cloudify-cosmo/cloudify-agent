@@ -91,4 +91,5 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             log_dir=self.log_dir,
             name=self.name,
             executable_temp_path=self.executable_temp_path,
+            cluster_settings_path=self.cluster_settings_path
         )
