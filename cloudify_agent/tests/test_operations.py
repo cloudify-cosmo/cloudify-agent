@@ -28,6 +28,7 @@ from cloudify import mocks
 from cloudify.state import current_ctx
 from cloudify.workflows import local
 from cloudify.amqp_client import get_client
+from cloudify.tests.mocks.mock_rest_client import MockRestclient
 
 from cloudify_agent import operations
 from cloudify_agent.api import utils
@@ -40,17 +41,6 @@ from cloudify_agent.tests.utils import FileServer
 
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import only_ci
-
-
-class _MockManagerClient(object):
-    def get_version(self):
-        return {'version': '3.4'}
-
-
-class _MockRestclient(object):
-    @property
-    def manager(self):
-        return _MockManagerClient()
 
 
 class TestInstallNewAgent(BaseDaemonLiveTestCase, unittest.TestCase):
@@ -91,9 +81,9 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, unittest.TestCase):
             finally:
                 fs.stop()
 
-    @patch('cloudify.manager.get_rest_client', _MockRestclient)
+    @patch('cloudify.manager.get_rest_client', return_value=MockRestclient())
     @only_ci
-    def test_install_new_agent(self):
+    def test_install_new_agent(self, *_):
         agent_name = utils.internal.generate_agent_name()
 
         blueprint_path = resources.get_resource(
@@ -224,6 +214,7 @@ class TestCreateAgentAmqp(BaseTest, unittest.TestCase):
     @patch('cloudify_agent.operations._send_amqp_task')
     @patch('cloudify_agent.api.utils.is_agent_alive',
            MagicMock(return_value=True))
+    @patch('cloudify.manager.get_rest_client', return_value=MockRestclient())
     def test_create_agent_from_old_agent(self, *mocks):
         with self._set_context():
             self._create_cloudify_agent_dir()

@@ -18,10 +18,12 @@ import tempfile
 import uuid
 import shutil
 import unittest
+from mock import patch
 
 from cloudify import ctx
 from cloudify.utils import LocalCommandRunner
 from cloudify.state import current_ctx
+from cloudify.tests.mocks.mock_rest_client import MockRestclient
 from cloudify_agent.tests import BaseTest, agent_package, agent_ssl_cert
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
@@ -35,7 +37,8 @@ class TestInstaller(BaseTest, unittest.TestCase):
     def setUpClass(cls):
         cls._package_url = agent_package.get_package_url()
 
-    def _test_agent_installation(self, agent_config):
+    @patch('cloudify.manager.get_rest_client', return_value=MockRestclient())
+    def _test_agent_installation(self, agent_config, _):
         new_ctx = mock_context()
         current_ctx.set(new_ctx)
 

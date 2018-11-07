@@ -22,6 +22,7 @@ from mock import patch
 
 from cloudify.workflows import local
 from cloudify.utils import setup_logger
+from cloudify.tests.mocks.mock_rest_client import MockRestclient
 
 from cloudify_agent.api import utils
 from cloudify_agent.tests import resources, agent_ssl_cert
@@ -83,7 +84,8 @@ class TestAgentInstallerLocal(BaseDaemonLiveTestCase, unittest.TestCase):
         self._test_local_agent_from_package(agent_name)
 
     @patch('cloudify.workflows.local._validate_node')
-    def _test_local_agent_from_package(self, agent_name, _):
+    @patch('cloudify.manager.get_rest_client', return_value=MockRestclient())
+    def _test_local_agent_from_package(self, agent_name, *_):
 
         agent_queue = '{0}-queue'.format(agent_name)
 
