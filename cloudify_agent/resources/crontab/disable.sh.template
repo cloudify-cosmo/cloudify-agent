@@ -3,7 +3,7 @@
 crontabf={{ workdir }}/{{ name }}.crontab
 
 set +e
-current_cron=$(crontab -u {{ user }} -l)
+current_cron=$(crontab -l)
 if [ $? -eq 1 ]; then
     echo "No cron, nothing to do."
 else
@@ -13,5 +13,5 @@ fi
 
 set -e
 
-crontab -u {{ user }} ${crontabf}
+crontab ${crontabf}
 rm ${crontabf}

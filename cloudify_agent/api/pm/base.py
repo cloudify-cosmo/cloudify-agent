@@ -795,7 +795,6 @@ class CronRespawnDaemonMixin(Daemon):
             file_path=enable_cron_script,
             cron_respawn_delay=self.cron_respawn_delay,
             cron_respawn_path=cron_respawn_path,
-            user=self.user,
             workdir=self.workdir,
             name=self.name
         )
@@ -812,7 +811,6 @@ class CronRespawnDaemonMixin(Daemon):
             template_path='crontab/disable.sh.template',
             file_path=disable_cron_script,
             name=self.name,
-            user=self.user,
             workdir=self.workdir
         )
         self._runner.run('chmod +x {0}'.format(disable_cron_script))
