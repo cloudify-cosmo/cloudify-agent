@@ -94,6 +94,8 @@ class TestDefaults(BaseTest, unittest.TestCase):
         self.assertEquals(
             runner.session_config['port'],
             winrm_runner.DEFAULT_WINRM_PORT)
+        self.assertIsNone(
+            runner.session_config['transport'])
 
 
 class TestSplitIntoChunks(unittest.TestCase):
