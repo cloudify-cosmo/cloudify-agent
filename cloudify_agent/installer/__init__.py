@@ -125,13 +125,14 @@ class AgentInstaller(object):
         broker_vhost = tenant.get('rabbitmq_vhost',
                                   broker_config.broker_vhost)
 
+        manager_ip = self.cloudify_agent.get_manager_ip()
         execution_env = {
             # mandatory values calculated before the agent
             # is actually created
             env.CLOUDIFY_DAEMON_QUEUE: self.cloudify_agent['queue'],
             env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
-            env.CLOUDIFY_REST_HOST: self.cloudify_agent['rest_host'],
-            env.CLOUDIFY_BROKER_IP: self.cloudify_agent['broker_ip'],
+            env.CLOUDIFY_REST_HOST: manager_ip,
+            env.CLOUDIFY_BROKER_IP: manager_ip,
 
             # Optional broker values
             env.CLOUDIFY_BROKER_USER: broker_user,
