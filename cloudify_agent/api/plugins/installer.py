@@ -13,25 +13,26 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import errno
 import os
 import sys
+import errno
 import shutil
 import tempfile
 import platform
-import logging
 
+from os import walk
 from distutils.version import LooseVersion
 
-import fasteners
 import wagon
+import fasteners
 
 from cloudify import ctx
+from cloudify.utils import setup_logger
+from cloudify.utils import extract_archive
+from cloudify.manager import get_rest_client
+from cloudify.utils import LocalCommandRunner
 from cloudify.exceptions import NonRecoverableError
 from cloudify.exceptions import CommandExecutionException
-from cloudify.utils import setup_logger
-from cloudify.utils import LocalCommandRunner
-from cloudify.manager import get_rest_client
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import plugins
@@ -350,79 +351,81 @@ class PluginInstaller(object):
 
 def extract_package_to_dir(package_url):
     """
-    Extracts a pip package to a temporary directory.
-
-    :param package_url: the URL to the package source.
-
+    Using a subprocess to extracts a pip package to a temporary directory.
+    :param: package_url: the URL to the package source.
     :return: the directory the package was extracted to.
+
     """
-
-    # 1) Plugin installation during deployment creation occurs not in the main
-    # thread, but rather in the local task thread pool.
-    # When installing source based plugins, pip will install an
-    # interrupt handler using signal.signal, this will fail saying something
-    # like "signals are only allowed in the main thread"
-    # from examining the code, I found patching signal in pip.util.ui
-    # is the cleanest form. No "official" way of disabling this was found.
-    # 2) pip.utils logger may be used internally by pip during some
-    # ImportError. This interferes with our ZMQLoggingHandler which during
-    # the first time it is invoked tries importing some stuff. This causes
-    # a deadlock between the handler lock and the global import lock. One side
-    # holds the import lock and tried writing to the logger and is blocked on
-    # the handler lock, while the other side holds the handler lock and is
-    # blocked on the import lock. This is why we patch the logging level
-    # of this logger - by name, before importing pip. (see CFY-4866)
-    _previous_signal = []
-    _previous_level = []
-
-    def _patch_pip_download():
-        pip_utils_logger = logging.getLogger('pip.utils')
-        _previous_level.append(pip_utils_logger.level)
-        pip_utils_logger.setLevel(logging.CRITICAL)
-
-        try:
-            import pip.utils.ui
-
-            def _stub_signal(sig, action):
-                return None
-            if hasattr(pip.utils.ui, 'signal'):
-                _previous_signal.append(pip.utils.ui.signal)
-                pip.utils.ui.signal = _stub_signal
-        except ImportError:
-            pass
-
-    def _restore_pip_download():
-        try:
-            import pip.utils.ui
-            if hasattr(pip.utils.ui, 'signal') and _previous_signal:
-                pip.utils.ui.signal = _previous_signal[0]
-        except ImportError:
-            pass
-        pip_utils_logger = logging.getLogger('pip.utils')
-        pip_utils_logger.setLevel(_previous_level[0])
-
     plugin_dir = None
+    archive_dir = tempfile.mkdtemp()
+    runner = LocalCommandRunner()
+
     try:
-        plugin_dir = tempfile.mkdtemp()
-        _patch_pip_download()
-        # Import here, after patch
-        import pip
-        pip.download.unpack_url(link=pip.index.Link(package_url),
-                                location=plugin_dir,
-                                download_dir=None,
-                                only_download=False)
-    except Exception as e:
+        command = [get_pip_path(), 'download', '-d',
+                   archive_dir, '--no-deps', package_url]
+        runner.run(command=command)
+        archive = _get_archive(archive_dir, package_url)
+        plugin_dir_parent = extract_archive(archive)
+        plugin_dir = _get_plugin_path(plugin_dir_parent, package_url)
+
+    except NonRecoverableError as e:
         if plugin_dir and os.path.exists(plugin_dir):
             shutil.rmtree(plugin_dir)
-        raise exceptions.PluginInstallationError(
-            'Failed to download and unpack package from {0}: {1}.'
-            'You may consider uploading the plugin\'s Wagon archive '
-            'to the manager, For more information please refer to '
-            'the documentation.'.format(package_url, str(e)))
+        raise e
+
     finally:
-        _restore_pip_download()
+        if os.path.exists(archive_dir):
+            shutil.rmtree(archive_dir)
 
     return plugin_dir
+
+
+def _get_plugin_path(plugin_dir_parent, package_url):
+    """
+    plugin_dir_parent is a directory containing the plugin dir. Since we
+    need the plugin`s dir, we find it's name and concatenate it to the
+    plugin_dir_parent.
+    """
+    contents = list(walk(plugin_dir_parent))
+    if len(contents) < 1:
+        _remove_tempdir_and_raise_proper_exception(package_url,
+                                                   plugin_dir_parent)
+    plugin_dir_name = contents[0][1][0]
+    return os.path.join(plugin_dir_parent, plugin_dir_name)
+
+
+def _assert_list_len_greater_than_value(l, value, package_url, archive_dir):
+    if len(l) < value:
+        _remove_tempdir_and_raise_proper_exception(package_url, archive_dir)
+
+
+def _assert_list_len(l, expected_len, package_url, archive_dir):
+    if len(l) != expected_len:
+        _remove_tempdir_and_raise_proper_exception(package_url, archive_dir)
+
+
+def _remove_tempdir_and_raise_proper_exception(package_url, tempdir):
+    if tempdir and os.path.exists(tempdir):
+        shutil.rmtree(tempdir)
+    raise exceptions.PluginInstallationError(
+        'Failed to download package from {0}.'
+        'You may consider uploading the plugin\'s Wagon archive '
+        'to the manager, For more information please refer to '
+        'the documentation.'.format(package_url))
+
+
+def _get_archive(archive_dir, package_url):
+    """
+    archive_dir contains a zip file with the plugin directory. This function
+    finds the name of that zip file and returns the full path to it (the full
+    path is required in order to extract it)
+    """
+    contents = list(walk(archive_dir))
+    _assert_list_len(contents, 1, package_url, archive_dir)
+    files = contents[0][2]
+    _assert_list_len(files, 1, package_url, archive_dir)
+    path = os.path.join(archive_dir, files[0])
+    return path
 
 
 def extract_package_name(package_dir):
