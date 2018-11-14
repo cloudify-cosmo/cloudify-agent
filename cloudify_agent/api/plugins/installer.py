@@ -351,8 +351,8 @@ class PluginInstaller(object):
 
 def extract_package_to_dir(package_url):
     """
-    Using a subprocess to extracts a pip package to a temporary directory.
-    :param: package_url: the URL to the package source.
+    Using a subprocess to extract a pip package to a temporary directory.
+    :param: package_url: the URL of the package source.
     :return: the directory the package was extracted to.
 
     """
@@ -361,6 +361,10 @@ def extract_package_to_dir(package_url):
     runner = LocalCommandRunner()
 
     try:
+        # We run `pip download` command in a subprocess to support
+        # multi-threaded scenario (i.e snapshot restore).
+        # We don't use `curl` because pip can handle different kinds of files,
+        # including .git.
         command = [get_pip_path(), 'download', '-d',
                    archive_dir, '--no-deps', package_url]
         runner.run(command=command)
@@ -390,13 +394,9 @@ def _get_plugin_path(plugin_dir_parent, package_url):
     if len(contents) < 1:
         _remove_tempdir_and_raise_proper_exception(package_url,
                                                    plugin_dir_parent)
-    plugin_dir_name = contents[0][1][0]
+    parent_dir_content = contents[0]
+    plugin_dir_name = parent_dir_content[1][0]
     return os.path.join(plugin_dir_parent, plugin_dir_name)
-
-
-def _assert_list_len_greater_than_value(l, value, package_url, archive_dir):
-    if len(l) < value:
-        _remove_tempdir_and_raise_proper_exception(package_url, archive_dir)
 
 
 def _assert_list_len(l, expected_len, package_url, archive_dir):
@@ -424,8 +424,7 @@ def _get_archive(archive_dir, package_url):
     _assert_list_len(contents, 1, package_url, archive_dir)
     files = contents[0][2]
     _assert_list_len(files, 1, package_url, archive_dir)
-    path = os.path.join(archive_dir, files[0])
-    return path
+    return os.path.join(archive_dir, files[0])
 
 
 def extract_package_name(package_dir):
