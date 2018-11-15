@@ -141,7 +141,8 @@ class TestConfiguration(BaseTest, unittest.TestCase):
             'system_python': 'python',
             'bypass_maintenance': False,
             'network': 'default',
-            'version': utils.get_agent_version()
+            'version': utils.get_agent_version(),
+            'node_instance_id': 'test_node'
         }
         expected.update(expected_values)
 

@@ -22,17 +22,20 @@ import copy
 from posixpath import join as urljoin
 from contextlib import contextmanager
 
-import cloudify.manager
 from cloudify import amqp_client, ctx
+from cloudify.decorators import operation
+from cloudify.models_states import AgentState
 from cloudify.constants import BROKER_PORT_SSL
 from cloudify.broker_config import broker_hostname
+from cloudify.error_handling import deserialize_known_exception
 from cloudify.exceptions import NonRecoverableError, RecoverableError
+from cloudify.manager import (get_rest_client,
+                              create_agent_record,
+                              update_agent_record)
 from cloudify.utils import (get_tenant,
                             get_rest_token,
                             ManagerVersion,
                             get_local_rest_certificate)
-from cloudify.decorators import operation
-from cloudify.error_handling import deserialize_known_exception
 
 from cloudify_agent.celery_app import get_celery_app
 from cloudify_agent.api.plugins.installer import PluginInstaller
@@ -182,7 +185,7 @@ def _copy_values_from_old_agent_config(old_agent, new_agent):
     fields_to_copy = ['windows', 'ip', 'basedir', 'user', 'distro_codename',
                       'distro', 'broker_ssl_cert_path', 'agent_rest_cert_path',
                       'network', 'local', 'install_method',
-                      'process_management']
+                      'process_management', 'node_instance_id']
     for field in fields_to_copy:
         if field in old_agent:
             new_agent[field] = old_agent[field]
@@ -248,7 +251,7 @@ def _celery_task_name(version):
 
 
 def _get_manager_version():
-    version_json = cloudify.manager.get_rest_client().manager.get_version()
+    version_json = get_rest_client().manager.get_version()
     return ManagerVersion(version_json['version'])
 
 
@@ -427,6 +430,7 @@ def _stop_old_agent(new_agent, old_agent, timeout):
 
     _run_script(new_agent, script_url, timeout)
     ctx.logger.info('Old Cloudify agent stopped')
+    update_agent_record(old_agent['name'], AgentState.STOPPED)
 
 
 def _validate_agent():
@@ -466,15 +470,20 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
     installing the new one
     """
     old_agent = _validate_agent()
+    update_agent_record(old_agent['name'], AgentState.UPGRADING)
     _update_broker_config(old_agent, manager_ip, manager_certificate)
     agents = _run_install_script(old_agent, install_agent_timeout)
     new_agent = agents['new']
     ctx.logger.info('Installed agent {0}'.format(new_agent['name']))
+    create_agent_record(new_agent, AgentState.STARTING)
 
     result = _validate_current_amqp(new_agent)
     if not result['agent_alive']:
+        update_agent_record(new_agent['name'], AgentState.FAILED)
         raise RecoverableError('New agent did not start and connect')
 
+    update_agent_record(new_agent['name'], AgentState.STARTED)
+    update_agent_record(old_agent['name'], AgentState.UPGRADED)
     if stop_old_agent:
         _stop_old_diamond(old_agent, install_agent_timeout)
         _stop_old_agent(new_agent, old_agent, install_agent_timeout)

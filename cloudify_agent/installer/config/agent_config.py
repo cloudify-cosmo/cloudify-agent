@@ -127,6 +127,7 @@ class CloudifyAgentConfig(dict):
         self._set_name()
         self.setdefault('network', constants.DEFAULT_NETWORK_NAME)
         self._set_ips()
+        self.setdefault('node_instance_id', ctx.instance.id)
         self.setdefault('queue', self['name'])
         self.setdefault('rest_port',
                         cloudify_utils.get_manager_rest_service_port())

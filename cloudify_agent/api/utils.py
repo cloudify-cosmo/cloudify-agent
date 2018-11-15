@@ -31,13 +31,13 @@ import pkg_resources
 from jinja2 import Template
 
 from cloudify.workflows import tasks as workflows_tasks
+from cloudify.utils import setup_logger, get_exec_tempdir
 from cloudify.constants import (SECURED_PROTOCOL,
                                 BROKER_PORT_SSL,
                                 BROKER_PORT_NO_SSL)
-
-from cloudify.utils import setup_logger, get_exec_tempdir
 # imported here for backwards compat
 from cloudify.utils import is_agent_alive  # noqa
+
 from cloudify_rest_client import CloudifyClient
 
 import cloudify_agent

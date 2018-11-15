@@ -13,11 +13,12 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from cloudify import ctx
 from cloudify.decorators import operation
 from cloudify.amqp_client import get_client
-from cloudify import utils as cloudify_utils
+from cloudify.models_states import AgentState
+from cloudify import ctx, utils as cloudify_utils
 from cloudify.exceptions import CommandExecutionError
+from cloudify.manager import create_agent_record, update_agent_record
 
 from cloudify_agent.api import utils
 from cloudify_agent.installer import script
@@ -31,22 +32,25 @@ from .config.agent_config import create_agent_config_and_installer
 def create(cloudify_agent, installer, **_):
     # When not in "remote" mode, this operation is called only to set the
     # agent_config dict in the runtime properties
+    agent_name = cloudify_agent['name']
+    create_agent_record(cloudify_agent)
     if cloudify_agent.has_installer:
         with script.install_script_path(cloudify_agent) as script_path:
-            ctx.logger.info('Creating Agent {0}'.format(
-                cloudify_agent['name']))
+            ctx.logger.info('Creating Agent {0}'.format(agent_name))
             try:
                 response = installer.runner.run_script(script_path)
                 output = response.std_out
                 if output:
                     for line in output.splitlines():
                         ctx.logger.info(line)
-            except CommandExecutionError, e:
+            except CommandExecutionError as e:
                 ctx.logger.error(str(e))
+                update_agent_record(agent_name, AgentState.FAILED)
                 raise
             ctx.logger.info(
                 'Agent created, configured and started successfully'
             )
+            update_agent_record(agent_name, AgentState.STARTED)
     elif cloudify_agent.is_proxied:
         ctx.logger.info('Working in "proxied" mode')
     elif cloudify_agent.is_provided:
@@ -61,13 +65,22 @@ def create(cloudify_agent, installer, **_):
         cloudify_agent['install_script_download_link'] = \
             install_script_download_link
         update_agent_runtime_properties(cloudify_agent)
+        update_agent_record(agent_name, AgentState.CREATED)
 
 
 @operation
 @create_agent_config_and_installer
 def configure(cloudify_agent, installer, **_):
-    ctx.logger.info('Configuring Agent {0}'.format(cloudify_agent['name']))
-    installer.configure_agent()
+    agent_name = cloudify_agent['name']
+    ctx.logger.info('Configuring Agent {0}'.format(agent_name))
+    update_agent_record(agent_name, AgentState.CONFIGURING)
+    try:
+        installer.configure_agent()
+    except CommandExecutionError as e:
+        ctx.logger.error(str(e))
+        update_agent_record(agent_name, AgentState.FAILED)
+        raise
+    update_agent_record(agent_name, AgentState.CONFIGURED)
 
 
 @operation
@@ -77,6 +90,8 @@ def start(cloudify_agent, **_):
     Only called in "init_script"/"plugin" mode, where the agent is started
     externally (e.g. userdata script), and all we have to do is wait for it
     """
+    agent_name = cloudify_agent['name']
+    update_agent_record(agent_name, AgentState.STARTING)
     tenant = cloudify_utils.get_tenant()
     client = get_client(
         amqp_user=tenant['rabbitmq_username'],
@@ -86,10 +101,14 @@ def start(cloudify_agent, **_):
     agent_alive = utils.is_agent_alive(cloudify_agent['queue'], client)
 
     if not agent_alive:
+        if ctx.retry_number > 3:
+            ctx.logger.warning('Waiting too long for Agent to start')
+            update_agent_record(agent_name, AgentState.NONRESPONSIVE)
         return ctx.operation.retry(
             message='Waiting for Agent to start...')
 
     ctx.logger.info('Agent has started')
+    update_agent_record(agent_name, AgentState.STARTED)
     if not cloudify_agent.is_provided:
         script.cleanup_scripts()
 
@@ -100,20 +119,26 @@ def stop(cloudify_agent, installer, **_):
     """
     Only called in "remote" mode - other modes stop via AMQP
     """
-    ctx.logger.info('Stopping Agent {0}'.format(cloudify_agent['name']))
+    agent_name = cloudify_agent['name']
+    ctx.logger.info('Stopping Agent {0}'.format(agent_name))
+    update_agent_record(agent_name, AgentState.STOPPING)
     installer.stop_agent()
+    update_agent_record(agent_name, AgentState.STOPPED)
     script.cleanup_scripts()
 
 
 @operation
 @create_agent_config_and_installer(validate_connection=False)
 def delete(cloudify_agent, installer, **_):
+    agent_name = cloudify_agent['name']
+    update_agent_record(agent_name, AgentState.DELETING)
     # delete the runtime properties set on create
     if cloudify_agent.has_installer:
-        ctx.logger.info('Deleting Agent {0}'.format(cloudify_agent['name']))
+        ctx.logger.info('Deleting Agent {0}'.format(agent_name))
         installer.delete_agent()
     ctx.instance.runtime_properties.pop('cloudify_agent', None)
     ctx.instance.update()
+    update_agent_record(agent_name, AgentState.DELETED)
 
     # TODO: Delete the RabbitMQ queue after deleting the agent
 
@@ -123,5 +148,13 @@ def delete(cloudify_agent, installer, **_):
 def restart(cloudify_agent, installer, **_):
     # no need to handling remote_execution False because this operation is
     # not invoked in that case
-    ctx.logger.info('Restarting Agent {0}'.format(cloudify_agent['name']))
-    installer.restart_agent()
+    agent_name = cloudify_agent['name']
+    ctx.logger.info('Restarting Agent {0}'.format(agent_name))
+    update_agent_record(agent_name, AgentState.RESTARTING)
+    try:
+        installer.restart_agent()
+    except CommandExecutionError as e:
+        ctx.logger.error(str(e))
+        update_agent_record(agent_name, AgentState.FAILED)
+        raise
+    update_agent_record(agent_name, AgentState.RESTARTED)
