@@ -590,9 +590,9 @@ def validate_agent_amqp(current_amqp=True, manager_ip=None,
     ctx.instance.runtime_properties['agent_status'] = result
 
     if current_amqp and not result['agent_alive']:
-        raise NonRecoverableError(result['agent_alive_error'])
+        raise RecoverableError(result['agent_alive_error'])
     if not current_amqp and not result['agent_alive_crossbroker']:
-        raise NonRecoverableError(result['agent_alive_crossbroker_error'])
+        raise RecoverableError(result['agent_alive_crossbroker_error'])
 
 
 def _get_broker_config(agent):
