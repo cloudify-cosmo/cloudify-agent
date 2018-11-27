@@ -430,7 +430,7 @@ def _stop_old_agent(new_agent, old_agent, timeout):
 
     _run_script(new_agent, script_url, timeout)
     ctx.logger.info('Old Cloudify agent stopped')
-    update_agent_record(old_agent['name'], AgentState.STOPPED)
+    update_agent_record(old_agent, AgentState.STOPPED)
 
 
 def _validate_agent():
@@ -470,7 +470,7 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
     installing the new one
     """
     old_agent = _validate_agent()
-    update_agent_record(old_agent['name'], AgentState.UPGRADING)
+    update_agent_record(old_agent, AgentState.UPGRADING)
     _update_broker_config(old_agent, manager_ip, manager_certificate)
     agents = _run_install_script(old_agent, install_agent_timeout)
     new_agent = agents['new']
@@ -479,11 +479,11 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
 
     result = _validate_current_amqp(new_agent)
     if not result['agent_alive']:
-        update_agent_record(new_agent['name'], AgentState.FAILED)
+        update_agent_record(new_agent, AgentState.FAILED)
         raise RecoverableError('New agent did not start and connect')
 
-    update_agent_record(new_agent['name'], AgentState.STARTED)
-    update_agent_record(old_agent['name'], AgentState.UPGRADED)
+    update_agent_record(new_agent, AgentState.STARTED)
+    update_agent_record(old_agent, AgentState.UPGRADED)
     if stop_old_agent:
         _stop_old_diamond(old_agent, install_agent_timeout)
         _stop_old_agent(new_agent, old_agent, install_agent_timeout)
