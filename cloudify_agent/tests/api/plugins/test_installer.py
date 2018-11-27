@@ -387,7 +387,7 @@ class TestGetSourceAndGetArgs(BaseTest, unittest.TestCase):
                 source = installer.get_plugin_source(
                     plugin,
                     blueprint_id='blueprint_id')
-        prefix = 'file:///C:' if os.name == 'nt' else 'file:///'
+        prefix = 'file:///C:' if os.name == 'nt' else 'file://'
         expected = '{0}{1}'.format(prefix, file_path)
         self.assertEqual(expected, source)
 
