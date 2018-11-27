@@ -20,6 +20,9 @@ import shutil
 import tempfile
 import platform
 
+from urlparse import urljoin
+from urllib import pathname2url
+
 from os import walk
 from distutils.version import LooseVersion
 
@@ -528,7 +531,7 @@ def get_plugin_source(plugin, blueprint_id=None):
                              'source does not contain a schema')
 
         plugin_zip = ctx.download_resource('plugins/{0}.zip'.format(source))
-        source = 'file://{0}'.format(plugin_zip)
+        source = path_to_file_url(plugin_zip)
 
     return source
 
@@ -536,3 +539,14 @@ def get_plugin_source(plugin, blueprint_id=None):
 def get_plugin_args(plugin):
     args = plugin.get('install_arguments') or ''
     return args.strip().split()
+
+
+def path_to_file_url(path):
+    """
+    Convert a path to a file: URL.  The path will be made absolute and have
+    quoted path parts.
+    As taken from: https://github.com/pypa/pip/blob/9.0.1/pip/download.py#L459
+    """
+    path = os.path.normpath(os.path.abspath(path))
+    url = urljoin('file:', pathname2url(path))
+    return url
