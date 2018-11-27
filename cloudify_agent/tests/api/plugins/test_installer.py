@@ -381,12 +381,15 @@ class TestGetSourceAndGetArgs(BaseTest, unittest.TestCase):
         plugin = {
             'source': 'plugin-dir-name'
         }
+        file_path = '/tmp/plugin-dir-name.zip'
         with patch('cloudify_agent.api.plugins.installer.ctx', **{
-                'download_resource.return_value': '/tmp/plugin-dir-name.zip'}):
+                'download_resource.return_value': file_path}):
                 source = installer.get_plugin_source(
                     plugin,
                     blueprint_id='blueprint_id')
-        self.assertEqual('file:///tmp/plugin-dir-name.zip', source)
+        prefix = 'file:///C:' if os.name == 'nt' else 'file://'
+        expected = '{0}{1}'.format(prefix, file_path)
+        self.assertEqual(expected, source)
 
 
 class TestGetManagedPlugin(BaseTest, unittest.TestCase):
