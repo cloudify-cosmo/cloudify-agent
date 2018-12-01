@@ -6,6 +6,8 @@ export CLOUDIFY_DAEMON_USER={{ user }}
 
 export AGENT_NAME="{{ name }}"
 export AGENT_WORK_DIR={{ workdir }}
+export AGENT_LOG_MAX_BYTES="{{ log_max_bytes }}"
+export AGENT_LOG_MAX_HISTORY="{{ log_max_history }}"
 export AGENT_LOG_DIR="{{ log_dir }}"
 export AGENT_LOG_LEVEL={{ log_level }}
 export MANAGER_FILE_SERVER_URL="https://{{ rest_host }}:{{ rest_port }}/resources"

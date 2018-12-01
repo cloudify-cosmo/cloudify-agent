@@ -136,6 +136,8 @@ class DetachedDaemon(CronRespawnDaemonMixin):
             local_rest_cert_file=self.local_rest_cert_file,
             log_level=self.log_level.upper(),
             log_dir=self.log_dir,
+            log_max_bytes=self.log_max_bytes,
+            log_max_history=self.log_max_history,
             extra_env_path=self.extra_env_path,
             storage_dir=utils.internal.get_storage_directory(self.user),
             workdir=self.workdir,

@@ -1,4 +1,6 @@
 AGENT_WORK_DIR={{ workdir }}
+AGENT_LOG_MAX_BYTES="{{ log_max_bytes }}"
+AGENT_LOG_MAX_HISTORY="{{ log_max_history }}"
 AGENT_LOG_DIR="{{ log_dir }}"
 AGENT_LOG_LEVEL="{{ log_level }}"
 MANAGER_FILE_SERVER_URL="https://{{ rest_host }}:{{ rest_port }}/resources"

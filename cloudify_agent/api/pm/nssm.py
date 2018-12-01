@@ -90,6 +90,8 @@ class NonSuckingServiceManagerDaemon(Daemon):
             nssm_path=self.nssm_path,
             log_level=self.log_level.upper(),
             log_dir=self.log_dir,
+            log_max_bytes=self.log_max_bytes,
+            log_max_history=self.log_max_history,
             workdir=self.workdir,
             user=self.user,
             rest_host=self.rest_host,
