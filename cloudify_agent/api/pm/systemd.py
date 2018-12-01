@@ -89,6 +89,8 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             local_rest_cert_file=self.local_rest_cert_file,
             log_level=self.log_level.upper(),
             log_dir=self.log_dir,
+            log_max_bytes=self.log_max_bytes,
+            log_max_history=self.log_max_history,
             name=self.name,
             executable_temp_path=self.executable_temp_path,
             cluster_settings_path=self.cluster_settings_path

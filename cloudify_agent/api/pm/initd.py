@@ -111,6 +111,8 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
             local_rest_cert_file=self.local_rest_cert_file,
             log_level=self.log_level.upper(),
             log_dir=self.log_dir,
+            log_max_bytes=self.log_max_bytes,
+            log_max_history=self.log_max_history,
             cron_respawn=str(self.cron_respawn).lower(),
             enable_cron_script=self.create_enable_cron_script(),
             disable_cron_script=self.create_disable_cron_script(),

@@ -46,9 +46,6 @@ from cloudify.constants import (MGMTWORKER_QUEUE,
                                 EVENTS_EXCHANGE_NAME)
 
 
-LOGFILE_BACKUP_COUNT = 5
-LOGFILE_SIZE_BYTES = 5 * 1024 * 1024
-
 DEFAULT_MAX_WORKERS = 10
 
 SUPPORTED_EXCEPTIONS = (
@@ -293,7 +290,7 @@ class HookConsumer(TaskConsumer):
 
     def _get_hook(self, event_type):
         if not os.path.exists(self.HOOKS_CONFIG_PATH):
-            logger.info("The hook consumer received `{0}` event but the "
+            logger.warn("The hook consumer received `{0}` event but the "
                         "hooks config file doesn't exist".format(event_type))
             return None
 

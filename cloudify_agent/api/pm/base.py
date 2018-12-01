@@ -245,6 +245,10 @@ class Daemon(object):
         self.min_workers = params.get('min_workers') or defaults.MIN_WORKERS
         self.max_workers = params.get('max_workers') or defaults.MAX_WORKERS
         self.workdir = params.get('workdir') or os.getcwd()
+        self.log_max_bytes = params.get('log_max_bytes',
+                                        defaults.LOG_FILE_SIZE)
+        self.log_max_history = params.get('log_max_history',
+                                          defaults.LOG_BACKUPS)
         self.executable_temp_path = params.get('executable_temp_path') or \
             get_exec_tempdir()
 
