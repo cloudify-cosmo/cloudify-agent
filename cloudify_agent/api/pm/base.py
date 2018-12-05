@@ -277,7 +277,7 @@ class Daemon(object):
             'broker_hostname': self.broker_ip,
             'broker_vhost': self.broker_vhost,
             'cluster': self.cluster,
-            'broker_heartbeat': self.heartbeat
+            'broker_heartbeat': self.heartbeat,
         }
         broker_conf_path = os.path.join(self.workdir, 'broker_config.json')
         with open(broker_conf_path, 'w') as conf_handle:
