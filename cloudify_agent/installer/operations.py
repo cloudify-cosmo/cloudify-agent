@@ -99,7 +99,7 @@ def start(cloudify_agent, **_):
     agent_alive = utils.is_agent_alive(cloudify_agent['queue'], client)
 
     if not agent_alive:
-        if ctx.retry_number > 3:
+        if ctx.operation.retry_number > 3:
             ctx.logger.warning('Waiting too long for Agent to start')
             update_agent_record(cloudify_agent, AgentState.NONRESPONSIVE)
         return ctx.operation.retry(
