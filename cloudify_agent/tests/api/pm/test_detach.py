@@ -60,6 +60,10 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest, unittest.TestCase):
         daemon.configure()
         daemon.start()
 
+        # sleeps so the cron won't respawn the agent before we make sure
+        # it's dead
+        time.sleep(5)
+
         # check it started
         timeout = daemon.cron_respawn_delay * 60 + 20
         self.wait_for_daemon_alive(daemon.queue, timeout=timeout)
