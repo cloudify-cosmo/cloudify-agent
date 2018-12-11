@@ -81,7 +81,9 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, unittest.TestCase):
             finally:
                 fs.stop()
 
-    @patch('cloudify.manager.get_rest_client', return_value=MockRestclient())
+    @patch('cloudify_agent.installer.operations.delete_agent_rabbitmq_user')
+    @patch('cloudify.agent_utils.get_rest_client',
+           return_value=MockRestclient())
     @only_ci
     def test_install_new_agent(self, *_):
         agent_name = utils.internal.generate_agent_name()
@@ -214,7 +216,8 @@ class TestCreateAgentAmqp(BaseTest, unittest.TestCase):
     @patch('cloudify_agent.operations._send_amqp_task')
     @patch('cloudify_agent.api.utils.is_agent_alive',
            MagicMock(return_value=True))
-    @patch('cloudify.manager.get_rest_client', return_value=MockRestclient())
+    @patch('cloudify.agent_utils.get_rest_client',
+           return_value=MockRestclient())
     def test_create_agent_from_old_agent(self, *mocks):
         with self._set_context():
             self._create_cloudify_agent_dir()

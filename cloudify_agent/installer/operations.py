@@ -18,7 +18,9 @@ from cloudify.amqp_client import get_client
 from cloudify.models_states import AgentState
 from cloudify import ctx, utils as cloudify_utils
 from cloudify.exceptions import CommandExecutionError
-from cloudify.manager import create_agent_record, update_agent_record
+from cloudify.agent_utils import (create_agent_record,
+                                  update_agent_record,
+                                  delete_agent_rabbitmq_user)
 
 from cloudify_agent.api import utils
 from cloudify_agent.installer import script
@@ -137,6 +139,7 @@ def delete(cloudify_agent, installer, **_):
     update_agent_record(cloudify_agent, AgentState.DELETED)
 
     # TODO: Delete the RabbitMQ queue after deleting the agent
+    delete_agent_rabbitmq_user(cloudify_agent['name'])
 
 
 @operation

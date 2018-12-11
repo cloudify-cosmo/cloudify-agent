@@ -84,7 +84,9 @@ class TestAgentInstallerLocal(BaseDaemonLiveTestCase, unittest.TestCase):
         self._test_local_agent_from_package(agent_name)
 
     @patch('cloudify.workflows.local._validate_node')
-    @patch('cloudify.manager.get_rest_client', return_value=MockRestclient())
+    @patch('cloudify_agent.installer.operations.delete_agent_rabbitmq_user')
+    @patch('cloudify.agent_utils.get_rest_client',
+           return_value=MockRestclient())
     def _test_local_agent_from_package(self, agent_name, *_):
 
         agent_queue = '{0}-queue'.format(agent_name)

@@ -460,7 +460,9 @@ def update_agent_runtime_properties(cloudify_agent):
     Update runtime properties, so that they will be available to future
     operations
     """
-    cloudify_agent.pop('rest_tenant', None)
-    cloudify_agent.pop('rest_token', None)
+    items_to_remove = ['rest_tenant', 'rest_token',
+                       'broker_user', 'broker_pass']
+    for item in items_to_remove:
+        cloudify_agent.pop(item, None)
     ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
     ctx.instance.update()
