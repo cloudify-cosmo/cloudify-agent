@@ -96,6 +96,10 @@ class TestInitDDaemon(BaseDaemonProcessManagementTest, unittest.TestCase):
         daemon.configure()
         daemon.start()
 
+        # sleeps so the cron won't respawn the agent before we make sure
+        # it's dead
+        time.sleep(5)
+
         # lets kill the process
         self.runner.run("pkill -9 -f 'cloudify_agent.worker'")
         self.wait_for_daemon_dead(daemon.queue)
