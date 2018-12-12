@@ -33,7 +33,7 @@ function install_requirements() {
 # 	sudo pip install pip==6.0.8 --upgrade
 # 	sudo pip install "virtualenv>=14.0.0,<15.0.0" &&
  	sudo pip install setuptools==36.8.0 --upgrade &&
-	sudo pip install cloudify-agent-packager==4.0.2
+	sudo pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/CY-886.zip
 }
 
 
