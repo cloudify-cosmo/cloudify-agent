@@ -32,6 +32,7 @@ from cloudify_rest_client.utils import is_kerberos_env
 DEFAULT_WINRM_PORT = '5985'
 DEFAULT_WINRM_URI = 'wsman'
 DEFAULT_WINRM_PROTOCOL = 'http'
+DEFAULT_TRANSPORT = 'basic'
 
 
 def validate(session_config):
@@ -71,7 +72,7 @@ class WinRMRunner(object):
             'uri': uri or DEFAULT_WINRM_URI,
             'user': user,
             'password': password,
-            'transport': transport
+            'transport': transport or DEFAULT_TRANSPORT
         }
 
         # Validations - [host, user, password]
