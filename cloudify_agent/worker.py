@@ -102,6 +102,12 @@ class CloudifyOperationConsumer(TaskConsumer):
         )
 
     def handle_task(self, full_task):
+        dlx_id = full_task.get('dlx_id', None)
+        # This scheduled task was sent to mgmtworker queue from a temp queue
+        # using a deal-letter-exchnage, need to delete them
+        if dlx_id:
+            self.delete_queue(dlx_id + '_queue')
+            self.delete_exchange(dlx_id)
         task = full_task['cloudify_task']
         ctx = task['kwargs'].pop('__cloudify_context')
         self._print_task(ctx, 'Started handling')
