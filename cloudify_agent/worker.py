@@ -24,27 +24,25 @@ import traceback
 import threading
 
 from cloudify_agent.api import utils
+from cloudify_agent.api.factory import DaemonFactory
+
+from cloudify_rest_client.executions import Execution
+from cloudify_rest_client.exceptions import InvalidExecutionUpdateStatus
+
 from cloudify import dispatch, exceptions
 from cloudify.logs import setup_agent_logger
-from cloudify_agent.api.factory import DaemonFactory
-from cloudify_rest_client.executions import Execution
 from cloudify.error_handling import serialize_known_exception
 from cloudify.state import current_workflow_ctx, workflow_ctx
 from cloudify.constants import MGMTWORKER_QUEUE, EVENTS_EXCHANGE_NAME
 from cloudify.manager import update_execution_status, get_rest_client
-from cloudify_rest_client.exceptions import InvalidExecutionUpdateStatus
 
-from cloudify.utils import (
-    get_func,
-    get_admin_api_token,
-    get_rest_token_by_user_id
-)
-from cloudify.amqp_client import (
-    AMQPConnection,
-    TaskConsumer,
-    SendHandler,
-    get_client
-)
+from cloudify.utils import (get_func,
+                            get_admin_api_token,
+                            get_rest_token_by_user_id)
+from cloudify.amqp_client import (AMQPConnection,
+                                  TaskConsumer,
+                                  SendHandler,
+                                  get_client)
 
 
 DEFAULT_MAX_WORKERS = 10
@@ -103,8 +101,8 @@ class CloudifyOperationConsumer(TaskConsumer):
         )
 
     def handle_task(self, full_task):
-        dlx_id = full_task.get('dlx_id', None)
-        execution_creator_id = full_task.get('execution_creator', None)
+        dlx_id = full_task.get('dlx_id')
+        execution_creator_id = full_task.get('execution_creator')
         task = full_task['cloudify_task']
         ctx = task['kwargs'].pop('__cloudify_context')
 
