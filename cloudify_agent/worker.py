@@ -23,27 +23,28 @@ import argparse
 import traceback
 import threading
 
-from cloudify.utils import get_func
+from cloudify_agent.api import utils
 from cloudify import dispatch, exceptions
-from cloudify.state import current_workflow_ctx, workflow_ctx
-from cloudify.manager import (
-    update_execution_status,
-    get_rest_client
-)
 from cloudify.logs import setup_agent_logger
+from cloudify_agent.api.factory import DaemonFactory
+from cloudify_rest_client.executions import Execution
+from cloudify.error_handling import serialize_known_exception
+from cloudify.state import current_workflow_ctx, workflow_ctx
+from cloudify.constants import MGMTWORKER_QUEUE, EVENTS_EXCHANGE_NAME
+from cloudify.manager import update_execution_status, get_rest_client
+from cloudify_rest_client.exceptions import InvalidExecutionUpdateStatus
+
+from cloudify.utils import (
+    get_func,
+    get_admin_api_token,
+    get_rest_token_by_user_id
+)
 from cloudify.amqp_client import (
     AMQPConnection,
     TaskConsumer,
     SendHandler,
     get_client
 )
-from cloudify_agent.api import utils
-from cloudify_agent.api.factory import DaemonFactory
-from cloudify_rest_client.executions import Execution
-from cloudify.error_handling import serialize_known_exception
-from cloudify_rest_client.exceptions import InvalidExecutionUpdateStatus
-from cloudify.constants import (MGMTWORKER_QUEUE,
-                                EVENTS_EXCHANGE_NAME)
 
 
 DEFAULT_MAX_WORKERS = 10
@@ -103,13 +104,19 @@ class CloudifyOperationConsumer(TaskConsumer):
 
     def handle_task(self, full_task):
         dlx_id = full_task.get('dlx_id', None)
-        # This scheduled task was sent to mgmtworker queue from a temp queue
-        # using a deal-letter-exchnage, need to delete them
+        execution_creator_id = full_task.get('execution_creator', None)
+        task = full_task['cloudify_task']
+        ctx = task['kwargs'].pop('__cloudify_context')
+
+        # This is a scheduled task. It was sent to mgmtworker queue from a
+        # temp queue using a dead-letter-exchange (dlx), need to delete them
         if dlx_id:
             self.delete_queue(dlx_id + '_queue')
             self.delete_exchange(dlx_id)
-        task = full_task['cloudify_task']
-        ctx = task['kwargs'].pop('__cloudify_context')
+            # Get new valid REST token (of the user who created the execution)
+            self.generate_valid_rest_token_and_put_in_ctx(ctx,
+                                                          execution_creator_id)
+
         self._print_task(ctx, 'Started handling')
         handler = self.handler(cloudify_context=ctx, args=task.get('args', []),
                                kwargs=task['kwargs'],
@@ -129,6 +136,21 @@ class CloudifyOperationConsumer(TaskConsumer):
             )
         self._print_task(ctx, 'Finished handling', status)
         return result
+
+    @staticmethod
+    def generate_valid_rest_token_and_put_in_ctx(ctx, execution_creator_id):
+        """
+        Create a rest client using the admin api token, use this rest client
+        to generate a valid REST token of the execution creator and put it
+        in the ctx.
+        :param execution_creator_id: the user id of the execution creator
+        """
+        admin_api_token = get_admin_api_token()
+        rest_client = get_rest_client(tenant='default_tenant',
+                                      api_token=admin_api_token)
+        user_rest_token = get_rest_token_by_user_id(rest_client,
+                                                    execution_creator_id)
+        ctx['rest_token'] = user_rest_token
 
 
 class CloudifyWorkflowConsumer(CloudifyOperationConsumer):
