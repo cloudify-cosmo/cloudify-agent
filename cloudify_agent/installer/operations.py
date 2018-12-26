@@ -139,7 +139,7 @@ def delete(cloudify_agent, installer, **_):
     update_agent_record(cloudify_agent, AgentState.DELETED)
 
     # TODO: Delete the RabbitMQ queue after deleting the agent
-    delete_agent_rabbitmq_user(cloudify_agent['name'])
+    delete_agent_rabbitmq_user(cloudify_agent)
 
 
 @operation
