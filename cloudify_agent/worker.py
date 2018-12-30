@@ -27,10 +27,14 @@ from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
 
 from cloudify_rest_client.executions import Execution
-from cloudify_rest_client.exceptions import InvalidExecutionUpdateStatus
+from cloudify_rest_client.exceptions import (
+    CloudifyClientError,
+    InvalidExecutionUpdateStatus
+)
 
 from cloudify import dispatch, exceptions
 from cloudify.logs import setup_agent_logger
+from cloudify.models_states import ExecutionState
 from cloudify.error_handling import serialize_known_exception
 from cloudify.state import current_workflow_ctx, workflow_ctx
 from cloudify.constants import MGMTWORKER_QUEUE, EVENTS_EXCHANGE_NAME
@@ -404,11 +408,39 @@ class ProcessRegistry(object):
         return handler.ctx.execution_id
 
 
-def make_amqp_worker(args):
-    if args.name:
-        _setup_excepthook(args.name)
-    _setup_logger(args.name)
+def _resume_stuck_executions():
+    """Resume executions that were in the STARTED state.
 
+    This runs after the mgmtworker has started, and will find and resume
+    all executions that are in the STARTED state, which would otherwise
+    become stuck.
+
+    For every tenant, query the executions, and for every execution in
+    STARTED state, resume it.
+
+    This uses the admin token.
+    """
+    admin_api_token = get_admin_api_token()
+    rest_client = get_rest_client(tenant='default_tenant',
+                                  api_token=admin_api_token)
+    tenants = rest_client.tenants.list()
+    for tenant in tenants:
+        tenant_client = get_rest_client(tenant=tenant.name,
+                                        api_token=admin_api_token)
+        for execution in tenant_client.executions.list(
+                status=ExecutionState.STARTED):
+            try:
+                tenant_client.executions.resume(execution.id)
+            except CloudifyClientError as e:
+                logger.warning('Could not resume execution {0} on '
+                               'tenant {1}: {2}'
+                               .format(execution.id, tenant.name, e))
+            else:
+                logger.info('Resuming execution {0} on tenant {1}'
+                            .format(execution.id, tenant.name))
+
+
+def make_amqp_worker(args):
     operation_registry = ProcessRegistry()
     workflow_registry = ProcessRegistry()
     handlers = [
@@ -435,6 +467,13 @@ def main():
     parser.add_argument('--name')
     parser.add_argument('--hooks-queue')
     args = parser.parse_args()
+
+    if args.name:
+        _setup_excepthook(args.name)
+    _setup_logger(args.name)
+    if not args.name:
+        _resume_stuck_executions()
+
     worker = make_amqp_worker(args)
     worker.consume()
 
