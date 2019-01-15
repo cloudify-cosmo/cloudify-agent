@@ -105,19 +105,17 @@ class CloudifyOperationConsumer(TaskConsumer):
         )
 
     def handle_task(self, full_task):
-        dlx_id = full_task.get('dlx_id')
         execution_creator_id = full_task.get('execution_creator')
         task = full_task['cloudify_task']
         ctx = task['kwargs'].pop('__cloudify_context')
 
-        # This is a scheduled task. It was sent to mgmtworker queue from a
-        # temp queue using a dead-letter-exchange (dlx), need to delete them
-        if dlx_id:
-            self.delete_queue(dlx_id + '_queue')
-            self.delete_exchange(dlx_id)
-            # Get new valid REST token (of the user who created the execution)
-            self.generate_valid_rest_token_and_put_in_ctx(ctx,
-                                                          execution_creator_id)
+        if self.is_scheduled_execution(full_task):
+            self.handle_scheduled_execution(ctx, execution_creator_id)
+
+            if not self.can_scheduled_execution_start(ctx['execution_id'],
+                                                      ctx['tenant']['name']):
+                # Execution can't currently start running, it has been queued.
+                return
 
         self._print_task(ctx, 'Started handling')
         handler = self.handler(cloudify_context=ctx, args=task.get('args', []),
@@ -140,6 +138,25 @@ class CloudifyOperationConsumer(TaskConsumer):
         return result
 
     @staticmethod
+    def is_scheduled_execution(full_task):
+        """
+        If a task contains a `dead-letter-exchange` (dlx_id) information it
+        means it was scheduled
+        """
+        return True if full_task.get('dlx_id') else False
+
+    def handle_scheduled_execution(self, ctx, execution_creator_id):
+        # This is a scheduled task. It was sent to mgmtworker queue from a
+        # temp queue using a dead-letter-exchange (dlx), need to delete them
+        execution_id = ctx['execution_id']
+        self.delete_queue(execution_id + '_queue')
+        self.delete_exchange(execution_id)
+
+        # Get new valid REST token (of the user who created the execution)
+        self.generate_valid_rest_token_and_put_in_ctx(ctx,
+                                                      execution_creator_id)
+
+    @staticmethod
     def generate_valid_rest_token_and_put_in_ctx(ctx, execution_creator_id):
         """
         Create a rest client using the admin api token, use this rest client
@@ -153,6 +170,22 @@ class CloudifyOperationConsumer(TaskConsumer):
         user_rest_token = get_rest_token_by_user_id(rest_client,
                                                     execution_creator_id)
         ctx['rest_token'] = user_rest_token
+
+    @staticmethod
+    def can_scheduled_execution_start(execution_id, tenant):
+        """
+        This method checks whether or not a scheduled execution can currently
+        start running. If it can't - it changes the executions status to
+        QUEUED (so that it will automatically start running when possible)
+        """
+
+        api_token = get_admin_api_token()
+        tenant_client = get_rest_client(tenant=tenant, api_token=api_token)
+        if tenant_client.executions.should_start(execution_id):
+            return True
+
+        tenant_client.executions.update(execution_id, ExecutionState.QUEUED)
+        return False
 
 
 class CloudifyWorkflowConsumer(CloudifyOperationConsumer):
