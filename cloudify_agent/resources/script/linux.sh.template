@@ -145,6 +145,12 @@ export -f create_custom_env_file
 start_daemon()
 {
     export_daemon_env
+    if ! cfy-agent daemons list | grep -x "${CLOUDIFY_DAEMON_NAME}"; then
+        cfy-agent daemons create {{ pm_options }}
+    else
+        echo "Agent already created, skipping create agent."
+    fi
+
     cfy-agent daemons create {{ pm_options }}
 
     cfy-agent daemons configure
