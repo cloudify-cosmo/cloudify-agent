@@ -2,7 +2,7 @@
 #define AppVersion GetEnv('VERSION')
 #define AppMilestone GetEnv('PRERELEASE')
 #define AppBuild GetEnv('BUILD')
-#define AppPublisher "GigaSpaces Technologies"
+#define AppPublisher "Cloudify Platform Ltd."
 #define AppURL "http://getcloudify.org/"
 
 [Setup]
