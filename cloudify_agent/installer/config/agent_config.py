@@ -123,6 +123,13 @@ class CloudifyAgentConfig(dict):
     def is_windows(self):
         return self['windows']
 
+    @property
+    def tmpdir(self):
+        try:
+            return self['env'][cloudify_utils.CFY_EXEC_TEMPDIR_ENVVAR]
+        except KeyError:
+            return None
+
     def set_default_values(self):
         self._set_name()
         self.setdefault('network', constants.DEFAULT_NETWORK_NAME)
