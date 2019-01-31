@@ -75,6 +75,8 @@ class NonSuckingServiceManagerDaemon(Daemon):
         self.startup_policy = params.get('startup_policy', 'auto')
         self.failure_reset_timeout = params.get('failure_reset_timeout', 60)
         self.failure_restart_delay = params.get('failure_restart_delay', 5000)
+        self.service_user = params.get('service_user', '')
+        self.service_password = params.get('service_password', '')
 
     def create_script(self):
         pass
@@ -94,6 +96,8 @@ class NonSuckingServiceManagerDaemon(Daemon):
             log_max_history=self.log_max_history,
             workdir=self.workdir,
             user=self.user,
+            service_user=self.service_user,
+            service_password=self.service_password,
             rest_host=self.rest_host,
             rest_port=self.rest_port,
             local_rest_cert_file=self.local_rest_cert_file,
