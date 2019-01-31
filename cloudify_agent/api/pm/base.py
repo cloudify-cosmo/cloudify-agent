@@ -19,8 +19,7 @@ import os
 import time
 
 from cloudify.utils import (LocalCommandRunner,
-                            setup_logger,
-                            get_exec_tempdir)
+                            setup_logger)
 from cloudify import constants
 from cloudify.amqp_client import get_client
 from cloudify.exceptions import CommandExecutionException
@@ -249,8 +248,7 @@ class Daemon(object):
                                         defaults.LOG_FILE_SIZE)
         self.log_max_history = params.get('log_max_history',
                                           defaults.LOG_BACKUPS)
-        self.executable_temp_path = params.get('executable_temp_path') or \
-            get_exec_tempdir()
+        self.executable_temp_path = params.get('executable_temp_path')
 
         self.extra_env_path = params.get('extra_env_path')
         self.log_level = params.get('log_level') or defaults.LOG_LEVEL
