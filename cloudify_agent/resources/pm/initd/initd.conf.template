@@ -13,8 +13,10 @@ export CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}"
 export AGENT_NAME="{{ name }}"
 export CLOUDIFY_CLUSTER_SETTINGS_PATH="{{ cluster_settings_path }}"
 
+{%- if executable_temp_path -%}
 # Executable tempfiles directory override
 export CFY_EXEC_TEMP="{{ executable_temp_path }}"
+{% endif %}
 export ENABLE_CRON_SCRIPT="{{ enable_cron_script }}"
 export DISABLE_CRON_SCRIPT="{{ disable_cron_script }}"
 export ENABLE_CRON_RESPAWN={{ cron_respawn }}

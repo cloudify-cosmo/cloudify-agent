@@ -9,6 +9,7 @@ REST_HOST="{{ rest_host }}"
 REST_PORT="{{ rest_port }}"
 AGENT_NAME="{{ name }}"
 CLOUDIFY_CLUSTER_SETTINGS_PATH="{{ cluster_settings_path }}"
-
+{%- if executable_temp_path -%}
 # Executable tempfiles directory override
 CFY_EXEC_TEMP="{{ executable_temp_path }}"
+{% endif %}
