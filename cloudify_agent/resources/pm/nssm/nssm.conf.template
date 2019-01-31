@@ -24,11 +24,18 @@ AGENT_LOG_DIR="{{ log_dir }}" ^
 CLOUDIFY_DAEMON_USER={{ user }} ^
 AGENT_LOG_LEVEL="{{ log_level }}" ^
 AGENT_WORK_DIR="{{ workdir }}" ^ {{ custom_environment }} ^
+{% if executable_temp_path %}
 CFY_EXEC_TEMP="{{ executable_temp_path }}" ^
+{% endif %}
 CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}" ^
 AGENT_NAME="{{ name }}" ^
 CLOUDIFY_CLUSTER_SETTINGS_PATH="{{ cluster_settings_path }}"
 
+{% if service_user %}
+echo Registering agent service to run with user "{{ service_user}}"...
+"{{ nssm_path }}" set {{ name }} ObjectName "{{ service_user }}" "{{ service_password }}"
+if %errorlevel% neq 0 exit /b %errorlevel%
+{% endif %}
 "{{ nssm_path }}" set {{ name }} DisplayName "Cloudify Agent - {{ name }}"
 "{{ nssm_path }}" set {{ name }} Description "Cloudify Agent Service"
 
