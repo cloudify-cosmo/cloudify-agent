@@ -3,8 +3,8 @@ param($VERSION,$PRERELEASE)
 function preparation () {
     echo "### preparation ###"
     pip install wheel
-    pip wheel --wheel-dir packaging/source/wheels --requirement "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/master/dev-requirements.txt"
-    pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels "https://github.com/cloudify-cosmo/cloudify-agent/archive/master.zip"
+    pip wheel --wheel-dir packaging/source/wheels --requirement "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/4.5.0.1-build/dev-requirements.txt"
+    pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels "https://github.com/cloudify-cosmo/cloudify-agent/archive/4.5.0.1-build.zip"
 
     pushd packaging\source
         New-Item -ItemType directory "pip","python","virtualenv"
