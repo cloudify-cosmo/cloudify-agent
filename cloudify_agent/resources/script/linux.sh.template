@@ -179,5 +179,7 @@ main()
     {% endif %}
 }
 export -f main
-
+{% if tmpdir %}
+export TMPDIR={{ tmpdir }}
+{% endif %}
 main
