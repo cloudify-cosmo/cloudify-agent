@@ -323,16 +323,16 @@ class PluginInstallerTest(BaseTest, unittest.TestCase):
                     return requests_version
             raise AssertionError('Expected requests to be installed.')
         requests_plugin = test_utils.create_mock_plugin(
-                basedir=self.plugins_work_dir,
-                install_requires=['requests==2.6.0'])
+            basedir=self.plugins_work_dir,
+            install_requires=['requests==2.6.0'])
         requests_tar = test_utils.create_plugin_tar(
-                basedir=self.plugins_work_dir,
-                plugin_dir_name=requests_plugin,
-                target_directory=self.file_server_resource_base)
+            basedir=self.plugins_work_dir,
+            plugin_dir_name=requests_plugin,
+            target_directory=self.file_server_resource_base)
         requests_wagon = test_utils.create_plugin_wagon(
-                basedir=self.plugins_work_dir,
-                plugin_dir_name=requests_plugin,
-                target_directory=self.file_server_resource_base)
+            basedir=self.plugins_work_dir,
+            plugin_dir_name=requests_plugin,
+            target_directory=self.file_server_resource_base)
         before_requests_version = extract_requests_version()
         plugin_struct = self._plugin_struct(source=requests_tar,
                                             name=requests_plugin)
