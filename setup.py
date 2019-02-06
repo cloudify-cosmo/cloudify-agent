@@ -25,7 +25,7 @@ install_requires = [
     'fabric==1.13.1',
     'wagon[venv]==0.6.3',
     'fasteners==0.13.0',
-    'virtualenv==16.1.0',
+    'virtualenv==15.1.0',
     'pika==0.11.2',
     'pip==9.0.1',
     'PyYAML==3.10'
