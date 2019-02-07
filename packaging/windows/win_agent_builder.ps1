@@ -1,10 +1,34 @@
-param($VERSION,$PRERELEASE)
+param($VERSION,$PRERELEASE,$DEV_BRANCH)
+
+function resolve_current_build_branch_urls() {
+    echo "### Resolve current build branch urls ###"
+    $env:AWS_S3_PATH = "s3://cloudify-release-eu/cloudify/$VERSION/$PRERELEASE-build"
+    $env:current_branch = "master"
+
+    if ($DEV_BRANCH -ne "" -And $DEV_BRANCH -ne "master") {
+        $branch_exists = $( git rev-parse --verify --quiet $DEV_BRANCH )
+        if ($branch_exists -ne "") {
+            $env:current_branch = $DEV_BRANCH
+            $env:AWS_S3_PATH = "$env:AWS_S3_PATH/$env:current_branch"
+        }
+    }
+
+    # Required urls
+    $env:DEV_REQUIREMENTS_URL = "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/$env:current_branch/dev-requirements.txt"
+    $env:REPO_ZIP_URL = "https://github.com/cloudify-cosmo/cloudify-agent/archive/$env:current_branch.zip"
+
+    echo "Chosen branch to build from $env:current_branch."
+}
+
 
 function preparation () {
-    echo "### preparation ###"
+    echo "### Preparation ###"
     pip install wheel
-    pip wheel --wheel-dir packaging/source/wheels --requirement "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/master/dev-requirements.txt"
-    pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels "https://github.com/cloudify-cosmo/cloudify-agent/archive/master.zip"
+
+    echo "dev requirement url of the agent $env:DEV_REQUIREMENTS_URL"
+    echo "Path to ziped repo of the agent $env:REPO_ZIP_URL"
+    pip wheel --wheel-dir packaging/source/wheels --requirement $env:DEV_REQUIREMENTS_URL
+    pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels $env:REPO_ZIP_URL
 
     pushd packaging\source
         New-Item -ItemType directory "pip","python","virtualenv"
@@ -17,14 +41,14 @@ function preparation () {
 }
 
 function build_win_agent ($VERSION,$PRERELEASE) {
-    echo "### build windows agent... ###"
+    echo "### Build windows agent ###"
     $env:VERSION = $VERSION
     $env:PRERELEASE = $PRERELEASE
     & "C:\Program Files (x86)\Inno Setup 5\ISCC.exe" packaging/create_install_wizard.iss
 }
 
 function s3_uploader ($s3_path) {
-    echo "### Upload to S3... ###"
+    echo "### Upload to S3 ###"
     pushd packaging\output
         $artifact = "cloudify-windows-agent_$env:VERSION-$env:PRERELEASE.exe"
         $artifact_md5 = $(Get-FileHash -Path $artifact -Algorithm MD5).Hash
@@ -37,9 +61,15 @@ function s3_uploader ($s3_path) {
 
 ### Main ###
 
+# resolving git branch releated settings
 git clone https://github.com/cloudify-cosmo/cloudify-agent.git
-cd cloudify-agent\packaging\windows
+cd cloudify-agent\
+resolve_current_build_branch_urls
+git checkout $env:current_branch
 
+cd packaging\windows
 preparation
 build_win_agent $VERSION $PRERELEASE
-s3_uploader "s3://cloudify-release-eu/cloudify/$env:VERSION/$env:PRERELEASE-build/"
+
+echo "S3 url: $env:AWS_S3_PATH"
+s3_uploader $env:AWS_S3_PATH
