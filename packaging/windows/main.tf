@@ -1,6 +1,7 @@
 variable "VERSION" {}
 variable "PRERELEASE" {}
 variable "password" {}
+variable "DEV_BRANCH" {}
 
 
 provider "aws" {
@@ -46,7 +47,7 @@ resource "aws_instance" "builder" {
   }
 
   provisioner "remote-exec" {
-    inline = [ "powershell.exe -File C:\\Users\\Administrator\\win_agent_builder.ps1 ${var.VERSION} ${var.PRERELEASE}" ]
+    inline = [ "powershell.exe -File C:\\Users\\Administrator\\win_agent_builder.ps1 ${var.VERSION} ${var.PRERELEASE} ${var.DEV_BRANCH}" ]
     connection {
       type     = "winrm"
       port     = 5986
