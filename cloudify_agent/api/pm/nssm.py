@@ -83,8 +83,8 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
     def create_config(self):
         # creating the installation script
-        self._logger.debug('Rendering configuration script "{0}" from template'
-                           .format(self.config_path))
+        self._logger.info('Rendering configuration script "{0}" from template'
+                          .format(self.config_path))
         utils.render_template_to_file(
             template_path='pm/nssm/nssm.conf.template',
             file_path=self.config_path,
@@ -113,13 +113,20 @@ class NonSuckingServiceManagerDaemon(Daemon):
             cluster_settings_path=self.cluster_settings_path
         )
 
-        self._logger.debug('Rendered configuration script: {0}'.format(
+        self._logger.info('Rendered configuration script: {0}'.format(
             self.config_path))
 
         # run the configuration script
         self._logger.info('Running configuration script')
-        self._runner.run(self.config_path)
-        self._logger.debug('Successfully executed configuration script')
+        try:
+            self._runner.run(self.config_path)
+        except Exception:
+            # Log the exception here, then re-raise it. This is done in order
+            # to ensure that the full exception message is shown.
+            self._logger.exception("Failure encountered while running "
+                                   "configuration script")
+            raise
+        self._logger.info('Successfully executed configuration script')
 
     def before_self_stop(self):
         if self.startup_policy in ['boot', 'system', 'auto']:
