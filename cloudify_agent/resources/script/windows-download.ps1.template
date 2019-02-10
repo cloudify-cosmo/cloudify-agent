@@ -24,6 +24,9 @@ function Download()
 AddSSLCert
 Download
 
-.\agent_installer.ps1
+$LogFile = $env:APPDATA + "\cloudify-agent-install.log"
+Write-Output "Executing agent installer, log will be written to $LogFile"
+.\agent_installer.ps1 *> $LogFile
+Write-Output "Agent installation completed"
 
 Remove-Item .\agent_installer.ps1 -Force

@@ -1,5 +1,6 @@
 #ps1_sysnative
 
+# Stop whenever an external command fails.
 $ErrorActionPreference = "Stop"
 
 {% if add_ssl_cert %}
@@ -69,7 +70,10 @@ function ConfigureAgent()
 {
     ExportDaemonEnv
     CreateCustomEnvFile
+
+    Write-Output "Configuring agent..."
     cfy-agent configure {{ configure_flags }}
+    Write-Output "Agent configured successfully"
 }
 {% endif %}
 
@@ -77,12 +81,20 @@ function ConfigureAgent()
 function StartAgent()
 {
     if (-Not ($Agentlist | Select-String $env:CLOUDIFY_DAEMON_NAME)) {
+        Write-Output "Creating daemon..."
         cfy-agent daemons create {{ pm_options }}
+        Write-Output "Daemon created successfully"
     } else {
         Write-Output "Agent already created, skipping create agent."
     }
+
+    Write-Output "Configuring daemon..."
     cfy-agent daemons configure
+    Write-Output "Daemon configured successfully"
+
+    Write-Output "Starting daemon..."
     cfy-agent daemons start
+    Write-Output "Daemon started successfully"
 }
 {% endif %}
 
