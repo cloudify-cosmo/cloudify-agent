@@ -52,6 +52,6 @@ echo "Creating directory: $(dirname ${log_file})"
 download agent_installer.sh
 chmod +x ./agent_installer.sh
 echo "Executing agent installer, log will be written to ${log_file}"
-{{ sudo }} ./agent_installer.sh > ${log_file} 2>&1
+{{ sudo }} ./agent_installer.sh 2>&1 | {{ sudo }} tee ${log_file} > /dev/null
 echo "Agent installation completed"
 rm ./agent_installer.sh
