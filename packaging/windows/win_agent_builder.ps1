@@ -1,34 +1,34 @@
 param($VERSION,$PRERELEASE,$DEV_BRANCH)
 
-function resolve_current_build_branch_urls() {
+function resolve_current_build_branch_urls($DEV_BRANCH) {
     echo "### Resolve current build branch urls ###"
-    $env:AWS_S3_PATH = "s3://cloudify-release-eu/cloudify/$VERSION/$PRERELEASE-build"
-    $env:current_branch = "master"
+    $AWS_S3_PATH = "s3://cloudify-release-eu/cloudify/$VERSION/$PRERELEASE-build"
+    $current_branch = "master"
 
     if ("$DEV_BRANCH" -ne "" -And $DEV_BRANCH -ne "master") {
         $branch_exists = $( git rev-parse --verify --quiet $DEV_BRANCH )
         if ($branch_exists -ne "") {
-            $env:current_branch = $DEV_BRANCH
-            $env:AWS_S3_PATH = "$env:AWS_S3_PATH/$env:current_branch"
+            $current_branch = $DEV_BRANCH
+            $AWS_S3_PATH = "$AWS_S3_PATH/$current_branch"
         }
     }
 
     # Required urls
-    $env:DEV_REQUIREMENTS_URL = "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/$env:current_branch/dev-requirements.txt"
-    $env:REPO_ZIP_URL = "https://github.com/cloudify-cosmo/cloudify-agent/archive/$env:current_branch.zip"
+    $DEV_REQUIREMENTS_URL = "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/$current_branch/dev-requirements.txt"
+    $REPO_ZIP_URL = "https://github.com/cloudify-cosmo/cloudify-agent/archive/$current_branch.zip"
 
-    echo "Chosen branch to build from $env:current_branch."
+    echo "Chosen branch to build from $current_branch."
+    return $current_branch, $AWS_S3_PATH, $DEV_REQUIREMENTS_URL, $REPO_ZIP_URL
 }
 
-
-function preparation () {
-    echo "### Preparation ###"
+function environment_preparation ($DEV_REQUIREMENTS_URL, $REPO_ZIP_URL) {
+    echo "### Environment Preparation ###"
     pip install wheel
 
-    echo "dev requirement url of the agent $env:DEV_REQUIREMENTS_URL"
-    echo "Path to ziped repo of the agent $env:REPO_ZIP_URL"
-    pip wheel --wheel-dir packaging/source/wheels --requirement $env:DEV_REQUIREMENTS_URL
-    pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels $env:REPO_ZIP_URL
+    echo "Agent dev-requirement url: $DEV_REQUIREMENTS_URL"
+    echo "Path to ziped agent github repo $REPO_ZIP_URL"
+    pip wheel --wheel-dir packaging/source/wheels --requirement $DEV_REQUIREMENTS_URL
+    pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels $REPO_ZIP_URL
 
     pushd packaging\source
         New-Item -ItemType directory "pip","python","virtualenv"
@@ -49,6 +49,7 @@ function build_win_agent ($VERSION,$PRERELEASE) {
 
 function s3_uploader ($s3_path) {
     echo "### Upload to S3 ###"
+    echo "Uploading to: $s3_path"
     pushd packaging\output
         $artifact = "cloudify-windows-agent_$env:VERSION-$env:PRERELEASE.exe"
         $artifact_md5 = $(Get-FileHash -Path $artifact -Algorithm MD5).Hash
@@ -61,15 +62,14 @@ function s3_uploader ($s3_path) {
 
 ### Main ###
 
-# resolving git branch releated settings
+# resolving git branch releated settings and environment
 git clone https://github.com/cloudify-cosmo/cloudify-agent.git
 cd cloudify-agent\
-resolve_current_build_branch_urls
-git checkout $env:current_branch
+$current_branch, $AWS_S3_PATH, $DEV_REQUIREMENTS_URL, $REPO_ZIP_URL = resolve_current_build_branch_urls($DEV_BRANCH)
+git checkout $current_branch
 
 cd packaging\windows
-preparation
-build_win_agent $VERSION $PRERELEASE
+environment_preparation($DEV_REQUIREMENTS_URL, $REPO_ZIP_URL)
+build_win_agent($VERSION, $PRERELEASE)
 
-echo "S3 url: $env:AWS_S3_PATH"
-s3_uploader $env:AWS_S3_PATH
+s3_uploader($AWS_S3_PATH)
