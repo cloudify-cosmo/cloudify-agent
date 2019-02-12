@@ -1,5 +1,8 @@
 #ps1_sysnative
 
+# All output should be UTF-8 (default is UTF-16).
+$PSDefaultParameterValues['*:Encoding'] = 'utf8'
+
 # Stop whenever an external command fails.
 $ErrorActionPreference = "Stop"
 
