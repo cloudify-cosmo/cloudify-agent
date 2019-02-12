@@ -3,7 +3,7 @@ ARG  BASE_IMAGE
 FROM ${BASE_IMAGE}
 RUN  yum clean all \
 &&   rm -rf /var/cache/yum \
-&&   rpm --rebuilddb && yum -y update && yum -y install \
+&&   rpm --rebuilddb && yum -y install \
      yum-utils \
      python-devel \
      make \
