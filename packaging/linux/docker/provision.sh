@@ -2,7 +2,7 @@
 
 # VERSION/PRERELEASE/BUILD must be exported as they is being read as an env var by the cloudify-agent-packager
 export CORE_TAG_NAME="4.5.5"
-export CORE_BRANCH="master"
+export CORE_BRANCH="4.5.5-build"
 
 curl -u $GITHUB_USERNAME:$GITHUB_PASSWORD https://raw.githubusercontent.com/cloudify-cosmo/${REPO}/${CORE_BRANCH}/packages-urls/common_build_env.sh -o ./common_build_env.sh &&
 source common_build_env.sh &&
