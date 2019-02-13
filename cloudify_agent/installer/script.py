@@ -175,7 +175,8 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             sudo=sudo,
             ssl_cert_content=self._get_local_cert_content(),
             ssl_cert_path=self._get_remote_ssl_cert_path(),
-            tmpdir=self.cloudify_agent.tmpdir
+            tmpdir=self.cloudify_agent.tmpdir,
+            name=self.cloudify_agent['name']
         )
         if not self.cloudify_agent.is_windows:
             args_dict['user'] = self.cloudify_agent['user']
