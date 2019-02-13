@@ -27,9 +27,17 @@ function Download()
 AddSSLCert
 Download
 
-$LogFile = $env:APPDATA + "\cloudify-agent-install.log"
+$LogDir = $env:ProgramData + "\Cloudify\cloudify-agent\logs"
+$LogFile = $LogDir + "\{{ name }}-install.log"
+
+If (!(test-path $LogDir))
+{
+    Write-Output "Creating directory: $LogDir"
+    New-Item -ItemType Directory -Path $LogDir
+}
+
 Write-Output "Executing agent installer, log will be written to $LogFile"
-.\agent_installer.ps1 *> $LogFile
+.\agent_installer.ps1 *>> $LogFile
 Write-Output "Agent installation completed"
 
 Remove-Item .\agent_installer.ps1 -Force
