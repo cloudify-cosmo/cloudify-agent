@@ -1,58 +1,54 @@
-@echo off
+$ps1_sysnative
 
+# All output should be UTF-8 (default is UTF-16).
+$PSDefaultParameterValues['*:Encoding'] = 'utf8'
 
-sc query {{ name }} > NUL
-if %ERRORLEVEL% EQU 0 echo Agent already installed && exit 0
-if %ERRORLEVEL% EQU 1060 echo Installing the agent as a windows service...
+$ServiceName = {{ name }}
+Write-Output "Checking whether service ($ServiceName) is already installed..."
 
-"{{ nssm_path }}" install {{ name }} "{{ virtualenv_path }}\Scripts\python.exe" -m cloudify_agent.worker ^
-    --queue "{{ queue }}" ^
-    --max-workers {{ max_workers }} ^
-    --name "{{ name }}"
+$ExistingService = Get-Service -Name $ServiceName
+if (!$?) {
+    Write-Output "Agent already installed"
+    Exit
+}
 
+if %ERRORLEVEL% NEQ 1060 (
+    echo Unexpected query return code: %ERRORLEVEL%
+    exit 1
+)
 
-if %errorlevel% neq 0 exit /b %errorlevel%
+echo Installing the agent as a windows service...
 
-echo Setting service environment
-
-"{{ nssm_path }}" set {{ name }} AppEnvironmentExtra ^
-REST_HOST={{ rest_host }} ^
-REST_PORT={{ rest_port }} ^
-LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}" ^
-MANAGER_FILE_SERVER_URL=https://{{ rest_host }}:{{ rest_port }}/resources ^
-AGENT_LOG_DIR="{{ log_dir }}" ^
-CLOUDIFY_DAEMON_USER={{ user }} ^
-AGENT_LOG_LEVEL="{{ log_level }}" ^
-AGENT_WORK_DIR="{{ workdir }}" ^ {{ custom_environment }} ^
-AGENT_LOG_MAX_BYTES="{{ log_max_bytes }}" ^
-AGENT_LOG_MAX_HISTORY="{{ log_max_history }}" ^
-{%- if executable_temp_path -%}
-CFY_EXEC_TEMP="{{ executable_temp_path }}" ^
+{%- if service_user -%}
+echo Service will be installed for user '{{ service_user }}'
+    {% set auth_params = "obj= \"{{ service_user }}\" password= \"{{ service_password }}\"" %}
+{% else %}
+echo Service will be installed for user 'LOCALSYSTEM'
+    {% set auth_params = "" %}
 {% endif %}
-CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}" ^
-AGENT_NAME="{{ name }}" ^
-CLOUDIFY_CLUSTER_SETTINGS_PATH="{{ cluster_settings_path }}"
+{%- set binpath = '\\"' + virtualenv_path + '\Scripts\python.exe\\" -m cloudify_agent.worker --vars-file \\"' + vars_file + '\\" --queue \\"' + queue + '\\" --max-workers ' + max_workers + ' --name \\"' + name  + '\\"' -%}
+{%- set displayname = 'Cloudify Agent - ' + name -%}
 
-{% if service_user %}
-echo Registering agent service to run with user "{{ service_user}}"...
-"{{ nssm_path }}" set {{ name }} ObjectName "{{ service_user }}" "{{ service_password }}"
-if %errorlevel% neq 0 exit /b %errorlevel%
-{% endif %}
-"{{ nssm_path }}" set {{ name }} DisplayName "Cloudify Agent - {{ name }}"
-"{{ nssm_path }}" set {{ name }} Description "Cloudify Agent Service"
+echo Creating service: name={{ name }}, startup policy={{ startup_policy }}, path={{ binpath }}, display name={{ displayname }}
+sc create {{ name }} start= {{ startup_policy }} binpath= "{{ binpath }}" displayname= "{{ displayname }}" {{ auth_params }}
+if %ERRORLEVEL% NEQ 0 (
+    echo Failed creating service (rc=%ERRORLEVEL%)
+    exit 1
+)
 
-if %errorlevel% neq 0 exit /b %errorlevel%
+{%- set description = "Cloudify Agent Service " + name -%}
+echo Setting service description: {{ description }}...
+sc description {{ name }} "{{ description }}"
+if %ERRORLEVEL% NEQ 0 (
+    echo Failed setting service's description (rc=%ERRORLEVEL%)
+    exit 1
+)
 
-echo Configuring startup policy...
-
-sc config {{ name }} start= {{ startup_policy }}
-
-if %errorlevel% neq 0 exit /b %errorlevel%
-
-echo Configuring failure policy...
-
+echo Configuring failure policy: reset={{ failure_reset_timeout }}, actions=restart/{{ failure_restart_delay }}...
 sc failure {{ name }} reset= {{ failure_reset_timeout }} actions= restart/{{ failure_restart_delay }}
-
-if %errorlevel% neq 0 exit /b %errorlevel%
+if %ERRORLEVEL% NEQ 0 (
+    echo Failed setting service's failure policy (rc=%ERRORLEVEL%)
+    exit 1
+)
 
 echo Cloudify Agent configured successfully as a Windows Service ({{ name }})

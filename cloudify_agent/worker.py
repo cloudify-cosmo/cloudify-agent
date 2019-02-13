@@ -21,6 +21,7 @@ import logging
 import argparse
 import traceback
 import threading
+import json
 
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
@@ -228,12 +229,22 @@ def main():
     parser.add_argument('--max-workers', default=DEFAULT_MAX_WORKERS, type=int)
     parser.add_argument('--name')
     parser.add_argument('--hooks-queue')
+    parser.add_argument('--vars-file')
     args = parser.parse_args()
 
+    setup_agent_logger(args.name)
+
+    if args.vars_file:
+        logger.info("Reading environment variables from %s", args.vars_file)
+        with open(args.vars_file) as f:
+            env_vars = json.load(f)
+        for name, value in env_vars.items():
+            os.environ[name] = str(value)
+        from cloudify import broker_config
+        reload(broker_config)
     if args.name:
         _setup_excepthook(args.name)
     logger = logging.getLogger('worker.{0}'.format(args.name))
-    setup_agent_logger(args.name)
 
     worker = make_amqp_worker(args)
     worker.consume()

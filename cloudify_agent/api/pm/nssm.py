@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import os
+import json
 
 from cloudify.exceptions import CommandExecutionException
 
@@ -22,6 +23,9 @@ from cloudify_agent.api import defaults
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.api.pm.base import Daemon
+
+from cloudify import constants
+from cloudify.utils import ENV_CFY_EXEC_TEMPDIR
 
 
 class NonSuckingServiceManagerDaemon(Daemon):
@@ -69,7 +73,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
         self.config_path = os.path.join(
             self.workdir,
-            '{0}.conf.bat'.format(self.name))
+            '{0}.conf.ps1'.format(self.name))
         self.nssm_path = utils.get_absolute_resource_path(
             os.path.join('pm', 'nssm', 'nssm.exe'))
         self.startup_policy = params.get('startup_policy', 'auto')
@@ -82,39 +86,66 @@ class NonSuckingServiceManagerDaemon(Daemon):
         pass
 
     def create_config(self):
+        # Creating the environment variables' file
+        envvars_file = {
+            constants.REST_HOST_KEY: self.rest_host,
+            constants.REST_PORT_KEY: self.rest_port,
+            constants.LOCAL_REST_CERT_FILE_KEY: self.local_rest_cert_file,
+            constants.MANAGER_FILE_SERVER_URL_KEY:
+                "https://{}:{}/resources".format(self.rest_host,
+                                                 self.rest_port),
+            constants.AGENT_LOG_DIR_KEY: self.log_dir,
+            # TODO: This key should be moved elsewhere
+            utils._Internal.CLOUDIFY_DAEMON_USER_KEY: self.user,
+            constants.AGENT_LOG_LEVEL_KEY: self.log_level.upper(),
+            constants.AGENT_WORK_DIR_KEY: self.workdir,
+            constants.AGENT_LOG_MAX_BYTES_KEY: self.log_max_bytes,
+            constants.AGENT_LOG_MAX_HISTORY_KEY: self.log_max_history,
+            utils._Internal.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY:
+                utils.internal.get_storage_directory(self.user),
+            constants.AGENT_NAME_KEY: self.name,
+            constants.CLUSTER_SETTINGS_PATH_KEY: self.cluster_settings_path
+        }
+
+        if self.executable_temp_path:
+            envvars_file[CFY_EXEC_TEMPDIR_ENVVAR] = self.executable_temp_path
+
+        if self.extra_env_path and os.path.exists(self.extra_env_path):
+            with open(self.extra_env_path) as f:
+                content = f.read()
+            for line in content.splitlines():
+                if line.startswith('set'):
+                    parts = line.split(' ')[1].split('=')
+                    key = parts[0]
+                    value = parts[1]
+                    envvars_file[key] = value
+
+        envvars_file_name = os.path.join(self.workdir, 'environment.json')
+        self._logger.info("Rendering environment variables JSON to %s",
+                          envvars_file_name,)
+        with open(envvars_file_name, 'w') as f:
+            json.dump(envvars_file, f, indent=4)
+
         # creating the installation script
         self._logger.info('Rendering configuration script "{0}" from template'
                           .format(self.config_path))
         utils.render_template_to_file(
             template_path='pm/nssm/nssm.conf.template',
             file_path=self.config_path,
+            vars_file=envvars_file_name,
             queue=self.queue,
-            nssm_path=self.nssm_path,
-            log_level=self.log_level.upper(),
-            log_dir=self.log_dir,
-            log_max_bytes=self.log_max_bytes,
-            log_max_history=self.log_max_history,
-            workdir=self.workdir,
-            user=self.user,
             service_user=self.service_user,
             service_password=self.service_password,
-            rest_host=self.rest_host,
-            rest_port=self.rest_port,
-            local_rest_cert_file=self.local_rest_cert_file,
             max_workers=self.max_workers,
             virtualenv_path=VIRTUALENV,
             name=self.name,
-            custom_environment=self._create_env_string(),
-            executable_temp_path=self.executable_temp_path,
             startup_policy=self.startup_policy,
             failure_reset_timeout=self.failure_reset_timeout,
-            failure_restart_delay=self.failure_restart_delay,
-            storage_dir=utils.internal.get_storage_directory(self.user),
-            cluster_settings_path=self.cluster_settings_path
+            failure_restart_delay=self.failure_restart_delay
         )
 
-        self._logger.info('Rendered configuration script: {0}'.format(
-            self.config_path))
+        self._logger.info('Rendered configuration script: %s',
+                          self.config_path)
 
         # run the configuration script
         self._logger.info('Running configuration script')
@@ -130,7 +161,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
     def before_self_stop(self):
         if self.startup_policy in ['boot', 'system', 'auto']:
-            self._logger.debug('Disabling service: {0}'.format(self.name))
+            self._logger.debug('Disabling service: %s', self.name)
             self._runner.run('sc config {0} start= disabled'.format(self.name))
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
@@ -139,13 +170,12 @@ class NonSuckingServiceManagerDaemon(Daemon):
                 raise exceptions.DaemonStillRunningException(self.name)
             self.stop()
 
-        self._logger.info('Removing {0} service'.format(
-            self.name))
+        self._logger.info('Removing %s service', self.name)
         self._runner.run('{0} remove {1} confirm'.format(
             self.nssm_path,
             self.name))
 
-        self._logger.debug('Deleting {0}'.format(self.config_path))
+        self._logger.debug('Deleting %s', self.config_path)
         if os.path.exists(self.config_path):
             os.remove(self.config_path)
 
@@ -182,16 +212,3 @@ class NonSuckingServiceManagerDaemon(Daemon):
         except CommandExecutionException as e:
             self._logger.debug(str(e))
             return False
-
-    def _create_env_string(self):
-        env_string = ''
-        if self.extra_env_path and os.path.exists(self.extra_env_path):
-            with open(self.extra_env_path) as f:
-                content = f.read()
-            for line in content.splitlines():
-                if line.startswith('set'):
-                    parts = line.split(' ')[1].split('=')
-                    key = parts[0]
-                    value = parts[1]
-                    env_string = '{0} {1}={2}'.format(env_string, key, value)
-        return env_string.rstrip()
