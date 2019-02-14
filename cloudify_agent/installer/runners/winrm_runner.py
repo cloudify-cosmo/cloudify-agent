@@ -161,8 +161,8 @@ class WinRMRunner(object):
                     output=res.std_out)
                 if raise_on_failure:
                     raise error
-                self.logger.exception("WinRM command ended with an error",
-                                      error)
+                self.logger.error("WinRM command ended with an error",
+                                  error)
 
         self.logger.debug(
             '[{0}] run: {1}'.format(
