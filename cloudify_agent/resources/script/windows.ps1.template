@@ -3,7 +3,7 @@
 # All output should be UTF-8 (default is UTF-16).
 $PSDefaultParameterValues['*:Encoding'] = 'utf8'
 
-# Stop whenever an external command fails.
+# Stop whenever a non-terminating cmdlet generates an error.
 $ErrorActionPreference = "Stop"
 
 {% if add_ssl_cert %}
@@ -76,6 +76,10 @@ function ConfigureAgent()
 
     Write-Output "Configuring agent..."
     cfy-agent configure {{ configure_flags }}
+    if (!$?) {
+        Write-Output "Failed configuring agent (rc=$LASTEXITCODE)"
+        Exit 1
+    }
     Write-Output "Agent configured successfully"
 }
 {% endif %}
@@ -86,6 +90,10 @@ function StartAgent()
     if (-Not ($Agentlist | Select-String $env:CLOUDIFY_DAEMON_NAME)) {
         Write-Output "Creating daemon..."
         cfy-agent daemons create {{ pm_options }}
+        if (!$?) {
+            Write-Output "Failed creating daemon (rc=$LASTEXITCODE)"
+            Exit 1
+        }
         Write-Output "Daemon created successfully"
     } else {
         Write-Output "Agent already created, skipping create agent."
@@ -93,10 +101,18 @@ function StartAgent()
 
     Write-Output "Configuring daemon..."
     cfy-agent daemons configure
+    if (!$?) {
+        Write-Output "Failed configuring daemon (rc=$LASTEXITCODE)"
+        Exit 1
+    }
     Write-Output "Daemon configured successfully"
 
     Write-Output "Starting daemon..."
     cfy-agent daemons start
+    if (!$?) {
+        Write-Output "Failed starting daemon (rc=$LASTEXITCODE)"
+        Exit 1
+    }
     Write-Output "Daemon started successfully"
 }
 {% endif %}
