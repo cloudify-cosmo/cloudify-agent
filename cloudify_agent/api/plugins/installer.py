@@ -234,7 +234,7 @@ class PluginInstaller(object):
                 'This probably means a previous deployment with the '
                 'same name was not cleaned properly.'
                 .format(plugin['name'], deployment_id))
-        self.logger.info('Installing plugin from source')
+        self.logger.info('Installing plugin from source: %s', plugin['name'])
         self._pip_install(source=source, args=args, constraint=constraint)
         shutil.move(tmp_plugin_dir, dst_dir)
 
@@ -292,7 +292,7 @@ class PluginInstaller(object):
         """Uninstall a previously installed plugin (only supports source
         plugins) """
         deployment_id = deployment_id or SYSTEM_DEPLOYMENT
-        self.logger.info('Uninstalling plugin from source')
+        self.logger.info('Uninstalling plugin from source: %s', plugin['name'])
         dst_dir = '{0}-{1}'.format(deployment_id, plugin['name'])
         dst_dir = self._full_dst_dir(dst_dir)
         if os.path.isdir(dst_dir):
