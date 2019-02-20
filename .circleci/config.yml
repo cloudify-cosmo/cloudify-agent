@@ -60,12 +60,6 @@ defaults:
       - run:
           name: Install tox, NOTICE we use an old version of tox for supporting py26
           command: sudo pip install tox==3.1.2 tox-pyenv
-      - run:
-          name: Run tox of specfic environment
-          command: tox -e $TOX_TEST
-      - run:
-          name: Push coverage data to codecov
-          command: bash <(curl -s https://codecov.io/bash) -F $TOX_TEST
 
 jobs:
   flake8:
@@ -95,5 +89,4 @@ workflows:
     jobs:
       - flake8
       - docs
-      - py26
       - py27
