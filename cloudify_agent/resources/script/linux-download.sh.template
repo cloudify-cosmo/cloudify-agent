@@ -16,7 +16,7 @@ download()
     SCRIPT_NAME=$1
 
     if command -v wget > /dev/null 2>&1; then
-        wget {{ link }} -O ${SCRIPT_NAME} --ca-certificate {{ ssl_cert_path }}
+        wget {{ link }} -O ${SCRIPT_NAME} -nv --ca-certificate {{ ssl_cert_path }}
     elif command -v curl > /dev/null 2>&1; then
         STATUS_CODE=$(curl -L -o ${SCRIPT_NAME} --write-out "%{http_code}" {{ link }} --cacert {{ ssl_cert_path }})
         if [ "${STATUS_CODE}" -ne "200" ] ; then
