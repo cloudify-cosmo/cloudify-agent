@@ -41,7 +41,7 @@ download()
 {
     echo "Downloading $1..."
     if command -v wget > /dev/null 2>&1; then
-        wget $1 -O $2 --header="{{ auth_token_header }}: {{ auth_token_value }}" --ca-certificate {{ ssl_cert_path }}
+        wget $1 -O $2 --header="{{ auth_token_header }}: {{ auth_token_value }}" -nv --ca-certificate {{ ssl_cert_path }}
     elif command -v curl > /dev/null 2>&1; then
         STATUS_CODE=$(curl -L -o $2 --write-out "%{http_code}" $1 -H "{{ auth_token_header }}: {{ auth_token_value }}" --cacert {{ ssl_cert_path }})
         if [ "${STATUS_CODE}" -ne "200" ] ; then
