@@ -182,7 +182,16 @@ class TestCreateAgentAmqp(BaseTest, unittest.TestCase):
                 node_name='host',
                 properties={'cloudify_agent': {}},
                 bootstrap_context=context.BootstrapContext({
-                    'cloudify_agent': {'networks': {'default': host}}}))
+                    'cloudify_agent': {
+                        'networks': {
+                            'default': {
+                                'manager': host,
+                                'brokers': [host],
+                            },
+                        },
+                    },
+                })
+            )
             current_ctx.set(mock)
             yield
         finally:

@@ -211,7 +211,7 @@ class CloudifyAgentConfig(dict):
         default_networks = ctx.bootstrap_context.cloudify_agent.networks
         networks = self.pop('networks', default_networks)
         if networks:
-            manager_ip = networks.get(self['network'])
+            manager_ip = networks.get(self['network'])['manager']
             if not manager_ip:
                 raise exceptions.AgentInstallerConfigurationError(
                     'The network associated with the agent (`{0}`) does not '
