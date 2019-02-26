@@ -63,8 +63,14 @@ class TestConfiguration(BaseTest, unittest.TestCase):
             agent_config={
                 'local': True,
                 'networks': {
-                    'default': 'localhost',
-                    network_name: manager_host
+                    'default': {
+                        'manager': 'localhost',
+                        'brokers': ['localhost'],
+                    },
+                    network_name: {
+                        'manager': manager_host,
+                        'brokers': [manager_host],
+                    },
                 },
                 'network': network_name
             },

@@ -551,7 +551,7 @@ def _parse_cluster_nodes(ctx, param, value):
         return
     network_name = ctx.params.get('network') or 'default'
     nodes = json_loads(base64.b64decode(value))
-    return [n['networks'][network_name] for n in nodes]
+    return [n['networks'][network_name]['manager'] for n in nodes]
 
 
 def get_manager_file_server_url(hostname, port):
