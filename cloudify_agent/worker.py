@@ -29,7 +29,8 @@ from cloudify_agent.api.factory import DaemonFactory
 from cloudify_rest_client.executions import Execution
 from cloudify_rest_client.exceptions import (
     CloudifyClientError,
-    InvalidExecutionUpdateStatus
+    InvalidExecutionUpdateStatus,
+    CloudifyLicenseError
 )
 
 from cloudify import dispatch, exceptions
@@ -456,7 +457,12 @@ def _resume_stuck_executions():
     admin_api_token = get_admin_api_token()
     rest_client = get_rest_client(tenant='default_tenant',
                                   api_token=admin_api_token)
-    tenants = rest_client.tenants.list()
+    try:
+        tenants = rest_client.tenants.list()
+    except CloudifyLicenseError:
+        logger.warning('No valid Cloudify license, could not resume'
+                       ' executions.')
+        return
     for tenant in tenants:
         tenant_client = get_rest_client(tenant=tenant.name,
                                         api_token=admin_api_token)
