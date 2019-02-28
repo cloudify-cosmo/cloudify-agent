@@ -384,9 +384,8 @@ class TestGetSourceAndGetArgs(BaseTest, unittest.TestCase):
         file_path = '/tmp/plugin-dir-name.zip'
         with patch('cloudify_agent.api.plugins.installer.ctx', **{
                 'download_resource.return_value': file_path}):
-                source = installer.get_plugin_source(
-                    plugin,
-                    blueprint_id='blueprint_id')
+            source = installer.get_plugin_source(plugin,
+                                                 blueprint_id='blueprint_id')
         prefix = 'file:///C:' if os.name == 'nt' else 'file://'
         expected = '{0}{1}'.format(prefix, file_path)
         self.assertEqual(expected, source)
