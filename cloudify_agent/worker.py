@@ -35,14 +35,11 @@ from cloudify_rest_client.exceptions import (
 from cloudify import dispatch, exceptions
 from cloudify.logs import setup_agent_logger
 from cloudify.models_states import ExecutionState
+from cloudify.utils import get_func, get_admin_api_token
 from cloudify.error_handling import serialize_known_exception
 from cloudify.state import current_workflow_ctx, workflow_ctx
 from cloudify.constants import MGMTWORKER_QUEUE, EVENTS_EXCHANGE_NAME
 from cloudify.manager import update_execution_status, get_rest_client
-
-from cloudify.utils import (get_func,
-                            get_admin_api_token,
-                            get_rest_token_by_user_id)
 from cloudify.amqp_client import (AMQPConnection,
                                   TaskConsumer,
                                   SendHandler,
@@ -105,12 +102,11 @@ class CloudifyOperationConsumer(TaskConsumer):
         )
 
     def handle_task(self, full_task):
-        execution_creator_id = full_task.get('execution_creator')
         task = full_task['cloudify_task']
         ctx = task['kwargs'].pop('__cloudify_context')
 
         if self.is_scheduled_execution(full_task):
-            self.handle_scheduled_execution(ctx, execution_creator_id)
+            self.handle_scheduled_execution(ctx['execution_id'])
 
             if not self.can_scheduled_execution_start(ctx['execution_id'],
                                                       ctx['tenant']['name']):
@@ -145,31 +141,11 @@ class CloudifyOperationConsumer(TaskConsumer):
         """
         return True if full_task.get('dlx_id') else False
 
-    def handle_scheduled_execution(self, ctx, execution_creator_id):
+    def handle_scheduled_execution(self, execution_id):
         # This is a scheduled task. It was sent to mgmtworker queue from a
         # temp queue using a dead-letter-exchange (dlx), need to delete them
-        execution_id = ctx['execution_id']
         self.delete_queue(execution_id + '_queue')
         self.delete_exchange(execution_id)
-
-        # Get new valid REST token (of the user who created the execution)
-        self.generate_valid_rest_token_and_put_in_ctx(ctx,
-                                                      execution_creator_id)
-
-    @staticmethod
-    def generate_valid_rest_token_and_put_in_ctx(ctx, execution_creator_id):
-        """
-        Create a rest client using the admin api token, use this rest client
-        to generate a valid REST token of the execution creator and put it
-        in the ctx.
-        :param execution_creator_id: the user id of the execution creator
-        """
-        admin_api_token = get_admin_api_token()
-        rest_client = get_rest_client(tenant='default_tenant',
-                                      api_token=admin_api_token)
-        user_rest_token = get_rest_token_by_user_id(rest_client,
-                                                    execution_creator_id)
-        ctx['rest_token'] = user_rest_token
 
     @staticmethod
     def can_scheduled_execution_start(execution_id, tenant):
@@ -178,7 +154,6 @@ class CloudifyOperationConsumer(TaskConsumer):
         start running. If it can't - it changes the executions status to
         QUEUED (so that it will automatically start running when possible)
         """
-
         api_token = get_admin_api_token()
         tenant_client = get_rest_client(tenant=tenant, api_token=api_token)
         if tenant_client.executions.should_start(execution_id):
@@ -240,7 +215,8 @@ class ServiceTaskConsumer(TaskConsumer):
         logger.info('Cancelling task {0}'.format(execution_id))
         self._operation_registry.cancel(execution_id)
 
-    def cancel_workflow_task(self, execution_id, rest_token, tenant):
+    def cancel_workflow_task(self, execution_id, rest_token, tenant,
+                             execution_token):
         logger.info('Cancelling workflow {0}'.format(execution_id))
 
         class CancelCloudifyContext(object):
@@ -250,6 +226,7 @@ class ServiceTaskConsumer(TaskConsumer):
                 self.tenant = tenant
                 self.tenant_name = tenant['name']
                 self.rest_token = rest_token
+                self.execution_token = execution_token
 
         with current_workflow_ctx.push(CancelCloudifyContext()):
             self._workflow_registry.cancel(execution_id)
