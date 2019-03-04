@@ -2,7 +2,6 @@ testtools
 mock==1.0.1
 unittest2
 FileServer
-https://github.com/cloudify-cosmo/cloudify-common/archive/5.0.dev1.zip
 pywinrm==0.3.0
 cryptography==2.1.4
 
