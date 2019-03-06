@@ -457,26 +457,26 @@ def _resume_stuck_executions():
     admin_api_token = get_admin_api_token()
     rest_client = get_rest_client(tenant='default_tenant',
                                   api_token=admin_api_token)
-    try:
-        tenants = rest_client.tenants.list()
-    except CloudifyLicenseError:
-        logger.warning('No valid Cloudify license, could not resume'
-                       ' executions.')
-        return
+    tenants = rest_client.tenants.list()
+
     for tenant in tenants:
         tenant_client = get_rest_client(tenant=tenant.name,
                                         api_token=admin_api_token)
-        for execution in tenant_client.executions.list(
-                status=ExecutionState.STARTED):
-            try:
-                tenant_client.executions.resume(execution.id)
-            except CloudifyClientError as e:
-                logger.warning('Could not resume execution {0} on '
-                               'tenant {1}: {2}'
-                               .format(execution.id, tenant.name, e))
-            else:
-                logger.info('Resuming execution {0} on tenant {1}'
-                            .format(execution.id, tenant.name))
+        try:
+            for execution in tenant_client.executions.list(
+                    status=ExecutionState.STARTED):
+                try:
+                    tenant_client.executions.resume(execution.id)
+                except CloudifyClientError as e:
+                    logger.warning('Could not resume execution {0} on '
+                                   'tenant {1}: {2}'
+                                   .format(execution.id, tenant.name, e))
+                else:
+                    logger.info('Resuming execution {0} on tenant {1}'
+                                .format(execution.id, tenant.name))
+        except CloudifyLicenseError:
+            logger.warning('No valid Cloudify license, could not resume'
+                           ' executions.')
 
 
 def make_amqp_worker(args):
