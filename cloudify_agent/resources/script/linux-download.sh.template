@@ -31,6 +31,9 @@ download()
 }
 
 # Create a temp directory and cd into it
+{% if tmpdir %}
+export TMPDIR={{ tmpdir }}
+{% endif %}
 cd $(mktemp -d)
 
 # If using `sudo` the script is running as a user, and there's no need
