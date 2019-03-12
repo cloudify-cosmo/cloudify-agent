@@ -56,7 +56,7 @@ class TestConfiguration(BaseTest, unittest.TestCase):
         )
         expected['rest_port'] = 80
         expected['rest_host'] = manager_host
-        expected['broker_ip'] = manager_host
+        expected['broker_ip'] = [manager_host]
         expected['network'] = 'test_network'
 
         self._test_prepare(
@@ -124,12 +124,13 @@ class TestConfiguration(BaseTest, unittest.TestCase):
         # This test needs to be adapted to security settings
         expected = {
             'agent_dir': agent_dir,
-            'process_management':
-                {'name': 'init.d' if os.name == 'posix' else 'nssm'},
+            'process_management': {
+                'name': 'init.d' if os.name == 'posix' else 'nssm'
+            },
             'basedir': basedir,
             'name': 'test_deployment',
             'rest_host': 'localhost',
-            'broker_ip': 'localhost',
+            'broker_ip': ['localhost'],
             'heartbeat': None,
             'queue': 'test_deployment',
             'envdir': envdir,

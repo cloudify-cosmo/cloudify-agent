@@ -134,6 +134,9 @@ class CloudifyAgentConfig(dict):
         self._set_name()
         self.setdefault('network', constants.DEFAULT_NETWORK_NAME)
         self._set_ips()
+        # Remove the networks dict as it's no longer needed
+        if 'networks' in self:
+            self.pop('networks')
         self.setdefault('node_instance_id', ctx.instance.id)
         self.setdefault('queue', self['name'])
         self.setdefault('rest_port',
@@ -207,12 +210,12 @@ class CloudifyAgentConfig(dict):
             name = ctx.instance.id
         self['name'] = name
 
-    def get_manager_ip(self):
+    def _get_network(self):
         default_networks = ctx.bootstrap_context.cloudify_agent.networks
-        networks = self.pop('networks', default_networks)
+        networks = self.get('networks', default_networks)
         if networks:
-            manager_ip = networks.get(self['network'])['manager']
-            if not manager_ip:
+            network = networks.get(self['network'])
+            if not network:
                 raise exceptions.AgentInstallerConfigurationError(
                     'The network associated with the agent (`{0}`) does not '
                     'appear in the list of manager networks assigned at '
@@ -221,13 +224,22 @@ class CloudifyAgentConfig(dict):
                 )
         else:
             # Might be getting here when working in local workflows (or tests)
-            manager_ip = cloudify_utils.get_manager_rest_service_host()
-        return manager_ip
+            rest_host_ip = cloudify_utils.get_manager_rest_service_host()
+            network = {
+                'manager': rest_host_ip,
+                'brokers': [rest_host_ip],
+            }
+        return network
+
+    def get_manager_ip(self):
+        return self._get_network()['manager']
+
+    def get_broker_ip(self):
+        return self._get_network()['brokers']
 
     def _set_ips(self):
-        manager_ip = self.get_manager_ip()
-        self['rest_host'] = manager_ip
-        self['broker_ip'] = manager_ip
+        self['rest_host'] = self.get_manager_ip()
+        self['broker_ip'] = self.get_broker_ip()
 
     def set_execution_params(self):
         self.setdefault('local', False)
