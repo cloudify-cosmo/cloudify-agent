@@ -88,7 +88,10 @@ class CloudifyAgentConfig(dict):
         """
 
         if new_agent:
-            self.update(_get_bootstrap_agent_config())  # BS context is 4th
+            # BS context is 5th (to be deprecated)
+            self.update(_get_bootstrap_agent_config())
+            # config stored on the mannager is the 4th
+            self.update(_get_stored_config())
             self.update(_get_node_properties())         # node props are 3rd
         self.update(_get_runtime_properties())      # runtime props are 2nd
         self.update(_get_agent_inputs(kwargs))      # inputs are 1st in order
@@ -434,6 +437,12 @@ def _get_bootstrap_agent_config():
     agent_context = ctx.bootstrap_context.cloudify_agent._cloudify_agent or {}
     agent_config = agent_context.copy()
     return _parse_extra_values(agent_config)
+
+
+def _get_stored_config():
+    return {
+        item.name: item.value for item in ctx.get_config(scope='agent')
+    }
 
 
 def _get_agent_config(params, params_location, allow_both_params=False):
