@@ -171,13 +171,11 @@ def _set_default_new_agent_config_values(old_agent, new_agent):
     new_agent['name'] = utils.internal.generate_new_agent_name(
         old_agent['name']
     )
-    # Set the broker IP explicitly to the current manager's IP
     new_agent['broker_ip'] = broker_hostname
     new_agent['old_agent_version'] = old_agent['version']
     new_agent['disable_requiretty'] = False
     new_agent['install_with_sudo'] = True
     new_agent['networks'] = ctx.bootstrap_context.cloudify_agent.networks
-    new_agent['cluster'] = ctx.bootstrap_context.cloudify_agent.cluster or []
 
 
 def _copy_values_from_old_agent_config(old_agent, new_agent):
