@@ -89,9 +89,13 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         )
 
     def _get_local_cert_content(self):
-        local_cert_path = os.path.expanduser(self._get_local_ssl_cert_path())
-        with open(local_cert_path, 'r') as f:
-            cert_content = f.read().strip()
+        local_cert_paths = self._get_local_ssl_cert_paths()
+        certs = []
+        for local_cert_path in local_cert_paths:
+            local_cert_path = os.path.expanduser(local_cert_path)
+            with open(local_cert_path, 'r') as f:
+                certs.append(f.read().strip())
+        cert_content = '\n'.join(certs)
         return cert_content
 
     def create_custom_env_file_on_target(self, environment):

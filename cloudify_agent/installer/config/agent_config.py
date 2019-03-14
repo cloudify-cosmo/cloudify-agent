@@ -137,6 +137,7 @@ class CloudifyAgentConfig(dict):
         self._set_name()
         self.setdefault('network', constants.DEFAULT_NETWORK_NAME)
         self._set_ips()
+        self._set_broker_cert()
         # Remove the networks dict as it's no longer needed
         if 'networks' in self:
             self.pop('networks')
@@ -154,6 +155,12 @@ class CloudifyAgentConfig(dict):
         self.setdefault('system_python', 'python')
         self.setdefault('heartbeat', None)
         self.setdefault('version', agent_utils.get_agent_version())
+
+    def _set_broker_cert(self):
+        self['broker_ssl_cert'] = '\n'.join(
+            broker['ca_cert_content'].strip() for broker in
+            ctx.get_brokers(network=self['network'])
+        )
 
     def _set_process_management(self, runner):
         """
