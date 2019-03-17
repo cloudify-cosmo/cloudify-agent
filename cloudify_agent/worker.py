@@ -30,7 +30,9 @@ from cloudify_rest_client.executions import Execution
 from cloudify_rest_client.exceptions import (
     CloudifyClientError,
     InvalidExecutionUpdateStatus,
-    CloudifyLicenseError
+    ExpiredCloudifyLicense,
+    MissingCloudifyLicense
+
 )
 
 from cloudify import dispatch, exceptions
@@ -458,7 +460,6 @@ def _resume_stuck_executions():
     rest_client = get_rest_client(tenant='default_tenant',
                                   api_token=admin_api_token)
     tenants = rest_client.tenants.list()
-
     for tenant in tenants:
         tenant_client = get_rest_client(tenant=tenant.name,
                                         api_token=admin_api_token)
@@ -474,7 +475,7 @@ def _resume_stuck_executions():
                 else:
                     logger.info('Resuming execution {0} on tenant {1}'
                                 .format(execution.id, tenant.name))
-        except CloudifyLicenseError:
+        except (ExpiredCloudifyLicense, MissingCloudifyLicense):
             logger.warning('No valid Cloudify license, could not resume'
                            ' executions.')
 
@@ -512,7 +513,6 @@ def main():
     _setup_logger(args.name)
     if not args.name:
         _resume_stuck_executions()
-
     worker = make_amqp_worker(args)
     worker.consume()
 
