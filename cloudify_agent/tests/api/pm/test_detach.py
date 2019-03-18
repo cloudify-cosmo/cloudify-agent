@@ -78,7 +78,7 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest, unittest.TestCase):
 
         # this should also disable the crontab entry
         daemon.stop()
-        self.wait_for_daemon_dead(daemon.queue)
+        self.wait_for_daemon_dead(daemon.queue, timeout=timeout)
 
         # sleep the cron delay time and make sure the daemon is still dead
         time.sleep(daemon.cron_respawn_delay * 60 + 20)

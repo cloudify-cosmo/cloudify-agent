@@ -97,9 +97,11 @@ export -f install_agent
 configure_virtualenv()
 {
     export_daemon_env
-    # configure command is run explicily as the virtualenv has not been "fixed"
+    # configure command is run explictly as the virtualenv has not been "fixed"
     # yet
+    echo "Configuring virtualenv..."
     ${AGENT_PYTHON_INTERPRETER} ${AGENT_CLI} configure --relocated-env
+    echo "Virtualenv configured successfully"
 }
 export -f configure_virtualenv
 
@@ -107,17 +109,21 @@ disable_requiretty()
 {
     {% if conf.disable_requiretty %}
         export_daemon_env
+        echo "Disabling TTY requirement for sudo..."
         cfy-agent configure --disable-requiretty --no-sudo
+        echo "TTY requirement for sudo disabled"
     {% else %}
-        echo "Skipping disable_requiretty part"
+        echo "Skipped disabling of TTY requirement"
     {% endif %}
 }
 export -f disable_requiretty
 
 configure_agent()
 {
+    echo "Configuring agent..."
     su {{ conf.user }} --shell /bin/bash -c "set -e; configure_virtualenv"
     disable_requiretty
+    echo "Agent configured successfully"
 }
 export -f configure_agent
 {% endif %}
@@ -146,15 +152,20 @@ start_daemon()
 {
     export_daemon_env
     if ! cfy-agent daemons list | grep -x "${CLOUDIFY_DAEMON_NAME}"; then
+        echo "Creating daemon..."
         cfy-agent daemons create {{ pm_options }}
+        echo "Daemon created successfully"
     else
         echo "Agent already created, skipping create agent."
     fi
 
-    cfy-agent daemons create {{ pm_options }}
-
+    echo "Configuring daemon..."
     cfy-agent daemons configure
+    echo "Daemon configured successfully"
+
+    echo "Starting daemon..."
     cfy-agent daemons start
+    echo "Daemon started successfully"
 }
 export -f start_daemon
 

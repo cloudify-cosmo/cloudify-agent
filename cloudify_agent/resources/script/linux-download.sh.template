@@ -45,7 +45,13 @@ add_ssl_cert
 su {{ user }} --shell /bin/bash -c "set -e; add_ssl_cert"
 {% endif %}
 
+log_file=/var/log/cloudify/agent-install.log
+echo "Creating directory: $(dirname ${log_file})"
+{{ sudo }} mkdir -p $(dirname ${log_file})
+
 download agent_installer.sh
 chmod +x ./agent_installer.sh
-{{ sudo }} ./agent_installer.sh
+echo "Executing agent installer, log will be written to ${log_file}"
+{{ sudo }} ./agent_installer.sh 2>&1 | {{ sudo }} tee ${log_file} > /dev/null
+echo "Agent installation completed"
 rm ./agent_installer.sh
