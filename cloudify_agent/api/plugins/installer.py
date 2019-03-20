@@ -236,6 +236,8 @@ class PluginInstaller(object):
                 .format(plugin['name'], deployment_id))
         self.logger.info('Installing plugin from source: %s', plugin['name'])
         self._pip_install(source=source, args=args, constraint=constraint)
+        self.logger.info('Moving the install dir from {0} to {1}'.format(
+            tmp_plugin_dir, dst_dir))
         shutil.move(tmp_plugin_dir, dst_dir)
 
     def _pip_freeze(self):
