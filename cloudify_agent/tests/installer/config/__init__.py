@@ -19,6 +19,15 @@ from cloudify.context import BootstrapContext
 from cloudify.mocks import MockCloudifyContext
 
 
+def mock_get_brokers(*args, **kwargs):
+    return [
+        {
+            'host': '127.0.0.1',
+            'ca_cert_content': '',
+        },
+    ]
+
+
 def mock_context(agent_properties=None,
                  agent_runtime_properties=None,
                  agent_context=None):
@@ -40,5 +49,6 @@ def mock_context(agent_properties=None,
             bootstrap_context={'cloudify_agent': agent_context})
     )
     context.installer = MagicMock()
+    context.get_brokers = mock_get_brokers
     context._get_current_object = lambda: context
     return context
