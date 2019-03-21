@@ -131,6 +131,7 @@ class TestConfiguration(BaseTest, unittest.TestCase):
             'name': 'test_deployment',
             'rest_host': 'localhost',
             'broker_ip': ['localhost'],
+            'broker_ssl_cert': '',
             'heartbeat': None,
             'queue': 'test_deployment',
             'envdir': envdir,

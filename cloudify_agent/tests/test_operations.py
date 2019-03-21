@@ -36,7 +36,10 @@ from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 
 from cloudify_agent.tests import agent_ssl_cert
 from cloudify_agent.tests import BaseTest, resources, agent_package
-from cloudify_agent.tests.installer.config import mock_context
+from cloudify_agent.tests.installer.config import (
+    mock_context,
+    mock_get_brokers,
+)
 from cloudify_agent.tests.utils import FileServer
 
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
@@ -192,11 +195,14 @@ class TestCreateAgentAmqp(BaseTest, unittest.TestCase):
                     },
                 })
             )
+            mock.get_brokers = mock_get_brokers
             current_ctx.set(mock)
             yield
         finally:
             current_ctx.set(old_context)
 
+    @patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())
+    @patch('cloudify.utils.ctx', mock_context())
     def test_create_agent_dict(self):
         with self._set_context(host='10.0.4.48'):
             old_agent = self._create_agent()
