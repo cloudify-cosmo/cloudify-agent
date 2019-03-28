@@ -28,7 +28,7 @@ from cloudify import mocks
 from cloudify.state import current_ctx
 from cloudify.workflows import local
 from cloudify.amqp_client import get_client
-from cloudify.tests.mocks.mock_rest_client import MockRestclient
+from cloudify.test_utils.mocks.mock_rest_client import MockRestclient
 
 from cloudify_agent import operations
 from cloudify_agent.api import utils

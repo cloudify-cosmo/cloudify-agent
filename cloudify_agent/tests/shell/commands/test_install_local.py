@@ -23,7 +23,8 @@ from mock import patch
 from cloudify import ctx
 from cloudify.utils import LocalCommandRunner
 from cloudify.state import current_ctx
-from cloudify.tests.mocks.mock_rest_client import MockRestclient
+from cloudify.test_utils.mocks.mock_rest_client import MockRestclient
+
 from cloudify_agent.tests import BaseTest, agent_package, agent_ssl_cert
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
