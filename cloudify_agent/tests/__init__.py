@@ -29,7 +29,6 @@ from cloudify.amqp_client import get_client
 from cloudify_agent.api import utils as agent_utils
 from cloudify_agent.api.defaults import (SSL_CERTS_TARGET_DIR,
                                          AGENT_SSL_CERT_FILENAME)
-from cloudify_agent.tests.installer.config import mock_get_brokers
 
 try:
     win_error = WindowsError
@@ -146,7 +145,6 @@ class BaseTest(object):
 
     def mock_ctx_with_tenant(self):
         self.original_ctx = current_ctx
-        current_ctx.get_brokers = mock_get_brokers
         current_ctx.set(mocks.MockContext({'tenant_name': 'default_tenant'}))
         self.addCleanup(self._restore_ctx)
 

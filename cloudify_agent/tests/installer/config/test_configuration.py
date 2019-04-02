@@ -57,15 +57,15 @@ class TestConfiguration(BaseTest, unittest.TestCase):
         expected['rest_port'] = 80
         expected['rest_host'] = manager_host
         expected['broker_ip'] = [manager_host]
-        expected['network'] = 'test_network'
+        expected['network'] = network_name
 
         self._test_prepare(
             agent_config={
                 'local': True,
                 'networks': {
                     'default': {
-                        'manager': 'localhost',
-                        'brokers': ['localhost'],
+                        'manager': manager_host,
+                        'brokers': [manager_host],
                     },
                     network_name: {
                         'manager': manager_host,
@@ -74,7 +74,22 @@ class TestConfiguration(BaseTest, unittest.TestCase):
                 },
                 'network': network_name
             },
-            expected_values=expected
+            expected_values=expected,
+            context={
+                'managers': [{
+                    'networks': {
+                        'default': manager_host,
+                        network_name: manager_host
+                    },
+                }],
+                'brokers': [{
+                    'networks': {
+                        'default': manager_host,
+                        network_name: manager_host
+                    },
+                    'ca_cert_content': '',
+                }]
+            }
         )
 
     @staticmethod
@@ -106,14 +121,7 @@ class TestConfiguration(BaseTest, unittest.TestCase):
         cloudify_agent.set_initial_values(True, agent_config={'local': True})
         self.assertEqual(cloudify_agent['ssl_cert_path'], '/tmp/blabla')
 
-    @patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())
-    @patch('cloudify.utils.ctx', mock_context())
-    def _test_prepare(self, agent_config, expected_values):
-        cloudify_agent = CloudifyAgentConfig()
-        cloudify_agent.set_initial_values(True, agent_config=agent_config)
-        cloudify_agent.set_execution_params()
-        cloudify_agent.set_default_values()
-        cloudify_agent.set_installation_params(None)
+    def _test_prepare(self, agent_config, expected_values, context=None):
 
         user = getpass.getuser()
         basedir = utils.get_home_dir(user)
@@ -155,4 +163,13 @@ class TestConfiguration(BaseTest, unittest.TestCase):
         expected.update(expected_values)
 
         self.maxDiff = None
-        self.assertDictEqual(expected, cloudify_agent)
+        context = context or {}
+        ctx = mock_context(**context)
+        with patch('cloudify_agent.installer.config.agent_config.ctx', ctx), \
+                patch('cloudify.utils.ctx', mock_context()):
+            cloudify_agent = CloudifyAgentConfig()
+            cloudify_agent.set_initial_values(True, agent_config=agent_config)
+            cloudify_agent.set_execution_params()
+            cloudify_agent.set_default_values()
+            cloudify_agent.set_installation_params(None)
+            self.assertDictEqual(expected, cloudify_agent)
