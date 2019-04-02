@@ -167,6 +167,7 @@ class CloudifyOperationConsumer(TaskConsumer):
 class CloudifyWorkflowConsumer(CloudifyOperationConsumer):
     routing_key = 'workflow'
     handler = dispatch.WorkflowHandler
+    late_ack = True
 
 
 class ServiceTaskConsumer(TaskConsumer):
