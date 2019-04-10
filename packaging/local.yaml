@@ -1,0 +1,4 @@
+python_path: /usr/bin/python
+cloudify_agent_module: .
+requirements_file: dev-requirements.txt
+keep_virtualenv: true

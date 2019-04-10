@@ -68,6 +68,51 @@ defaults:
           command: bash <(curl -s https://codecov.io/bash) -F $TOX_TEST
 
 jobs:
+  # build the agent, and a rpm containing this single agent, in CI.
+  # This can then be used in the cloudify-manager-install's CI, so that
+  # in the sanity-check there, the agent built here from branch is used
+  build_agent:
+    docker:
+      - image: centos:7
+    steps:
+      - checkout
+      - run: curl -O https://bootstrap.pypa.io/get-pip.py
+      - run: python get-pip.py
+      - run: yum install -y python-devel git gcc gcc-c++
+      - run: pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip
+      - run: cfy-ap -c packaging/local.yaml -f -v
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - centos-Core-agent.tar.gz
+
+  build_rpm:
+    docker:
+      - image: rpmbuild/centos7
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/rpm
+      - run: sudo chmod a+wx /opt
+      - run:
+          name: Prepare rpm-building environment
+          command: |
+            curl -o ~/rpm/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
+            mkdir -p ~/rpm/packaging/agents/ ;
+            curl -o ~/rpm/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
+            curl -O https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/version_info ;
+            cat version_info >> $BASH_ENV
+      - run:
+          name: Building a CI agent rpm
+          command: |
+            rpmbuild \
+              -D "CLOUDIFY_VERSION ${CLOUDIFY_VERSION}" \
+              -D "CLOUDIFY_PACKAGE_RELEASE ${CLOUDIFY_PACKAGE_RELEASE}" \
+              -bb ~/rpm/cloudify-agents.spec
+      - store_artifacts:
+          path: ~/rpm/noarch/
+          destination: result
+
   flake8:
     <<: *test_defaults
     environment:
@@ -97,3 +142,7 @@ workflows:
       - docs
       - py26
       - py27
+      - build_agent
+      - build_rpm:
+          requires:
+            - build_agent
