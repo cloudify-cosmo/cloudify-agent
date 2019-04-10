@@ -24,7 +24,6 @@ from cloudify import exceptions
 from cloudify_agent.installer import script
 from cloudify_agent.tests import BaseTest, utils, agent_ssl_cert
 from cloudify_agent.tests.api.pm import only_os
-from cloudify_agent.tests.installer.config import mock_get_brokers
 
 
 class BaseInstallScriptTest(BaseTest, unittest.TestCase):
@@ -58,7 +57,6 @@ class BaseInstallScriptTest(BaseTest, unittest.TestCase):
         }
         node_properties['agent_config'].update(**override_properties)
         ctx = MockCloudifyContext(node_id='d', properties=node_properties)
-        ctx.get_brokers = mock_get_brokers
         current_ctx.set(ctx)
 
     def _get_install_script(self, add_ssl_cert=True):

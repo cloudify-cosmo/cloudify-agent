@@ -148,7 +148,7 @@ class AgentInstaller(object):
             env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
             env.CLOUDIFY_REST_HOST: manager_ip,
             env.CLOUDIFY_BROKER_IP: ','.join(
-                broker['host'] for broker in
+                broker.networks[network] for broker in
                 ctx.get_brokers(network=network)
             ),
 

@@ -21,7 +21,6 @@ from contextlib import contextmanager
 from mock import patch, MagicMock
 
 from cloudify import constants
-from cloudify import context
 from cloudify import ctx
 from cloudify import mocks
 
@@ -38,7 +37,6 @@ from cloudify_agent.tests import agent_ssl_cert
 from cloudify_agent.tests import BaseTest, resources, agent_package
 from cloudify_agent.tests.installer.config import (
     mock_context,
-    mock_get_brokers,
 )
 from cloudify_agent.tests.utils import FileServer
 
@@ -184,25 +182,18 @@ class TestCreateAgentAmqp(BaseTest, unittest.TestCase):
                 runtime_properties=properties,
                 node_name='host',
                 properties={'cloudify_agent': {}},
-                bootstrap_context=context.BootstrapContext({
-                    'cloudify_agent': {
-                        'networks': {
-                            'default': {
-                                'manager': host,
-                                'brokers': [host],
-                            },
-                        },
-                    },
-                })
+                brokers=[{
+                    'networks': {'default': host}
+                }],
+                managers=[{
+                    'networks': {'default': host}
+                }]
             )
-            mock.get_brokers = mock_get_brokers
             current_ctx.set(mock)
             yield
         finally:
             current_ctx.set(old_context)
 
-    @patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())
-    @patch('cloudify.utils.ctx', mock_context())
     def test_create_agent_dict(self):
         with self._set_context(host='10.0.4.48'):
             old_agent = self._create_agent()

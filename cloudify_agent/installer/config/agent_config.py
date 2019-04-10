@@ -158,8 +158,9 @@ class CloudifyAgentConfig(dict):
 
     def _set_broker_cert(self):
         self['broker_ssl_cert'] = '\n'.join(
-            broker['ca_cert_content'].strip() for broker in
+            broker.ca_cert_content.strip() for broker in
             ctx.get_brokers(network=self['network'])
+            if broker.ca_cert_content
         )
 
     def _set_process_management(self, runner):
@@ -220,32 +221,15 @@ class CloudifyAgentConfig(dict):
             name = ctx.instance.id
         self['name'] = name
 
-    def _get_network(self):
-        default_networks = ctx.bootstrap_context.cloudify_agent.networks
-        networks = self.get('networks', default_networks)
-        if networks:
-            network = networks.get(self['network'])
-            if not network:
-                raise exceptions.AgentInstallerConfigurationError(
-                    'The network associated with the agent (`{0}`) does not '
-                    'appear in the list of manager networks assigned at '
-                    'bootstrap ({1})'.format(self['network'],
-                                             ', '.join(networks))
-                )
-        else:
-            # Might be getting here when working in local workflows (or tests)
-            rest_host_ip = cloudify_utils.get_manager_rest_service_host()
-            network = {
-                'manager': rest_host_ip,
-                'brokers': [rest_host_ip],
-            }
-        return network
-
     def get_manager_ip(self):
-        return self._get_network()['manager']
+        managers = [manager.networks[self['network']]
+                    for manager in ctx.get_managers(network=self['network'])]
+        # TODO make the agent work with multiple managers here
+        return managers[0]
 
     def get_broker_ip(self):
-        return self._get_network()['brokers']
+        return [broker.networks[self['network']]
+                for broker in ctx.get_brokers(network=self['network'])]
 
     def _set_ips(self):
         self['rest_host'] = self.get_manager_ip()
