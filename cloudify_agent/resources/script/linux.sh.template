@@ -137,13 +137,15 @@ create_custom_env_file()
 {
     {% if custom_env is not none %}
     cat <<EOF > {{ custom_env_path }}
+{% if conf.process_management.name == 'init.d' -%}
 #!/bin/bash
+{% endif %}
 {% for env_key, env_value in custom_env.iteritems() %}
-export {{ env_key }}="{{ env_value }}"
+{% if conf.process_management.name == 'init.d' %}export {% endif %}{{ env_key }}="{{ env_value }}"
 {% endfor %}
 EOF
     {% else %}
-        echo "No custom env configured"
+	echo "No custom env configured"
     {% endif %}
 }
 export -f create_custom_env_file
