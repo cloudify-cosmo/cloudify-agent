@@ -149,7 +149,7 @@ class TestConfiguration(BaseTest, unittest.TestCase):
             'disable_requiretty': True,
             'env': {},
             'fabric_env': {},
-            'max_workers': 20,
+            'max_workers': 5,
             'min_workers': 0,
             'workdir': workdir,
             'broker_ssl_cert_path': os.environ[constants.BROKER_SSL_CERT_PATH],
@@ -158,7 +158,9 @@ class TestConfiguration(BaseTest, unittest.TestCase):
             'bypass_maintenance': False,
             'network': 'default',
             'version': utils.get_agent_version(),
-            'node_instance_id': 'test_node'
+            'node_instance_id': 'test_node',
+            'log_max_bytes': 5242880,
+            'log_max_history': 7
         }
         expected.update(expected_values)
 
