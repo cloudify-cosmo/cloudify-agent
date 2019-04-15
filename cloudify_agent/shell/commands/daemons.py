@@ -22,6 +22,10 @@ from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.shell import env
 from cloudify_agent.shell.decorators import handle_failures
 
+from cloudify.utils import (ENV_CFY_EXEC_TEMPDIR,
+                            ENV_AGENT_LOG_MAX_BYTES,
+                            ENV_AGENT_LOG_MAX_HISTORY)
+
 
 @click.command(context_settings=dict(ignore_unknown_options=True))
 @click.option('--process-management',
@@ -177,6 +181,16 @@ from cloudify_agent.shell.decorators import handle_failures
                    .format(env.CLOUDIFY_CLUSTER_NODES),
               envvar=env.CLOUDIFY_CLUSTER_NODES,
               callback=api_utils._parse_cluster_nodes)
+@click.option('--executable-temp-path',
+              help='Alternative path for temporary executable files',
+              envvar=ENV_CFY_EXEC_TEMPDIR)
+@click.option('--log-max-bytes',
+              help='Maximum size (in bytes) of a log file before it rolls '
+                   'over',
+              envvar=ENV_AGENT_LOG_MAX_BYTES)
+@click.option('--log-max-history',
+              help='Maximum number of historical log files to keep',
+              envvar=ENV_AGENT_LOG_MAX_HISTORY)
 # this is defined in order to allow passing any kind of option to the
 # command line. in order to support creating daemons of different kind via
 # the same command line. this argument is parsed as keyword arguments which

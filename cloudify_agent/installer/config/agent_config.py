@@ -23,6 +23,7 @@ from posixpath import join as posix_join
 
 from cloudify_agent.installer import exceptions
 from cloudify_agent.api import utils as agent_utils
+from cloudify_agent.api import defaults
 
 from cloudify import ctx
 from cloudify import constants
@@ -129,7 +130,7 @@ class CloudifyAgentConfig(dict):
     @property
     def tmpdir(self):
         try:
-            return self['env'][cloudify_utils.CFY_EXEC_TEMPDIR_ENVVAR]
+            return self['env'][cloudify_utils.ENV_CFY_EXEC_TEMPDIR]
         except KeyError:
             return None
 
@@ -147,14 +148,16 @@ class CloudifyAgentConfig(dict):
                         cloudify_utils.get_manager_rest_service_port())
         self.setdefault('bypass_maintenance',
                         cloudify_utils.get_is_bypass_maintenance())
-        self.setdefault('min_workers', 0)
-        self.setdefault('max_workers', 20)
+        self.setdefault('min_workers', defaults.MIN_WORKERS)
+        self.setdefault('max_workers', defaults.MAX_WORKERS)
         self.setdefault('disable_requiretty', True)
         self.setdefault('env', {})
         self.setdefault('fabric_env', {})
         self.setdefault('system_python', 'python')
         self.setdefault('heartbeat', None)
         self.setdefault('version', agent_utils.get_agent_version())
+        self.setdefault('log_max_bytes', defaults.LOG_FILE_SIZE)
+        self.setdefault('log_max_history', defaults.LOG_BACKUPS)
 
     def _set_broker_cert(self):
         self['broker_ssl_cert'] = '\n'.join(
