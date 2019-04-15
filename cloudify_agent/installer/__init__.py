@@ -31,7 +31,10 @@ from cloudify_agent.installer.runners.local_runner import LocalCommandRunner
 from cloudify.utils import (get_tenant,
                             setup_logger,
                             get_rest_token,
-                            get_is_bypass_maintenance)
+                            get_is_bypass_maintenance,
+                            ENV_CFY_EXEC_TEMPDIR,
+                            ENV_AGENT_LOG_MAX_BYTES,
+                            ENV_AGENT_LOG_MAX_HISTORY)
 
 from cloudify_agent.shell import env
 from cloudify_agent.api import utils, defaults
@@ -186,7 +189,12 @@ class AgentInstaller(object):
             ),
             env.CLOUDIFY_CLUSTER_NODES: base64.b64encode(json.dumps(
                 self.cloudify_agent.get('cluster', []))),
-            env.CLOUDIFY_NETWORK_NAME: network
+            env.CLOUDIFY_NETWORK_NAME: network,
+            ENV_CFY_EXEC_TEMPDIR: self.cloudify_agent.get(
+                'executable_temp_path'),
+            ENV_AGENT_LOG_MAX_BYTES: self.cloudify_agent.get('log_max_bytes'),
+            ENV_AGENT_LOG_MAX_HISTORY: self.cloudify_agent.get(
+                'log_max_history')
         }
 
         execution_env = utils.purge_none_values(execution_env)
