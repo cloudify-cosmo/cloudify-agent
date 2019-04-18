@@ -43,10 +43,6 @@ defaults:
     steps:
       - checkout
       - run:
-          name: Install and set python version with pyenv
-          command: |
-                   apt-get install -y build-essential zlib1g-dev xz-utils
-      - run:
           name: Install and run cron
           command: apt-get install cron
       - run:
