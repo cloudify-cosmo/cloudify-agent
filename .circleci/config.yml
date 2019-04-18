@@ -38,19 +38,14 @@ defaults:
     # We use specifically this python image version, because there is a conflicting change in the latest python image
     # that wrongly influence them.
     docker:
-      - image: circleci/python:2.7.14
+      - image: dockershelf/python:2.6
       - image: rabbitmq:3.7.7
     steps:
       - checkout
       - run:
           name: Install and set python version with pyenv
           command: |
-                   git clone https://github.com/yyuu/pyenv.git ~/.pyenv
-                   export PYENV_ROOT="$HOME/.pyenv"
-                   export PATH="$PYENV_ROOT/bin:$PATH"
                    sudo apt-get install -y build-essential zlib1g-dev xz-utils
-                   pyenv install 2.6.9
-                   pyenv local 2.6.9
       - run:
           name: Install and run cron
           command: sudo apt-get install cron
