@@ -45,16 +45,16 @@ defaults:
       - run:
           name: Install and set python version with pyenv
           command: |
-                   sudo apt-get install -y build-essential zlib1g-dev xz-utils
+                   apt-get install -y build-essential zlib1g-dev xz-utils
       - run:
           name: Install and run cron
-          command: sudo apt-get install cron
+          command: apt-get install cron
       - run:
           name: Run cron–
-          command: sudo /etc/init.d/cron start
+          command: /etc/init.d/cron start
       - run:
           name: Install tox, NOTICE we use an old version of tox for supporting py26
-          command: sudo pip install tox==3.1.2 tox-pyenv
+          command: pip install --user tox==3.1.2 tox-pyenv
       - run:
           name: Run tox of specfic environment
           command: tox -e $TOX_TEST
