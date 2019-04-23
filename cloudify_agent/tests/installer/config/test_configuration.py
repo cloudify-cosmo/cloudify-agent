@@ -159,6 +159,7 @@ class TestConfiguration(BaseTest, unittest.TestCase):
             'network': 'default',
             'version': utils.get_agent_version(),
             'node_instance_id': 'test_node',
+            'log_level': 'info',
             'log_max_bytes': 5242880,
             'log_max_history': 7
         }

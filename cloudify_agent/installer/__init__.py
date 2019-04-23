@@ -33,6 +33,7 @@ from cloudify.utils import (get_tenant,
                             get_rest_token,
                             get_is_bypass_maintenance,
                             ENV_CFY_EXEC_TEMPDIR,
+                            ENV_AGENT_LOG_LEVEL,
                             ENV_AGENT_LOG_MAX_BYTES,
                             ENV_AGENT_LOG_MAX_HISTORY)
 
@@ -192,6 +193,7 @@ class AgentInstaller(object):
             env.CLOUDIFY_NETWORK_NAME: network,
             ENV_CFY_EXEC_TEMPDIR: self.cloudify_agent.get(
                 'executable_temp_path'),
+            ENV_AGENT_LOG_LEVEL: self.cloudify_agent.get('log_level'),
             ENV_AGENT_LOG_MAX_BYTES: self.cloudify_agent.get('log_max_bytes'),
             ENV_AGENT_LOG_MAX_HISTORY: self.cloudify_agent.get(
                 'log_max_history')

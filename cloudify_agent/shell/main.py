@@ -31,8 +31,9 @@ from cloudify_agent.shell.commands import configure
 
 
 _logger = setup_logger('cloudify_agent.shell.main',
-                       logger_format='%(message)s',
-                       logger_level=logging.INFO)
+                       logger_format='%(asctime)s [%(levelname)-5s] '
+                                     '[%(name)s] %(message)s',
+                       logger_level=logging.DEBUG)
 
 
 def get_logger():
