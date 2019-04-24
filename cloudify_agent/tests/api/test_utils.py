@@ -64,7 +64,7 @@ class TestUtils(BaseTest, unittest.TestCase):
                         local_rest_cert_file=self._rest_cert_path)
         daemon_json = utils.internal.daemon_to_dict(daemon)
         self.assertEqual(daemon_json['rest_host'], '127.0.0.1')
-        self.assertEqual(daemon_json['broker_ip'], '127.0.0.1')
+        self.assertEqual(daemon_json['broker_ip'], ['127.0.0.1'])
         self.assertEqual(daemon_json['name'], 'name')
         self.assertEqual(daemon_json['queue'], 'queue')
 
