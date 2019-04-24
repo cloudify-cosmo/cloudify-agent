@@ -210,7 +210,13 @@ class Daemon(object):
         # Mandatory parameters
         self.validate_mandatory()
         self.rest_host = params['rest_host']
-        self.broker_ip = params['broker_ip']
+        if isinstance(params['broker_ip'], basestring):
+            self.broker_ip = params['broker_ip'].split(',')
+        else:
+            # We appear to sometimes invoke this with the params already
+            # having been processed, so if it's not a string then we will
+            # treat it as already having been split.
+            self.broker_ip = params['broker_ip']
         self.local_rest_cert_file = params['local_rest_cert_file']
         self.cluster = params.get('cluster', [])
 
