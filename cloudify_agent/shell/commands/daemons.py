@@ -23,6 +23,7 @@ from cloudify_agent.shell import env
 from cloudify_agent.shell.decorators import handle_failures
 
 from cloudify.utils import (ENV_CFY_EXEC_TEMPDIR,
+                            ENV_AGENT_LOG_LEVEL,
                             ENV_AGENT_LOG_MAX_BYTES,
                             ENV_AGENT_LOG_MAX_HISTORY)
 
@@ -150,8 +151,8 @@ from cloudify.utils import (ENV_CFY_EXEC_TEMPDIR,
               envvar=env.CLOUDIFY_DAEMON_MAX_WORKERS)
 @click.option('--log-level',
               help='Log level of the daemon. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_LOG_LEVEL),
-              envvar=env.CLOUDIFY_DAEMON_LOG_LEVEL)
+              .format(ENV_AGENT_LOG_LEVEL),
+              envvar=ENV_AGENT_LOG_LEVEL)
 @click.option('--pid-file',
               help='Path to a location where the daemon pid file will be '
                    'stored. [env {0}]'

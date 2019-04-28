@@ -13,8 +13,10 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import copy
 import getpass
 import json
+import logging
 import os
 import time
 
@@ -203,6 +205,12 @@ class Daemon(object):
 
         # save params
         self._params = params
+
+        if self._logger.isEnabledFor(logging.DEBUG):
+            printed_params = copy.deepcopy(self._params)
+            printed_params.pop('broker_pass', None)
+            self._logger.debug("Daemon attributes: %s", json.dumps(
+                printed_params, indent=4))
 
         # configure command runner
         self._runner = LocalCommandRunner(logger=self._logger)

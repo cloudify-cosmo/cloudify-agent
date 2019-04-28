@@ -156,6 +156,7 @@ class CloudifyAgentConfig(dict):
         self.setdefault('system_python', 'python')
         self.setdefault('heartbeat', None)
         self.setdefault('version', agent_utils.get_agent_version())
+        self.setdefault('log_level', defaults.LOG_LEVEL)
         self.setdefault('log_max_bytes', defaults.LOG_FILE_SIZE)
         self.setdefault('log_max_history', defaults.LOG_BACKUPS)
 
