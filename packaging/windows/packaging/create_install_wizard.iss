@@ -16,7 +16,7 @@ AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
-DefaultDirName={pf}\Cloudify
+DefaultDirName={pf64}\Cloudify Agents
 DisableProgramGroupPage=yes
 OutputBaseFilename=cloudify-windows-agent_{#AppVersion}-{#AppMilestone}
 Compression=lzma
@@ -27,6 +27,7 @@ MinVersion=6.0
 SetupIconFile=source\icons\Cloudify.ico
 UninstallDisplayIcon={app}\Cloudify.ico
 OutputDir=output\
+SetupLogging=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -61,13 +62,25 @@ const
   infoPythonUninstall = 'Cloudify uninstaller will not remove Python as a safety precaution. Uninstalling Python should be done independently by the user.';
 
 
+function BoolToStr(Value: Boolean): String;
+begin
+  if Value then
+    Result := 'Yes'
+  else
+    Result := 'No';
+end;
+
+
 function getPythonDir(): String;
 var
   InstallPath: String;
 begin
-  RegQueryStringValue(HKLM, RegPythonPath, '', InstallPath);
-  RegQueryStringValue(HKCU, RegPythonPath, '', InstallPath);
+  RegQueryStringValue(HKLM64, RegPythonPath, '', InstallPath);
+  Log('InstallPath after HKLM: ' + InstallPath);
+  RegQueryStringValue(HKCU64, RegPythonPath, '', InstallPath);
+  Log('InstallPath after HKCU: ' + InstallPath);
   Result := InstallPath;
+  Log('InstallPath final: ' + Result);
 end;
 
 
@@ -77,6 +90,7 @@ begin
       Result := True
   else
       Result := False;
+  Log('isPythonInstalled result: ' + BoolToStr(Result));
 end;
 
 
@@ -86,9 +100,11 @@ var
 begin
   if isPythonInstalled then begin
     PythonPath := AddBackslash(getPythonDir) + 'python.exe';
+    Log('Checking PythonPath: ' + PythonPath);
     if FileExists(PythonPath) then
       Result := PythonPath
   end;
+  Log('getPythonPath result: ' + Result);
 end;
 
 
@@ -100,9 +116,10 @@ var
 begin
   ExtractTemporaryFile('python.msi');
   InstallerPath := Expandconstant('{tmp}\python.msi');
-  PythonArgs := 'ADDDEFAULT=pip_feature';
+  PythonArgs := 'ADDDEFAULT=pip_feature TARGETDIR="' + Expandconstant('{sd}\Python27x64') + '"';
   if WizardSilent then
     PythonArgs := PythonArgs + ' /qn';
+  Log('Running: ' + InstallerPath + ' ' + PythonArgs);
   ShellExec('', InstallerPath, PythonArgs, '', SW_SHOW, ewWaituntilterminated, ErrorCode);
 
   if Errorcode <> 0 then
@@ -118,9 +135,11 @@ var
 begin
   if isPythonInstalled then begin
     PipPath := AddBackslash(getPythonDir) + 'Scripts\pip.exe';
+    Log('Checking PipPath: ' + PipPath);
     if FileExists(PipPath) then
       Result := PipPath
   end;
+  Log('getPipPath result: ' + Result);
 end;
 
 
@@ -130,6 +149,7 @@ begin
       Result := True
   else
       Result := False;
+  Log('isPipInstalled result: ' + BoolToStr(Result));
 end;
 
 
@@ -158,9 +178,11 @@ var
 begin
   if isPythonInstalled then begin
     VenvPath := AddBackslash(getPythonDir) + 'Scripts\virtualenv.exe';
+    Log('Checking VenvPath: ' + VenvPath);
     if FileExists(VenvPath) then
       Result := VenvPath
   end;
+  Log('getVenvPath result: ' + Result);
 end;
 
 
@@ -170,6 +192,7 @@ begin
       Result := True
   else
       Result := False;
+  Log('isVenvInstalled result: ' + BoolToStr(Result));
 end;
 
 
