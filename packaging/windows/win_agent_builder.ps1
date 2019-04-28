@@ -35,7 +35,7 @@ function preparation () {
         Invoke-RestMethod -Uri http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/get-pip.py -OutFile pip\get-pip.py
         Invoke-RestMethod -Uri http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/pip-6.1.1-py2.py3-none-any.whl -OutFile pip\pip-6.1.1-py2.py3-none-any.whl
         Invoke-RestMethod -Uri http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/setuptools-15.2-py2.py3-none-any.whl -OutFile pip\setuptools-15.2-py2.py3-none-any.whl
-        Invoke-RestMethod -Uri http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/python.msi -OutFile python\python.msi
+        Invoke-RestMethod -Uri http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/python-2.7.9.amd64.msi -OutFile python\python.msi
         Invoke-RestMethod -Uri http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/virtualenv-15.1.0-py2.py3-none-any.whl -OutFile virtualenv\virtualenv-15.1.0-py2.py3-none-any.whl
     popd
 }
