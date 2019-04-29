@@ -93,5 +93,4 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             log_max_history=self.log_max_history,
             name=self.name,
             executable_temp_path=self.executable_temp_path,
-            cluster_settings_path=self.cluster_settings_path
         )

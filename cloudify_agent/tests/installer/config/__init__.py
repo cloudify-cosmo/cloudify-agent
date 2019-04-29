@@ -17,6 +17,7 @@ from mock import MagicMock
 
 from cloudify.context import BootstrapContext
 from cloudify.mocks import MockCloudifyContext
+from cloudify_agent.tests import agent_ssl_cert
 
 
 def mock_context(agent_properties=None,
@@ -37,6 +38,18 @@ def mock_context(agent_properties=None,
         'rest_token': 'test_token',
         'properties': {'cloudify_agent': agent_properties},
         'runtime_properties': {'cloudify_agent': agent_runtime_properties},
+        'managers': [
+            {
+                'networks': {'default': '127.0.0.1'},
+                'ca_cert_content': agent_ssl_cert.DUMMY_CERT
+            }
+        ],
+        'brokers': [
+            {
+                'networks': {'default': '127.0.0.1'},
+                'ca_cert_content': agent_ssl_cert.DUMMY_CERT
+            }
+        ],
         'bootstrap_context': BootstrapContext(
             bootstrap_context={'cloudify_agent': agent_context})
     }

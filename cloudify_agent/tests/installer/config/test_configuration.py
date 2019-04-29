@@ -25,6 +25,7 @@ from cloudify_agent.api import utils
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests.installer.config import mock_context
+from cloudify_agent.tests import agent_ssl_cert
 
 
 class TestConfiguration(BaseTest, TestCase):
@@ -53,7 +54,7 @@ class TestConfiguration(BaseTest, TestCase):
             rest_port=80, manager_host=manager_host
         )
         expected['rest_port'] = 80
-        expected['rest_host'] = manager_host
+        expected['rest_host'] = [manager_host]
         expected['broker_ip'] = [manager_host]
         expected['network'] = network_name
 
@@ -79,19 +80,20 @@ class TestConfiguration(BaseTest, TestCase):
                         'default': manager_host,
                         network_name: manager_host
                     },
+                    'ca_cert_content': agent_ssl_cert.DUMMY_CERT
                 }],
                 'brokers': [{
                     'networks': {
                         'default': manager_host,
                         network_name: manager_host
                     },
-                    'ca_cert_content': '',
+                    'ca_cert_content': agent_ssl_cert.DUMMY_CERT,
                 }]
             }
         )
 
     @staticmethod
-    def _get_distro_package_url(rest_port, manager_host='localhost'):
+    def _get_distro_package_url(rest_port, manager_host='127.0.0.1'):
         result = {}
         base_url = utils.get_manager_file_server_url(manager_host, rest_port)
         agent_package_url = '{0}/packages/agents'.format(base_url)
@@ -135,9 +137,9 @@ class TestConfiguration(BaseTest, TestCase):
             },
             'basedir': basedir,
             'name': 'test_deployment',
-            'rest_host': 'localhost',
-            'broker_ip': ['localhost'],
-            'broker_ssl_cert': '',
+            'rest_host': ['127.0.0.1'],
+            'broker_ip': ['127.0.0.1'],
+            'broker_ssl_cert': agent_ssl_cert.DUMMY_CERT,
             'heartbeat': None,
             'queue': 'test_deployment',
             'envdir': envdir,
@@ -159,7 +161,9 @@ class TestConfiguration(BaseTest, TestCase):
             'node_instance_id': 'test_node',
             'log_level': 'info',
             'log_max_bytes': 5242880,
-            'log_max_history': 7
+            'log_max_history': 7,
+            'rest_ssl_cert': agent_ssl_cert.DUMMY_CERT
+
         }
         expected.update(expected_values)
 

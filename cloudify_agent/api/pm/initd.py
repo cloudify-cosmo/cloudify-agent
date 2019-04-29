@@ -120,7 +120,6 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
             extra_env_path=self.extra_env_path,
             storage_dir=utils.internal.get_storage_directory(self.user),
             name=self.name,
-            cluster_settings_path=self.cluster_settings_path
         )
 
 

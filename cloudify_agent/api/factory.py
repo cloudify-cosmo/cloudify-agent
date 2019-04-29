@@ -17,7 +17,6 @@ import os
 import json
 
 from cloudify.utils import setup_logger
-from cloudify import cluster as cluster_settings
 
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
@@ -194,19 +193,6 @@ class DaemonFactory(object):
             self.storage, '{0}.json'.format(
                 daemon.name)
         )
-        cluster_path = os.path.join(
-            self.storage, 'cluster-{0}.json'.format(
-                daemon.name)
-        )
-        daemon.cluster_settings_path = cluster_path
-
-        if getattr(daemon, 'cluster', None):
-            # .set_cluster_nodes will normalize the nodes representation,
-            # so let's store the normalized version
-            nodes = cluster_settings.set_cluster_nodes(daemon.cluster,
-                                                       filename=cluster_path)
-            daemon.cluster = nodes
-
         self.logger.debug('Saving daemon configuration at: {0}'
                           .format(daemon_path))
         with open(daemon_path, 'w') as f:
@@ -226,10 +212,6 @@ class DaemonFactory(object):
             self.storage, '{0}.json'.format(name))
         if os.path.exists(daemon_path):
             os.remove(daemon_path)
-
-        cluster_path = os.path.join(
-            self.storage, 'cluster-{0}.json'.format(name))
-        cluster_settings.delete_cluster_settings(filename=cluster_path)
 
     def _check_existing(self, attributes):
         """Should we verify that the agent does not exist yet?
