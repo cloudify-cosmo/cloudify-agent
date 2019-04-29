@@ -1,7 +1,7 @@
-https://github.com/cloudify-cosmo/cloudify-common/archive/5.0.0.dev1.zip
+https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip
 
 # Install stubs of cloudify packages that were merged into cloudify-common
-git+https://github.com/cloudify-cosmo/cloudify-agent@5.0.0.dev1#egg=cloudify-rest-client&subdirectory=packaging/stub_packages/cloudify-rest-client
-git+https://github.com/cloudify-cosmo/cloudify-agent@5.0.0.dev1#egg=cloudify-plugins-common&subdirectory=packaging/stub_packages/cloudify-plugins-common
-git+https://github.com/cloudify-cosmo/cloudify-agent@5.0.0.dev1#egg=cloudify-dsl-parser&subdirectory=packaging/stub_packages/cloudify-dsl-parser
-git+https://github.com/cloudify-cosmo/cloudify-agent@5.0.0.dev1#egg=cloudify-script-plugin&subdirectory=packaging/stub_packages/cloudify-script-plugin
+git+https://github.com/cloudify-cosmo/cloudify-agent@master#egg=cloudify-rest-client&subdirectory=packaging/stub_packages/cloudify-rest-client
+git+https://github.com/cloudify-cosmo/cloudify-agent@master#egg=cloudify-plugins-common&subdirectory=packaging/stub_packages/cloudify-plugins-common
+git+https://github.com/cloudify-cosmo/cloudify-agent@master#egg=cloudify-dsl-parser&subdirectory=packaging/stub_packages/cloudify-dsl-parser
+git+https://github.com/cloudify-cosmo/cloudify-agent@master#egg=cloudify-script-plugin&subdirectory=packaging/stub_packages/cloudify-script-plugin
