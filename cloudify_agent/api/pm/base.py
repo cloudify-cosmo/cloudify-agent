@@ -208,7 +208,9 @@ class Daemon(object):
 
         if self._logger.isEnabledFor(logging.DEBUG):
             printed_params = copy.deepcopy(self._params)
-            printed_params.pop('broker_pass', None)
+            for hidden_field in ['broker_pass',
+                                 'service_password']:
+                printed_params.pop(hidden_field, None)
             self._logger.debug("Daemon attributes: %s", json.dumps(
                 printed_params, indent=4))
 
