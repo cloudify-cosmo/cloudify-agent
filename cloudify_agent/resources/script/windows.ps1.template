@@ -75,7 +75,7 @@ function ConfigureAgent()
     CreateCustomEnvFile
 
     Write-Output "Configuring agent..."
-    cfy-agent configure {{ configure_flags }}
+    cfy-agent {{ debug_flag }} configure {{ configure_flags }}
     if (!$?) {
         Write-Output "Failed configuring agent (rc=$LASTEXITCODE)"
         Exit 1
@@ -89,7 +89,7 @@ function StartAgent()
 {
     if (-Not ($Agentlist | Select-String $env:CLOUDIFY_DAEMON_NAME)) {
         Write-Output "Creating daemon..."
-        cfy-agent daemons create {{ pm_options }}
+        cfy-agent {{ debug_flag }} daemons create {{ pm_options }}
         if (!$?) {
             Write-Output "Failed creating daemon (rc=$LASTEXITCODE)"
             Exit 1
@@ -100,7 +100,7 @@ function StartAgent()
     }
 
     Write-Output "Configuring daemon..."
-    cfy-agent daemons configure
+    cfy-agent {{ debug_flag }} daemons configure
     if (!$?) {
         Write-Output "Failed configuring daemon (rc=$LASTEXITCODE)"
         Exit 1
@@ -108,7 +108,7 @@ function StartAgent()
     Write-Output "Daemon configured successfully"
 
     Write-Output "Starting daemon..."
-    cfy-agent daemons start
+    cfy-agent {{ debug_flag }} daemons start
     if (!$?) {
         Write-Output "Failed starting daemon (rc=$LASTEXITCODE)"
         Exit 1

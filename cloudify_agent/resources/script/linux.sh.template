@@ -110,7 +110,7 @@ disable_requiretty()
     {% if conf.disable_requiretty %}
         export_daemon_env
         echo "Disabling TTY requirement for sudo..."
-        cfy-agent configure --disable-requiretty --no-sudo
+        cfy-agent {{ debug_flag }} configure --disable-requiretty --no-sudo
         echo "TTY requirement for sudo disabled"
     {% else %}
         echo "Skipped disabling of TTY requirement"
@@ -155,18 +155,18 @@ start_daemon()
     export_daemon_env
     if ! cfy-agent daemons list | grep -x "${CLOUDIFY_DAEMON_NAME}"; then
         echo "Creating daemon..."
-        cfy-agent daemons create {{ pm_options }}
+        cfy-agent {{ debug_flag }} daemons create {{ pm_options }}
         echo "Daemon created successfully"
     else
         echo "Agent already created, skipping create agent."
     fi
 
     echo "Configuring daemon..."
-    cfy-agent daemons configure
+    cfy-agent {{ debug_flag }} daemons configure
     echo "Daemon configured successfully"
 
     echo "Starting daemon..."
-    cfy-agent daemons start
+    cfy-agent {{ debug_flag }} daemons start
     echo "Daemon started successfully"
 }
 export -f start_daemon

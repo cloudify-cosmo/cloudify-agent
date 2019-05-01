@@ -85,7 +85,9 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             configure=True,
             start=True,
             add_ssl_cert=add_ssl_cert,
-            tmpdir=self.cloudify_agent.tmpdir
+            tmpdir=self.cloudify_agent.tmpdir,
+            debug_flag='--debug' if self.cloudify_agent.get(
+                'log_level', '').lower() == 'debug' else ''
         )
 
     def _get_local_cert_content(self):
