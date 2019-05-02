@@ -47,17 +47,6 @@ class TestUtils(BaseTest, unittest.TestCase):
     def tearDownClass(cls):
         cls.fs.stop()
 
-    def test_get_absolute_resource_path(self):
-        full_path = utils.get_absolute_resource_path(
-            os.path.join('pm', 'nssm', 'nssm.exe'))
-        expected = os.path.join(
-            os.path.dirname(cloudify_agent.__file__),
-            'resources',
-            'pm',
-            'nssm',
-            'nssm.exe')
-        self.assertEqual(expected, full_path)
-
     def test_daemon_to_dict(self):
         daemon = Daemon(rest_host='127.0.0.1', name='name',
                         queue='queue', broker_ip='127.0.0.1',

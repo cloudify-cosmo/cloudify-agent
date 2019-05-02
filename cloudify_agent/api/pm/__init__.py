@@ -16,6 +16,6 @@
 # import all daemon concrete implementations
 # so that we can use Daemon.__subclasses__()
 from cloudify_agent.api.pm.initd import InitDDaemon  # NOQA
-from cloudify_agent.api.pm.nssm import NonSuckingServiceManagerDaemon  # NOQA
+from cloudify_agent.api.pm.win import WindowsServiceManagerDaemon  # NOQA
 from cloudify_agent.api.pm.detach import DetachedDaemon  # NOQA
 from cloudify_agent.api.pm.systemd import SystemDDaemon  # NOQA

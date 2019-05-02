@@ -25,14 +25,17 @@ from cloudify_agent.api import utils
 from cloudify_agent.api.pm.base import Daemon
 
 from cloudify import constants
-from cloudify.utils import ENV_CFY_EXEC_TEMPDIR
+from cloudify.utils import (ENV_CFY_EXEC_TEMPDIR,
+                            ENV_AGENT_LOG_DIR,
+                            ENV_AGENT_LOG_LEVEL,
+                            ENV_AGENT_LOG_MAX_BYTES,
+                            ENV_AGENT_LOG_MAX_HISTORY)
 
 
-class NonSuckingServiceManagerDaemon(Daemon):
+class WindowsServiceManagerDaemon(Daemon):
 
     """
-    Implementation for the nssm windows service management.
-    Based on the nssm service management. see https://nssm.cc/
+    Implementation for the native windows service management.
 
     Following are all possible custom key-word arguments
     (in addition to the ones available in the base daemon)
@@ -63,19 +66,17 @@ class NonSuckingServiceManagerDaemon(Daemon):
         Specifies delay time (in milliseconds) for the restart action.
     """
 
-    PROCESS_MANAGEMENT = 'nssm'
+    PROCESS_MANAGEMENT = 'win'
 
     RUNNING_STATES = ['SERVICE_RUNNING', 'SERVICE_STOP_PENDING']
 
     def __init__(self, logger=None, **params):
-        super(NonSuckingServiceManagerDaemon, self).__init__(
+        super(WindowsServiceManagerDaemon, self).__init__(
             logger=logger, **params)
 
         self.config_path = os.path.join(
             self.workdir,
             '{0}.conf.ps1'.format(self.name))
-        self.nssm_path = utils.get_absolute_resource_path(
-            os.path.join('pm', 'nssm', 'nssm.exe'))
         self.startup_policy = params.get('startup_policy', 'auto')
         self.failure_reset_timeout = params.get('failure_reset_timeout', 60)
         self.failure_restart_delay = params.get('failure_restart_delay', 5000)
@@ -94,21 +95,20 @@ class NonSuckingServiceManagerDaemon(Daemon):
             constants.MANAGER_FILE_SERVER_URL_KEY:
                 "https://{}:{}/resources".format(self.rest_host,
                                                  self.rest_port),
-            constants.AGENT_LOG_DIR_KEY: self.log_dir,
+            ENV_AGENT_LOG_DIR: self.log_dir,
             # TODO: This key should be moved elsewhere
             utils._Internal.CLOUDIFY_DAEMON_USER_KEY: self.user,
-            constants.AGENT_LOG_LEVEL_KEY: self.log_level.upper(),
+            ENV_AGENT_LOG_LEVEL: self.log_level.upper(),
             constants.AGENT_WORK_DIR_KEY: self.workdir,
-            constants.AGENT_LOG_MAX_BYTES_KEY: self.log_max_bytes,
-            constants.AGENT_LOG_MAX_HISTORY_KEY: self.log_max_history,
+            ENV_AGENT_LOG_MAX_BYTES: self.log_max_bytes,
+            ENV_AGENT_LOG_MAX_HISTORY: self.log_max_history,
             utils._Internal.CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY:
                 utils.internal.get_storage_directory(self.user),
-            constants.AGENT_NAME_KEY: self.name,
             constants.CLUSTER_SETTINGS_PATH_KEY: self.cluster_settings_path
         }
 
         if self.executable_temp_path:
-            envvars_file[CFY_EXEC_TEMPDIR_ENVVAR] = self.executable_temp_path
+            envvars_file[ENV_CFY_EXEC_TEMPDIR] = self.executable_temp_path
 
         if self.extra_env_path and os.path.exists(self.extra_env_path):
             with open(self.extra_env_path) as f:
@@ -171,8 +171,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
             self.stop()
 
         self._logger.info('Removing %s service', self.name)
-        self._runner.run('{0} remove {1} confirm'.format(
-            self.nssm_path,
+        self._runner.run('sc delete {0}'.format(
             self.name))
 
         self._logger.debug('Deleting %s', self.config_path)
@@ -189,7 +188,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
     def start(self, *args, **kwargs):
         try:
-            super(NonSuckingServiceManagerDaemon, self).start(*args, **kwargs)
+            super(WindowsServiceManagerDaemon, self).start(*args, **kwargs)
         except CommandExecutionException as e:
             if e.code == 1056:
                 self._logger.info('Service already started')
@@ -198,7 +197,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
     def status(self):
         try:
-            command = '{0} status {1}'.format(self.nssm_path, self.name)
+            command = 'sc status {0}'.format(self.name)
             response = self._runner.run(command)
             # apparently nssm output is encoded in utf16.
             # encode to ascii to be able to parse this

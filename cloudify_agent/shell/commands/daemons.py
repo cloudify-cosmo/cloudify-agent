@@ -33,7 +33,7 @@ from cloudify.utils import (ENV_CFY_EXEC_TEMPDIR,
               help='The process management system to use '
                    'when creating the daemon. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_PROCESS_MANAGEMENT),
-              type=click.Choice(['init.d', 'nssm', 'detach', 'systemd']),
+              type=click.Choice(['init.d', 'win', 'detach', 'systemd']),
               required=True,
               envvar=env.CLOUDIFY_DAEMON_PROCESS_MANAGEMENT)
 @click.option('--rest-host',

@@ -170,7 +170,7 @@ class CloudifyAgentConfig(dict):
     def _set_process_management(self, runner):
         """
         Determine the process management system to use for the agent.
-        * If working with windows, the only option is nssm
+        * If working with windows, the only option is 'win'
         * If working with linux then:
             * If the install method is remote (SSH) we try to determine
               the default system automatically
@@ -184,7 +184,7 @@ class CloudifyAgentConfig(dict):
         if self['process_management'].get('name'):
             return
         if self.is_windows:
-            default_pm_name = 'nssm'
+            default_pm_name = 'win'
         else:
             if self.is_remote:
                 default_pm_name = self._get_process_management(runner)
