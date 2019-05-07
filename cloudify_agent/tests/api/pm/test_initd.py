@@ -96,7 +96,9 @@ class TestInitDDaemon(BaseDaemonProcessManagementTest, TestCase):
         daemon.configure()
         daemon.start()
 
-        crontab = self.runner.run('crontab -l').std_out
+        # initd daemon's cron is for root, so that respawning the daemon can
+        # use the init system which requires root
+        crontab = self.runner.run('sudo crontab -lu root').std_out
         self.assertIn(daemon.cron_respawn_path, crontab)
 
         self.runner.run("pkill -9 -f 'cloudify_agent.worker'")
@@ -111,5 +113,5 @@ class TestInitDDaemon(BaseDaemonProcessManagementTest, TestCase):
         daemon.stop()
         self.wait_for_daemon_dead(daemon.queue)
 
-        crontab = self.runner.run('crontab -l').std_out
+        crontab = self.runner.run('sudo crontab -lu root').std_out
         self.assertNotIn(daemon.cron_respawn_path, crontab)
