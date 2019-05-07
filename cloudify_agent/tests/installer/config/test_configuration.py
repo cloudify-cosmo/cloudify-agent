@@ -168,11 +168,12 @@ class TestConfiguration(BaseTest, unittest.TestCase):
         self.maxDiff = None
         context = context or {}
         ctx = mock_context(**context)
-        with patch('cloudify_agent.installer.config.agent_config.ctx', ctx), \
-                patch('cloudify.utils.ctx', mock_context()):
-            cloudify_agent = CloudifyAgentConfig()
-            cloudify_agent.set_initial_values(True, agent_config=agent_config)
-            cloudify_agent.set_execution_params()
-            cloudify_agent.set_default_values()
-            cloudify_agent.set_installation_params(None)
-            self.assertDictEqual(expected, cloudify_agent)
+        with patch('cloudify_agent.installer.config.agent_config.ctx', ctx):
+            with patch('cloudify.utils.ctx', mock_context()):
+                cloudify_agent = CloudifyAgentConfig()
+                cloudify_agent.set_initial_values(
+                    True, agent_config=agent_config)
+                cloudify_agent.set_execution_params()
+                cloudify_agent.set_default_values()
+                cloudify_agent.set_installation_params(None)
+                self.assertDictEqual(expected, cloudify_agent)
