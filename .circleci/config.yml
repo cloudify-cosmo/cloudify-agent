@@ -55,6 +55,11 @@ defaults:
           name: Install and run cron
           command: sudo apt-get install cron
       - run:
+          # python 2.6 will require pyyaml to be built, rather than installed
+          # from a wheel, and so we need to provide headers
+          name: Install python headers
+          command: sudo apt-get install libpython-dev
+      - run:
           name: Run cron–
           command: sudo /etc/init.d/cron start
       - run:
