@@ -59,7 +59,7 @@ defaults:
           command: sudo /etc/init.d/cron start
       - run:
           name: Install tox, NOTICE we use an old version of tox for supporting py26
-          command: sudo ~/.pyenv/versions/2.6.9/bin/pip install tox tox-pyenv
+          command: sudo ~/.pyenv/versions/2.6.9/bin/pip install tox
       - run:
           name: Run tox of specfic environment
           command: ~/.pyenv/versions/2.6.9/bin/tox -e $TOX_TEST
