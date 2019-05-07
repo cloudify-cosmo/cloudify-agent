@@ -93,6 +93,7 @@ agent_ssl_cert = _AgentSSLCert()
 
 class BaseTest(object):
     def setUp(self):
+        super(BaseTest, self).setUp()
         self.temp_folder = tempfile.mkdtemp(prefix='cfy-agent-tests-')
         self._rest_cert_path = agent_ssl_cert.get_local_cert_path(
             self.temp_folder)
