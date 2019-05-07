@@ -12,7 +12,8 @@
 #  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
-import unittest
+
+from testtools import TestCase
 
 import click
 
@@ -22,7 +23,7 @@ from cloudify_agent.shell.decorators import handle_failures
 from cloudify_agent.tests.shell.commands import BaseCommandLineTestCase
 
 
-class TestDecorators(BaseCommandLineTestCase, unittest.TestCase):
+class TestDecorators(BaseCommandLineTestCase, TestCase):
 
     def test_api_exceptions_conversion(self):
 

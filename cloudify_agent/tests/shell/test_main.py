@@ -12,7 +12,8 @@
 #  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
-import unittest
+
+from testtools import TestCase
 
 import mock
 import json
@@ -24,7 +25,7 @@ import click
 from cloudify_agent.tests.shell.commands import BaseCommandLineTestCase
 
 
-class TestCommandLine(BaseCommandLineTestCase, unittest.TestCase):
+class TestCommandLine(BaseCommandLineTestCase, TestCase):
 
     def test_debug_command_line(self):
 

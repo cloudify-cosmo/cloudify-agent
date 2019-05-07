@@ -17,8 +17,9 @@ import os
 import tempfile
 import uuid
 import shutil
-import unittest
+
 from mock import patch
+from testtools import TestCase
 
 from cloudify import ctx
 from cloudify.utils import LocalCommandRunner
@@ -31,7 +32,7 @@ from cloudify_agent.installer.operations import create as create_agent
 from cloudify_agent.tests.installer.config import mock_context
 
 
-class TestInstaller(BaseTest, unittest.TestCase):
+class TestInstaller(BaseTest, TestCase):
 
     @classmethod
     def setUpClass(cls):
