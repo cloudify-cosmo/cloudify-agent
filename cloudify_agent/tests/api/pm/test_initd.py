@@ -15,6 +15,7 @@
 
 import os
 import time
+
 from mock import patch
 from testtools import TestCase
 

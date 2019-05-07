@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import os
+
 from testtools import TestCase
 
 from cloudify.state import current_ctx

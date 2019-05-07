@@ -19,13 +19,12 @@ import os
 import platform
 import shutil
 import multiprocessing
-
-from testtools import TestCase
-
 from contextlib import contextmanager
 
 import wagon
+
 from mock import patch
+from testtools import TestCase
 
 from cloudify import dispatch
 from cloudify import exceptions as cloudify_exceptions

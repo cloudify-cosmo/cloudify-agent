@@ -13,14 +13,15 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from testtools import TestCase
 
-import mock
 import json
 import logging
 import pkgutil
 
 import click
+
+import mock
+from testtools import TestCase
 
 from cloudify_agent.tests.shell.commands import BaseCommandLineTestCase
 

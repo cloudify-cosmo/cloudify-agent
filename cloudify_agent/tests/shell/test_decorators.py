@@ -13,9 +13,9 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from testtools import TestCase
-
 import click
+
+from testtools import TestCase
 
 from cloudify_agent.api import exceptions
 from cloudify_agent.shell.decorators import handle_failures

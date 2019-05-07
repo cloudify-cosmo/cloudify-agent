@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 from testtools import TestCase
+
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.tests.api.pm import only_os
 

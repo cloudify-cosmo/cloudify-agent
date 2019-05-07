@@ -14,9 +14,10 @@
 #  * limitations under the License.
 
 import getpass
-from mock import patch
 
+from mock import patch
 from testtools import TestCase
+
 from cloudify_agent.api.pm.base import Daemon
 from cloudify_agent.api import exceptions
 
