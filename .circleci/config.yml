@@ -126,7 +126,7 @@ jobs:
   py26:
     <<: *test_defaults_for_python26
     environment:
-      TOX_TEST: py26
+      TOX_TEST: py26_tests
 
   py27:
     <<: *test_defaults
