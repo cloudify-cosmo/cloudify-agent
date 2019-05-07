@@ -73,12 +73,25 @@ def only_ci(func):
 
     return wrapper
 
+if hasattr(unittest, 'skipIf'):
+    skip_if = unittest.skipIf
+else:
+    # 2.6 unittest didn't have skipIf
+    def skip_if(condition, reason):
+        if condition:
+            def _decorator(f):
+                def _inner(*args, **kwargs):
+                    pass
+                return _inner
+            return _decorator
+        return lambda f: f
+
 
 def only_os(os_type):
     def decorator(test):
         if isinstance(test, (types.MethodType, types.FunctionType)):
-            @unittest.skipIf(os.name != os_type,
-                             reason='Not relevant OS to run the test.')
+            @skip_if(os.name != os_type,
+                     reason='Not relevant OS to run the test.')
             def run_test(*args, **kwargs):
                 test(*args, **kwargs)
             return run_test
