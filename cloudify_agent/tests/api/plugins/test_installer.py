@@ -87,6 +87,7 @@ class PluginInstallerTest(BaseTest, TestCase):
         self.mock_ctx_with_tenant()
 
     def tearDown(self):
+        super(PluginInstallerTest, self).tearDown()
         self.installer.uninstall_source(plugin=self._plugin_struct(''))
         self.installer.uninstall_source(plugin=self._plugin_struct(''),
                                         deployment_id='deployment')
@@ -164,10 +165,13 @@ class PluginInstallerTest(BaseTest, TestCase):
 
     def test_install_from_source_already_exists(self):
         self.installer.install(self._plugin_struct(source='mock-plugin.tar'))
-        with self.assertRaises(exceptions.PluginInstallationError) as c:
+        try:
             self.installer.install(
                 self._plugin_struct(source='mock-plugin.tar'))
-        self.assertIn('already exists', str(c.exception))
+        except exceptions.PluginInstallationError as e:
+            self.assertIn('already exists', str(e))
+        else:
+            self.fail('PluginInstallationError not raised')
 
     def test_uninstall_from_source(self):
         self.installer.install(self._plugin_struct(source='mock-plugin.tar'))
@@ -252,9 +256,12 @@ class PluginInstallerTest(BaseTest, TestCase):
         os.remove(plugin_id_path)
         # the installation here should identify a plugin.id missing
         # and re-install the plugin
-        with self.assertRaises(exceptions.PluginInstallationError) as c:
+        try:
             self.test_install_from_wagon()
-        self.assertIn('corrupted state', str(c.exception))
+        except exceptions.PluginInstallationError as e:
+            self.assertIn('corrupted state', str(e))
+        else:
+            self.fail('PluginInstallationError not raised')
 
     def test_install_from_wagon_overriding_same_version(self):
         self.test_install_from_wagon()
@@ -262,18 +269,24 @@ class PluginInstallerTest(BaseTest, TestCase):
                 PACKAGE_NAME, PACKAGE_VERSION,
                 download_path=self.wagons['mock-plugin-modified'],
                 plugin_id='2'):
-            with self.assertRaises(exceptions.PluginInstallationError) as c:
+            try:
                 self.installer.install(self._plugin_struct())
-            self.assertIn('does not match the ID', str(c.exception))
+            except exceptions.PluginInstallationError as e:
+                self.assertIn('does not match the ID', str(e))
+            else:
+                self.fail('PluginInstallationError not raised')
 
     def test_install_from_wagon_central_deployment(self):
         with _patch_for_install_wagon(PACKAGE_NAME, PACKAGE_VERSION,
                                       download_path=self.wagons[PACKAGE_NAME]):
-            with self.assertRaises(exceptions.PluginInstallationError) as c:
+            try:
                 self.installer.install(self._plugin_struct(
                     executor='central_deployment_agent'),
                     deployment_id='deployment')
-            self.assertIn('REST plugins API', str(c.exception))
+            except exceptions.PluginInstallationError as e:
+                self.assertIn('REST plugins API', str(e))
+            else:
+                self.fail('PluginInstallationError not raised')
 
     def test_uninstall_from_wagon(self):
         self.test_install_from_wagon()

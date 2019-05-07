@@ -34,9 +34,9 @@ from cloudify_agent.tests.installer.config import mock_context
 
 class TestInstaller(BaseTest, TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls._package_url = agent_package.get_package_url()
+    def setUp(self):
+        super(TestInstaller, self).setUp()
+        self._package_url = agent_package.get_package_url()
 
     @patch('cloudify.agent_utils.get_rest_client',
            return_value=MockRestclient())
