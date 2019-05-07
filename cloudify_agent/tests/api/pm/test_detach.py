@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import time
 import os
 
 from mock import patch
@@ -60,26 +59,21 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest, TestCase):
         daemon.configure()
         daemon.start()
 
-        # sleeps so the cron won't respawn the agent before we make sure
-        # it's dead
-        time.sleep(5)
-
-        # check it started
-        timeout = daemon.cron_respawn_delay * 60 + 20
-        self.wait_for_daemon_alive(daemon.queue, timeout=timeout)
+        crontab = self.runner.run('crontab -l').std_out
+        self.assertIn(daemon.cron_respawn_path, crontab)
 
         # lets kill the process
         self.runner.run("pkill -9 -f 'cloudify_agent.worker'")
         self.wait_for_daemon_dead(daemon.queue)
 
         # check it was respawned
-        timeout = daemon.cron_respawn_delay * 60 + 20
-        self.wait_for_daemon_alive(daemon.queue, timeout=timeout)
+        # mocking cron - respawn it using the cron respawn script
+        self.runner.run(daemon.cron_respawn_path)
+        self.wait_for_daemon_alive(daemon.queue)
 
         # this should also disable the crontab entry
         daemon.stop()
-        self.wait_for_daemon_dead(daemon.queue, timeout=timeout)
+        self.wait_for_daemon_dead(daemon.queue)
 
-        # sleep the cron delay time and make sure the daemon is still dead
-        time.sleep(daemon.cron_respawn_delay * 60 + 20)
-        self.assert_daemon_dead(daemon.queue)
+        crontab = self.runner.run('crontab -l').std_out
+        self.assertNotIn(daemon.cron_respawn_path, crontab)

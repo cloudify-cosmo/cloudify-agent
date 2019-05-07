@@ -36,11 +36,10 @@ defaults:
     steps:
       - checkout
       - run:
+          # we install cron to allow use of crontab in tests, but not run it,
+          # because we do mock cron in tests
           name: Install and run cron
           command: sudo apt-get install cron
-      - run:
-          name: Run cron
-          command: sudo /etc/init.d/cron start
       - install_tini
       - run:
           name: Install tox

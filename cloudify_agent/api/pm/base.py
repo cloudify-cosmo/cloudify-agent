@@ -791,28 +791,30 @@ class CronRespawnDaemonMixin(Daemon):
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
+    @property
+    def cron_respawn_path(self):
+        return os.path.join(
+            self.workdir, '{0}-respawn.sh'.format(self.name))
+
     def create_enable_cron_script(self):
 
         enable_cron_script = os.path.join(
             self.workdir, '{0}-enable-cron.sh'.format(self.name))
 
-        cron_respawn_path = os.path.join(
-            self.workdir, '{0}-respawn.sh'.format(self.name))
-
         self._logger.debug('Rendering respawn script from template')
         utils.render_template_to_file(
             template_path='respawn.sh.template',
-            file_path=cron_respawn_path,
+            file_path=self.cron_respawn_path,
             start_command=self.start_command(),
             status_command=self.status_command()
         )
-        self._runner.run('chmod +x {0}'.format(cron_respawn_path))
+        self._runner.run('chmod +x {0}'.format(self.cron_respawn_path))
         self._logger.debug('Rendering enable cron script from template')
         utils.render_template_to_file(
             template_path='crontab/enable.sh.template',
             file_path=enable_cron_script,
             cron_respawn_delay=self.cron_respawn_delay,
-            cron_respawn_path=cron_respawn_path,
+            cron_respawn_path=self.cron_respawn_path,
             workdir=self.workdir,
             name=self.name
         )
