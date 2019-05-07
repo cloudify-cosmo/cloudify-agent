@@ -3,6 +3,7 @@ mock==1.0.1
 unittest2
 FileServer
 pywinrm==0.3.0
+xmltodict==0.11.0
 cryptography==2.1.4
 
 # for creating the agent package in tests
