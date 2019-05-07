@@ -9,6 +9,22 @@ checkout:
         git checkout -qf FETCH_HEAD
       fi
 
+commands:
+  install_tini:
+    description: Download, verify, and install tini
+    steps:
+      - run:
+          # import the author's public key, and verify tini signature
+          # using gpg. The public key is stored in the repository, and was
+          # obtained from the keyserver pointed to in tini's readme.
+          name: Download tini
+          command: |
+                   gpg --import ~/project/.circleci/thomas.gpg
+                   curl -LO https://github.com/krallin/tini/releases/download/v0.18.0/tini
+                   gpg --batch --verify ~/project/.circleci/tini.asc tini
+                   chmod +x tini
+                   sudo mv tini /sbin/tini
+
 defaults:
   - &test_defaults
     docker:
@@ -25,11 +41,13 @@ defaults:
       - run:
           name: Run cron
           command: sudo /etc/init.d/cron start
+      - install_tini
       - run:
-          name: Install and run tox
-          command: |
-                   sudo pip install tox
-                   python -m tox -e ${TOX_TEST}
+          name: Install tox
+          command: sudo pip install tox
+      - run:
+          name: Run tox of specfic environment
+          command: sudo /sbin/tini -ws sudo -- -u $(whoami) python -m tox -e ${TOX_TEST}
       - run:
           name: Push coverage data to codecov
           command: bash <(curl -s https://codecov.io/bash) -F $TOX_TEST
@@ -59,15 +77,13 @@ defaults:
           # from a wheel, and so we need to provide headers
           name: Install python headers
           command: sudo apt-get install libpython-dev
-      - run:
-          name: Run cron–
-          command: sudo /etc/init.d/cron start
+      - install_tini
       - run:
           name: Install tox, NOTICE we use an old version of tox for supporting py26
           command: sudo ~/.pyenv/versions/2.6.9/bin/pip install tox
       - run:
           name: Run tox of specfic environment
-          command: ~/.pyenv/versions/2.6.9/bin/tox -e $TOX_TEST
+          command: sudo /sbin/tini -ws sudo -- -u $(whoami) ~/.pyenv/versions/2.6.9/bin/tox -e $TOX_TEST
       - run:
           name: Push coverage data to codecov
           command: bash <(curl -s https://codecov.io/bash) -F $TOX_TEST
