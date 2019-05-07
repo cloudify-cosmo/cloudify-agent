@@ -15,7 +15,8 @@
 
 import os
 import tempfile
-import unittest
+
+from testtools import TestCase
 
 from cloudify.utils import setup_logger
 
@@ -28,7 +29,7 @@ from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests import utils as test_utils
 
 
-class TestUtils(BaseTest, unittest.TestCase):
+class TestUtils(BaseTest, TestCase):
 
     def setUp(self):
         super(TestUtils, self).setUp()

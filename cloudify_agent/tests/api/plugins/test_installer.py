@@ -19,7 +19,8 @@ import os
 import platform
 import shutil
 import multiprocessing
-import unittest
+
+from testtools import TestCase
 
 from contextlib import contextmanager
 
@@ -48,7 +49,7 @@ PACKAGE_NAME = 'mock-plugin'
 PACKAGE_VERSION = '1.0'
 
 
-class PluginInstallerTest(BaseTest, unittest.TestCase):
+class PluginInstallerTest(BaseTest, TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -352,7 +353,7 @@ class PluginInstallerTest(BaseTest, unittest.TestCase):
         self.assertEqual(before_requests_version, after_requests_version)
 
 
-class TestGetSourceAndGetArgs(BaseTest, unittest.TestCase):
+class TestGetSourceAndGetArgs(BaseTest, TestCase):
 
     def test_get_url_and_args_http_no_args(self):
         plugin = {'source': 'http://google.com'}
@@ -392,7 +393,7 @@ class TestGetSourceAndGetArgs(BaseTest, unittest.TestCase):
         self.assertEqual(expected, source)
 
 
-class TestGetManagedPlugin(BaseTest, unittest.TestCase):
+class TestGetManagedPlugin(BaseTest, TestCase):
 
     def test_no_package_name(self):
         with _patch_client(plugins=[]) as client:

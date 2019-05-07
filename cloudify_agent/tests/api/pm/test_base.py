@@ -14,9 +14,9 @@
 #  * limitations under the License.
 
 import getpass
-import unittest
 from mock import patch
 
+from testtools import TestCase
 from cloudify_agent.api.pm.base import Daemon
 from cloudify_agent.api import exceptions
 
@@ -26,7 +26,7 @@ from cloudify_agent.tests import get_storage_directory
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-class TestDaemonDefaults(BaseTest, unittest.TestCase):
+class TestDaemonDefaults(BaseTest, TestCase):
 
     def setUp(self):
         super(TestDaemonDefaults, self).setUp()
@@ -58,7 +58,7 @@ class TestDaemonDefaults(BaseTest, unittest.TestCase):
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-class TestDaemonValidations(BaseTest, unittest.TestCase):
+class TestDaemonValidations(BaseTest, TestCase):
     def setUp(self):
         super(TestDaemonValidations, self).setUp()
 
@@ -135,7 +135,7 @@ class TestDaemonValidations(BaseTest, unittest.TestCase):
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-class TestNotImplemented(BaseTest, unittest.TestCase):
+class TestNotImplemented(BaseTest, TestCase):
 
     def setUp(self):
         super(TestNotImplemented, self).setUp()

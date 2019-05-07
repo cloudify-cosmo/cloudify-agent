@@ -15,9 +15,9 @@
 
 import time
 import os
-import unittest
 
 from mock import patch
+from testtools import TestCase
 
 from cloudify_agent.api.pm.detach import DetachedDaemon
 
@@ -29,7 +29,7 @@ from cloudify_agent.tests import get_storage_directory
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
 @only_os('posix')
-class TestDetachedDaemon(BaseDaemonProcessManagementTest, unittest.TestCase):
+class TestDetachedDaemon(BaseDaemonProcessManagementTest, TestCase):
 
     @property
     def daemon_cls(self):

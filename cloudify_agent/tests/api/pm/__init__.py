@@ -73,6 +73,7 @@ def only_ci(func):
 
     return wrapper
 
+
 if hasattr(unittest, 'skipIf'):
     skip_if = unittest.skipIf
 else:
@@ -80,9 +81,8 @@ else:
     def skip_if(condition, reason):
         if condition:
             def _decorator(f):
-                def _inner(*args, **kwargs):
-                    pass
-                return _inner
+                # don't even return a test function
+                return None
             return _decorator
         return lambda f: f
 

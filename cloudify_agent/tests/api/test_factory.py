@@ -16,7 +16,8 @@
 import uuid
 import os
 import shutil
-import unittest
+
+from testtools import TestCase
 
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
@@ -24,7 +25,7 @@ from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.tests import get_storage_directory, BaseTest
 
 
-class TestDaemonFactory(BaseTest, unittest.TestCase):
+class TestDaemonFactory(BaseTest, TestCase):
 
     def setUp(self):
         super(TestDaemonFactory, self).setUp()
