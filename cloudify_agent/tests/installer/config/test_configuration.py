@@ -16,8 +16,9 @@
 import getpass
 import os
 import platform
-import unittest
+
 from mock import patch
+from testtools import TestCase
 
 from cloudify import constants
 from cloudify_agent.api import utils
@@ -26,10 +27,7 @@ from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests.installer.config import mock_context
 
 
-class TestConfiguration(BaseTest, unittest.TestCase):
-    def setUp(self):
-        super(TestConfiguration, self).setUp()
-
+class TestConfiguration(BaseTest, TestCase):
     def test_prepare(self):
         expected = self._get_distro_package_url(rest_port=80)
         expected['rest_port'] = 80
@@ -168,11 +166,12 @@ class TestConfiguration(BaseTest, unittest.TestCase):
         self.maxDiff = None
         context = context or {}
         ctx = mock_context(**context)
-        with patch('cloudify_agent.installer.config.agent_config.ctx', ctx), \
-                patch('cloudify.utils.ctx', mock_context()):
-            cloudify_agent = CloudifyAgentConfig()
-            cloudify_agent.set_initial_values(True, agent_config=agent_config)
-            cloudify_agent.set_execution_params()
-            cloudify_agent.set_default_values()
-            cloudify_agent.set_installation_params(None)
-            self.assertDictEqual(expected, cloudify_agent)
+        with patch('cloudify_agent.installer.config.agent_config.ctx', ctx):
+            with patch('cloudify.utils.ctx', mock_context()):
+                cloudify_agent = CloudifyAgentConfig()
+                cloudify_agent.set_initial_values(
+                    True, agent_config=agent_config)
+                cloudify_agent.set_execution_params()
+                cloudify_agent.set_default_values()
+                cloudify_agent.set_installation_params(None)
+                self.assertDictEqual(expected, cloudify_agent)

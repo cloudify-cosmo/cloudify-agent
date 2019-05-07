@@ -14,7 +14,8 @@
 #  * limitations under the License.
 
 import os
-import unittest
+
+from testtools import TestCase
 
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
@@ -26,7 +27,7 @@ from cloudify_agent.tests import BaseTest, utils, agent_ssl_cert
 from cloudify_agent.tests.api.pm import only_os
 
 
-class BaseInstallScriptTest(BaseTest, unittest.TestCase):
+class BaseInstallScriptTest(BaseTest, TestCase):
 
     windows = None
 
@@ -92,11 +93,8 @@ class BaseInstallScriptTest(BaseTest, unittest.TestCase):
 
 
 @only_os('posix')
-class TestLinuxInstallScript(BaseInstallScriptTest, unittest.TestCase):
-
-    def setUp(self):
-        self.windows = False
-        super(TestLinuxInstallScript, self).setUp()
+class TestLinuxInstallScript(BaseInstallScriptTest, TestCase):
+    windows = False
 
     def test_download_curl(self):
         self._serve()
@@ -165,11 +163,8 @@ class TestLinuxInstallScript(BaseInstallScriptTest, unittest.TestCase):
 
 
 @only_os('nt')
-class TestWindowsInstallScript(BaseInstallScriptTest, unittest.TestCase):
-
-    def setUp(self):
-        self.windows = True
-        super(TestWindowsInstallScript, self).setUp()
+class TestWindowsInstallScript(BaseInstallScriptTest, TestCase):
+    windows = True
 
     def test_create_custom_env_file(self):
         self.input_cloudify_agent.update({'env': {'one': 'one'}})

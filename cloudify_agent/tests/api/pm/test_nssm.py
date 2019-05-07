@@ -14,9 +14,9 @@
 #  * limitations under the License.
 
 import os
-import unittest
 
 from mock import patch
+from testtools import TestCase
 
 from cloudify.exceptions import CommandExecutionException
 
@@ -31,7 +31,7 @@ from cloudify_agent.tests import get_storage_directory
        get_storage_directory)
 @only_os('nt')
 class TestNonSuckingServiceManagerDaemon(BaseDaemonProcessManagementTest,
-                                         unittest.TestCase):
+                                         TestCase):
 
     @property
     def daemon_cls(self):

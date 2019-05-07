@@ -15,8 +15,9 @@
 
 import os
 import time
-import unittest
+
 from mock import patch
+from testtools import TestCase
 
 from cloudify_agent.api.pm.initd import InitDDaemon
 from cloudify_agent.tests import get_storage_directory
@@ -60,7 +61,7 @@ CONFIG_DIR = '/tmp/etc/default'
     'cloudify_agent.api.pm.initd.stop_command',
     _non_service_stop_command)
 @only_os('posix')
-class TestInitDDaemon(BaseDaemonProcessManagementTest, unittest.TestCase):
+class TestInitDDaemon(BaseDaemonProcessManagementTest, TestCase):
 
     @property
     def daemon_cls(self):

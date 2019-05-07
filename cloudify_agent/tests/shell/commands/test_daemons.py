@@ -14,9 +14,9 @@
 #  * limitations under the License.
 
 import os
-import unittest
 
 from mock import patch
+from testtools import TestCase
 
 import cloudify_agent.shell.env as env_constants
 from cloudify_agent.api import utils
@@ -32,7 +32,7 @@ from cloudify_agent.tests import get_storage_directory
 @patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load')
 @patch('cloudify_agent.shell.commands.daemons.DaemonFactory.delete')
 @patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load_all')
-class TestPatchedDaemonCommandLine(BaseCommandLineTestCase, unittest.TestCase):
+class TestPatchedDaemonCommandLine(BaseCommandLineTestCase, TestCase):
 
     PROCESS_MANAGEMENT = 'init.d'
 
@@ -227,7 +227,7 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase, unittest.TestCase):
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-class TestDaemonCommandLine(BaseCommandLineTestCase, unittest.TestCase):
+class TestDaemonCommandLine(BaseCommandLineTestCase, TestCase):
 
     def test_inspect_non_existing_agent(self):
         try:

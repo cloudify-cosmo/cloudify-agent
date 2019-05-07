@@ -14,8 +14,7 @@
 #    * limitations under the License.
 
 from mock import patch
-
-from unittest import TestCase
+from testtools import TestCase
 
 from cloudify_agent.tests.resources import get_resource
 

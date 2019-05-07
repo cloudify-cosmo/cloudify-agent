@@ -16,9 +16,9 @@
 import shutil
 import tempfile
 import uuid
-import unittest
 
 from mock import patch
+from testtools import TestCase
 
 from cloudify.workflows import local
 from cloudify.utils import setup_logger
@@ -45,7 +45,7 @@ from cloudify_agent.tests.api.pm import (
 # actually launching VM's from the test.
 ##############################################################################
 
-class TestAgentInstallerLocal(BaseDaemonLiveTestCase, unittest.TestCase):
+class TestAgentInstallerLocal(BaseDaemonLiveTestCase, TestCase):
 
     """
     these tests run local workflows in order to invoke the installer

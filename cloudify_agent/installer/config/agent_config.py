@@ -447,9 +447,9 @@ def _get_bootstrap_agent_config():
 
 
 def _get_stored_config():
-    return {
-        item.name: item.value for item in ctx.get_config(scope='agent')
-    }
+    return dict(
+        (item.name, item.value) for item in ctx.get_config(scope='agent')
+    )
 
 
 def _get_agent_config(params, params_location, allow_both_params=False):

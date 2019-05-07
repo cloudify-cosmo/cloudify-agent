@@ -15,10 +15,10 @@
 import os
 import platform
 import shutil
-import unittest
 from contextlib import contextmanager
 
 from mock import patch, MagicMock
+from testtools import TestCase
 
 from cloudify import constants
 from cloudify import ctx
@@ -44,10 +44,7 @@ from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import only_ci
 
 
-class TestInstallNewAgent(BaseDaemonLiveTestCase, unittest.TestCase):
-    def setUp(self):
-        super(TestInstallNewAgent, self).setUp()
-
+class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
     @contextmanager
     def _manager_env(self):
         port = 8756
@@ -136,7 +133,7 @@ rest_mock.manager = MagicMock()
 rest_mock.manager.get_version = lambda: '3.3'
 
 
-class TestCreateAgentAmqp(BaseTest, unittest.TestCase):
+class TestCreateAgentAmqp(BaseTest, TestCase):
     @staticmethod
     @patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())
     @patch('cloudify.utils.ctx', mock_context())

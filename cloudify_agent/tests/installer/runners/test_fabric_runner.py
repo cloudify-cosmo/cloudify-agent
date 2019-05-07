@@ -13,8 +13,8 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import unittest
 from mock import patch
+from testtools import TestCase
 
 from cloudify_agent.installer import exceptions
 from cloudify_agent.installer.runners.fabric_runner import (
@@ -41,10 +41,7 @@ from cloudify_agent.tests.api.pm import only_os
 ##############################################################################
 
 @only_os('posix')
-class TestDefaults(BaseTest, unittest.TestCase):
-    def setUp(self):
-        super(TestDefaults, self).setUp()
-
+class TestDefaults(BaseTest, TestCase):
     def test_default_port(self):
         runner = FabricRunner(
             validate_connection=False,
@@ -55,10 +52,7 @@ class TestDefaults(BaseTest, unittest.TestCase):
 
 
 @only_os('posix')
-class TestValidations(BaseTest, unittest.TestCase):
-    def setUp(self):
-        super(TestValidations, self).setUp()
-
+class TestValidations(BaseTest, TestCase):
     def test_no_host(self):
         self.assertRaisesRegexp(
             exceptions.AgentInstallerConfigurationError,
@@ -88,12 +82,8 @@ class TestValidations(BaseTest, unittest.TestCase):
 
 
 @only_os('posix')
-class TestAbortException(BaseTest, unittest.TestCase):
-
+class TestAbortException(BaseTest, TestCase):
     """Test behavior on fabric abort."""
-
-    def setUp(self):
-        super(TestAbortException, self).setUp()
 
     def test_exception_message(self):
         """Exception message is the same one used by fabric."""
@@ -111,6 +101,9 @@ class TestAbortException(BaseTest, unittest.TestCase):
         )
         with patch(fabric_api_path) as fabric_api:
             fabric_api.run.side_effect = Exception(expected_message)
-            with self.assertRaises(FabricCommandExecutionError) as context:
+            try:
                 runner.run('a command')
-            self.assertEqual(context.exception.error, expected_message)
+            except FabricCommandExecutionError as e:
+                self.assertEqual(e.error, expected_message)
+            else:
+                self.fail('FabricCommandExecutionError not raised')
