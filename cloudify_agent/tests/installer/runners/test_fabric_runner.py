@@ -101,6 +101,9 @@ class TestAbortException(BaseTest, TestCase):
         )
         with patch(fabric_api_path) as fabric_api:
             fabric_api.run.side_effect = Exception(expected_message)
-            with self.assertRaises(FabricCommandExecutionError) as context:
+            try:
                 runner.run('a command')
-            self.assertEqual(context.exception.error, expected_message)
+            except FabricCommandExecutionError as e:
+                self.assertEqual(e.error, expected_message)
+            else:
+                self.fail('FabricCommandExecutionError not raised')
