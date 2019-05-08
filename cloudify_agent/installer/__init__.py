@@ -14,11 +14,9 @@
 #  * limitations under the License.
 
 import os
-import json
 import shutil
 import ntpath
 import copy
-import base64
 
 try:
     # Python 3.3+
@@ -41,7 +39,6 @@ from cloudify_agent.shell import env
 from cloudify_agent.api import utils, defaults
 
 from cloudify import broker_config
-from cloudify import ctx
 
 
 class AgentInstaller(object):
@@ -143,18 +140,14 @@ class AgentInstaller(object):
         broker_user = self.cloudify_agent.get('broker_user', tenant_user)
         broker_pass = self.cloudify_agent.get('broker_pass', tenant_pass)
 
-        manager_ip = self.cloudify_agent.get_manager_ip()
         network = self.cloudify_agent.get('network')
         execution_env = {
             # mandatory values calculated before the agent
             # is actually created
             env.CLOUDIFY_DAEMON_QUEUE: self.cloudify_agent['queue'],
             env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
-            env.CLOUDIFY_REST_HOST: manager_ip,
-            env.CLOUDIFY_BROKER_IP: ','.join(
-                broker.networks[network] for broker in
-                ctx.get_brokers(network=network)
-            ),
+            env.CLOUDIFY_REST_HOST: ','.join(self.cloudify_agent['rest_host']),
+            env.CLOUDIFY_BROKER_IP: ','.join(self.cloudify_agent['broker_ip']),
 
             # Optional broker values
             env.CLOUDIFY_BROKER_USER: broker_user,
@@ -188,8 +181,6 @@ class AgentInstaller(object):
             env.CLOUDIFY_LOCAL_REST_CERT_PATH: (
                 self.cloudify_agent['agent_rest_cert_path']
             ),
-            env.CLOUDIFY_CLUSTER_NODES: base64.b64encode(json.dumps(
-                self.cloudify_agent.get('cluster', []))),
             env.CLOUDIFY_NETWORK_NAME: network,
             ENV_CFY_EXEC_TEMPDIR: self.cloudify_agent.get(
                 'executable_temp_path'),

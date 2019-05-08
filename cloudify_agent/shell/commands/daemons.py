@@ -40,7 +40,8 @@ from cloudify.utils import (ENV_CFY_EXEC_TEMPDIR,
               help='The IP or host name of the REST service [env {0}]'
               .format(env.CLOUDIFY_REST_HOST),
               required=True,
-              envvar=env.CLOUDIFY_REST_HOST)
+              envvar=env.CLOUDIFY_REST_HOST,
+              callback=api_utils._parse_comma_separated)
 @click.option('--rest-port',
               help='The manager REST port to connect to. [env {0}]'
               .format(env.CLOUDIFY_REST_PORT),
@@ -96,7 +97,8 @@ from cloudify.utils import (ENV_CFY_EXEC_TEMPDIR,
 @click.option('--broker-ip',
               help='The broker host name or ip to connect to. [env {0}]'
                    .format(env.CLOUDIFY_BROKER_IP),
-              envvar=env.CLOUDIFY_BROKER_IP)
+              envvar=env.CLOUDIFY_BROKER_IP,
+              callback=api_utils._parse_comma_separated)
 @click.option('--broker-vhost',
               help='The broker virtual host to connect to. [env {0}]'
                    .format(env.CLOUDIFY_BROKER_VHOST),
@@ -177,11 +179,6 @@ from cloudify.utils import (ENV_CFY_EXEC_TEMPDIR,
                    .format(env.CLOUDIFY_NETWORK_NAME),
               envvar=env.CLOUDIFY_NETWORK_NAME,
               is_eager=True)
-@click.option('--cluster',
-              help='List of nodes in a cluster [env {0}]'
-                   .format(env.CLOUDIFY_CLUSTER_NODES),
-              envvar=env.CLOUDIFY_CLUSTER_NODES,
-              callback=api_utils._parse_cluster_nodes)
 @click.option('--executable-temp-path',
               help='Alternative path for temporary executable files',
               envvar=ENV_CFY_EXEC_TEMPDIR)

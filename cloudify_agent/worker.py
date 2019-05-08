@@ -126,6 +126,7 @@ class ServiceTaskConsumer(TaskConsumer):
         return {'time': time.time()}
 
     def cluster_update_task(self, nodes):
+        # TODO! replace with the add-networks stuff
         if not self.name:
             raise RuntimeError('cluster-update sent to agent with no name set')
         factory = DaemonFactory()

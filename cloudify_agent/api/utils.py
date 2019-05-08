@@ -22,7 +22,6 @@ import errno
 import getpass
 import types
 import urllib
-import base64
 import pkgutil
 
 import appdirs
@@ -30,6 +29,7 @@ import pkg_resources
 
 from jinja2 import Template
 
+from cloudify.cluster import CloudifyClusterClient
 from cloudify.workflows import tasks as workflows_tasks
 from cloudify.utils import setup_logger, get_exec_tempdir
 from cloudify.constants import (SECURED_PROTOCOL,
@@ -37,8 +37,6 @@ from cloudify.constants import (SECURED_PROTOCOL,
                                 BROKER_PORT_NO_SSL)
 # imported here for backwards compat
 from cloudify.utils import is_agent_alive  # noqa
-
-from cloudify_rest_client import CloudifyClient
 
 import cloudify_agent
 from cloudify_agent import VIRTUALENV
@@ -534,7 +532,7 @@ def get_rest_client(rest_host,
                       'create a REST client for a secured ' \
                       'manager [{1}]'.format(name, rest_host)
 
-    return CloudifyClient(
+    return CloudifyClusterClient(
         host=rest_host,
         protocol=SECURED_PROTOCOL,
         port=rest_port,
@@ -545,13 +543,10 @@ def get_rest_client(rest_host,
     )
 
 
-def _parse_cluster_nodes(ctx, param, value):
-    """Parsing callback for the --cluster option for cfy-agent"""
+def _parse_comma_separated(ctx, param, value):
     if not value:
         return
-    network_name = ctx.params.get('network') or 'default'
-    nodes = json_loads(base64.b64decode(value))
-    return [n['networks'][network_name]['manager'] for n in nodes]
+    return [part.strip() for part in value.split(',')]
 
 
 def get_manager_file_server_url(hostname, port):

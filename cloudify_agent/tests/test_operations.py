@@ -42,6 +42,7 @@ from cloudify_agent.tests.utils import FileServer
 
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
 from cloudify_agent.tests.api.pm import only_ci
+from cloudify_rest_client.manager import ManagerItem
 
 
 class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
@@ -67,17 +68,37 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
         shutil.copyfile(agent_package.get_package_path(), agent_path)
 
         new_env = {
-            constants.REST_HOST_KEY: 'localhost',
-            constants.MANAGER_FILE_SERVER_URL_KEY:
-                'http://localhost:{0}'.format(port),
             constants.MANAGER_FILE_SERVER_ROOT_KEY: resources_dir,
             constants.REST_PORT_KEY: str(port),
+            constants.MANAGER_FILE_SERVER_SCHEME: 'http'
         }
-        with patch.dict(os.environ, new_env):
-            try:
-                yield
-            finally:
-                fs.stop()
+
+        # Need to patch, to avoid broker_ssl_enabled being True
+        @contextmanager
+        def get_amqp_client(agent):
+            yield get_client()
+
+        managers = [
+            ManagerItem({
+                'networks': {'default': '127.0.0.1'},
+                'ca_cert_content': agent_ssl_cert.DUMMY_CERT
+            })
+        ]
+        patches = [
+            patch.dict(os.environ, new_env),
+            patch('cloudify_agent.operations._get_amqp_client',
+                  get_amqp_client),
+            patch('cloudify.endpoint.LocalEndpoint.get_managers',
+                  return_value=managers),
+        ]
+        for p in patches:
+            p.start()
+        try:
+            yield
+        finally:
+            for p in patches:
+                p.stop()
+            fs.stop()
 
     @patch('cloudify_agent.installer.operations.delete_agent_rabbitmq_user')
     @patch('cloudify.agent_utils.get_rest_client',
@@ -94,30 +115,11 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
             'ssl_cert_path': self._rest_cert_path
         }
 
-        # Necessary to patch this method, because by default port 80 is used
-        def http_rest_host(cloudify_agent):
-            return os.environ[constants.MANAGER_FILE_SERVER_URL_KEY]
-
-        # Necessary to patch, because by default https will be used
-        def file_server_url(*args, **kwargs):
-            return '{0}/resources'.format(http_rest_host({}))
-
-        # Need to patch, to avoid broker_ssl_enabled being True
-        @contextmanager
-        def get_amqp_client(agent):
-            yield get_client()
-
         with self._manager_env():
-            with patch('cloudify_agent.api.utils.get_manager_file_server_url',
-                       file_server_url):
-                env = local.init_env(name=self._testMethodName,
-                                     blueprint_path=blueprint_path,
-                                     inputs=inputs)
-                with patch('cloudify_agent.operations._http_rest_host',
-                           http_rest_host):
-                    with patch('cloudify_agent.operations._get_amqp_client',
-                               get_amqp_client):
-                        env.execute('install', task_retries=0)
+            env = local.init_env(name=self._testMethodName,
+                                 blueprint_path=blueprint_path,
+                                 inputs=inputs)
+            env.execute('install', task_retries=0)
             agent_dict = self.get_agent_dict(env, 'new_agent_host')
             agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
             new_agent_name = agent_dict['name']

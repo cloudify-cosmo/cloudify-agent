@@ -220,15 +220,8 @@ class Daemon(object):
         # Mandatory parameters
         self.validate_mandatory()
         self.rest_host = params['rest_host']
-        if isinstance(params['broker_ip'], basestring):
-            self.broker_ip = params['broker_ip'].split(',')
-        else:
-            # We appear to sometimes invoke this with the params already
-            # having been processed, so if it's not a string then we will
-            # treat it as already having been split.
-            self.broker_ip = params['broker_ip']
+        self.broker_ip = params['broker_ip']
         self.local_rest_cert_file = params['local_rest_cert_file']
-        self.cluster = params.get('cluster', [])
 
         # Optional parameters - REST client
         self.validate_optional()
@@ -282,7 +275,6 @@ class Daemon(object):
         # we will make use of these values when loading agents by name.
         self.process_management = self.PROCESS_MANAGEMENT
         self.virtualenv = VIRTUALENV
-        self.cluster_settings_path = params.get('cluster_settings_path')
         self.network = params.get('network') or 'default'
 
     def create_broker_conf(self):

@@ -18,13 +18,13 @@ import os
 from testtools import TestCase
 
 from cloudify.state import current_ctx
-from cloudify.mocks import MockCloudifyContext
 from cloudify import utils as cloudify_utils
 from cloudify import exceptions
 
 from cloudify_agent.installer import script
 from cloudify_agent.tests import BaseTest, utils, agent_ssl_cert
 from cloudify_agent.tests.api.pm import only_os
+from cloudify_agent.tests.installer.config import mock_context
 
 
 class BaseInstallScriptTest(BaseTest, TestCase):
@@ -57,8 +57,7 @@ class BaseInstallScriptTest(BaseTest, TestCase):
             }
         }
         node_properties['agent_config'].update(**override_properties)
-        ctx = MockCloudifyContext(node_id='d', properties=node_properties)
-        current_ctx.set(ctx)
+        current_ctx.set(mock_context(node_id='d', properties=node_properties))
 
     def _get_install_script(self, add_ssl_cert=True):
         script_builder = script._get_script_builder(

@@ -35,7 +35,7 @@ from cloudify_agent.tests.api.pm import (
     only_os,
     BaseDaemonLiveTestCase
 )
-
+from cloudify_rest_client.manager import ManagerItem
 
 ##############################################################################
 # these tests run a local workflow to install the agent on the local machine.
@@ -45,8 +45,8 @@ from cloudify_agent.tests.api.pm import (
 # actually launching VM's from the test.
 ##############################################################################
 
-class TestAgentInstallerLocal(BaseDaemonLiveTestCase, TestCase):
 
+class TestAgentInstallerLocal(BaseDaemonLiveTestCase, TestCase):
     """
     these tests run local workflows in order to invoke the installer
     operations. the remote use case is tested as part of the system tests.
@@ -104,12 +104,20 @@ class TestAgentInstallerLocal(BaseDaemonLiveTestCase, TestCase):
             'file_server_port': self.fs.port,
             'ssl_cert_path': self._rest_cert_path
         }
+        managers = [
+            ManagerItem({
+                'networks': {'default': '127.0.0.1'},
+                'ca_cert_content': agent_ssl_cert.DUMMY_CERT
+            })
+        ]
 
-        env = local.init_env(name=self._testMethodName,
-                             blueprint_path=blueprint_path,
-                             inputs=inputs)
+        with patch('cloudify.endpoint.LocalEndpoint.get_managers',
+                   return_value=managers):
+            env = local.init_env(name=self._testMethodName,
+                                 blueprint_path=blueprint_path,
+                                 inputs=inputs)
 
-        env.execute('install', task_retries=0)
+            env.execute('install', task_retries=0)
         agent_dict = self.get_agent_dict(env)
         agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
 

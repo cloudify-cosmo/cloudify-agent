@@ -72,22 +72,6 @@ def get_celery_app(broker_url=None,
     return celery_client
 
 
-def get_cluster_celery_app(broker_urls, cluster, ssl_enabled,
-                           broker_ssl_cert_path=None):
-    err = None
-    for broker_url in broker_urls:
-        try:
-            return get_celery_app(
-                broker_url=broker_url,
-                broker_ssl_cert_path=broker_ssl_cert_path,
-                broker_ssl_enabled=ssl_enabled,
-                max_retries=1)
-        except Exception as err:
-            continue
-    if err is not None:
-        raise err
-
-
 def _get_broker_url(tenant, target, broker_ssl_enabled):
     """
     If the target is the mgmtworker queue, or if no tenants was passed use

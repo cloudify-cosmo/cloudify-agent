@@ -161,8 +161,8 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         name = utils.internal.generate_agent_name()
 
         params = {
-            'rest_host': '127.0.0.1',
-            'broker_ip': '127.0.0.1',
+            'rest_host': ['127.0.0.1'],
+            'broker_ip': ['127.0.0.1'],
             'user': self.username,
             'workdir': self.temp_folder,
             'logger': self.logger,
@@ -308,13 +308,11 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.start()
 
         expected = {
-            constants.REST_HOST_KEY: str(daemon.rest_host),
+            constants.REST_HOST_KEY: ','.join(daemon.rest_host),
             constants.REST_PORT_KEY: str(daemon.rest_port),
-            constants.MANAGER_FILE_SERVER_URL_KEY:
-                'https://{0}:{1}/resources'.format(
-                    daemon.rest_host,
-                    daemon.rest_port
-            ),
+            constants.MANAGER_FILE_SERVER_URL_KEY: ','.join(
+                'https://{0}:{1}/resources'.format(host, daemon.rest_port)
+                for host in daemon.rest_host),
             constants.AGENT_WORK_DIR_KEY: daemon.workdir,
         }
 
