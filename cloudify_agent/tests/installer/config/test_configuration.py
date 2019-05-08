@@ -41,18 +41,18 @@ class TestConfiguration(BaseTest, TestCase):
     def test_prepare_secured(self):
         expected = self._get_distro_package_url(rest_port=443)
         expected['rest_port'] = '443'
-
-        self._test_prepare(
-            agent_config={'local': True, 'rest_port': '443'},
-            expected_values=expected
-        )
+        expected['file_server_url'] = 'https://localhost:443/resources'
+        with patch('cloudify.utils.get_manager_rest_service_port',
+                   return_value=443):
+            self._test_prepare(
+                agent_config={'local': True, 'rest_port': '443'},
+                expected_values=expected
+            )
 
     def test_prepare_multi_networks(self):
         manager_host = '10.0.0.1'
         network_name = 'test_network'
-        expected = self._get_distro_package_url(
-            rest_port=80, manager_host=manager_host
-        )
+        expected = self._get_distro_package_url(rest_port=80)
         expected['rest_port'] = 80
         expected['rest_host'] = [manager_host]
         expected['broker_ip'] = [manager_host]
@@ -149,7 +149,7 @@ class TestConfiguration(BaseTest, TestCase):
             'disable_requiretty': True,
             'env': {},
             'fabric_env': {},
-            'file_server_url': 'https://localhost:80/resources',
+            'file_server_url': 'http://localhost:80/resources',
             'max_workers': 5,
             'min_workers': 0,
             'workdir': workdir,
@@ -171,12 +171,24 @@ class TestConfiguration(BaseTest, TestCase):
         self.maxDiff = None
         context = context or {}
         ctx = mock_context(**context)
-        with patch('cloudify_agent.installer.config.agent_config.ctx', ctx):
-            with patch('cloudify.utils.ctx', mock_context()):
-                cloudify_agent = CloudifyAgentConfig()
-                cloudify_agent.set_initial_values(
-                    True, agent_config=agent_config)
-                cloudify_agent.set_execution_params()
-                cloudify_agent.set_default_values()
-                cloudify_agent.set_installation_params(None)
-                self.assertDictEqual(expected, cloudify_agent)
+        patches = [
+            patch('cloudify_agent.installer.config.agent_config.ctx', ctx),
+            patch('cloudify.utils.ctx', mock_context())
+        ]
+        # it's originally a string because it comes from envvars
+        if expected['rest_port'] != '443':
+            patches.append(
+                patch('cloudify.utils.get_manager_file_server_scheme',
+                      return_value='http')
+            )
+        for p in patches:
+            p.start()
+            self.addCleanup(p.stop)
+
+        cloudify_agent = CloudifyAgentConfig()
+        cloudify_agent.set_initial_values(
+            True, agent_config=agent_config)
+        cloudify_agent.set_execution_params()
+        cloudify_agent.set_default_values()
+        cloudify_agent.set_installation_params(None)
+        self.assertDictEqual(expected, cloudify_agent)
