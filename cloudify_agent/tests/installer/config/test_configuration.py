@@ -93,7 +93,7 @@ class TestConfiguration(BaseTest, TestCase):
         )
 
     @staticmethod
-    def _get_distro_package_url(rest_port, manager_host='127.0.0.1'):
+    def _get_distro_package_url(rest_port, manager_host='localhost'):
         result = {}
         base_url = utils.get_manager_file_server_url(manager_host, rest_port)
         agent_package_url = '{0}/packages/agents'.format(base_url)
@@ -149,6 +149,7 @@ class TestConfiguration(BaseTest, TestCase):
             'disable_requiretty': True,
             'env': {},
             'fabric_env': {},
+            'file_server_url': 'https://localhost:80/resources',
             'max_workers': 5,
             'min_workers': 0,
             'workdir': workdir,

@@ -70,11 +70,8 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
         new_env = {
             constants.MANAGER_FILE_SERVER_ROOT_KEY: resources_dir,
             constants.REST_PORT_KEY: str(port),
+            constants.MANAGER_FILE_SERVER_SCHEME: 'http'
         }
-
-        # Necessary to patch, because by default https will be used
-        def file_server_url(*args, **kwargs):
-            return 'http://localhost:{0}/resources'.format(port)
 
         # Need to patch, to avoid broker_ssl_enabled being True
         @contextmanager
@@ -89,8 +86,6 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
         ]
         patches = [
             patch.dict(os.environ, new_env),
-            patch('cloudify_agent.api.utils.get_manager_file_server_url',
-                  file_server_url),
             patch('cloudify_agent.operations._get_amqp_client',
                   get_amqp_client),
             patch('cloudify.endpoint.LocalEndpoint.get_managers',

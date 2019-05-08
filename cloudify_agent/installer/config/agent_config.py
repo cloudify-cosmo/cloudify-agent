@@ -14,7 +14,6 @@
 #  * limitations under the License.
 
 import os
-import random
 import getpass
 import platform
 
@@ -370,12 +369,15 @@ class CloudifyAgentConfig(dict):
                 cloudify_utils.get_broker_ssl_cert_path()
 
     def _set_fileserver_url(self):
-        # use a random restservice server, so that if that one is down and
-        # the operation fails, the next retry will possibly use a different one
-        rest_host = random.choice(self['rest_host'])
-        self['file_server_url'] = agent_utils.get_manager_file_server_url(
-            rest_host, self['rest_port']
-        )
+        # using the first (only) restservice out of the ones defined in the
+        # mgmtworker's envvars (ie. just the mgmtworker-local one, not all
+        # in the cluster). This is because mgmtworker will write a script
+        # that is supposed to be downloaded by the agent installer, and that
+        # script will only be served by the local restservice, because other
+        # restservices would only have it available after the delay of
+        # filesystem replication
+        self['file_server_url'] = \
+            cloudify_utils.get_manager_file_server_url()[0]
 
     def _set_package_url(self, runner):
         if self.get('package_url'):
