@@ -138,7 +138,6 @@ class CloudifyAgentConfig(dict):
         self._set_name()
         self.setdefault('network', constants.DEFAULT_NETWORK_NAME)
         self._set_ips_and_certs()
-        self._set_fileserver_url()
         # Remove the networks dict as it's no longer needed
         if 'networks' in self:
             self.pop('networks')
@@ -219,13 +218,12 @@ class CloudifyAgentConfig(dict):
         self['name'] = name
 
     def _set_ips_and_certs(self):
-        managers = ctx.get_managers(network=self['network'])
-        brokers = ctx.get_brokers(network=self['network'])
+        network = self['network']
+        managers = ctx.get_managers(network=network)
+        brokers = ctx.get_brokers(network=network)
 
-        self['rest_host'] = [manager.networks[self['network']]
-                             for manager in managers]
-        self['broker_ip'] = [broker.networks[self['network']]
-                             for broker in brokers]
+        self['rest_host'] = [manager.networks[network] for manager in managers]
+        self['broker_ip'] = [broker.networks[network] for broker in brokers]
 
         self['rest_ssl_cert'] = '\n'.join(
             manager.ca_cert_content.strip() for manager in
@@ -234,6 +232,28 @@ class CloudifyAgentConfig(dict):
         self['broker_ssl_cert'] = '\n'.join(
             broker.ca_cert_content.strip() for broker in
             brokers if broker.ca_cert_content
+        )
+
+        # setting fileserver url:
+        # using the mgmtworker-local one, not all in the cluster.
+        # This is because mgmtworker will write a script
+        # that is supposed to be downloaded by the agent installer, and that
+        # script will only be served by the local restservice, because other
+        # restservices would only have it available after the delay of
+        # filesystem replication
+        local_manager_hostname = cloudify_utils.get_manager_name()
+        local_manager_network_ip = None
+        for manager in managers:
+            if manager.hostname == local_manager_hostname:
+                local_manager_network_ip = manager.networks[network]
+                break
+        if not local_manager_network_ip:
+            raise RuntimeError(
+                'No fileserver url for manager {0} on network {1}'
+                .format(local_manager_hostname, self['network']))
+        self['file_server_url'] = agent_utils.get_manager_file_server_url(
+            local_manager_network_ip,
+            cloudify_utils.get_manager_rest_service_port()
         )
 
     def set_execution_params(self):
@@ -367,17 +387,6 @@ class CloudifyAgentConfig(dict):
         if not self.get('broker_ssl_cert_path'):
             self['broker_ssl_cert_path'] = \
                 cloudify_utils.get_broker_ssl_cert_path()
-
-    def _set_fileserver_url(self):
-        # using the first (only) restservice out of the ones defined in the
-        # mgmtworker's envvars (ie. just the mgmtworker-local one, not all
-        # in the cluster). This is because mgmtworker will write a script
-        # that is supposed to be downloaded by the agent installer, and that
-        # script will only be served by the local restservice, because other
-        # restservices would only have it available after the delay of
-        # filesystem replication
-        self['file_server_url'] = \
-            cloudify_utils.get_manager_file_server_url()[0]
 
     def _set_package_url(self, runner):
         if self.get('package_url'):
