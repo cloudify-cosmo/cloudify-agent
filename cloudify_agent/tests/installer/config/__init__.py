@@ -41,7 +41,8 @@ def mock_context(agent_properties=None,
         'managers': [
             {
                 'networks': {'default': '127.0.0.1'},
-                'ca_cert_content': agent_ssl_cert.DUMMY_CERT
+                'ca_cert_content': agent_ssl_cert.DUMMY_CERT,
+                'hostname': 'cloudify'
             }
         ],
         'brokers': [

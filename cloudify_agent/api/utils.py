@@ -549,8 +549,9 @@ def _parse_comma_separated(ctx, param, value):
     return [part.strip() for part in value.split(',')]
 
 
-def get_manager_file_server_url(hostname, port):
-    scheme = 'http' if port == 80 else 'https'
+def get_manager_file_server_url(hostname, port, scheme=None):
+    if scheme is None:
+        scheme = 'http' if port == 80 else 'https'
     return '{0}://{1}:{2}/resources'.format(scheme, hostname, port)
 
 
