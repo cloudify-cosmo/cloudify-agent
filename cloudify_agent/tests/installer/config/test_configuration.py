@@ -41,7 +41,7 @@ class TestConfiguration(BaseTest, TestCase):
     def test_prepare_secured(self):
         expected = self._get_distro_package_url(rest_port=443)
         expected['rest_port'] = '443'
-        expected['file_server_url'] = 'https://localhost:443/resources'
+        expected['file_server_url'] = 'https://127.0.0.1:443/resources'
         with patch('cloudify.utils.get_manager_rest_service_port',
                    return_value=443):
             self._test_prepare(
@@ -52,12 +52,14 @@ class TestConfiguration(BaseTest, TestCase):
     def test_prepare_multi_networks(self):
         manager_host = '10.0.0.1'
         network_name = 'test_network'
-        expected = self._get_distro_package_url(rest_port=80)
+        expected = self._get_distro_package_url(
+            rest_port=80, manager_host=manager_host)
         expected['rest_port'] = 80
         expected['rest_host'] = [manager_host]
         expected['broker_ip'] = [manager_host]
         expected['network'] = network_name
-
+        expected['file_server_url'] = \
+            'http://{0}:80/resources'.format(manager_host)
         self._test_prepare(
             agent_config={
                 'local': True,
@@ -80,7 +82,8 @@ class TestConfiguration(BaseTest, TestCase):
                         'default': manager_host,
                         network_name: manager_host
                     },
-                    'ca_cert_content': agent_ssl_cert.DUMMY_CERT
+                    'ca_cert_content': agent_ssl_cert.DUMMY_CERT,
+                    'hostname': 'cloudify'
                 }],
                 'brokers': [{
                     'networks': {
@@ -93,7 +96,7 @@ class TestConfiguration(BaseTest, TestCase):
         )
 
     @staticmethod
-    def _get_distro_package_url(rest_port, manager_host='localhost'):
+    def _get_distro_package_url(rest_port, manager_host='127.0.0.1'):
         result = {}
         base_url = utils.get_manager_file_server_url(manager_host, rest_port)
         agent_package_url = '{0}/packages/agents'.format(base_url)
@@ -149,7 +152,7 @@ class TestConfiguration(BaseTest, TestCase):
             'disable_requiretty': True,
             'env': {},
             'fabric_env': {},
-            'file_server_url': 'http://localhost:80/resources',
+            'file_server_url': 'http://127.0.0.1:80/resources',
             'max_workers': 5,
             'min_workers': 0,
             'workdir': workdir,
@@ -173,7 +176,8 @@ class TestConfiguration(BaseTest, TestCase):
         ctx = mock_context(**context)
         patches = [
             patch('cloudify_agent.installer.config.agent_config.ctx', ctx),
-            patch('cloudify.utils.ctx', mock_context())
+            patch('cloudify.utils.ctx', mock_context()),
+            patch('cloudify.utils.get_manager_name', return_value='cloudify')
         ]
         # it's originally a string because it comes from envvars
         if expected['rest_port'] != '443':

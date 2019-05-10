@@ -253,7 +253,8 @@ class CloudifyAgentConfig(dict):
                 .format(local_manager_hostname, self['network']))
         self['file_server_url'] = agent_utils.get_manager_file_server_url(
             local_manager_network_ip,
-            cloudify_utils.get_manager_rest_service_port()
+            cloudify_utils.get_manager_rest_service_port(),
+            scheme=cloudify_utils.get_manager_file_server_scheme()
         )
 
     def set_execution_params(self):

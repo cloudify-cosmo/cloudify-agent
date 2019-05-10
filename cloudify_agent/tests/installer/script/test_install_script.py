@@ -15,11 +15,12 @@
 
 import os
 
+from mock import patch
 from testtools import TestCase
 
 from cloudify.state import current_ctx
 from cloudify import utils as cloudify_utils
-from cloudify import exceptions
+from cloudify import constants, exceptions
 
 from cloudify_agent.installer import script
 from cloudify_agent.tests import BaseTest, utils, agent_ssl_cert
@@ -60,10 +61,11 @@ class BaseInstallScriptTest(BaseTest, TestCase):
         current_ctx.set(mock_context(node_id='d', properties=node_properties))
 
     def _get_install_script(self, add_ssl_cert=True):
-        script_builder = script._get_script_builder(
-            cloudify_agent=self.input_cloudify_agent
-        )
-        return script_builder.install_script(add_ssl_cert=add_ssl_cert)
+        with patch.dict(os.environ, {constants.MANAGER_NAME: 'cloudify'}):
+            script_builder = script._get_script_builder(
+                cloudify_agent=self.input_cloudify_agent
+            )
+            return script_builder.install_script(add_ssl_cert=add_ssl_cert)
 
     def _run(self, *commands):
         install_script = self._get_install_script()

@@ -70,7 +70,8 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
         new_env = {
             constants.MANAGER_FILE_SERVER_ROOT_KEY: resources_dir,
             constants.REST_PORT_KEY: str(port),
-            constants.MANAGER_FILE_SERVER_SCHEME: 'http'
+            constants.MANAGER_FILE_SERVER_SCHEME: 'http',
+            constants.MANAGER_NAME: 'cloudify'
         }
 
         # Need to patch, to avoid broker_ssl_enabled being True
@@ -81,7 +82,8 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
         managers = [
             ManagerItem({
                 'networks': {'default': '127.0.0.1'},
-                'ca_cert_content': agent_ssl_cert.DUMMY_CERT
+                'ca_cert_content': agent_ssl_cert.DUMMY_CERT,
+                'hostname': 'cloudify'
             })
         ]
         patches = [
@@ -172,7 +174,7 @@ class TestCreateAgentAmqp(BaseTest, TestCase):
         try:
             os.environ[constants.MANAGER_FILE_SERVER_ROOT_KEY] = \
                 self.temp_folder
-
+            os.environ[constants.MANAGER_NAME] = 'cloudify'
             properties = {}
             properties['cloudify_agent'] = self._create_agent()
             properties['agent_status'] = {'agent_alive_crossbroker': True}
@@ -185,7 +187,8 @@ class TestCreateAgentAmqp(BaseTest, TestCase):
                     'networks': {'default': host}
                 }],
                 managers=[{
-                    'networks': {'default': host}
+                    'networks': {'default': host},
+                    'hostname': 'cloudify'
                 }]
             )
             current_ctx.set(mock)

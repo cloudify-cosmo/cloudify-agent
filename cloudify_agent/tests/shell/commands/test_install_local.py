@@ -40,7 +40,8 @@ class TestInstaller(BaseTest, TestCase):
 
     @patch('cloudify.agent_utils.get_rest_client',
            return_value=MockRestclient())
-    def _test_agent_installation(self, agent_config, _):
+    @patch('cloudify.utils.get_manager_name', return_value='cloudify')
+    def _test_agent_installation(self, agent_config, *_):
         new_ctx = mock_context()
         current_ctx.set(new_ctx)
 

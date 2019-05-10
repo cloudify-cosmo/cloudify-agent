@@ -45,6 +45,9 @@ defaults:
           name: Install tox
           command: sudo pip install tox
       - run:
+          # run under tini to allow reaping subprocesses
+          # if you ssh into circle and want to run specific tests manually, do:
+          # sudo /sbin/tini -sw -- sudo -ucircleci bash -c "source .tox/py27/bin/activate && pytest cloudify_agent/tests/..."
           name: Run tox of specfic environment
           command: sudo /sbin/tini -ws sudo -- -u $(whoami) python -m tox -e ${TOX_TEST}
       - run:
