@@ -25,7 +25,7 @@ import threading
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
 
-from cloudify import dispatch, exceptions
+from cloudify import constants, dispatch, exceptions
 from cloudify.logs import setup_agent_logger
 from cloudify.error_handling import serialize_known_exception
 from cloudify.amqp_client import AMQPConnection, TaskConsumer
@@ -125,15 +125,31 @@ class ServiceTaskConsumer(TaskConsumer):
     def ping_task(self):
         return {'time': time.time()}
 
-    def cluster_update_task(self, nodes):
-        # TODO! replace with the add-networks stuff
+    def cluster_update_task(self, brokers, broker_ca, managers, manager_ca):
+        """Update the running agent with the new cluster.
+
+        When a node is added or removed from the cluster, the agent will
+        receive the current cluster nodes in this task. We need to update
+        both the current process envvars, the cert files, and all the
+        daemon config files.
+        """
         if not self.name:
             raise RuntimeError('cluster-update sent to agent with no name set')
         factory = DaemonFactory()
         daemon = factory.load(self.name)
-        network_name = daemon.network
-        nodes = [n['networks'][network_name] for n in nodes]
-        daemon.cluster = nodes
+
+        os.environ[constants.REST_HOST_KEY] = ','.join(managers)
+
+        with open(daemon.local_rest_cert_file, 'w') as f:
+            f.write(manager_ca)
+        with open(daemon.broker_ssl_cert_path, 'w') as f:
+            f.write(broker_ca)
+
+        daemon.rest_host = managers
+        daemon.broker_ip = brokers
+        daemon.create_broker_conf()
+        daemon.create_config()
+
         factory.save(daemon)
 
     def cancel_operation_task(self, execution_id):
