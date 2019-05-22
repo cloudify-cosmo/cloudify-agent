@@ -49,6 +49,46 @@ services:
     depends_on:
       - centos7_base
 
+  redhat6_base:
+    build:
+      context: ./
+      dockerfile: docker-files/centos_rhel/Dockerfile
+      args:
+        BASE_IMAGE: rhel-subs:6.1
+    image: redhat6_base_img
+  redhat6_agent:
+    build:
+      context: ./
+      dockerfile: docker-files/Dockerfile
+      args:
+        BASE_IMAGE: redhat6_base_img
+    image: redhat6_agent_img
+    container_name: redhat6_agent
+    environment: *common-variables
+    network_mode: host
+    depends_on:
+      - redhat6_base
+
+  redhat7_base:
+    build:
+      context: ./
+      dockerfile: docker-files/centos_rhel/Dockerfile
+      args:
+        BASE_IMAGE: rhel-subs:7
+    image: redhat7_base_img
+  redhat7_agent:
+      build:
+        context: ./
+        dockerfile: docker-files/Dockerfile
+        args:
+          BASE_IMAGE: redhat7_base_img
+      image: redhat7_agent_img
+      container_name: redhat7_agent
+      environment: *common-variables
+      network_mode: host
+      depends_on:
+        - redhat7_base
+
   ubuntu14_base:
     build:
       context: ./
