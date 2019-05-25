@@ -23,11 +23,11 @@ from posixpath import join as urljoin
 from contextlib import contextmanager
 
 from cloudify import amqp_client, ctx
+from cloudify import broker_config as global_broker_config
 from cloudify.decorators import operation
 from cloudify.manager import get_rest_client
 from cloudify.models_states import AgentState
 from cloudify.constants import BROKER_PORT_SSL
-from cloudify.broker_config import broker_hostname
 from cloudify.error_handling import deserialize_known_exception
 from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.agent_utils import create_agent_record, update_agent_record
@@ -171,7 +171,7 @@ def _set_default_new_agent_config_values(old_agent, new_agent):
     new_agent['name'] = utils.internal.generate_new_agent_name(
         old_agent['name']
     )
-    new_agent['broker_ip'] = broker_hostname
+    new_agent['broker_ip'] = global_broker_config.broker_hostname
     new_agent['old_agent_version'] = old_agent['version']
     new_agent['disable_requiretty'] = False
     new_agent['install_with_sudo'] = True
