@@ -62,8 +62,15 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         """
         template = self._get_template(self.install_script_template)
         # Called before creating the agent env to populate all the variables
-        cert_content = self.cloudify_agent['rest_ssl_cert'] \
-            if add_ssl_cert else ''
+        if add_ssl_cert:
+            rest_cert = self.cloudify_agent['rest_ssl_cert'].strip()
+            broker_cert = self.cloudify_agent['broker_ssl_cert'].strip()
+            certs = [rest_cert]
+            if broker_cert and broker_cert != rest_cert:
+                certs.append(broker_cert)
+            cert_content = '\n'.join(certs)
+        else:
+            cert_content = ''
         remote_ssl_cert_path = self._get_remote_ssl_cert_path()
         # Called before rendering the template to populate all the variables
         daemon_env = self._create_agent_env()
