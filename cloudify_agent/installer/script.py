@@ -167,7 +167,10 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         args_dict = dict(
             link=script_url,
             sudo=sudo,
-            ssl_cert_content=self.cloudify_agent['rest_ssl_cert'],
+            ssl_cert_content='\n'.join([
+                self.cloudify_agent['rest_ssl_cert'],
+                self.cloudify_agent['broker_ssl_cert'],
+            ]),
             ssl_cert_path=self._get_remote_ssl_cert_path(),
             tmpdir=self.cloudify_agent.tmpdir,
             name=self.cloudify_agent['name']
