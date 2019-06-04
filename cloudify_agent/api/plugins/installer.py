@@ -214,7 +214,7 @@ class PluginInstaller(object):
     def _wait_for_syncthing():
         # This file exists only when the Syncthing service is running
         if os.path.exists(syncthing_utils.config_path):
-            while not syncthing_utils.mgmtworker_is_syncing_complete():
+            while not syncthing_utils.mgmtworker_is_plugins_syncing_complete():
                 time.sleep(SYNCTHING_QUERY_INTERVAL)
 
     @staticmethod
