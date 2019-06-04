@@ -35,9 +35,8 @@ from cloudify.utils import setup_logger
 from cloudify.utils import extract_archive
 from cloudify.manager import get_rest_client
 from cloudify.utils import LocalCommandRunner
-from cloudify.exceptions import NonRecoverableError
-from cloudify.exceptions import CommandExecutionException
 from cloudify.plugins.install_utils import INSTALLING_PREFIX
+from cloudify.exceptions import NonRecoverableError, CommandExecutionException
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import plugins
@@ -53,7 +52,7 @@ except ImportError:
 SYSTEM_DEPLOYMENT = '__system__'
 SYNCTHING_QUERY_INTERVAL = 1
 PLUGIN_QUERY_INTERVAL = 1
-
+INSTALLATION_TIMEOUT = 75
 
 class PluginInstaller(object):
 
@@ -145,9 +144,15 @@ class PluginInstaller(object):
                           'in {0}'.format(dst_dir))
 
         # create_deployment_env should wait for the install_plugin wf to finish
+        deadline = time.time() + INSTALLATION_TIMEOUT
         while (self._is_plugin_installing(managed_plugin.id) and
                deployment_id != SYSTEM_DEPLOYMENT):
-            time.sleep(PLUGIN_QUERY_INTERVAL)
+            if time.time() < deadline:
+                time.sleep(PLUGIN_QUERY_INTERVAL)
+            else:
+                raise exceptions.PluginInstallationError(
+                    'Timeout waiting for plugin to be installed. '
+                    'Plugin info: [{0}] '.format(managed_plugin))
 
         if os.path.exists(dst_dir):
             self.logger.debug('Plugin path exists {0}'.format(dst_dir))
@@ -191,14 +196,13 @@ class PluginInstaller(object):
                 'installed using the REST plugins API. [{0}]'
                 .format(managed_plugin))
         else:
-            self.logger.info('Installing managed plugin: {0} [{1}]'
-                             .format(managed_plugin.id, description))
             try:
+                self.logger.info('Installing managed plugin: {0} [{1}]'
+                                 .format(managed_plugin.id, description))
                 self._wagon_install(plugin=managed_plugin, args=args)
                 shutil.move(tmp_plugin_dir, dst_dir)
                 with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
                     f.write(managed_plugin.id)
-
                 # Wait for Syncthing to sync plugin files on all managers
                 if syncthing_utils:
                     self._wait_for_syncthing()
@@ -212,10 +216,16 @@ class PluginInstaller(object):
 
     @staticmethod
     def _wait_for_syncthing():
+        deadline = time.time() + INSTALLATION_TIMEOUT
         # This file exists only when the Syncthing service is running
         if os.path.exists(syncthing_utils.config_path):
             while not syncthing_utils.mgmtworker_is_plugins_syncing_complete():
-                time.sleep(SYNCTHING_QUERY_INTERVAL)
+                if time.time() < deadline:
+                    time.sleep(SYNCTHING_QUERY_INTERVAL)
+                else:
+                    raise exceptions.PluginInstallationError(
+                        'Timeout waiting for Syncthing to sync plugin`s'
+                        ' directory.')
 
     @staticmethod
     def _update_plugin_status(plugin_id):
