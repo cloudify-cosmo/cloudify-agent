@@ -149,8 +149,7 @@ class _AgentPackageGenerator(object):
         from cloudify_agent.tests import utils
         self._resources_dir = tempfile.mkdtemp(
             prefix='file-server-resource-base')
-        self._fs = utils.FileServer(
-            root_path=self._resources_dir, port=8888, ssl=False)
+        self._fs = utils.FileServer(root_path=self._resources_dir, ssl=False)
         self._fs.start()
         config = {
             'cloudify_agent_module': utils.get_source_uri(),
