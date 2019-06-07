@@ -72,7 +72,6 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
         new_env = {
             constants.MANAGER_FILE_SERVER_ROOT_KEY: resources_dir,
             constants.REST_PORT_KEY: str(port),
-            constants.MANAGER_FILE_SERVER_SCHEME: 'http',
             constants.MANAGER_NAME: 'cloudify'
         }
 
