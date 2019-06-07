@@ -267,6 +267,10 @@ class FileServer():
     def start(self, timeout=5):
         app = bottle.Bottle()
 
+        @app.get('/')
+        def get_index():
+            return '\n'.join(os.listdir(self.root_path))
+
         @app.get('/<filename:path>')
         def get_file(filename):
             return bottle.static_file(filename, root=self.root_path)
