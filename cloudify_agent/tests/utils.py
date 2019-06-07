@@ -307,7 +307,9 @@ def op_context(task_name,
             'name': plugin_name,
             'package_name': package_name,
             'package_version': package_version
-        }
+        },
+        # agents in tests do not have a manager
+        'local': True
     }
     if deployment_id:
         result['deployment_id'] = deployment_id
