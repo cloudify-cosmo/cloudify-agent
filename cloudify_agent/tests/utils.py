@@ -251,12 +251,18 @@ class SSLWSGIServer(wsgiref.simple_server.WSGIServer):
 
 
 class FileServer():
-    def __init__(self, root_path=None, port=5555, ssl=True):
-        self.port = port
+    def __init__(self, root_path=None, port=0, ssl=True):
+        self._port = port
         self.root_path = root_path or os.path.dirname(resources.__file__)
         self._server = None
         self._server_thread = None
         self._ssl = ssl
+
+    @property
+    def port(self):
+        if not self._server:
+            return
+        return self._server.server_address[1]
 
     def start(self, timeout=5):
         app = bottle.Bottle()
@@ -268,7 +274,7 @@ class FileServer():
         server_class = SSLWSGIServer if self._ssl else \
             wsgiref.simple_server.WSGIServer
         self._server = wsgiref.simple_server.make_server(
-            '127.0.0.1', self.port, app, server_class=server_class)
+            '', self._port, app, server_class=server_class)
 
         self._server_thread = threading.Thread(
             target=self._server.serve_forever)
