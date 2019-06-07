@@ -63,7 +63,7 @@ class TestAgentInstallerLocal(BaseDaemonLiveTestCase, TestCase):
 
         self.resource_base = tempfile.mkdtemp(
             prefix='file-server-resource-base')
-        self.fs = FileServer(root_path=self.resource_base)
+        self.fs = FileServer(root_path=self.resource_base, ssl=False)
         self.fs.start()
 
         self.addCleanup(self.fs.stop)

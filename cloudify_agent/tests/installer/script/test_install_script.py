@@ -33,10 +33,9 @@ class BaseInstallScriptTest(BaseTest, TestCase):
     windows = None
 
     def _serve(self):
-        self.port = 5555
-        self.server = utils.FileServer(self.temp_folder, port=self.port)
+        self.server = utils.FileServer(self.temp_folder, ssl=False)
         self.server.start()
-        self.addCleanup(lambda: self.server.stop())
+        self.addCleanup(self.server.stop)
 
     def setUp(self):
         super(BaseInstallScriptTest, self).setUp()
@@ -101,16 +100,16 @@ class TestLinuxInstallScript(BaseInstallScriptTest, TestCase):
         self._serve()
         self._run('ln -s $(which curl) curl',
                   'PATH=$PWD',
-                  'download http://localhost:{0} download.output'.format(
-                      self.port))
+                  'download http://localhost:{0} download.output'
+                  .format(self.server.port))
         self.assertTrue(os.path.isfile('download.output'))
 
     def test_download_wget(self):
         self._serve()
         self._run('ln -s $(which wget) wget',
                   'PATH=$PWD',
-                  'download http://localhost:{0} download.output'.format(
-                      self.port))
+                  'download http://localhost:{0} download.output'
+                  .format(self.server.port))
         self.assertTrue(os.path.isfile('download.output'))
 
     def test_download_no_curl_or_wget(self):
@@ -119,7 +118,8 @@ class TestLinuxInstallScript(BaseInstallScriptTest, TestCase):
             exceptions.CommandExecutionException,
             self._run,
             'PATH=$PWD',
-            'download http://localhost:{0} download.output'.format(self.port))
+            'download http://localhost:{0} download.output'
+            .format(self.server.port))
 
     def test_package_url_implicit(self):
         output = self._run('package_url')

@@ -51,6 +51,7 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
         port = 8756
         fs = FileServer(root_path=self.temp_folder, port=port)
         fs.start()
+        self.addCleanup(fs.stop)
         if os.name == 'nt':
             package_name = 'cloudify-windows-agent.exe'
         else:
@@ -66,13 +67,20 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
 
         agent_path = os.path.join(agent_dir, package_name)
         shutil.copyfile(agent_package.get_package_path(), agent_path)
+        self.addCleanup(agent_package.cleanup)
 
         new_env = {
             constants.MANAGER_FILE_SERVER_ROOT_KEY: resources_dir,
             constants.REST_PORT_KEY: str(port),
-            constants.MANAGER_FILE_SERVER_SCHEME: 'http',
             constants.MANAGER_NAME: 'cloudify'
         }
+
+        original_create_op_context = operations._get_cloudify_context
+
+        def mock_create_op_context(agent, task_name):
+            context = original_create_op_context(agent, task_name)
+            context['__cloudify_context']['local'] = True
+            return context
 
         # Need to patch, to avoid broker_ssl_enabled being True
         @contextmanager
@@ -92,6 +100,8 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
                   get_amqp_client),
             patch('cloudify.endpoint.LocalEndpoint.get_managers',
                   return_value=managers),
+            patch('cloudify_agent.operations._get_cloudify_context',
+                  mock_create_op_context)
         ]
         for p in patches:
             p.start()

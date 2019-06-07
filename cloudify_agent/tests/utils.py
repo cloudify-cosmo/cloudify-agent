@@ -13,17 +13,18 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import logging
-import platform
-import time
-import socket
-import subprocess
-import os
 import filecmp
+import os
+import platform
+import ssl
 import tarfile
+import tempfile
+import threading
 import uuid
+import wsgiref.simple_server
 from contextlib import contextmanager
 
+import bottle
 import wagon
 from agent_packager import packager
 
@@ -33,8 +34,10 @@ from cloudify.utils import setup_logger
 
 import cloudify_agent
 
-from cloudify_agent import VIRTUALENV
 from cloudify_agent.tests import resources
+from cloudify_agent.api.defaults import (SSL_CERTS_TARGET_DIR,
+                                         AGENT_SSL_CERT_FILENAME)
+
 
 logger = setup_logger('cloudify_agent.tests.utils')
 
@@ -225,68 +228,67 @@ def are_dir_trees_equal(dir1, dir2):
     return True
 
 
-class FileServer(object):
+class SSLWSGIServer(wsgiref.simple_server.WSGIServer):
+    _certfile = None
+    _keyfile = None
 
-    def __init__(self, root_path=None, port=5555):
-        self.port = port
+    def server_close(self):
+        wsgiref.simple_server.WSGIServer.server_close(self)
+        if self._certfile:
+            os.unlink(self._certfile)
+        if self._keyfile:
+            os.unlink(self._keyfile)
+
+    def get_request(self):
+        if not self._certfile or not self._keyfile:
+            self._certfile = _AgentSSLCert.get_local_cert_path()
+            self._keyfile = _AgentSSLCert.local_key_path()
+        socket, addr = wsgiref.simple_server.WSGIServer.get_request(self)
+        socket = ssl.wrap_socket(
+            socket, keyfile=self._keyfile, certfile=self._certfile,
+            server_side=True)
+        return socket, addr
+
+
+class FileServer():
+    def __init__(self, root_path=None, port=0, ssl=True):
+        self._port = port
         self.root_path = root_path or os.path.dirname(resources.__file__)
-        self.process = None
-        self.logger = setup_logger('cloudify_agent.tests.utils.FileServer',
-                                   logger_level=logging.DEBUG)
-        self.runner = LocalCommandRunner(self.logger)
+        self._server = None
+        self._server_thread = None
+        self._ssl = ssl
+
+    @property
+    def port(self):
+        if not self._server:
+            return
+        return self._server.server_address[1]
 
     def start(self, timeout=5):
-        if os.name == 'nt':
-            serve_path = os.path.join(VIRTUALENV, 'Scripts', 'serve')
-        else:
-            serve_path = os.path.join(VIRTUALENV, 'bin', 'serve')
+        app = bottle.Bottle()
 
-        self.process = subprocess.Popen(
-            [serve_path, '-p', str(self.port), self.root_path],
-            stdin=open(os.devnull, 'w'),
-            stdout=None,
-            stderr=None)
+        @app.get('/')
+        def get_index():
+            return '\n'.join(os.listdir(self.root_path))
 
-        end_time = time.time() + timeout
+        @app.get('/<filename:path>')
+        def get_file(filename):
+            return bottle.static_file(filename, root=self.root_path)
 
-        while end_time > time.time():
-            if self.is_alive():
-                logger.info('File server is up and serving from {0} ({1})'
-                            .format(self.root_path, self.process.pid))
-                return
-            logger.info('File server is not responding. waiting 10ms')
-            time.sleep(0.1)
-        raise RuntimeError('FileServer failed to start')
+        server_class = SSLWSGIServer if self._ssl else \
+            wsgiref.simple_server.WSGIServer
+        self._server = wsgiref.simple_server.make_server(
+            '', self._port, app, server_class=server_class)
+
+        self._server_thread = threading.Thread(
+            target=self._server.serve_forever)
+        self._server_thread.start()
 
     def stop(self, timeout=15):
-        if self.process is None:
-            return
-
-        end_time = time.time() + timeout
-
-        if os.name == 'nt':
-            self.runner.run('taskkill /F /T /PID {0}'.format(self.process.pid),
-                            stdout_pipe=False, stderr_pipe=False,
-                            exit_on_failure=False)
-        else:
-            self.runner.run('kill -9 {0}'.format(self.process.pid))
-
-        while end_time > time.time():
-            if not self.is_alive():
-                logger.info('File server has shutdown')
-                return
-            logger.info('File server is still running. waiting 10ms')
-            time.sleep(0.1)
-        raise RuntimeError('FileServer failed to stop')
-
-    def is_alive(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            s.connect(('localhost', self.port))
-            s.close()
-            return True
-        except socket.error:
-            return False
+        self._server.shutdown()
+        self._server_thread.join(timeout)
+        if self._server_thread.is_alive():
+            raise RuntimeError('FileServer failed to stop')
 
 
 def op_context(task_name,
@@ -307,8 +309,75 @@ def op_context(task_name,
             'name': plugin_name,
             'package_name': package_name,
             'package_version': package_version
-        }
+        },
+        # agents in tests do not have a manager
+        'local': True
     }
     if deployment_id:
         result['deployment_id'] = deployment_id
     return result
+
+
+class _AgentSSLCert(object):
+    DUMMY_CERT = """-----BEGIN CERTIFICATE-----
+MIIB9jCCAV+gAwIBAgIJAPSWQ5SpAsA1MA0GCSqGSIb3DQEBCwUAMBQxEjAQBgNV
+BAMMCTEyNy4wLjAuMTAeFw0xOTA2MDcxMzI2MTVaFw0yMDA2MDYxMzI2MTVaMBQx
+EjAQBgNVBAMMCTEyNy4wLjAuMTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEA
+wxec40yt8nLAhCvQ564LB64aMhrQG5OeqXF+9Gf02goy41VBTZ+nCa98E6e3kbQc
+syJR1BotgnJtR8hyYiw5svAkVue6dwxBtZ+zyH6WDQxmDnK3ilRCJeD5VdiDZfau
+vQpgYGbTnm5PIm6ifNo2Sw4DOhf93TCZ/du5OvlihIUCAwEAAaNQME4wHQYDVR0O
+BBYEFDjXfACluAhEgcX1ZFlNYlIAJLD5MB8GA1UdIwQYMBaAFDjXfACluAhEgcX1
+ZFlNYlIAJLD5MAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQELBQADgYEAqwzTZFXJ
+MrophVgsYCqPByU1aw2IulZGnocsbpRv1VQVxYQSo42JwQfu82DyG0rCXjAeaph6
+Plo3XHZ0yvRmWVTb8pORbg+RQqzzFQmb7nhSpIaBMMim6u5G5/184dmCloc4QyWL
+/CJQWsGXXUBg+8HNhzReKvdbICSTlqaonZo=
+-----END CERTIFICATE-----"""
+    PRIVATE_KEY = """-----BEGIN PRIVATE KEY-----
+MIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBAMMXnONMrfJywIQr
+0OeuCweuGjIa0BuTnqlxfvRn9NoKMuNVQU2fpwmvfBOnt5G0HLMiUdQaLYJybUfI
+cmIsObLwJFbnuncMQbWfs8h+lg0MZg5yt4pUQiXg+VXYg2X2rr0KYGBm055uTyJu
+onzaNksOAzoX/d0wmf3buTr5YoSFAgMBAAECgYAg9Nk08Jwl68qnyTsWGCmW14tn
+UW48aliQKTMYGIOdXcGw85L/iOvP0Aw2yctR2spKXI7UNMPhWHErgioIeY4ZZ4Qs
+QaFB776YP1779aJjT98J/PMuWj+R3iTWm1jWngmCOgrCvRfTf8eV6EGee11zaiyT
+ThvvEP2+gnGCTLHVwQJBAPJ3a+aIsPct8s+saWCUX7p6v25TXLWgzpPRh2KadXhw
+FwS+6bQ4a41gfuRT54XhGXU5ICTz542ubwe+6qTjznUCQQDN+0P9BTOkLRTVFmTo
+KsTIyfHaWVOIP55X5D7WHczunzTAHzDqFus0ebAB6Zvxb2u86JcT6jrkmF8HCLPZ
+SjvRAkEArGyKWdWI6y5MxqxX/6tj7AvQSFeVzT++x9WwDknDEdO8Os69CUE6Er61
+Xg/gzA8IeJkYJ88fMl0CbiKxYHLz5QJAERKaeAZOWXVDHMZWZsfkt5/FZAuzWL+t
+KCvK6YRe0AhyHtp2+3Aa3qaXaBEs074gd+/vVb88UmYuui6GeaQlgQJATayT5T0D
+ZW6ExLdmb9PCe6psBBCFMBgeBpcTQXKM2UvfZg6zovMRjd8fbjlTPJvxj9lfsjsc
+12XFXMUqKqE6tw==
+-----END PRIVATE KEY-----"""
+
+    @staticmethod
+    def get_local_cert_path(temp_folder=None):
+        with tempfile.NamedTemporaryFile(delete=False, dir=temp_folder) as f:
+            f.write(_AgentSSLCert.DUMMY_CERT)
+        return f.name
+
+    @staticmethod
+    def local_key_path(temp_folder=None):
+        with tempfile.NamedTemporaryFile(delete=False, dir=temp_folder) as f:
+            f.write(_AgentSSLCert.PRIVATE_KEY)
+        return f.name
+
+    @staticmethod
+    def _clean_cert(cert_content):
+        """ Strip any whitespaces, and normalize the string on windows """
+
+        cert_content = cert_content.strip()
+        cert_content = cert_content.replace('\r\n', '\n').replace('\r', '\n')
+        return cert_content
+
+    @staticmethod
+    def verify_remote_cert(agent_dir):
+        agent_cert_path = os.path.join(
+            os.path.expanduser(agent_dir),
+            os.path.normpath(SSL_CERTS_TARGET_DIR),
+            AGENT_SSL_CERT_FILENAME
+        )
+        with open(agent_cert_path, 'r') as f:
+            cert_content = f.read()
+
+        cert_content = _AgentSSLCert._clean_cert(cert_content)
+        assert cert_content == _AgentSSLCert.DUMMY_CERT
