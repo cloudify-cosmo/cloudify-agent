@@ -51,6 +51,7 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
         port = 8756
         fs = FileServer(root_path=self.temp_folder, port=port)
         fs.start()
+        self.addCleanup(fs.stop)
         if os.name == 'nt':
             package_name = 'cloudify-windows-agent.exe'
         else:
@@ -66,6 +67,7 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
 
         agent_path = os.path.join(agent_dir, package_name)
         shutil.copyfile(agent_package.get_package_path(), agent_path)
+        self.addCleanup(agent_package.cleanup)
 
         new_env = {
             constants.MANAGER_FILE_SERVER_ROOT_KEY: resources_dir,

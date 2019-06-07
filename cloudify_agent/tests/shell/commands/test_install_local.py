@@ -37,6 +37,7 @@ class TestInstaller(BaseTest, TestCase):
     def setUp(self):
         super(TestInstaller, self).setUp()
         self._package_url = agent_package.get_package_url()
+        self.addCleanup(agent_package.cleanup)
 
     @patch('cloudify.agent_utils.get_rest_client',
            return_value=MockRestclient())
