@@ -60,7 +60,7 @@ class PluginInstallerTest(BaseTest, TestCase):
         cls.file_server_resource_base = tempfile.mkdtemp(
             prefix='file-server-resource-base-')
         cls.fs = test_utils.FileServer(
-            root_path=cls.file_server_resource_base)
+            root_path=cls.file_server_resource_base, ssl=False)
         cls.fs.start()
         cls.file_server_url = 'http://localhost:{0}'.format(cls.fs.port)
 

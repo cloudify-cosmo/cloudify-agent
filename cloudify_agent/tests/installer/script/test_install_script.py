@@ -34,9 +34,10 @@ class BaseInstallScriptTest(BaseTest, TestCase):
 
     def _serve(self):
         self.port = 5555
-        self.server = utils.FileServer(self.temp_folder, port=self.port)
+        self.server = utils.FileServer(
+            self.temp_folder, port=self.port, ssl=False)
         self.server.start()
-        self.addCleanup(lambda: self.server.stop())
+        self.addCleanup(self.server.stop)
 
     def setUp(self):
         super(BaseInstallScriptTest, self).setUp()
