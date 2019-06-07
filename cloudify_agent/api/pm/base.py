@@ -331,7 +331,10 @@ class Daemon(object):
 
     def _is_daemon_running(self):
         self._logger.debug('Checking if agent daemon is running...')
-        return utils.is_agent_alive(self.queue, self._get_client(), timeout=3)
+        client = self._get_client()
+        with client:
+            return utils.is_agent_alive(
+                self.queue, client, timeout=3, connect=False)
 
     ########################################################################
     # the following methods must be implemented by the sub-classes as they
