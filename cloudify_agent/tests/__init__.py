@@ -27,8 +27,7 @@ from cloudify.utils import setup_logger
 from cloudify.amqp_client import get_client
 
 from cloudify_agent.api import utils as agent_utils
-from cloudify_agent.api.defaults import (SSL_CERTS_TARGET_DIR,
-                                         AGENT_SSL_CERT_FILENAME)
+from cloudify_agent.tests import utils as test_utils
 
 try:
     win_error = WindowsError
@@ -40,55 +39,7 @@ def get_storage_directory(_=None):
     return os.path.join(tempfile.gettempdir(), 'cfy-agent-tests-daemons')
 
 
-class _AgentSSLCert(object):
-    DUMMY_CERT = """-----BEGIN CERTIFICATE-----
-MIIC5zCCAc+gAwIBAgIJAMDMgooDgq+oMA0GCSqGSIb3DQEBBQUAMBQxEjAQBgNV
-BAMTCTEwLjAuMC4xNzAgFw0xNzA3MjMxMDUxMzhaGA8yMTE3MDYyOTEwNTEzOFow
-FDESMBAGA1UEAxMJMTAuMC4wLjE3MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
-CgKCAQEAzgTrRomQZV0wRVA51HTrRCsNyoH9qVJtn8N16VgYrSIiUUSKFrIsNYJC
-ijzZdv1FS4olu98KRitXbd/b+vSTEnVqaMPZ6eA6VJKaGFwWC87uR6NJ+QO3N5gz
-B5OAF6aSC6ieLo7zknRPyHUis7Fl0m4eyZ0KpwmunxzS5TJh5U5cQOFFI13bmXoM
-J+Fy3Bp+BrEH99Awh7PBGM/VuWDexJtaOUbCUk7j9TC8kEGsRPOaFSF4444EPD/e
-HvGkoQlqItHKsI81oyPA7J4fLDegRzRyKpHD3RlZeap72oYApJ1a/ycvB58NeVbF
-5BZpfaXMl+6BcQ9dTowKE7anYSU68QIDAQABozowODA2BgNVHREELzAthwQKAAAR
-ggkxMC4wLjAuMTeHBH8AAAGCCTEyNy4wLjAuMYIJbG9jYWxob3N0MA0GCSqGSIb3
-DQEBBQUAA4IBAQCqi2l1bdJ0AnqH/bkU8jIFI5WiBMqqNZ9EuFAMAmnman+HgmiI
-XwL4r0MjBarZtCiw8geQNJJobowLec0WeayMe1b5yebEOC3IW0VgwoY4T5EsQEL7
-yAUgictlFVpjSMZLj4OLeC7vkto7qIt8wAON4208eJfYV4G9hHECy1HmVSIJzCEy
-0IDhUFXcc3fNw/0NS1KzHSzxBHTQVOLwNJwVDsrZatr8Kkty41rYNvm78MkIWQep
-iILRgGAUuV5Pyz+Q0oV6I6EMuxgKfdOR5afhHc9pHUua7BJdhVRIegzsbfl6rFxN
-LeQrlI6ZGJVyqflWbTF7pos1V7/TAW6kDlUK
------END CERTIFICATE-----"""
-
-    @staticmethod
-    def get_local_cert_path(temp_folder):
-        with tempfile.NamedTemporaryFile(delete=False, dir=temp_folder) as f:
-            f.write(_AgentSSLCert.DUMMY_CERT)
-        return f.name
-
-    @staticmethod
-    def _clean_cert(cert_content):
-        """ Strip any whitespaces, and normalize the string on windows """
-
-        cert_content = cert_content.strip()
-        cert_content = cert_content.replace('\r\n', '\n').replace('\r', '\n')
-        return cert_content
-
-    @staticmethod
-    def verify_remote_cert(agent_dir):
-        agent_cert_path = os.path.join(
-            os.path.expanduser(agent_dir),
-            os.path.normpath(SSL_CERTS_TARGET_DIR),
-            AGENT_SSL_CERT_FILENAME
-        )
-        with open(agent_cert_path, 'r') as f:
-            cert_content = f.read()
-
-        cert_content = _AgentSSLCert._clean_cert(cert_content)
-        assert cert_content == _AgentSSLCert.DUMMY_CERT
-
-
-agent_ssl_cert = _AgentSSLCert()
+agent_ssl_cert = test_utils._AgentSSLCert()
 
 
 class BaseTest(object):
