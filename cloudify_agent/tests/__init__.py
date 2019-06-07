@@ -182,7 +182,3 @@ class _AgentPackageGenerator(object):
 
 
 agent_package = _AgentPackageGenerator()
-
-
-def tearDown():
-    agent_package.cleanup()
