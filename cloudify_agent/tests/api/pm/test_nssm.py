@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import os
+import time
 
 from mock import patch
 from testtools import TestCase
@@ -55,3 +56,18 @@ class TestNonSuckingServiceManagerDaemon(BaseDaemonProcessManagementTest,
             CommandExecutionException,
             self.runner.run,
             'sc getdisplayname {0}'.format(daemon.name))
+
+    def test_status(self):
+        daemon = self.create_daemon()
+        daemon.create()
+        daemon.configure()
+        self.assertFalse(daemon.status())
+        daemon.start()
+        # on windows, the daemon.start completes and returns fast enough
+        # that the service state is still SERVICE_START_PENDING
+        for retry in range(5):
+            if daemon.status():
+                break
+            time.sleep(1)
+        else:
+            self.fail('Daemon failed to start')
