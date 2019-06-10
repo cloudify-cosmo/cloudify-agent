@@ -54,6 +54,7 @@ SYNCTHING_QUERY_INTERVAL = 1
 PLUGIN_QUERY_INTERVAL = 1
 INSTALLATION_TIMEOUT = 75
 
+
 class PluginInstaller(object):
 
     def __init__(self, logger=None):
@@ -153,7 +154,6 @@ class PluginInstaller(object):
                 raise exceptions.PluginInstallationError(
                     'Timeout waiting for plugin to be installed. '
                     'Plugin info: [{0}] '.format(managed_plugin))
-
         if os.path.exists(dst_dir):
             self.logger.debug('Plugin path exists {0}'.format(dst_dir))
             plugin_id_path = os.path.join(dst_dir, 'plugin.id')
@@ -175,7 +175,6 @@ class PluginInstaller(object):
                 raise exceptions.PluginInstallationError(
                     'Managed plugin installation found but it is '
                     'in a corrupted state. [{0}]'.format(managed_plugin))
-
         fields = ['package_name',
                   'package_version',
                   'supported_platform',
@@ -205,7 +204,7 @@ class PluginInstaller(object):
                     f.write(managed_plugin.id)
                 # Wait for Syncthing to sync plugin files on all managers
                 if syncthing_utils:
-                    self._wait_for_syncthing()
+                    syncthing_utils.wait_for_plugins_sync()
                 self._update_plugin_status(managed_plugin.id)
             except Exception as e:
                 tpe, value, tb = sys.exc_info()
@@ -213,19 +212,6 @@ class PluginInstaller(object):
                                           'plugin: {0} [{1}][{2}]'
                                           .format(managed_plugin.id,
                                                   plugin, e)), None, tb
-
-    @staticmethod
-    def _wait_for_syncthing():
-        deadline = time.time() + INSTALLATION_TIMEOUT
-        # This file exists only when the Syncthing service is running
-        if os.path.exists(syncthing_utils.config_path):
-            while not syncthing_utils.mgmtworker_is_plugins_syncing_complete():
-                if time.time() < deadline:
-                    time.sleep(SYNCTHING_QUERY_INTERVAL)
-                else:
-                    raise exceptions.PluginInstallationError(
-                        'Timeout waiting for Syncthing to sync plugin`s'
-                        ' directory.')
 
     @staticmethod
     def _update_plugin_status(plugin_id):
@@ -241,8 +227,7 @@ class PluginInstaller(object):
     def _is_plugin_installing(plugin_id):
         client = get_rest_client()
         plugin = client.plugins.get(plugin_id)
-        return True if plugin.archive_name.startswith(INSTALLING_PREFIX)\
-            else False
+        return plugin.archive_name.startswith(INSTALLING_PREFIX)
 
     def _wagon_install(self, plugin, args):
         client = get_rest_client()
