@@ -1,5 +1,18 @@
 #! /bin/bash -e
 
+
+MYSELF=$(whoami)
+run_as()
+{
+    user=$1
+    if [ $MYSELF == $user ]
+    then
+        ${@:2}
+    else
+        su $user --shell /bin/bash -c "set -e; ${@:2}"
+    fi
+}
+
 {% if add_ssl_cert %}
 add_ssl_cert()
 {
@@ -81,9 +94,9 @@ export -f download_and_extract_agent_package
 install_agent()
 {
     {% if add_ssl_cert %}
-    su {{ conf.user }} --shell /bin/bash -c "set -e; add_ssl_cert"
+    run_as {{ conf.user }} add_ssl_cert
     {% endif %}
-    su {{ conf.user }} --shell /bin/bash -c "set -e; download_and_extract_agent_package"
+    run_as {{ conf.user }} download_and_extract_agent_package
 }
 export -f install_agent
 {% endif %}
@@ -121,7 +134,7 @@ export -f disable_requiretty
 configure_agent()
 {
     echo "Configuring agent..."
-    su {{ conf.user }} --shell /bin/bash -c "set -e; configure_virtualenv"
+    run_as {{ conf.user }} configure_virtualenv
     disable_requiretty
     echo "Agent configured successfully"
 }
@@ -173,8 +186,8 @@ export -f start_daemon
 
 start_agent()
 {
-    su {{ conf.user }} --shell /bin/bash -c "set -e; create_custom_env_file"
-    su {{ conf.user }} --shell /bin/bash -c "set -e; start_daemon"
+    run_as {{ conf.user }} create_custom_env_file
+    run_as {{ conf.user }} start_daemon
 }
 export -f start_agent
 {% endif %}
