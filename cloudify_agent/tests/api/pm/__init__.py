@@ -445,7 +445,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
                                                  deployment_id=deployment_id)
         kwargs = kwargs or {}
         kwargs['__cloudify_context'] = cloudify_context
-        handler = amqp_client.BlockingRequestResponseHandler(exchange=queue)
+        handler = amqp_client.BlockingRequestResponseHandler(queue)
         client = amqp_client.get_client()
         client.add_handler(handler)
         with client:
