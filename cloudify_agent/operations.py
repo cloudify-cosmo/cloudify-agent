@@ -358,8 +358,7 @@ def _send_amqp_task(agent, params, timeout):
         raise RecoverableError('Agent is not responding')
 
     task = {'cloudify_task': {'kwargs': params}}
-    handler = amqp_client.BlockingRequestResponseHandler(
-        exchange=agent['queue'])
+    handler = amqp_client.BlockingRequestResponseHandler(agent['queue'])
 
     with _get_amqp_client(agent) as client:
         client.add_handler(handler)
