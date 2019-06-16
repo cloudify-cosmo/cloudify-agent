@@ -205,7 +205,8 @@ class PluginInstallerTest(BaseTest, TestCase):
         os.close(fd)
         self.addCleanup(lambda: os.remove(output_path))
         with _patch_for_install_wagon(PACKAGE_NAME, PACKAGE_VERSION,
-                                      download_path=self.wagons[PACKAGE_NAME]):
+                                      download_path=self.wagons[PACKAGE_NAME],
+                                      concurrent=True):
             class TestLoggingHandler(logging.Handler):
                 def emit(self, record):
                     if 'Using' in record.message:
@@ -214,10 +215,11 @@ class PluginInstallerTest(BaseTest, TestCase):
             handler = TestLoggingHandler()
             self.logger.addHandler(handler)
             try:
-                def installer_func():
-                    self.installer.install(self._plugin_struct())
-                installers = [multiprocessing.Process(target=installer_func)
-                              for _ in range(2)]
+                def installer_func(dep_id='__system__'):
+                    self.installer.install(self._plugin_struct(), dep_id)
+                installers = [multiprocessing.Process(target=installer_func),
+                              multiprocessing.Process(target=installer_func,
+                                                      args=('id',))]
                 for installer_process in installers:
                     installer_process.start()
                 for installer_process in installers:
@@ -277,7 +279,8 @@ class PluginInstallerTest(BaseTest, TestCase):
 
     def test_install_from_wagon_central_deployment(self):
         with _patch_for_install_wagon(PACKAGE_NAME, PACKAGE_VERSION,
-                                      download_path=self.wagons[PACKAGE_NAME]):
+                                      download_path=self.wagons[PACKAGE_NAME],
+                                      archive_name='some_archive'):
             try:
                 self.installer.install(self._plugin_struct(
                     executor='central_deployment_agent'),
@@ -469,22 +472,27 @@ class TestGetManagedPlugin(BaseTest, TestCase):
 
 @contextmanager
 def _patch_for_install_wagon(package_name, package_version,
-                             download_path, plugin_id='1'):
+                             download_path, plugin_id='1',
+                             archive_name='installing-archive_name',
+                             concurrent=False):
     plugin = {'package_name': package_name,
               'package_version': package_version,
               'supported_platform': 'any',
               'id': plugin_id,
-              'visibility': VisibilityState.TENANT}
-    with _patch_client([plugin], download_path=download_path) as client:
+              'visibility': VisibilityState.TENANT,
+              'archive_name': archive_name}
+    with _patch_client([plugin], download_path=download_path,
+                       concurrent=concurrent) as client:
         with patch('cloudify_agent.api.plugins.installer.get_managed_plugin',
                    lambda p: client.plugins.plugins[0]):
             yield
 
 
 @contextmanager
-def _patch_client(plugins, download_path=None):
+def _patch_client(plugins, download_path=None, concurrent=False):
     plugins = [Plugin(p) for p in plugins]
-    client = MockClient(plugins, download_path=download_path)
+    client = (MockConcurrentClinet(plugins, download_path=download_path) if
+              concurrent else MockClient(plugins, download_path=download_path))
     with patch('cloudify_agent.api.plugins.installer.get_rest_client',
                lambda: client):
         yield client
@@ -503,7 +511,46 @@ class MockPlugins(object):
     def download(self, output_file, **kwargs):
         shutil.copy(self.download_path, output_file)
 
+    def get(self, plugin_id):
+        for plugin in self.plugins:
+            if plugin['id'] == plugin_id:
+                return plugin
+
+    def finish_installation(self, plugin_id):
+        plugin = self.get(plugin_id)
+        plugin['archive_name'] = 'archive_name'
+        return plugin
+
+
+class ConcurrentMockPlugins(MockPlugins):
+    def __init__(self, plugins, **kwargs):
+        fd, output_path = tempfile.mkstemp()
+        os.close(fd)
+        self.output_path = output_path
+        super(ConcurrentMockPlugins, self).__init__(plugins, **kwargs)
+
+    def get(self, plugin_id):
+        plugin = super(ConcurrentMockPlugins, self).get(plugin_id)
+        with open(self.output_path, 'r') as output:
+            if ('finished installation for plugin id {0}'.format(plugin_id)
+                    in output.read()):
+                plugin['archive_name'] = 'archive_name'
+
+        return plugin
+
+    def finish_installation(self, plugin_id):
+        with open(self.output_path, 'w') as output:
+            output.write('finished installation for plugin id {0}'.
+                         format(plugin_id))
+            super(ConcurrentMockPlugins, self).finish_installation(plugin_id)
+
 
 class MockClient(object):
     def __init__(self, plugins, download_path=None):
         self.plugins = MockPlugins(plugins, download_path=download_path)
+
+
+class MockConcurrentClinet(object):
+    def __init__(self, plugins, download_path=None):
+        self.plugins = ConcurrentMockPlugins(plugins,
+                                             download_path=download_path)

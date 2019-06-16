@@ -15,6 +15,7 @@
 
 import os
 import sys
+import time
 import errno
 import shutil
 import tempfile
@@ -34,8 +35,8 @@ from cloudify.utils import setup_logger
 from cloudify.utils import extract_archive
 from cloudify.manager import get_rest_client
 from cloudify.utils import LocalCommandRunner
-from cloudify.exceptions import NonRecoverableError
-from cloudify.exceptions import CommandExecutionException
+from cloudify.plugins.install_utils import INSTALLING_PREFIX
+from cloudify.exceptions import NonRecoverableError, CommandExecutionException
 
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import plugins
@@ -43,8 +44,15 @@ from cloudify_agent.api import exceptions
 from cloudify_agent.api.utils import get_pip_path
 from cloudify_rest_client.constants import VisibilityState
 
+try:
+    from cloudify_premium import syncthing_utils
+except ImportError:
+    syncthing_utils = None
 
 SYSTEM_DEPLOYMENT = '__system__'
+SYNCTHING_QUERY_INTERVAL = 1
+PLUGIN_QUERY_INTERVAL = 1
+INSTALLATION_TIMEOUT = 75
 
 
 class PluginInstaller(object):
@@ -135,67 +143,91 @@ class PluginInstaller(object):
         dst_dir = self._full_dst_dir(dst_dir, managed_plugin)
         self.logger.debug('Checking if managed plugin installation exists '
                           'in {0}'.format(dst_dir))
-        lock = self._lock(dst_dir)
-        lock.acquire()
-        try:
-            if os.path.exists(dst_dir):
-                self.logger.debug('Plugin path exists {0}'.format(dst_dir))
-                plugin_id_path = os.path.join(dst_dir, 'plugin.id')
-                if os.path.exists(plugin_id_path):
-                    self.logger.debug('Plugin id path exists {0}'.
-                                      format(plugin_id_path))
-                    with open(plugin_id_path) as f:
-                        existing_plugin_id = f.read().strip()
-                    matching_existing_installation = (
-                        existing_plugin_id == managed_plugin.id)
-                    if not matching_existing_installation:
-                        raise exceptions.PluginInstallationError(
-                            'Managed plugin installation found but its ID '
-                            'does not match the ID of the plugin currently '
-                            'on the manager. [existing: {0}, new: {1}]'
-                            .format(existing_plugin_id,
-                                    managed_plugin.id))
-                else:
-                    raise exceptions.PluginInstallationError(
-                        'Managed plugin installation found but it is '
-                        'in a corrupted state. [{0}]'.format(managed_plugin))
 
-            fields = ['package_name',
-                      'package_version',
-                      'supported_platform',
-                      'distribution',
-                      'distribution_release']
-            description = ', '.join('{0}: {1}'.format(
-                field, managed_plugin.get(field))
-                for field in fields if managed_plugin.get(field))
-
-            if matching_existing_installation:
-                self.logger.info(
-                    'Using existing installation of managed plugin: {0} [{1}]'
-                    .format(managed_plugin.id, description))
-            elif (deployment_id != SYSTEM_DEPLOYMENT and
-                  plugin['executor'] == 'central_deployment_agent'):
-                raise exceptions.PluginInstallationError(
-                    'Central deployment agent managed plugins can only be '
-                    'installed using the REST plugins API. [{0}]'
-                    .format(managed_plugin))
+        # create_deployment_env should wait for the install_plugin wf to finish
+        deadline = time.time() + INSTALLATION_TIMEOUT
+        while (self._is_plugin_installing(managed_plugin.id) and
+               deployment_id != SYSTEM_DEPLOYMENT):
+            if time.time() < deadline:
+                time.sleep(PLUGIN_QUERY_INTERVAL)
             else:
+                raise exceptions.PluginInstallationError(
+                    'Timeout waiting for plugin to be installed. '
+                    'Plugin info: [{0}] '.format(managed_plugin))
+        if os.path.exists(dst_dir):
+            self.logger.debug('Plugin path exists {0}'.format(dst_dir))
+            plugin_id_path = os.path.join(dst_dir, 'plugin.id')
+            if os.path.exists(plugin_id_path):
+                self.logger.debug('Plugin id path exists {0}'.
+                                  format(plugin_id_path))
+                with open(plugin_id_path) as f:
+                    existing_plugin_id = f.read().strip()
+                matching_existing_installation = (
+                    existing_plugin_id == managed_plugin.id)
+                if not matching_existing_installation:
+                    raise exceptions.PluginInstallationError(
+                        'Managed plugin installation found but its ID '
+                        'does not match the ID of the plugin currently '
+                        'on the manager. [existing: {0}, new: {1}]'
+                        .format(existing_plugin_id,
+                                managed_plugin.id))
+            else:
+                raise exceptions.PluginInstallationError(
+                    'Managed plugin installation found but it is '
+                    'in a corrupted state. [{0}]'.format(managed_plugin))
+        fields = ['package_name',
+                  'package_version',
+                  'supported_platform',
+                  'distribution',
+                  'distribution_release']
+        description = ', '.join('{0}: {1}'.format(
+            field, managed_plugin.get(field))
+            for field in fields if managed_plugin.get(field))
+
+        if matching_existing_installation:
+            self.logger.info(
+                'Using existing installation of managed plugin: {0} [{1}]'
+                .format(managed_plugin.id, description))
+        elif (deployment_id != SYSTEM_DEPLOYMENT and
+              plugin['executor'] == 'central_deployment_agent'):
+            raise exceptions.PluginInstallationError(
+                'Central deployment agent managed plugins can only be '
+                'installed using the REST plugins API. [{0}]'
+                .format(managed_plugin))
+        else:
+            try:
                 self.logger.info('Installing managed plugin: {0} [{1}]'
                                  .format(managed_plugin.id, description))
-                try:
-                    self._wagon_install(plugin=managed_plugin, args=args)
-                    shutil.move(tmp_plugin_dir, dst_dir)
-                    with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
-                        f.write(managed_plugin.id)
-                except Exception as e:
-                    tpe, value, tb = sys.exc_info()
-                    raise NonRecoverableError('Failed installing managed '
-                                              'plugin: {0} [{1}][{2}]'
-                                              .format(managed_plugin.id,
-                                                      plugin, e)), None, tb
-        finally:
-            if lock:
-                lock.release()
+                self._wagon_install(plugin=managed_plugin, args=args)
+                shutil.move(tmp_plugin_dir, dst_dir)
+                with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
+                    f.write(managed_plugin.id)
+                # Wait for Syncthing to sync plugin files on all managers
+                if syncthing_utils:
+                    syncthing_utils.wait_for_plugins_sync()
+                self._update_plugin_status(managed_plugin.id)
+            except Exception as e:
+                tpe, value, tb = sys.exc_info()
+                raise NonRecoverableError('Failed installing managed '
+                                          'plugin: {0} [{1}][{2}]'
+                                          .format(managed_plugin.id,
+                                                  plugin, e)), None, tb
+
+    @staticmethod
+    def _update_plugin_status(plugin_id):
+        """
+        Completing plugin installation process after installing it on relevant
+        locations and syncing across all Managers if needed.
+        :param plugin_id:
+        """
+        client = get_rest_client()
+        client.plugins.finish_installation(plugin_id)
+
+    @staticmethod
+    def _is_plugin_installing(plugin_id):
+        client = get_rest_client()
+        plugin = client.plugins.get(plugin_id)
+        return plugin.archive_name.startswith(INSTALLING_PREFIX)
 
     def _wagon_install(self, plugin, args):
         client = get_rest_client()
