@@ -276,8 +276,7 @@ class Daemon(object):
             'log_file') or os.path.join(self.workdir,
                                         '{0}.log'.format(self.name))
         self.pid_file = params.get(
-            'pid_file') or os.path.join(self.workdir,
-                                        '{0}.pid'.format(self.name))
+            'pid_file') or os.path.join('/run/{0}.pid'.format(self.name))
 
         # create working directory if its missing
         if not os.path.exists(self.workdir):
