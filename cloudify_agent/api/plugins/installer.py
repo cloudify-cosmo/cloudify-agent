@@ -199,13 +199,17 @@ class PluginInstaller(object):
                 self.logger.info('Installing managed plugin: {0} [{1}]'
                                  .format(managed_plugin.id, description))
                 self._wagon_install(plugin=managed_plugin, args=args)
+                self.logger.debug('Moving plugin from tmp dir `{0}` to `{1}`'.
+                                  format(tmp_plugin_dir, dst_dir))
                 shutil.move(tmp_plugin_dir, dst_dir)
                 with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
                     f.write(managed_plugin.id)
-                # Wait for Syncthing to sync plugin files on all managers
-                if syncthing_utils:
-                    syncthing_utils.wait_for_plugins_sync()
-                self._update_plugin_status(managed_plugin.id)
+
+                if self._is_plugin_installing(managed_plugin.id):
+                    # Wait for Syncthing to sync plugin files on all managers
+                    if syncthing_utils:
+                        syncthing_utils.wait_for_plugins_sync()
+                    self._update_plugin_status(managed_plugin.id)
             except Exception as e:
                 tpe, value, tb = sys.exc_info()
                 raise NonRecoverableError('Failed installing managed '
