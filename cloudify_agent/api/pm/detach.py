@@ -112,6 +112,7 @@ class DetachedDaemon(CronRespawnDaemonMixin):
             config_path=self.config_path,
             queue=self.queue,
             name=self.name,
+            user=self.user,
             max_workers=self.max_workers,
             virtualenv_path=VIRTUALENV,
             workdir=self.workdir,
