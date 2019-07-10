@@ -28,7 +28,7 @@ from cloudify_agent.api.factory import DaemonFactory
 from cloudify import constants, dispatch, exceptions
 from cloudify.logs import setup_agent_logger
 from cloudify.error_handling import serialize_known_exception
-from cloudify.amqp_client import AMQPConnection, TaskConsumer
+from cloudify.amqp_client import AMQPConnection, TaskConsumer, NO_RESPONSE
 
 DEFAULT_MAX_WORKERS = 10
 
@@ -84,6 +84,9 @@ class CloudifyOperationConsumer(TaskConsumer):
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
             result = {'ok': True, 'result': rv}
             status = 'SUCCESS - result: {0}'.format(result)
+        except exceptions.ProcessKillCancelled:
+            self._print_task(ctx, 'Task kill-cancelled')
+            return NO_RESPONSE
         except SUPPORTED_EXCEPTIONS as e:
             error = serialize_known_exception(e)
             result = {'ok': False, 'error': error}
