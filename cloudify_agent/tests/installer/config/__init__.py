@@ -13,7 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from mock import MagicMock
+from mock import MagicMock, patch
 
 from cloudify.context import BootstrapContext
 from cloudify.mocks import MockCloudifyContext
@@ -59,3 +59,12 @@ def mock_context(agent_properties=None,
     context.installer = MagicMock()
     context._get_current_object = lambda: context
     return context
+
+
+def get_tenant_mock(patch_where='cloudify_agent.installer.get_tenant'):
+    return patch(patch_where, return_value={
+        'name': 'default_tenant',
+        'rabbitmq_username': 'guest',
+        'rabbitmq_password': 'guest',
+        'rabbitmq_vhost': '/'
+    })

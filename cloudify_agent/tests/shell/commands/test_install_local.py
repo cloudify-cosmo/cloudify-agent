@@ -29,7 +29,7 @@ from cloudify_agent.tests import BaseTest, agent_package, agent_ssl_cert
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 from cloudify_agent.installer.operations import create as create_agent
-from cloudify_agent.tests.installer.config import mock_context
+from cloudify_agent.tests.installer.config import mock_context, get_tenant_mock
 
 
 class TestInstaller(BaseTest, TestCase):
@@ -39,6 +39,7 @@ class TestInstaller(BaseTest, TestCase):
         self._package_url = agent_package.get_package_url()
         self.addCleanup(agent_package.cleanup)
 
+    @get_tenant_mock()
     @patch('cloudify.agent_utils.get_rest_client',
            return_value=MockRestclient())
     @patch('cloudify.utils.get_manager_name', return_value='cloudify')
