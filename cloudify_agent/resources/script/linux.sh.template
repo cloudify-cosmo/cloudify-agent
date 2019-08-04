@@ -14,7 +14,7 @@ export_daemon_env()
 {
     export_agent_cli_env
     {% for env_key, env_value in daemon_env.iteritems() %}
-        export {{ env_key }}={{ env_value }}
+        export {{ env_key }}="{{ env_value }}"
     {% endfor %}
 }
 export -f export_daemon_env
