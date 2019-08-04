@@ -37,6 +37,7 @@ from cloudify_agent.tests import agent_ssl_cert
 from cloudify_agent.tests import BaseTest, resources, agent_package
 from cloudify_agent.tests.installer.config import (
     mock_context,
+    get_tenant_mock
 )
 from cloudify_agent.tests.utils import FileServer
 
@@ -101,7 +102,8 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
             patch('cloudify.endpoint.LocalEndpoint.get_managers',
                   return_value=managers),
             patch('cloudify_agent.operations._get_cloudify_context',
-                  mock_create_op_context)
+                  mock_create_op_context),
+            get_tenant_mock()
         ]
         for p in patches:
             p.start()
@@ -234,6 +236,8 @@ class TestCreateAgentAmqp(BaseTest, TestCase):
     @patch('cloudify_agent.operations._send_amqp_task')
     @patch('cloudify_agent.api.utils.is_agent_alive',
            MagicMock(return_value=True))
+    @get_tenant_mock()
+    @get_tenant_mock(patch_where='cloudify_agent.operations.get_tenant')
     @patch('cloudify.agent_utils.get_rest_client',
            return_value=MockRestclient())
     def test_create_agent_from_old_agent(self, *mocks):

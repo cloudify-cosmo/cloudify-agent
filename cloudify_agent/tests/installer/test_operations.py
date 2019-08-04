@@ -35,6 +35,8 @@ from cloudify_agent.tests.api.pm import (
     only_os,
     BaseDaemonLiveTestCase
 )
+from cloudify_agent.tests.installer.config import get_tenant_mock
+
 from cloudify_rest_client.manager import ManagerItem
 
 ##############################################################################
@@ -85,6 +87,7 @@ class TestAgentInstallerLocal(BaseDaemonLiveTestCase, TestCase):
 
     @patch('cloudify.workflows.local._validate_node')
     @patch('cloudify_agent.installer.operations.delete_agent_rabbitmq_user')
+    @get_tenant_mock()
     @patch('cloudify.agent_utils.get_rest_client',
            return_value=MockRestclient())
     @patch('cloudify.utils.get_manager_name', return_value='cloudify')
