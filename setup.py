@@ -28,7 +28,7 @@ install_requires = [
     'virtualenv==15.1.0',
     'pika==0.11.2',
     'pip==9.0.1',
-    'PyYAML==3.12'
+    'PyYAML==3.10'
 ]
 
 setup(
