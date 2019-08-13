@@ -15,6 +15,7 @@
 
 import click
 import json
+import os
 
 from cloudify_agent.api import defaults
 from cloudify_agent.api import utils as api_utils
@@ -26,6 +27,13 @@ from cloudify.utils import (ENV_CFY_EXEC_TEMPDIR,
                             ENV_AGENT_LOG_LEVEL,
                             ENV_AGENT_LOG_MAX_BYTES,
                             ENV_AGENT_LOG_MAX_HISTORY)
+
+
+class _ExpandUserPath(click.Path):
+    """Like click.Path but also calls os.path.expanduser"""
+    def convert(self, value, param, ctx):
+        value = os.path.expanduser(value)
+        return super(_ExpandUserPath, self).convert(value, param, ctx)
 
 
 @click.command(context_settings=dict(ignore_unknown_options=True))
@@ -67,7 +75,7 @@ from cloudify.utils import (ENV_CFY_EXEC_TEMPDIR,
               help='The path to a local copy of the REST public cert, used for'
                    ' cert verification, if required [env {0}]'
               .format(env.CLOUDIFY_LOCAL_REST_CERT_PATH),
-              type=click.Path(exists=True, readable=True, file_okay=True),
+              type=_ExpandUserPath(exists=True, readable=True, file_okay=True),
               envvar=env.CLOUDIFY_LOCAL_REST_CERT_PATH)
 @click.option('--name',
               help='The name of the daemon. [env {0}]'
@@ -125,13 +133,13 @@ from cloudify.utils import (ENV_CFY_EXEC_TEMPDIR,
                    'Only used when broker-ssl-enable is "true" [env {0}]'
                    .format(env.CLOUDIFY_BROKER_SSL_CERT),
               default=None,
-              type=click.Path(exists=True, readable=True, file_okay=True),
+              type=_ExpandUserPath(exists=True, readable=True, file_okay=True),
               envvar=env.CLOUDIFY_BROKER_SSL_CERT)
 @click.option('--broker-ssl-cert-path',
               help='The path to a local copy of the Broker public cert, '
                    'used for cert verification, if required [env {0}]'
               .format(env.CLOUDIFY_BROKER_SSL_CERT_PATH),
-              type=click.Path(exists=False, readable=False, file_okay=True),
+              type=_ExpandUserPath(readable=False, file_okay=True),
               envvar=env.CLOUDIFY_BROKER_SSL_CERT_PATH
               )
 @click.option('--heartbeat',
