@@ -138,6 +138,7 @@ class CloudifyAgentConfig(dict):
         self._set_name()
         self.setdefault('network', constants.DEFAULT_NETWORK_NAME)
         self._set_ips_and_certs()
+        self._set_tenant()
         # Remove the networks dict as it's no longer needed
         if 'networks' in self:
             self.pop('networks')
@@ -256,6 +257,10 @@ class CloudifyAgentConfig(dict):
             cloudify_utils.get_manager_rest_service_port(),
             scheme=cloudify_utils.get_manager_file_server_scheme()
         )
+
+    def _set_tenant(self):
+        if not self.get('tenant'):
+            self['tenant'] = ctx.tenant
 
     def set_execution_params(self):
         self.setdefault('local', False)

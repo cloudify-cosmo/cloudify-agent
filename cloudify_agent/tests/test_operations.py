@@ -236,8 +236,6 @@ class TestCreateAgentAmqp(BaseTest, TestCase):
     @patch('cloudify_agent.operations._send_amqp_task')
     @patch('cloudify_agent.api.utils.is_agent_alive',
            MagicMock(return_value=True))
-    @get_tenant_mock()
-    @get_tenant_mock(patch_where='cloudify_agent.operations.get_tenant')
     @patch('cloudify.agent_utils.get_rest_client',
            return_value=MockRestclient())
     def test_create_agent_from_old_agent(self, *mocks):

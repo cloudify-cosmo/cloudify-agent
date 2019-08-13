@@ -166,8 +166,13 @@ class TestConfiguration(BaseTest, TestCase):
             'log_level': 'info',
             'log_max_bytes': 5242880,
             'log_max_history': 7,
-            'rest_ssl_cert': agent_ssl_cert.DUMMY_CERT
-
+            'rest_ssl_cert': agent_ssl_cert.DUMMY_CERT,
+            'tenant': {
+                'name': 'default_tenant',
+                'rabbitmq_username': 'guest',
+                'rabbitmq_password': 'guest',
+                'rabbitmq_vhost': '/'
+            }
         }
         expected.update(expected_values)
 
