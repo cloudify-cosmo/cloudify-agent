@@ -101,6 +101,7 @@ class _ExpandUserPath(click.Path):
               help='Working directory for runtime files (pid, log). '
                    'Defaults to current working directory. [env {0}]'
                    .format(env.CLOUDIFY_DAEMON_WORKDIR),
+              type=_ExpandUserPath(file_okay=False),
               envvar=env.CLOUDIFY_DAEMON_WORKDIR)
 @click.option('--broker-ip',
               help='The broker host name or ip to connect to. [env {0}]'
@@ -167,11 +168,13 @@ class _ExpandUserPath(click.Path):
               help='Path to a location where the daemon pid file will be '
                    'stored. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_PID_FILE),
+              type=_ExpandUserPath(),
               envvar=env.CLOUDIFY_DAEMON_PID_FILE)
 @click.option('--log-dir',
               help='Path to a location where the daemon log files will be '
                    'stored. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_LOG_DIR),
+              type=_ExpandUserPath(file_okay=False),
               envvar=env.CLOUDIFY_DAEMON_LOG_DIR)
 @click.option('--extra-env-path',
               help='Path to an environment file to be added to the daemon. ['
@@ -189,6 +192,7 @@ class _ExpandUserPath(click.Path):
               is_eager=True)
 @click.option('--executable-temp-path',
               help='Alternative path for temporary executable files',
+              type=_ExpandUserPath(file_okay=False),
               envvar=ENV_CFY_EXEC_TEMPDIR)
 @click.option('--log-max-bytes',
               help='Maximum size (in bytes) of a log file before it rolls '
