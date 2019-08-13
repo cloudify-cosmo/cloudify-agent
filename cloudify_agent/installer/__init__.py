@@ -26,8 +26,7 @@ except ImportError:
     from pipes import quote
 
 from cloudify_agent.installer.runners.local_runner import LocalCommandRunner
-from cloudify.utils import (get_tenant,
-                            setup_logger,
+from cloudify.utils import (setup_logger,
                             get_rest_token,
                             get_is_bypass_maintenance,
                             ENV_CFY_EXEC_TEMPDIR,
@@ -128,7 +127,8 @@ class AgentInstaller(object):
         raise NotImplementedError('Must be implemented by sub-class')
 
     def _create_agent_env(self):
-        tenant = get_tenant()
+        # pop to not leave creds around
+        tenant = self.cloudify_agent.pop('tenant')
         tenant_name = tenant.get('name', defaults.DEFAULT_TENANT_NAME)
         tenant_user = tenant.get('rabbitmq_username',
                                  broker_config.broker_username)
