@@ -25,7 +25,7 @@ from cloudify import constants, exceptions
 from cloudify_agent.installer import script
 from cloudify_agent.tests import BaseTest, utils, agent_ssl_cert
 from cloudify_agent.tests.api.pm import only_os
-from cloudify_agent.tests.installer.config import mock_context, get_tenant_mock
+from cloudify_agent.tests.installer.config import mock_context
 
 
 class BaseInstallScriptTest(BaseTest, TestCase):
@@ -58,9 +58,6 @@ class BaseInstallScriptTest(BaseTest, TestCase):
         }
         node_properties['agent_config'].update(**override_properties)
         current_ctx.set(mock_context(node_id='d', properties=node_properties))
-        tenant_mock = get_tenant_mock()
-        tenant_mock.start()
-        self.addCleanup(tenant_mock.stop)
 
     def _get_install_script(self, add_ssl_cert=True):
         with patch.dict(os.environ, {constants.MANAGER_NAME: 'cloudify'}):

@@ -52,7 +52,13 @@ def mock_context(agent_properties=None,
             }
         ],
         'bootstrap_context': BootstrapContext(
-            bootstrap_context={'cloudify_agent': agent_context})
+            bootstrap_context={'cloudify_agent': agent_context}),
+        'tenant': {
+            'name': 'default_tenant',
+            'rabbitmq_username': 'guest',
+            'rabbitmq_password': 'guest',
+            'rabbitmq_vhost': '/'
+        }
     }
     context.update(kwargs)
     context = MockCloudifyContext(**context)
@@ -61,8 +67,8 @@ def mock_context(agent_properties=None,
     return context
 
 
-def get_tenant_mock(patch_where='cloudify_agent.installer.get_tenant'):
-    return patch(patch_where, return_value={
+def get_tenant_mock():
+    return patch('cloudify.utils.get_tenant', return_value={
         'name': 'default_tenant',
         'rabbitmq_username': 'guest',
         'rabbitmq_password': 'guest',
