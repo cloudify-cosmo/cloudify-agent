@@ -31,8 +31,7 @@ from cloudify.constants import BROKER_PORT_SSL
 from cloudify.error_handling import deserialize_known_exception
 from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.agent_utils import create_agent_record, update_agent_record
-from cloudify.utils import (get_tenant,
-                            get_rest_token,
+from cloudify.utils import (get_rest_token,
                             ManagerVersion,
                             get_local_rest_certificate)
 
@@ -97,8 +96,7 @@ def restart(new_name=None, delay_period=5, **_):
     # make the current master stop listening to the current queue
     # to avoid a situation where we have two masters listening on the
     # same queue.
-    rest_tenant = get_tenant()
-    app = get_celery_app(tenant=rest_tenant)
+    app = get_celery_app(tenant=ctx.tenant)
     app.control.cancel_consumer(
         queue=daemon.queue,
         destination=['celery@{0}'.format(daemon.name)]
@@ -335,14 +333,13 @@ def _get_amqp_client(agent):
         broker_config = _get_broker_config(agent)
         ssl_cert_path = get_local_rest_certificate()
 
-    tenant = get_tenant()
     try:
         yield amqp_client.get_client(
             amqp_host=broker_config.get('broker_ip'),
-            amqp_user=tenant.get('rabbitmq_username'),
+            amqp_user=ctx.tenant.get('rabbitmq_username'),
             amqp_port=broker_config.get('broker_port'),
-            amqp_pass=tenant.get('rabbitmq_password'),
-            amqp_vhost=tenant.get('rabbitmq_vhost'),
+            amqp_pass=ctx.tenant.get('rabbitmq_password'),
+            amqp_vhost=ctx.tenant.get('rabbitmq_vhost'),
             ssl_enabled=broker_config.get('broker_ssl_enabled'),
             ssl_cert_path=ssl_cert_path
         )
