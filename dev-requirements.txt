@@ -1,4 +1,4 @@
-https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip
+https://github.com/cloudify-cosmo/cloudify-common/archive/cy-1732-evaluation-storage-1.zip
 
 # Install stubs of cloudify packages that were merged into cloudify-common
 git+https://github.com/cloudify-cosmo/cloudify-agent@master#egg=cloudify-rest-client&subdirectory=packaging/stub_packages/cloudify-rest-client
