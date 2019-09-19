@@ -39,7 +39,9 @@ defaults:
           # we install cron to allow use of crontab in tests, but not run it,
           # because we do mock cron in tests
           name: Install and run cron
-          command: sudo apt-get install cron
+          command: |
+                   sudo apt-get update
+                   sudo apt-get install cron
       - install_tini
       - run:
           name: Install tox
@@ -74,7 +76,9 @@ defaults:
                    pyenv local 2.6.9
       - run:
           name: Install and run cron
-          command: sudo apt-get install cron
+          command: |
+                   sudo apt-get update
+                   sudo apt-get install cron
       - run:
           # python 2.6 will require pyyaml to be built, rather than installed
           # from a wheel, and so we need to provide headers
