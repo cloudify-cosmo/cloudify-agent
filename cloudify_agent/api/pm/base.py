@@ -708,9 +708,9 @@ class GenericLinuxDaemonMixin(Daemon):
     def __init__(self, logger=None, **params):
         super(GenericLinuxDaemonMixin, self).__init__(logger=logger, **params)
 
-        self.service_name = params.get('service_name')
-        if not self.service_name:
-            self.service_name = 'cloudify-worker-{0}'.format(self.name)
+        # CY-1852: 'service_name' should exist, otherwise we have a design
+        # flaw somewhere and we'd like to know about it.
+        self.service_name = params['service_name']
         self.script_path = self._get_script_path()
         self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
 
