@@ -167,6 +167,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             'workdir': self.temp_folder,
             'logger': self.logger,
             'name': name,
+            'service_name': 'cloudify-worker_{0}'.format(name),
             'queue': '{0}-queue'.format(name),
             'local_rest_cert_file': self._rest_cert_path,
             'broker_ssl_enabled': False,  # No SSL on the CI machines
