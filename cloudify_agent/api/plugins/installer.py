@@ -198,6 +198,10 @@ class PluginInstaller(object):
             try:
                 self.logger.info('Installing managed plugin: {0} [{1}]'
                                  .format(managed_plugin.id, description))
+                # Wait for Syncthing to sync resources for the wagons
+                if syncthing_utils:
+                    syncthing_utils.wait_for_plugins_sync(
+                        sync_dir=syncthing_utils.RESOURCES_DIR)
                 self._wagon_install(plugin=managed_plugin, args=args)
                 self.logger.debug('Moving plugin from tmp dir `{0}` to `{1}`'.
                                   format(tmp_plugin_dir, dst_dir))
