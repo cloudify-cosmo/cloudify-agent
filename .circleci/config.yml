@@ -125,10 +125,10 @@ jobs:
       - run:
           name: Prepare rpm-building environment
           command: |
-            curl -o ~/rpm/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
+            curl -o ~/rpm/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/5.0.5-ms/packaging/cloudify-agents.spec ;
             mkdir -p ~/rpm/packaging/agents/ ;
-            curl -o ~/rpm/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
-            curl -O https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/version_info ;
+            curl -o ~/rpm/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/5.0.5-ms/packaging/agents/copy_packages.py ;
+            curl -O https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/5.0.5-ms/packaging/version_info ;
             cat version_info >> $BASH_ENV
       - run:
           name: Building a CI agent rpm
