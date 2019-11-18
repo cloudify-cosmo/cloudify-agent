@@ -141,7 +141,8 @@ class ServiceTaskConsumer(TaskConsumer):
         factory = DaemonFactory()
         daemon = factory.load(self.name)
 
-        os.environ[constants.REST_HOST_KEY] = ','.join(managers)
+        os.environ[constants.REST_HOST_KEY] = \
+            u','.join(managers).encode('utf-8')
 
         with open(daemon.local_rest_cert_file, 'w') as f:
             f.write(manager_ca)

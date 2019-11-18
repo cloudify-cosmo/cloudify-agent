@@ -178,7 +178,7 @@ var
   ErrorCode: Integer;
 begin
   if isPythonInstalled then begin
-    ExtractTemporaryFiles('*.whl');  
+    ExtractTemporaryFiles('*.whl');
     GetPipArgs := 'install --use-wheel --no-index --find-links . virtualenv';
     ShellExec('', getPipPath, GetPipArgs, Expandconstant('{tmp}'), SW_SHOW, ewWaituntilterminated, ErrorCode);
 

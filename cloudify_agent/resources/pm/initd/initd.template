@@ -34,6 +34,8 @@ start() {
     echo 'Service already running' >&2
     return 0
   fi
+  sudo mkdir -p $(dirname "$PIDFILE")
+  sudo chown {{ user }} $(dirname "$PIDFILE")
   . {{ config_path }}
   enable_cron_respawn
   if [ -d "{{ log_dir }}" ]; then

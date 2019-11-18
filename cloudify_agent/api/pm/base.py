@@ -262,9 +262,12 @@ class Daemon(object):
         self.extra_env_path = params.get('extra_env_path')
         self.log_level = params.get('log_level') or defaults.LOG_LEVEL
         self.log_dir = params.get('log_dir') or self.workdir
+        # CentOS / RHEL 6 don't have /run; they have /var/run which is cleared
+        # at boot time.
+        # CentOS / RHEL 7 mount /run on tmpfs, and symlink /var/run to it.
+        # We'll use /var/run globally for the time being.
         self.pid_file = params.get(
-            'pid_file') or os.path.join(self.workdir,
-                                        '{0}.pid'.format(self.name))
+            'pid_file') or '/var/run/cloudify.{0}/agent.pid'.format(self.name)
 
         # create working directory if its missing
         if not os.path.exists(self.workdir):
