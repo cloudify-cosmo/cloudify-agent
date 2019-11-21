@@ -515,6 +515,9 @@ def get_managed_plugin(plugin):
         query_parameters['supported_platform'] = supported_platform
     client = get_rest_client()
     plugins = client.plugins.list(**query_parameters)
+    if not plugins:
+        query_parameters['package_name'] = INSTALLING_PREFIX+package_name
+        plugins = client.plugins.list(**query_parameters)
 
     (current_platform,
      a_dist,
