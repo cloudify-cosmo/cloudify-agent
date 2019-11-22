@@ -22,6 +22,7 @@ import logging
 import argparse
 import traceback
 import threading
+from contextlib import contextmanager
 from distutils.version import StrictVersion
 
 from cloudify_agent.api import utils
@@ -321,9 +322,16 @@ class ServiceTaskConsumer(TaskConsumer):
                 'cloudify_agent' in node_instance.runtime_properties)
 
 
+class HookHandler(dispatch.OperationHandler):
+    @contextmanager
+    def _update_operation_state(self):
+        yield
+
+
 class HookConsumer(CloudifyOperationConsumer):
     routing_key = 'events.hooks'
     HOOKS_CONFIG_PATH = '/opt/mgmtworker/config/hooks.conf'
+    handler = HookHandler
 
     def __init__(self, queue_name, registry, max_workers=5):
         super(HookConsumer, self).__init__(queue_name,
