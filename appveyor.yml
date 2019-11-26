@@ -56,7 +56,7 @@ build: false # Not a C# project, build stuff at the test step instead.
 
 before_test:
   - echo Installing tox
-  - pip install tox
+  - pip install tox==3.14.0
 
 test_script:
   - tox -e %TOX_ENV%
