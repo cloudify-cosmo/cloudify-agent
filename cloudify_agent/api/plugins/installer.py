@@ -500,6 +500,7 @@ def get_managed_plugin(plugin):
     distribution_version = plugin.get('distribution_version')
     distribution_release = plugin.get('distribution_release')
     supported_platform = plugin.get('supported_platform')
+    supported_cloudify = plugin.get('supported_cloudify')
     if not package_name:
         return None
     query_parameters = {'package_name': package_name}
@@ -513,6 +514,8 @@ def get_managed_plugin(plugin):
         query_parameters['distribution_release'] = distribution_release
     if supported_platform:
         query_parameters['supported_platform'] = supported_platform
+    if supported_cloudify:
+        query_parameters['supported_cloudify'] = supported_cloudify
     client = get_rest_client()
     plugins = client.plugins.list(**query_parameters)
 
