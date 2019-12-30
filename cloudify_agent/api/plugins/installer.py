@@ -35,6 +35,7 @@ from cloudify.utils import setup_logger
 from cloudify.utils import extract_archive
 from cloudify.manager import get_rest_client
 from cloudify.utils import LocalCommandRunner
+from cloudify.constants import MANAGER_PLUGINS_PATH
 from cloudify.plugins.install_utils import INSTALLING_PREFIX
 from cloudify.exceptions import NonRecoverableError, CommandExecutionException
 
@@ -198,6 +199,7 @@ class PluginInstaller(object):
             try:
                 self.logger.info('Installing managed plugin: {0} [{1}]'
                                  .format(managed_plugin.id, description))
+                wait_for_wagon_in_directory(managed_plugin.id)
                 # Wait for Syncthing to sync resources for the wagons
                 if syncthing_utils:
                     syncthing_utils.wait_for_plugins_sync(
@@ -592,3 +594,12 @@ def path_to_file_url(path):
     path = os.path.normpath(os.path.abspath(path))
     url = urljoin('file:', pathname2url(path))
     return url
+
+
+def wait_for_wagon_in_directory(plugin_id, retries=30, interval=1):
+    path = os.path.join(MANAGER_PLUGINS_PATH, plugin_id)
+    for _ in range(retries):
+        if os.path.isdir(path) and \
+                (any(File.endswith('.wgn') for File in os.listdir(path))):
+            return
+        time.sleep(interval)
