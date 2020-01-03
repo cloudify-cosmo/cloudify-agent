@@ -342,7 +342,8 @@ class Daemon(object):
                 'queue_declare',
                 queue='{0}_service'.format(self.queue),
                 auto_delete=False,
-                durable=True)
+                durable=True,
+                arguments={'x-ha-policy': 'all'})
             return utils.is_agent_alive(
                 self.queue, client, timeout=3, connect=False)
 
