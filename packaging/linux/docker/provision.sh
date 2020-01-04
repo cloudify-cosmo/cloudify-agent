@@ -1,6 +1,7 @@
 #!/bin/bash -x
 
 # VERSION/PRERELEASE/BUILD must be exported as they is being read as an env var by the cloudify-agent-packager
+# These env vars are being updated by the bump version process
 export CORE_TAG_NAME="5.0.5"
 export CORE_BRANCH="master"
 

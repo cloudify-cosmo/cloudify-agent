@@ -36,14 +36,16 @@ function install_requirements() {
 
 
 # VERSION/PRERELEASE/BUILD must be exported as they is being read as an env var by the cloudify-agent-packager
-export CORE_TAG_NAME="5.0.5"
-export CORE_BRANCH="master"
 export GITHUB_USERNAME=$1
 export GITHUB_PASSWORD=$2
 export AWS_ACCESS_KEY_ID=$3
 export AWS_ACCESS_KEY=$4
 export REPO=$5
 export BRANCH=$6
+
+# These env vars are being updated by the bump version process
+export CORE_TAG_NAME="5.0.5"
+export CORE_BRANCH="master"
 
 curl -u $GITHUB_USERNAME:$GITHUB_TOKEN https://raw.githubusercontent.com/cloudify-cosmo/${REPO}/${CORE_BRANCH}/packages-urls/common_build_env.sh -o ./common_build_env.sh &&
 source common_build_env.sh &&
