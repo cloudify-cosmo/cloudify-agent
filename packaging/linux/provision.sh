@@ -37,7 +37,7 @@ function install_requirements() {
 
 # VERSION/PRERELEASE/BUILD must be exported as they is being read as an env var by the cloudify-agent-packager
 export GITHUB_USERNAME=$1
-export GITHUB_PASSWORD=$2
+export GITHUB_TOKEN=$2
 export AWS_ACCESS_KEY_ID=$3
 export AWS_ACCESS_KEY=$4
 export REPO=$5

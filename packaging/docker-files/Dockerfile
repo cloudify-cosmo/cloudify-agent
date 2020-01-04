@@ -9,9 +9,9 @@ COPY ["linux/docker/provision.sh", "linux/packager.yaml", "/opt/"]
 RUN  chmod +x /opt/provision.sh
 WORKDIR /opt
 ENV  GITHUB_USERNAME=${GITHUB_USERNAME} \
-     GITHUB_PASSWORD=${GITHUB_PASSWORD} \
+     GITHUB_TOKEN=${GITHUB_TOKEN} \
      AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
      AWS_ACCESS_KEY=${AWS_ACCESS_KEY} \
      REPO=${REPO} \
      BRANCH=${BRANCH}
-CMD /opt/provision.sh ${GITHUB_USERNAME} ${GITHUB_PASSWORD} ${AWS_ACCESS_KEY_ID} ${AWS_ACCESS_KEY} ${REPO} ${BRANCH} ; tail -f /dev/null
+CMD /opt/provision.sh ${GITHUB_USERNAME} ${GITHUB_TOKEN} ${AWS_ACCESS_KEY_ID} ${AWS_ACCESS_KEY} ${REPO} ${BRANCH} ; tail -f /dev/null
