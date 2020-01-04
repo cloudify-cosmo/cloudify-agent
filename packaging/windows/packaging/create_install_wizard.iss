@@ -3,7 +3,7 @@
 #define AppMilestone GetEnv('PRERELEASE')
 #define AppBuild GetEnv('BUILD')
 #define AppPublisher "Cloudify Platform Ltd."
-#define AppURL "http://getcloudify.org/"
+#define AppURL "https://cloudify.co/"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
