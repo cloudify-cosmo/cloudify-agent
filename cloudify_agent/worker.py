@@ -80,7 +80,14 @@ class CloudifyOperationConsumer(TaskConsumer):
                                args=task.get('args', []),
                                kwargs=task['kwargs'],
                                process_registry=self._registry)
+
+        # Register the pending tasks stored at "_tasks_buffer" with the
+        # common "registry" instance shared between handlers so that we can
+        # clear all pending tasks if there is any when "kill-cancel" request
+        # is initiated
+        self._registry.register_pending_tasks(handler, self._tasks_buffer)
         try:
+
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
             result = {'ok': True, 'result': rv}
             status = 'SUCCESS - result: {0}'.format(result)
@@ -158,6 +165,9 @@ class ServiceTaskConsumer(TaskConsumer):
 
     def cancel_operation_task(self, execution_id):
         logger.info('Cancelling task {0}'.format(execution_id))
+        # Before cancel the execution take, place make sure that no pending
+        # processed are exists on
+        self._operation_registry.remove_pending_tasks(execution_id)
         self._operation_registry.cancel(execution_id)
 
 
@@ -197,9 +207,17 @@ class ProcessRegistry(object):
     def __init__(self):
         self._processes = {}
         self._cancelled = set()
+        # This will be dict of pending tasks belongs to the running
+        # executions so that we can clear them of when kill-cancel is
+        # initiated
+        self._pending_tasks = {}
 
     def register(self, handler, process):
         self._processes.setdefault(self.make_key(handler), []).append(process)
+
+    def register_pending_tasks(self, handler, pending_tasks):
+        # We only care about the reference to the pending process/tasks
+        self._pending_tasks[self.make_key(handler)] = pending_tasks
 
     def unregister(self, handler, process):
         key = self.make_key(handler)
@@ -215,6 +233,16 @@ class ProcessRegistry(object):
         for p in self._processes.get(task_id, []):
             t = threading.Thread(target=self._stop_process, args=(p, ))
             t.start()
+
+    def remove_pending_tasks(self, execution_id):
+        """
+        Remove the pending tasks associated with the current execution_id
+        :param execution_id: Current execution id
+        """
+        pending_process = self._pending_tasks.get(execution_id)
+        if pending_process:
+            # Clear all "pending_process" (deque type) items.
+            pending_process.clear()
 
     def _stop_process(self, process):
         """Stop the process: SIGTERM, and after 5 seconds, SIGKILL
