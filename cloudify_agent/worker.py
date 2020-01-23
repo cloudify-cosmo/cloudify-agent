@@ -230,9 +230,12 @@ class ProcessRegistry(object):
 
     def cancel(self, task_id):
         self._cancelled.add(task_id)
-        for p in self._processes.get(task_id, []):
-            t = threading.Thread(target=self._stop_process, args=(p, ))
-            t.start()
+        threads = [
+            threading.Thread(target=self._stop_process, args=(p,))
+            for p in self._processes.get(task_id, [])
+        ]
+        for thread in threads:
+            thread.start()
 
     def remove_pending_tasks(self, execution_id):
         """
