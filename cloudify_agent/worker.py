@@ -165,8 +165,8 @@ class ServiceTaskConsumer(TaskConsumer):
 
     def cancel_operation_task(self, execution_id):
         logger.info('Cancelling task {0}'.format(execution_id))
-        # Before cancel the execution take, place make sure that no pending
-        # processed are exists on
+        # Before cancel the execution take place make sure that no pending
+        # tasks are existed
         self._operation_registry.remove_pending_tasks(execution_id)
         self._operation_registry.cancel(execution_id)
 
@@ -242,10 +242,9 @@ class ProcessRegistry(object):
         Remove the pending tasks associated with the current execution_id
         :param execution_id: Current execution id
         """
-        pending_process = self._pending_tasks.get(execution_id)
-        if pending_process:
-            # Clear all "pending_process" (deque type) items.
-            pending_process.clear()
+        pending_tasks = self._pending_tasks.get(execution_id)
+        if pending_tasks:
+            pending_tasks.clear()
 
     def _stop_process(self, process):
         """Stop the process: SIGTERM, and after 5 seconds, SIGKILL
