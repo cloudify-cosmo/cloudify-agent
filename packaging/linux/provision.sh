@@ -45,7 +45,7 @@ export BRANCH=$6
 
 # These env vars are being updated by the bump version process
 export CORE_TAG_NAME="5.0.5"
-export CORE_BRANCH="master"
+export CORE_BRANCH="5.0.5-build"
 
 curl -u $GITHUB_USERNAME:$GITHUB_TOKEN https://raw.githubusercontent.com/cloudify-cosmo/${REPO}/${CORE_BRANCH}/packages-urls/common_build_env.sh -o ./common_build_env.sh &&
 source common_build_env.sh &&

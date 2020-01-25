@@ -3,7 +3,7 @@ param($VERSION,$PRERELEASE,$DEV_BRANCH)
 function resolve_current_build_branch_urls() {
     echo "### Resolve current build branch urls ###"
     $env:AWS_S3_PATH = "s3://cloudify-release-eu/cloudify/$VERSION/$PRERELEASE-build"
-    $env:current_branch = "master"
+    $env:current_branch = "5.0.5-build"
 
     if ("$DEV_BRANCH" -ne "" -And $DEV_BRANCH -ne "master") {
         $branch_exists = $( git rev-parse --verify --quiet $DEV_BRANCH )
