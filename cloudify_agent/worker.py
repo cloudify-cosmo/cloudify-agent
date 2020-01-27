@@ -25,7 +25,10 @@ import threading
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
 
-from cloudify import constants, dispatch, exceptions
+from cloudify_rest_client.exceptions import UserUnauthorizedError
+
+from cloudify import constants, dispatch, exceptions, state
+from cloudify.models_states import ExecutionState
 from cloudify.logs import setup_agent_logger
 from cloudify.error_handling import serialize_known_exception
 from cloudify.amqp_client import AMQPConnection, TaskConsumer, NO_RESPONSE
@@ -80,6 +83,40 @@ class CloudifyOperationConsumer(TaskConsumer):
                                args=task.get('args', []),
                                kwargs=task['kwargs'],
                                process_registry=self._registry)
+
+        # We need also to handle old tasks still in queue and not picked by
+        # the worker so that we can ignore them as the state of the
+        # execution is cancelled. Morever, we need to handle a case when
+        # resume workflow is running while there are some old operations
+        # tasks still in the queue which holds an invalid execution token
+        # which could raise 401 error
+        previous_cancelled_task = False
+        # Need to use the context associated with the that task
+        with state.current_ctx.push(handler.ctx):
+            try:
+                # Get the status of the current execution so that we can
+                # tell if the current running task can be run or not
+                current_execution = handler.ctx.get_execution(
+                    ctx.get('execution_id')
+                )
+                logger.info(
+                    'The current status of the execution is {}'
+                    ''.format(current_execution.status)
+                )
+                # If the current execution task is cancelled, that means
+                # some this current task was on the queue when the previous
+                # cancel operation triggered, so we need to ignore running
+                # such tasks from the previous execution which was cancelled
+                if current_execution.status == ExecutionState.CANCELLED:
+                    previous_cancelled_task = True
+            except UserUnauthorizedError:
+                # This means that Execution token is no longer valid since
+                # there is a new token re-generated because of resume workflow
+                previous_cancelled_task = True
+
+        if previous_cancelled_task:
+            self._print_task(ctx, 'Ignore Tasks for cancelled execution')
+            return NO_RESPONSE
 
         # Register the pending tasks stored at "_tasks_buffer" with the
         # common "registry" instance shared between handlers so that we can
