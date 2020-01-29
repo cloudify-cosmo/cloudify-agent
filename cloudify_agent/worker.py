@@ -99,16 +99,18 @@ class CloudifyOperationConsumer(TaskConsumer):
                 current_execution = handler.ctx.get_execution(
                     ctx.get('execution_id')
                 )
-                logger.info(
-                    'The current status of the execution is {}'
-                    ''.format(current_execution.status)
-                )
-                # If the current execution task is cancelled, that means
-                # some this current task was on the queue when the previous
-                # cancel operation triggered, so we need to ignore running
-                # such tasks from the previous execution which was cancelled
-                if current_execution.status == ExecutionState.CANCELLED:
-                    previous_cancelled_task = True
+                if current_execution:
+                    logger.info(
+                        'The current status of the execution is {}'
+                        ''.format(current_execution.status)
+                    )
+                    # If the current execution task is cancelled, that means
+                    # some this current task was on the queue when the previous
+                    # cancel operation triggered, so we need to ignore running
+                    # such tasks from the previous execution which was
+                    # cancelled
+                    if current_execution.status == ExecutionState.CANCELLED:
+                        previous_cancelled_task = True
             except UserUnauthorizedError:
                 # This means that Execution token is no longer valid since
                 # there is a new token re-generated because of resume workflow
