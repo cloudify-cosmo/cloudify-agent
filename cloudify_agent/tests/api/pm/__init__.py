@@ -453,8 +453,6 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             result = handler.publish(task, routing_key='operation',
                                      timeout=timeout)
         error = result.get('error')
-        print 'This is the error we got from this'
-        print error
         if error:
             raise deserialize_known_exception(error)
         else:
