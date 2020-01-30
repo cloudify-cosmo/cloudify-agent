@@ -86,11 +86,12 @@ class CloudifyOperationConsumer(TaskConsumer):
 
         # We need also to handle old tasks still in queue and not picked by
         # the worker so that we can ignore them as the state of the
-        # execution is cancelled. Morever, we need to handle a case when
+        # execution is cancelled and ignore pending tasks picked by the
+        # worker but still not executed. Morever,we need to handle a case when
         # resume workflow is running while there are some old operations
         # tasks still in the queue which holds an invalid execution token
         # which could raise 401 error
-        previous_cancelled_task = False
+        pending_cancelled_task = False
         # Need to use the context associated with the that task
         with state.current_ctx.push(handler.ctx):
             try:
@@ -110,21 +111,20 @@ class CloudifyOperationConsumer(TaskConsumer):
                     # such tasks from the previous execution which was
                     # cancelled
                     if current_execution.status == ExecutionState.CANCELLED:
-                        previous_cancelled_task = True
+                        pending_cancelled_task = True
+                else:
+                    raise exceptions.NonRecoverableError(
+                        'No execution available'
+                    )
             except UserUnauthorizedError:
                 # This means that Execution token is no longer valid since
                 # there is a new token re-generated because of resume workflow
-                previous_cancelled_task = True
+                pending_cancelled_task = True
 
-        if previous_cancelled_task:
+        if pending_cancelled_task:
             self._print_task(ctx, 'Ignore Tasks for cancelled execution')
             return NO_RESPONSE
 
-        # Register the pending tasks stored at "_tasks_buffer" with the
-        # common "registry" instance shared between handlers so that we can
-        # clear all pending tasks if there is any when "kill-cancel" request
-        # is initiated
-        self._registry.register_pending_tasks(handler, self._tasks_buffer)
         try:
 
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
@@ -206,7 +206,6 @@ class ServiceTaskConsumer(TaskConsumer):
         logger.info('Cancelling task {0}'.format(execution_id))
         # Before cancel the execution take place make sure that no pending
         # tasks are existed
-        self._operation_registry.remove_pending_tasks(execution_id)
         self._operation_registry.cancel(execution_id)
 
 
@@ -246,17 +245,9 @@ class ProcessRegistry(object):
     def __init__(self):
         self._processes = {}
         self._cancelled = set()
-        # This will be dict of pending tasks belongs to the running
-        # executions so that we can clear them of when kill-cancel is
-        # initiated
-        self._pending_tasks = {}
 
     def register(self, handler, process):
         self._processes.setdefault(self.make_key(handler), []).append(process)
-
-    def register_pending_tasks(self, handler, pending_tasks):
-        # We only care about the reference to the pending process/tasks
-        self._pending_tasks[self.make_key(handler)] = pending_tasks
 
     def unregister(self, handler, process):
         key = self.make_key(handler)
@@ -275,15 +266,6 @@ class ProcessRegistry(object):
         ]
         for thread in threads:
             thread.start()
-
-    def remove_pending_tasks(self, execution_id):
-        """
-        Remove the pending tasks associated with the current execution_id
-        :param execution_id: Current execution id
-        """
-        pending_tasks = self._pending_tasks.get(execution_id)
-        if pending_tasks:
-            pending_tasks.clear()
 
     def _stop_process(self, process):
         """Stop the process: SIGTERM, and after 5 seconds, SIGKILL
