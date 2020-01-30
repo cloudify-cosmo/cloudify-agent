@@ -35,11 +35,6 @@ from cloudify.amqp_client import AMQPConnection, TaskConsumer, NO_RESPONSE
 
 DEFAULT_MAX_WORKERS = 10
 
-SUPPORTED_EXCEPTIONS = (
-    exceptions.OperationRetry, exceptions.RecoverableError,
-    exceptions.NonRecoverableError, exceptions.ProcessExecutionError,
-    exceptions.HttpException)
-
 
 class CloudifyOperationConsumer(TaskConsumer):
     routing_key = 'operation'
@@ -74,16 +69,14 @@ class CloudifyOperationConsumer(TaskConsumer):
                 workflow_id=ctx.get('workflow_id'),
                 suffix=suffix))
 
-    def handle_task(self, full_task):
-        task = full_task['cloudify_task']
-        ctx = task['kwargs'].pop('__cloudify_context')
-
-        self._print_task(ctx, 'Started handling')
-        handler = self.handler(cloudify_context=ctx,
-                               args=task.get('args', []),
-                               kwargs=task['kwargs'],
-                               process_registry=self._registry)
-
+    @staticmethod
+    def _validate_not_cancelled(handler, ctx):
+        """
+        This method will validate if the current running tasks is cancelled
+        or not
+        :param handler:
+        :param ctx:
+        """
         # We need also to handle old tasks still in queue and not picked by
         # the worker so that we can ignore them as the state of the
         # execution is cancelled and ignore pending tasks picked by the
@@ -91,7 +84,6 @@ class CloudifyOperationConsumer(TaskConsumer):
         # resume workflow is running while there are some old operations
         # tasks still in the queue which holds an invalid execution token
         # which could raise 401 error
-        pending_cancelled_task = False
         # Need to use the context associated with the that task
         with state.current_ctx.push(handler.ctx):
             try:
@@ -111,7 +103,7 @@ class CloudifyOperationConsumer(TaskConsumer):
                     # such tasks from the previous execution which was
                     # cancelled
                     if current_execution.status == ExecutionState.CANCELLED:
-                        pending_cancelled_task = True
+                        raise exceptions.ProcessKillCancelled()
                 else:
                     raise exceptions.NonRecoverableError(
                         'No execution available'
@@ -119,21 +111,26 @@ class CloudifyOperationConsumer(TaskConsumer):
             except UserUnauthorizedError:
                 # This means that Execution token is no longer valid since
                 # there is a new token re-generated because of resume workflow
-                pending_cancelled_task = True
+                raise exceptions.ProcessKillCancelled()
 
-        if pending_cancelled_task:
-            self._print_task(ctx, 'Ignore Tasks for cancelled execution')
-            return NO_RESPONSE
+    def handle_task(self, full_task):
+        task = full_task['cloudify_task']
+        ctx = task['kwargs'].pop('__cloudify_context')
 
+        self._print_task(ctx, 'Started handling')
+        handler = self.handler(cloudify_context=ctx,
+                               args=task.get('args', []),
+                               kwargs=task['kwargs'],
+                               process_registry=self._registry)
         try:
-
+            self._validate_not_cancelled(handler, ctx)
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
             result = {'ok': True, 'result': rv}
             status = 'SUCCESS - result: {0}'.format(result)
         except exceptions.ProcessKillCancelled:
             self._print_task(ctx, 'Task kill-cancelled')
             return NO_RESPONSE
-        except SUPPORTED_EXCEPTIONS as e:
+        except Exception as e:
             error = serialize_known_exception(e)
             result = {'ok': False, 'error': error}
             status = 'ERROR - result: {0}'.format(result)
@@ -204,8 +201,6 @@ class ServiceTaskConsumer(TaskConsumer):
 
     def cancel_operation_task(self, execution_id):
         logger.info('Cancelling task {0}'.format(execution_id))
-        # Before cancel the execution take place make sure that no pending
-        # tasks are existed
         self._operation_registry.cancel(execution_id)
 
 
