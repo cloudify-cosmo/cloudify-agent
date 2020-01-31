@@ -1,4 +1,4 @@
-https://github.com/cloudify-cosmo/cloudify-common/archive/5.0.5.zip
+https://github.com/cloudify-cosmo/cloudify-common/archive/5.0.5.1.zip
 
 # Install stubs of cloudify packages that were merged into cloudify-common
 git+https://github.com/cloudify-cosmo/cloudify-agent@5.0.5#egg=cloudify-rest-client&subdirectory=packaging/stub_packages/cloudify-rest-client
