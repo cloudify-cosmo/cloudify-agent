@@ -94,7 +94,7 @@ class CloudifyOperationConsumer(TaskConsumer):
                 )
                 if current_execution:
                     logger.info(
-                        'The current status of the execution is {}'
+                        'The current status of the execution is {0}'
                         ''.format(current_execution.status)
                     )
                     # If the current execution task is cancelled, that means
