@@ -23,9 +23,9 @@ install_requires = [
     'jinja2==2.10',
     'paramiko==1.18.3',
     'fabric==1.13.1',
-    'wagon[venv]==0.6.3',
     'fasteners==0.13.0',
     'virtualenv==15.1.0',
+    'wagon==0.6.3',
     'pika==0.11.2',
     'pip==9.0.1',
     'PyYAML==3.10'
