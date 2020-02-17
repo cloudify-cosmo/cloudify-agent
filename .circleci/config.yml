@@ -47,6 +47,9 @@ defaults:
           name: Install tox
           command: sudo pip install tox
       - run:
+          name: Downgrade virtualenv version
+          command: sudo pip install virtualenv==15.1.0
+      - run:
           # run under tini to allow reaping subprocesses
           # if you ssh into circle and want to run specific tests manually, do:
           # cd project; source .tox/py27/bin/activate
