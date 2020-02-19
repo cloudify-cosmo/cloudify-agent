@@ -123,9 +123,17 @@ class CloudifyAgentConfig(dict):
     def is_windows(self):
         return self['windows']
 
+    @property
+    def tmpdir(self):
+        try:
+            return self['env'][cloudify_utils.CFY_EXEC_TEMPDIR_ENVVAR]
+        except KeyError:
+            return None
+
     def set_default_values(self):
         self._set_name()
-        self._set_network()
+        self.setdefault('network', constants.DEFAULT_NETWORK_NAME)
+        self._set_ips()
         self.setdefault('queue', self['name'])
         self.setdefault('rest_port',
                         cloudify_utils.get_manager_rest_service_port())
@@ -198,20 +206,25 @@ class CloudifyAgentConfig(dict):
             name = ctx.instance.id
         self['name'] = name
 
-    def _set_network(self):
-        network = self.setdefault('network', constants.DEFAULT_NETWORK_NAME)
-        networks = self.pop('networks', None)
+    def get_manager_ip(self):
+        default_networks = ctx.bootstrap_context.cloudify_agent.networks
+        networks = self.pop('networks', default_networks)
         if networks:
-            manager_ip = networks.get(network)
+            manager_ip = networks.get(self['network'])
             if not manager_ip:
                 raise exceptions.AgentInstallerConfigurationError(
                     'The network associated with the agent (`{0}`) does not '
                     'appear in the list of manager networks assigned at '
-                    'bootstrap ({1})'.format(network, ', '.join(networks))
+                    'bootstrap ({1})'.format(self['network'],
+                                             ', '.join(networks))
                 )
         else:
             # Might be getting here when working in local workflows (or tests)
             manager_ip = cloudify_utils.get_manager_rest_service_host()
+        return manager_ip
+
+    def _set_ips(self):
+        manager_ip = self.get_manager_ip()
         self['rest_host'] = manager_ip
         self['broker_ip'] = manager_ip
 
