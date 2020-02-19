@@ -25,17 +25,15 @@ import threading
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
 
-from cloudify import constants, dispatch, exceptions
+from cloudify_rest_client.exceptions import UserUnauthorizedError
+
+from cloudify import constants, dispatch, exceptions, state
+from cloudify.models_states import ExecutionState
 from cloudify.logs import setup_agent_logger
 from cloudify.error_handling import serialize_known_exception
 from cloudify.amqp_client import AMQPConnection, TaskConsumer, NO_RESPONSE
 
 DEFAULT_MAX_WORKERS = 10
-
-SUPPORTED_EXCEPTIONS = (
-    exceptions.OperationRetry, exceptions.RecoverableError,
-    exceptions.NonRecoverableError, exceptions.ProcessExecutionError,
-    exceptions.HttpException)
 
 
 class CloudifyOperationConsumer(TaskConsumer):
@@ -71,6 +69,50 @@ class CloudifyOperationConsumer(TaskConsumer):
                 workflow_id=ctx.get('workflow_id'),
                 suffix=suffix))
 
+    @staticmethod
+    def _validate_not_cancelled(handler, ctx):
+        """
+        This method will validate if the current running tasks is cancelled
+        or not
+        :param handler:
+        :param ctx:
+        """
+        # We need also to handle old tasks still in queue and not picked by
+        # the worker so that we can ignore them as the state of the
+        # execution is cancelled and ignore pending tasks picked by the
+        # worker but still not executed. Morever,we need to handle a case when
+        # resume workflow is running while there are some old operations
+        # tasks still in the queue which holds an invalid execution token
+        # which could raise 401 error
+        # Need to use the context associated with the that task
+        with state.current_ctx.push(handler.ctx):
+            try:
+                # Get the status of the current execution so that we can
+                # tell if the current running task can be run or not
+                current_execution = handler.ctx.get_execution(
+                    ctx.get('execution_id')
+                )
+                if current_execution:
+                    logger.info(
+                        'The current status of the execution is {0}'
+                        ''.format(current_execution.status)
+                    )
+                    # If the current execution task is cancelled, that means
+                    # some this current task was on the queue when the previous
+                    # cancel operation triggered, so we need to ignore running
+                    # such tasks from the previous execution which was
+                    # cancelled
+                    if current_execution.status == ExecutionState.CANCELLED:
+                        raise exceptions.ProcessKillCancelled()
+                else:
+                    raise exceptions.NonRecoverableError(
+                        'No execution available'
+                    )
+            except UserUnauthorizedError:
+                # This means that Execution token is no longer valid since
+                # there is a new token re-generated because of resume workflow
+                raise exceptions.ProcessKillCancelled()
+
     def handle_task(self, full_task):
         task = full_task['cloudify_task']
         ctx = task['kwargs'].pop('__cloudify_context')
@@ -81,13 +123,14 @@ class CloudifyOperationConsumer(TaskConsumer):
                                kwargs=task['kwargs'],
                                process_registry=self._registry)
         try:
+            self._validate_not_cancelled(handler, ctx)
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
             result = {'ok': True, 'result': rv}
             status = 'SUCCESS - result: {0}'.format(result)
         except exceptions.ProcessKillCancelled:
             self._print_task(ctx, 'Task kill-cancelled')
             return NO_RESPONSE
-        except SUPPORTED_EXCEPTIONS as e:
+        except Exception as e:
             error = serialize_known_exception(e)
             result = {'ok': False, 'error': error}
             status = 'ERROR - result: {0}'.format(result)
@@ -212,9 +255,12 @@ class ProcessRegistry(object):
 
     def cancel(self, task_id):
         self._cancelled.add(task_id)
-        for p in self._processes.get(task_id, []):
-            t = threading.Thread(target=self._stop_process, args=(p, ))
-            t.start()
+        threads = [
+            threading.Thread(target=self._stop_process, args=(p,))
+            for p in self._processes.get(task_id, [])
+        ]
+        for thread in threads:
+            thread.start()
 
     def _stop_process(self, process):
         """Stop the process: SIGTERM, and after 5 seconds, SIGKILL
