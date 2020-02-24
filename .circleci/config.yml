@@ -159,11 +159,37 @@ jobs:
     environment:
       TOX_TEST: py27
 
+  py3_compat:
+    docker:
+      - image: circleci/python:2.7
+    steps:
+      - checkout
+      - run:
+          name: install futurize
+          command: pip install future --user
+      - run:
+          name: find python3-incompatible code
+          command: |
+            FUTURIZE="futurize ."
+            while read line; do
+              FUTURIZE="${FUTURIZE} ${line}"
+            done<.circleci/py3fixers
+            $FUTURIZE>futurize_diffs
+      - run:
+          name: check that there is no python3-incompatible code
+          command: |
+            if [[ -s futurize_diffs ]]; then
+              echo "Python-3-incompatible code found"
+              cat futurize_diffs
+              exit 1
+            fi
+
 workflows:
   version: 2
 
   run_test:
     jobs: &build_jobs
+      - py3_compat
       - flake8
       - py26
       - py27
