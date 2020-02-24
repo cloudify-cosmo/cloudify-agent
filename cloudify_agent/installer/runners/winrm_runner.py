@@ -28,6 +28,7 @@ from cloudify_agent.installer import utils
 from cloudify_agent.api import utils as api_utils
 
 from cloudify_rest_client.utils import is_kerberos_env
+from functools import reduce
 
 DEFAULT_WINRM_PORT = '5985'
 DEFAULT_WINRM_URI = 'wsman'
