@@ -82,7 +82,7 @@ class BaseInstallScriptTest(BaseTest, TestCase):
             f.write('\n{0}'.format('\n'.join(commands)))
 
         if not self.windows:
-            os.chmod(install_script_path, 0755)
+            os.chmod(install_script_path, 0o755)
         if self.windows:
             command_line = 'powershell {0}'.format(install_script_path)
         else:
