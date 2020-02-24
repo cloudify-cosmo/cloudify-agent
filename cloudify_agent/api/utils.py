@@ -20,7 +20,6 @@ import tempfile
 import os
 import errno
 import getpass
-import types
 import urllib
 import pkgutil
 
@@ -427,7 +426,7 @@ def get_bool_or_default(raw_value, default_value):
     if raw_value is None:
         return default_value
 
-    if isinstance(raw_value, types.BooleanType):
+    if isinstance(raw_value, bool):
         return raw_value
     elif isinstance(raw_value, basestring):
         return raw_value.lower() == 'true'
