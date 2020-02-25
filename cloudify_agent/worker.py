@@ -116,6 +116,7 @@ class CloudifyOperationConsumer(TaskConsumer):
     def handle_task(self, full_task):
         task = full_task['cloudify_task']
         ctx = task['kwargs'].pop('__cloudify_context')
+        workflow_id = ctx.get('workflow_id')
 
         self._print_task(ctx, 'Started handling')
         handler = self.handler(cloudify_context=ctx,
@@ -123,7 +124,8 @@ class CloudifyOperationConsumer(TaskConsumer):
                                kwargs=task['kwargs'],
                                process_registry=self._registry)
         try:
-            self._validate_not_cancelled(handler, ctx)
+            if workflow_id != 'install_new_agents':
+                self._validate_not_cancelled(handler, ctx)
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
             result = {'ok': True, 'result': rv}
             status = 'SUCCESS - result: {0}'.format(result)
