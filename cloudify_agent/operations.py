@@ -32,6 +32,7 @@ from cloudify.error_handling import deserialize_known_exception
 from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.agent_utils import create_agent_record, update_agent_record
 from cloudify.utils import (get_rest_token,
+                            get_manager_rest_service_host,
                             ManagerVersion,
                             get_local_rest_certificate)
 
@@ -293,7 +294,8 @@ def _get_cloudify_context(agent, task_name):
             'workflow_id': ctx.workflow_id,
             'execution_id': ctx.execution_id,
             'tenant': ctx.tenant,
-            'rest_token': get_rest_token()
+            'rest_token': get_rest_token(),
+            'rest_host': get_manager_rest_service_host()
         }
     }
 
