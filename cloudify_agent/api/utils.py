@@ -422,19 +422,6 @@ def env_to_file(env_variables, destination_path=None, posix=True):
     return destination_path
 
 
-def get_bool_or_default(raw_value, default_value):
-    if raw_value is None:
-        return default_value
-
-    if isinstance(raw_value, bool):
-        return raw_value
-    elif isinstance(raw_value, basestring):
-        return raw_value.lower() == 'true'
-    else:
-        raise ValueError('value has invalid type: {0}, expected boolean or '
-                         'string'.format(type(raw_value)))
-
-
 def stringify_values(dictionary):
 
     """
