@@ -1,4 +1,4 @@
-testtools
+testtools==2.3.0
 mock==1.0.1
 unittest2
 pywinrm==0.3.0
