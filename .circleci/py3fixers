@@ -13,3 +13,9 @@
 -f lib2to3.fixes.fix_filter
 # skipped - not idempotent
 # -f lib2to3.fixes.fix_dict
+-f lib2to3.fixes.fix_map
+-f lib2to3.fixes.fix_zip
+-f lib2to3.fixes.fix_xrange
+-f libfuturize.fixes.fix_cmp
+-f libfuturize.fixes.fix_division
+-f lib2to3.fixes.fix_metaclass
