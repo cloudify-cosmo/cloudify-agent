@@ -207,7 +207,7 @@ class AgentInstaller(object):
         # actually passed separately via an
         # environment variable
         process_management.pop('name')
-        for key, value in process_management.iteritems():
+        for key, value in process_management.items():
             options.append("--{0}={1}".format(key, quote(value)))
 
         return ' '.join(options)

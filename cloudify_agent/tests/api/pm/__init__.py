@@ -326,7 +326,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             _value = _get_env_var(var)
             self.assertEqual(_value, expected_value)
 
-        for key, value in expected.iteritems():
+        for key, value in expected.items():
             _check_env_var(key, value)
 
     @patch_get_source

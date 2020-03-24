@@ -66,7 +66,7 @@ class BaseTest(object):
         utils.logger.setLevel(logging.INFO)
 
         self.curr_dir = os.getcwd()
-        for key, value in agent_env_vars.iteritems():
+        for key, value in agent_env_vars.items():
             os.environ[key] = value
 
         def clean_folder(folder_name):
@@ -81,7 +81,7 @@ class BaseTest(object):
                 clean_folder(get_storage_directory())
 
         def clean_env():
-            for var in agent_env_vars.iterkeys():
+            for var in agent_env_vars:
                 del os.environ[var]
 
         self.addCleanup(clean_folder, folder_name=self.temp_folder)
