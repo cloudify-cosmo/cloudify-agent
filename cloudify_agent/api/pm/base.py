@@ -628,14 +628,10 @@ class Daemon(object):
             deployment_id=self.deployment_id,
             _get_all_results=True)
 
-        def match_ip(node_instance):
-            host_id = node_instance.host_id
-            if host_id == node_instance.id:
-                # compute node instance
-                return self.host == node_instance.runtime_properties['ip']
-            return False
-
-        matched = filter(match_ip, node_instances)
+        matched = [
+            ni for ni in node_instances
+            if ni.host_id == ni.id and self.host == ni.runtime_properties['ip']
+        ]
 
         if len(matched) > 1:
             raise exceptions.DaemonConfigurationError(

@@ -250,7 +250,7 @@ class SSLWSGIServer(wsgiref.simple_server.WSGIServer):
         return socket, addr
 
 
-class FileServer():
+class FileServer(object):
     def __init__(self, root_path=None, port=0, ssl=True):
         self._port = port
         self.root_path = root_path or os.path.dirname(resources.__file__)
