@@ -10,3 +10,5 @@ idna==2.7
 
 # for creating the agent package in tests
 https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip
+pytest
+pytest-cov

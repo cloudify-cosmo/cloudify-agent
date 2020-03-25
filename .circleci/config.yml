@@ -9,7 +9,32 @@ checkout:
         git checkout -qf FETCH_HEAD
       fi
 
+executors:
+  py26:
+    docker:
+        # staying on old debian image, because buster dropped libssl1.0-dev, which
+        # is required to compile py2.6 via pyenv
+      - image: circleci/python:2.7.14
+      - image: rabbitmq:3.7.4
+  py27:
+    docker:
+      - image: circleci/python:2.7.14
+      - image: rabbitmq:3.7.4
+  py36:
+    docker:
+      - image: circleci/python:3.6
+      - image: rabbitmq:3.7.4
+
 commands:
+  install_cron:
+    steps:
+      - run:
+          # we install cron to allow use of crontab in tests, but not run it,
+          # because we do mock cron in tests
+          name: Install and run cron
+          command: |
+                   sudo apt-get update
+                   sudo apt-get install -y cron
   install_tini:
     description: Download, verify, and install tini
     steps:
@@ -24,79 +49,33 @@ commands:
                    gpg --batch --verify ~/project/.circleci/tini.asc tini
                    chmod +x tini
                    sudo mv tini /sbin/tini
-
-defaults:
-  - &test_defaults
-    docker:
-    # We use specifically this python image version, because there is a conflicting change in the latest python image
-    # that wrongly influence them.
-      - image: circleci/python:2.7.14
-      - image: rabbitmq:3.7.7
-
+  install_test_dependencies:
+    parameters:
+      cache_prefix:
+        type: string
+        default: py27
     steps:
-      - checkout
+      - restore_cache:
+          keys:
+            - << parameters.cache_prefix >>-venv-{{ checksum "dev-requirements.txt" }}-{{ checksum "test-requirements.txt" }}-{{ checksum "setup.py" }}
+      - run: ~/venv/bin/pip install -r dev-requirements.txt
+      - run: ~/venv/bin/pip install -r test-requirements.txt
+      - run: ~/venv/bin/pip install -e .
+      - save_cache:
+          paths:
+            - ~/venv
+          key: << parameters.cache_prefix >>-dependencies-{{ checksum "dev-requirements.txt" }}-{{ checksum "test-requirements.txt" }}-{{ checksum "setup.py" }}
+
+  pytest:
+    steps:
       - run:
-          # we install cron to allow use of crontab in tests, but not run it,
-          # because we do mock cron in tests
-          name: Install and run cron
-          command: |
-                   sudo apt-get update
-                   sudo apt-get install cron
-      - install_tini
-      - run:
-          name: Install tox
-          command: sudo pip install tox
-      - run:
-          name: Downgrade virtualenv version
-          command: sudo pip install virtualenv==15.1.0
-      - run:
+          name: Run unittests
           # run under tini to allow reaping subprocesses
           # if you ssh into circle and want to run specific tests manually, do:
-          # cd project; source .tox/py27/bin/activate
-          # /sbin/tini -sw -- pytest cloudify_agent/tests/...
-          name: Run tox of specfic environment
-          command: /sbin/tini -ws -- python -m tox -e ${TOX_TEST}
-      - run:
-          name: Push coverage data to codecov
-          command: bash <(curl -s https://codecov.io/bash) -F $TOX_TEST
-
-  - &test_defaults_for_python26
-    # We use specifically this python image version, because there is a conflicting change in the latest python image
-    # that wrongly influence them.
-    docker:
-      - image: circleci/python:2.7.14
-      - image: rabbitmq:3.7.7
-    steps:
-      - checkout
-      - run:
-          name: Install and set python version with pyenv
+          # /sbin/tini -sw -- ~/.local/bin/pytest cloudify_agent/tests/...
           command: |
-                   git clone https://github.com/yyuu/pyenv.git ~/.pyenv
-                   export PYENV_ROOT="$HOME/.pyenv"
-                   export PATH="$PYENV_ROOT/bin:$PATH"
-                   sudo apt-get install -y build-essential zlib1g-dev xz-utils
-                   pyenv install 2.6.9
-                   pyenv local 2.6.9
-      - run:
-          name: Install and run cron
-          command: |
-                   sudo apt-get update
-                   sudo apt-get install cron
-      - run:
-          # python 2.6 will require pyyaml to be built, rather than installed
-          # from a wheel, and so we need to provide headers
-          name: Install python headers
-          command: sudo apt-get install libpython-dev
-      - install_tini
-      - run:
-          name: Install tox, NOTICE we use an old version of tox for supporting py26
-          command: sudo ~/.pyenv/versions/2.6.9/bin/pip install tox
-      - run:
-          name: Run tox of specfic environment
-          command: sudo /sbin/tini -ws sudo -- -u $(whoami) ~/.pyenv/versions/2.6.9/bin/tox -e $TOX_TEST
-      - run:
-          name: Push coverage data to codecov
-          command: bash <(curl -s https://codecov.io/bash) -F $TOX_TEST
+            source ~/venv/bin/activate
+            /sbin/tini -ws -- ~/venv/bin/pytest --cov-report term-missing --cov=cloudify_agent cloudify_agent
 
 jobs:
   # build the agent, and a rpm containing this single agent, in CI.
@@ -145,19 +124,50 @@ jobs:
           destination: result
 
   flake8:
-    <<: *test_defaults
-    environment:
-      TOX_TEST: flake8
+    docker:
+      - image: circleci/python:2.7
+    steps:
+      - checkout
+      - run: pip install flake8 --user
+      - run: flake8 cloudify_agent
 
   py26:
-    <<: *test_defaults_for_python26
-    environment:
-      TOX_TEST: py26_tests
+    executor: py26
+    steps:
+      - checkout
+      - run:
+          name: Install and set python version with pyenv
+          command: |
+                   git clone https://github.com/yyuu/pyenv.git ~/.pyenv
+                   export PYENV_ROOT="$HOME/.pyenv"
+                   export PATH="$PYENV_ROOT/bin:$PATH"
+                   sudo apt-get update
+                   sudo apt-get install -y build-essential zlib1g-dev xz-utils
+                   pyenv install 2.6.9
+                   pyenv local 2.6.9
+      - run:
+          # python 2.6 will require pyyaml to be built, rather than installed
+          # from a wheel, and so we need to provide headers
+          name: Install python headers
+          command: sudo apt-get install libpython-dev
+      - install_cron
+      - install_tini
+      - run: pip install virtualenv==15.1.0 --user
+      - run: ~/.local/bin/virtualenv ~/venv
+      - install_test_dependencies:
+          cache_prefix: py26
+      - pytest
 
   py27:
-    <<: *test_defaults
-    environment:
-      TOX_TEST: py27
+    executor: py27
+    steps:
+      - checkout
+      - install_cron
+      - install_tini
+      - run: pip install virtualenv==15.1.0 --user
+      - run: virtualenv ~/venv
+      - install_test_dependencies
+      - pytest
 
   py3_compat:
     docker:

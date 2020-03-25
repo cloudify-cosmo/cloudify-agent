@@ -15,7 +15,6 @@ environment:
 cache:
   - "%choco_cache_location%"
   - "%rabbitmq_installer_path%"
-  - C:\Users\appveyor\.tox
 
 install:
 
@@ -55,11 +54,14 @@ install:
 build: false # Not a C# project, build stuff at the test step instead.
 
 before_test:
-  - echo Installing tox
-  - pip install tox==3.14.0
+  - echo Installing dependencies
+  - virtualenv venv
+  - venv\Scripts\python.exe -m pip install -r dev-requirements.txt
+  - venv\Scripts\python.exe -m pip install -r test-requirements.txt
+  - venv\Scripts\python.exe -m pip install -U .
 
 test_script:
-  - tox -e %TOX_ENV%
+  - venv\Scripts\pytest.exe -svx .
 
 # RDP can be set in Appveyor - look here:
 # https://www.appveyor.com/docs/how-to/rdp-to-build-worker/
