@@ -721,7 +721,7 @@ class GenericLinuxDaemonMixin(Daemon):
             self._runner.run(self.status_command())
             return True
         except CommandExecutionException as e:
-            self._logger.debug(str(e))
+            self._logger.debug('%s', e)
             return False
 
     def create_script(self):
