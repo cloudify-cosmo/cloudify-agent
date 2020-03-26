@@ -471,9 +471,9 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
 
     try:
         agents = _run_install_script(old_agent, install_agent_timeout)
-    except Exception as error:
+    except Exception:
         update_agent_runtime_properties(original_agent)
-        raise error
+        raise
 
     new_agent = agents['new']
     ctx.logger.info('Installed agent {0}'.format(new_agent['name']))
