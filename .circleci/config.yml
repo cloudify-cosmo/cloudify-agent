@@ -18,7 +18,7 @@ executors:
       - image: rabbitmq:3.7.4
   py27:
     docker:
-      - image: circleci/python:2.7.14
+      - image: circleci/python:2.7
       - image: rabbitmq:3.7.4
   py36:
     docker:
@@ -35,20 +35,7 @@ commands:
           command: |
                    sudo apt-get update
                    sudo apt-get install -y cron
-  install_tini:
-    description: Download, verify, and install tini
-    steps:
-      - run:
-          # import the author's public key, and verify tini signature
-          # using gpg. The public key is stored in the repository, and was
-          # obtained from the keyserver pointed to in tini's readme.
-          name: Download tini
-          command: |
-                   gpg --import ~/project/.circleci/thomas.gpg
-                   curl -LO https://github.com/krallin/tini/releases/download/v0.18.0/tini
-                   gpg --batch --verify ~/project/.circleci/tini.asc tini
-                   chmod +x tini
-                   sudo mv tini /sbin/tini
+
   install_test_dependencies:
     parameters:
       cache_prefix:
@@ -70,12 +57,9 @@ commands:
     steps:
       - run:
           name: Run unittests
-          # run under tini to allow reaping subprocesses
-          # if you ssh into circle and want to run specific tests manually, do:
-          # /sbin/tini -sw -- ~/.local/bin/pytest cloudify_agent/tests/...
           command: |
             source ~/venv/bin/activate
-            /sbin/tini -ws -- ~/venv/bin/pytest --cov-report term-missing --cov=cloudify_agent cloudify_agent
+            ~/venv/bin/pytest --cov-report term-missing --cov=cloudify_agent cloudify_agent
 
 jobs:
   # build the agent, and a rpm containing this single agent, in CI.
@@ -151,7 +135,6 @@ jobs:
           name: Install python headers
           command: sudo apt-get install libpython-dev
       - install_cron
-      - install_tini
       - run: pip install virtualenv==15.1.0 --user
       - run: ~/.local/bin/virtualenv ~/venv
       - install_test_dependencies:
@@ -163,7 +146,6 @@ jobs:
     steps:
       - checkout
       - install_cron
-      - install_tini
       - run: pip install virtualenv==15.1.0 --user
       - run: virtualenv ~/venv
       - install_test_dependencies
