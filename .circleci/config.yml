@@ -115,6 +115,14 @@ jobs:
       - run: pip install flake8 --user
       - run: flake8 cloudify_agent
 
+  flake8_py36:
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - checkout
+      - run: pip install flake8 --user
+      - run: flake8 cloudify_agent
+
   py26:
     executor: py26
     steps:
@@ -151,6 +159,16 @@ jobs:
       - install_test_dependencies
       - pytest
 
+  py36:
+    executor: py36
+    steps:
+      - checkout
+      - install_cron
+      - run: virtualenv ~/venv
+      - install_test_dependencies:
+          cache_prefix: py36
+      - pytest
+
   py3_compat:
     docker:
       - image: circleci/python:2.7
@@ -183,8 +201,10 @@ workflows:
     jobs: &build_jobs
       - py3_compat
       - flake8
+      - flake8_py36
       - py26
       - py27
+      - py36
       - build_agent
       - build_rpm:
           requires:
