@@ -282,7 +282,7 @@ def get_resource(resource_path):
     return pkg_resources.resource_string(
         cloudify_agent.__name__,
         os.path.join('resources', resource_path)
-    )
+    ).decode('utf-8')
 
 
 def get_absolute_resource_path(resource_path):
