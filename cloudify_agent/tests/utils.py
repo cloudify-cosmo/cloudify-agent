@@ -402,13 +402,15 @@ W6ymlKLurKPd5YI4Q0y6irWmVMoeaQ==
 
     @staticmethod
     def get_local_cert_path(temp_folder=None):
-        with tempfile.NamedTemporaryFile(delete=False, dir=temp_folder) as f:
+        with tempfile.NamedTemporaryFile(
+                delete=False, dir=temp_folder, mode='w') as f:
             f.write(_AgentSSLCert.DUMMY_CERT)
         return f.name
 
     @staticmethod
     def local_key_path(temp_folder=None):
-        with tempfile.NamedTemporaryFile(delete=False, dir=temp_folder) as f:
+        with tempfile.NamedTemporaryFile(
+                delete=False, dir=temp_folder, mode='w') as f:
             f.write(_AgentSSLCert.PRIVATE_KEY)
         return f.name
 
