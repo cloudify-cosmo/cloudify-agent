@@ -20,7 +20,6 @@ import tempfile
 import os
 import errno
 import getpass
-import urllib
 import pkgutil
 
 import appdirs
@@ -28,6 +27,7 @@ import pkg_resources
 
 from jinja2 import Template
 
+from cloudify._compat import urlquote
 from cloudify.cluster import CloudifyClusterClient
 from cloudify.workflows import tasks as workflows_tasks
 from cloudify.utils import setup_logger, get_exec_tempdir
@@ -176,8 +176,8 @@ class _Internal(object):
             broker_port = BROKER_PORT_SSL
         else:
             broker_port = BROKER_PORT_NO_SSL
-        return defaults.BROKER_URL.format(username=urllib.quote(broker_user),
-                                          password=urllib.quote(broker_pass),
+        return defaults.BROKER_URL.format(username=urlquote(broker_user),
+                                          password=urlquote(broker_pass),
                                           host=broker_ip,
                                           vhost=broker_vhost,
                                           port=broker_port)

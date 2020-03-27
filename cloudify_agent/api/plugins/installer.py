@@ -21,9 +21,6 @@ import shutil
 import tempfile
 import platform
 
-from urlparse import urljoin
-from urllib import pathname2url
-
 from os import walk
 from distutils.version import LooseVersion
 
@@ -31,6 +28,7 @@ import wagon
 import fasteners
 
 from cloudify import ctx
+from cloudify._compat import reraise, urljoin, pathname2url
 from cloudify.utils import setup_logger
 from cloudify.utils import extract_archive
 from cloudify.manager import get_rest_client
