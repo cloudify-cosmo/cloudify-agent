@@ -17,6 +17,7 @@ import click
 import sys
 from functools import wraps
 
+from cloudify._compat import reraise
 from cloudify_agent.api import exceptions
 
 
@@ -64,6 +65,6 @@ def handle_failures(func):
             # read by the click framework to set the exit code of
             # the process.
             value.exit_code = codes.get(tpe, 1)
-            raise type(value), value, tb
+            reraise(type(value), value, tb)
 
     return wrapper

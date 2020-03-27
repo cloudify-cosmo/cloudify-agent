@@ -218,10 +218,11 @@ class PluginInstaller(object):
                     self._update_plugin_status(managed_plugin.id)
             except Exception as e:
                 tpe, value, tb = sys.exc_info()
-                raise NonRecoverableError('Failed installing managed '
+                exc = NonRecoverableError('Failed installing managed '
                                           'plugin: {0} [{1}][{2}]'
                                           .format(managed_plugin.id,
-                                                  plugin, e)), None, tb
+                                                  plugin, e))
+                reraise(NonRecoverableError, exc, tb)
 
     @staticmethod
     def _update_plugin_status(plugin_id):
