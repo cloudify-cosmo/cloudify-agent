@@ -17,17 +17,18 @@ from mock import Mock, patch
 from testtools import TestCase
 
 from cloudify_agent.installer import exceptions
-from cloudify_agent.installer.runners.fabric_runner import (
-    FabricCommandExecutionException,
-)
 
 # these imports may run on a windows box, in which case they may fail. (if
 # the pywin32 extensions). The tests wont run anyway because of the decorator,
 # so we can just avoid this import.
 try:
     from cloudify_agent.installer.runners.fabric_runner import FabricRunner
+    from cloudify_agent.installer.runners.fabric_runner import (
+        FabricCommandExecutionException,
+    )
 except ImportError:
     FabricRunner = None
+    FabricCommandExecutionException = None
 
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests.api.pm import only_os
