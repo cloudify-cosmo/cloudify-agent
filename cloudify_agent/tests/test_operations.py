@@ -18,7 +18,7 @@ import shutil
 from contextlib import contextmanager
 
 from mock import patch, MagicMock
-from testtools import TestCase
+from unittest import TestCase
 
 from cloudify import constants
 from cloudify import ctx

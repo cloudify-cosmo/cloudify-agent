@@ -21,9 +21,6 @@ import shutil
 import tempfile
 import platform
 
-from urlparse import urljoin
-from urllib import pathname2url
-
 from os import walk
 from distutils.version import LooseVersion
 
@@ -31,6 +28,7 @@ import wagon
 import fasteners
 
 from cloudify import ctx
+from cloudify._compat import reraise, urljoin, pathname2url
 from cloudify.utils import setup_logger
 from cloudify.utils import extract_archive
 from cloudify.manager import get_rest_client
@@ -218,10 +216,11 @@ class PluginInstaller(object):
                     self._update_plugin_status(managed_plugin.id)
             except Exception as e:
                 tpe, value, tb = sys.exc_info()
-                raise NonRecoverableError('Failed installing managed '
+                exc = NonRecoverableError('Failed installing managed '
                                           'plugin: {0} [{1}][{2}]'
                                           .format(managed_plugin.id,
-                                                  plugin, e)), None, tb
+                                                  plugin, e))
+                reraise(NonRecoverableError, exc, tb)
 
     @staticmethod
     def _update_plugin_status(plugin_id):

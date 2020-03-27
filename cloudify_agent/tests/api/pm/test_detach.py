@@ -16,7 +16,7 @@
 import os
 
 from mock import patch
-from testtools import TestCase
+from unittest import TestCase
 
 from cloudify_agent.api.pm.detach import DetachedDaemon
 

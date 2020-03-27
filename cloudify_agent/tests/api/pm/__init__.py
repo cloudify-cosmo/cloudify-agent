@@ -14,10 +14,9 @@
 #  * limitations under the License.
 
 import os
-import types
-import inspect
 import unittest
 
+import pytest
 from mock import patch
 from functools import wraps
 from mock import _get_target
@@ -88,23 +87,8 @@ else:
 
 
 def only_os(os_type):
-    def decorator(test):
-        if isinstance(test, (types.MethodType, types.FunctionType)):
-            @skip_if(os.name != os_type,
-                     reason='Not relevant OS to run the test.')
-            def run_test(*args, **kwargs):
-                test(*args, **kwargs)
-            return run_test
-        if isinstance(test, type):
-            for name, fn in inspect.getmembers(test):
-                if isinstance(fn, types.UnboundMethodType):
-                    if name.startswith('test') or name.endswith('test'):
-                        setattr(test, name, decorator(fn))
-            return test
-        raise ValueError("'test' argument is of an unsupported type: {0}. "
-                         "supported types are: 'type', 'FunctionType',"
-                         " 'MethodType'".format(type(test)))
-    return decorator
+    return pytest.mark.skipif(
+        os.name != os_type, reason='Not relevant OS to run the test.')
 
 
 class BaseDaemonLiveTestCase(BaseTest):

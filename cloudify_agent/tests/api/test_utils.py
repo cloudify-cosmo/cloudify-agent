@@ -15,8 +15,7 @@
 
 import os
 import tempfile
-
-from testtools import TestCase
+from unittest import TestCase
 
 from cloudify.utils import setup_logger
 

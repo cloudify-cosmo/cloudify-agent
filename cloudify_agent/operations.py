@@ -35,6 +35,7 @@ from cloudify.utils import (get_rest_token,
                             get_manager_rest_service_host,
                             ManagerVersion,
                             get_local_rest_certificate)
+from cloudify._compat import reraise
 
 from cloudify_agent.celery_app import get_celery_app
 from cloudify_agent.api.plugins.installer import PluginInstaller
@@ -65,7 +66,7 @@ def install_plugins(plugins, **_):
         except exceptions.PluginInstallationError as e:
             # preserve traceback
             tpe, value, tb = sys.exc_info()
-            raise NonRecoverableError, NonRecoverableError(str(e)), tb
+            reraise(NonRecoverableError, NonRecoverableError(str(e)), tb)
 
 
 @operation
@@ -471,9 +472,9 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
 
     try:
         agents = _run_install_script(old_agent, install_agent_timeout)
-    except Exception as error:
+    except Exception:
         update_agent_runtime_properties(original_agent)
-        raise error
+        raise
 
     new_agent = agents['new']
     ctx.logger.info('Installed agent {0}'.format(new_agent['name']))
