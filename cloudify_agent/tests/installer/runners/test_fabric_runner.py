@@ -13,12 +13,12 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from mock import patch
+from mock import Mock, patch
 from testtools import TestCase
 
 from cloudify_agent.installer import exceptions
 from cloudify_agent.installer.runners.fabric_runner import (
-    FabricCommandExecutionError,
+    FabricCommandExecutionException,
 )
 
 # these imports may run on a windows box, in which case they may fail. (if
@@ -96,14 +96,17 @@ class TestAbortException(BaseTest, TestCase):
             password='password',
         )
 
-        fabric_api_path = (
-            'cloudify_agent.installer.runners.fabric_runner.fabric_api'
+        connection_path = (
+            'cloudify_agent.installer.runners.fabric_runner.Connection'
         )
-        with patch(fabric_api_path) as fabric_api:
-            fabric_api.run.side_effect = Exception(expected_message)
+        with patch(connection_path) as conn_factory:
+            conn_factory.return_value.run.return_value = Mock(
+                return_code=1,
+                stderr=expected_message
+            )
             try:
                 runner.run('a command')
-            except FabricCommandExecutionError as e:
+            except FabricCommandExecutionException as e:
                 self.assertEqual(e.error, expected_message)
             else:
-                self.fail('FabricCommandExecutionError not raised')
+                self.fail('FabricCommandExecutionException not raised')
