@@ -14,14 +14,12 @@
 #  * limitations under the License.
 
 import os
+import sys
 import logging
 
-from fabric import network
-from fabric import api as fabric_api
-from fabric.context_managers import settings
-from fabric.context_managers import hide
-from fabric.context_managers import shell_env
+from fabric import Connection
 
+from cloudify._compat import reraise
 from cloudify.utils import CommandExecutionResponse
 from cloudify.utils import setup_logger
 from cloudify.exceptions import CommandExecutionException
@@ -36,12 +34,7 @@ DEFAULT_REMOTE_EXECUTION_PORT = 22
 RSA_PRIVATE_KEY_PREFIX = '-----BEGIN RSA PRIVATE KEY-----'
 
 COMMON_ENV = {
-    'warn_only': True,
     'forward_agent': True,
-    'abort_on_prompts': True,
-    # Raise Exception(message) instead of calling sys.exit(1)
-    'abort_exception': Exception,
-    'disable_known_hosts': True
 }
 
 
@@ -75,6 +68,7 @@ class FabricRunner(object):
         # fabric environment
         self.env = self._set_env()
         self.env.update(fabric_env or {})
+        self._connection = None
 
         self._validate_ssh_config()
         if validate_connection:
@@ -91,17 +85,18 @@ class FabricRunner(object):
 
     def _set_env(self):
         env = {
-            'host_string': self.host,
+            'host': self.host,
             'port': self.port,
-            'user': self.user
+            'user': self.user,
+            'connect_kwargs': {}
         }
         if self.key:
             if self.key.startswith(RSA_PRIVATE_KEY_PREFIX):
-                env['key'] = self.key
+                env['connect_kwargs']['key'] = self.key
             else:
-                env['key_filename'] = self.key
+                env['connect_kwargs']['key_filename'] = self.key
         if self.password:
-            env['password'] = self.password
+            env['connect_kwargs']['password'] = self.password
         if is_kerberos_env():
             # For GSSAPI, the fabric env just needs to have
             # gss_auth and gss_kex set to True
@@ -115,6 +110,19 @@ class FabricRunner(object):
         self.logger.debug('Validating SSH connection')
         self.ping()
         self.logger.debug('SSH connection is ready')
+
+    def _ensure_connection(self):
+        if self._connection is None:
+            self._connection = Connection(**self.env)
+            try:
+                self._connection.open()
+            except Exception as e:
+                _, _, tb = sys.exc_info()
+                reraise(
+                    FabricCommandExecutionError,
+                    FabricCommandExecutionError(str(e)),
+                    tb
+                )
 
     def run(self, command, execution_env=None, **attributes):
 
@@ -135,44 +143,23 @@ class FabricRunner(object):
 
         if execution_env is None:
             execution_env = {}
-
-        with shell_env(**execution_env):
-            with settings(**self.env):
-                try:
-                    with hide('warnings'):
-                        r = fabric_api.run(
-                            command,
-                            quiet=not self.logger.isEnabledFor(logging.DEBUG),
-                            **attributes)
-                    if r.return_code != 0:
-
-                        # by default, fabric combines the stdout
-                        # and stderr streams into the stdout stream.
-                        # this is good because normally when an error
-                        # happens, the stdout is useful as well.
-                        # this is why we populate the error
-                        # with stdout and not stderr
-                        # see http://docs.fabfile.org/en/latest
-                        # /usage/env.html#combine-stderr
-                        raise FabricCommandExecutionException(
-                            command=command,
-                            error=r.stdout,
-                            output=None,
-                            code=r.return_code
-                        )
-                    return FabricCommandExecutionResponse(
-                        command=command,
-                        std_out=r.stdout,
-                        std_err=None,
-                        return_code=r.return_code
-                    )
-                except FabricCommandExecutionException:
-                    raise
-                except BaseException as e:
-                    raise FabricCommandExecutionError(
-                        command=command,
-                        error=str(e)
-                    )
+        self._ensure_connection()
+        attributes.setdefault('hide', self.logger.isEnabledFor(logging.DEBUG))
+        attributes.setdefault('warn', True)
+        r = self._connection.run(command, **attributes)
+        if r.return_code != 0:
+            raise FabricCommandExecutionException(
+                command=command,
+                error=r.stderr,
+                output=r.stdout,
+                code=r.return_code
+            )
+        return FabricCommandExecutionResponse(
+            command=command,
+            std_out=r.stdout,
+            std_err=None,
+            return_code=r.return_code
+        )
 
     def sudo(self, command, **attributes):
 
@@ -232,19 +219,17 @@ class FabricRunner(object):
             basename = os.path.basename(src)
             tempdir = self.mkdtemp()
             dst = os.path.join(tempdir, basename)
+        self._ensure_connection()
+        if dst is None:
+            dst = os.path.basename(src)
+        target_path = dst
+        if sudo:
+            dst = os.path.basename(dst)
 
-        with settings(**self.env):
-            with hide('warnings'):
-                r = fabric_api.put(src, dst, use_sudo=sudo, **attributes)
-                if not r.succeeded:
-                    raise FabricCommandExecutionException(
-                        command='fabric_api.put',
-                        error='Failed uploading {0} to {1}'
-                        .format(src, dst),
-                        code=-1,
-                        output=None
-                    )
-        return dst
+        self._connection.put(src, dst)
+        if sudo:
+            self.sudo('sudo mv {0} {1}'.format(dst, target_path))
+        return target_path
 
     def ping(self, **attributes):
 
@@ -372,15 +357,9 @@ class FabricRunner(object):
     def delete(self, path):
         self.run('rm -rf {0}'.format(path))
 
-    @staticmethod
-    def close():
-
-        """
-        Closes all fabric connections.
-
-        """
-
-        network.disconnect_all()
+    def close(self):
+        if self._connection is not None:
+            self._connection.close()
 
 
 class FabricCommandExecutionError(CommandExecutionError):
