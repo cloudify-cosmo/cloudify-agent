@@ -14,12 +14,17 @@
 #  * limitations under the License.
 
 from cloudify import ctx
+from cloudify._compat import PY2
 from cloudify_agent.tests.utils import create_agent_package
 
 config = {
     'cloudify_agent_module': ctx.node.properties['cloudify_agent_module'],
     'requirements_file': ctx.node.properties.get('requirements_file')
 }
+if not PY2:
+    # unfortunate, but this is what the agent-packager has us do.
+    config['python_path'] = '/usr/local/bin/python3.6'
+
 
 resource_base = ctx.node.properties['resource_base']
 file_server_port = ctx.node.properties['file_server_port']
