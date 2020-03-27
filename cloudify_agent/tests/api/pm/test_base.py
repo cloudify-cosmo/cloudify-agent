@@ -64,7 +64,9 @@ class TestDaemonValidations(BaseTest, TestCase):
         super(TestDaemonValidations, self).setUp()
 
     def test_missing_rest_host(self):
-        try:
+        with self.assertRaisesRegex(
+                exceptions.DaemonMissingMandatoryPropertyError,
+                'rest_host is mandatory'):
             Daemon(
                 name='name',
                 queue='queue',
@@ -74,12 +76,11 @@ class TestDaemonValidations(BaseTest, TestCase):
                 broker_pass='guest',
                 local_rest_cert_file=self._rest_cert_path
             )
-            self.fail('Expected ValueError due to missing rest_host')
-        except exceptions.DaemonMissingMandatoryPropertyError as e:
-            self.assertTrue('rest_host is mandatory' in e.message)
 
     def test_bad_min_workers(self):
-        try:
+        with self.assertRaisesRegex(
+                exceptions.DaemonPropertiesError,
+                'min_workers is supposed to be a number'):
             Daemon(
                 name='name',
                 queue='queue',
@@ -92,12 +93,11 @@ class TestDaemonValidations(BaseTest, TestCase):
                 broker_pass='guest',
                 local_rest_cert_file=self._rest_cert_path
             )
-        except exceptions.DaemonPropertiesError as e:
-            self.assertTrue('min_workers is supposed to be a number' in
-                            e.message)
 
     def test_bad_max_workers(self):
-        try:
+        with self.assertRaisesRegex(
+                exceptions.DaemonPropertiesError,
+                'max_workers is supposed to be a number'):
             Daemon(
                 name='name',
                 queue='queue',
@@ -110,12 +110,11 @@ class TestDaemonValidations(BaseTest, TestCase):
                 broker_pass='guest',
                 local_rest_cert_file=self._rest_cert_path
             )
-        except exceptions.DaemonPropertiesError as e:
-            self.assertTrue('max_workers is supposed to be a number' in
-                            e.message)
 
     def test_min_workers_larger_than_max_workers(self):
-        try:
+        with self.assertRaisesRegex(
+                exceptions.DaemonPropertiesError,
+                'min_workers cannot be greater than max_workers'):
             Daemon(
                 name='name',
                 queue='queue',
@@ -129,9 +128,6 @@ class TestDaemonValidations(BaseTest, TestCase):
                 broker_pass='guest',
                 local_rest_cert_file=self._rest_cert_path
             )
-        except exceptions.DaemonPropertiesError as e:
-            self.assertTrue('min_workers cannot be greater than max_workers'
-                            in e.message)
 
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
