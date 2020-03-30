@@ -28,10 +28,10 @@ from cloudify_agent.api import defaults
 from cloudify import ctx
 from cloudify import constants
 from cloudify import utils as cloudify_utils
+from cloudify.exceptions import CommandExecutionException
 
 from .installer_config import create_runner, get_installer
 from .config_errors import raise_missing_attribute, raise_missing_attributes
-from ..runners.fabric_runner import FabricCommandExecutionException
 
 
 def create_agent_config_and_installer(func=None,
@@ -191,7 +191,7 @@ class CloudifyAgentConfig(dict):
             return 'init.d'
         try:
             runner.run('which systemctl')
-        except FabricCommandExecutionException as e:
+        except CommandExecutionException as e:
             if e.code != 1:
                 raise
             return 'init.d'

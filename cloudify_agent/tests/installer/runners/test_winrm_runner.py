@@ -21,7 +21,7 @@ from cloudify_agent.installer.runners.winrm_runner import split_into_chunks
 from cloudify_agent.tests import BaseTest
 
 ##############################################################################
-# note that this file only tests validation and defaults of the fabric runner.
+# note that this file only tests validation and defaults of the winrm runner.
 # it does not test the actual functionality because that requires starting
 # a vm. functional tests are executed as local workflow tests in the system
 # tests framework
@@ -30,46 +30,31 @@ from cloudify_agent.tests import BaseTest
 
 class TestValidations(BaseTest, TestCase):
     def test_validate_host(self):
-
         # Missing host
         session_config = {
             'user': 'test_user',
             'password': 'test_password'
         }
-
-        try:
+        with self.assertRaisesRegex(ValueError, 'Invalid host'):
             winrm_runner.validate(session_config)
-            self.fail('Expected ValueError for missing host')
-        except ValueError as e:
-            self.assertIn('Invalid host', e.message)
 
     def test_validate_user(self):
-
         # Missing user
         session_config = {
             'host': 'test_host',
             'password': 'test_password'
         }
-
-        try:
+        with self.assertRaisesRegex(ValueError, 'Invalid user'):
             winrm_runner.validate(session_config)
-            self.fail('Expected ValueError for missing user')
-        except ValueError as e:
-            self.assertIn('Invalid user', e.message)
 
     def test_validate_password(self):
-
         # Missing password
         session_config = {
             'host': 'test_host',
             'user': 'test_user'
         }
-
-        try:
+        with self.assertRaisesRegex(ValueError, 'Invalid password'):
             winrm_runner.validate(session_config)
-            self.fail('Expected ValueError for missing password')
-        except ValueError as e:
-            self.assertIn('Invalid password', e.message)
 
 
 class TestDefaults(BaseTest, TestCase):

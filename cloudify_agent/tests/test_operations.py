@@ -42,7 +42,7 @@ from cloudify_agent.tests.installer.config import (
 from cloudify_agent.tests.utils import FileServer
 
 from cloudify_agent.tests.api.pm import BaseDaemonLiveTestCase
-from cloudify_agent.tests.api.pm import only_ci
+from cloudify_agent.tests.api.pm import only_ci, only_os
 from cloudify_rest_client.manager import ManagerItem
 
 
@@ -149,6 +149,7 @@ rest_mock.manager = MagicMock()
 rest_mock.manager.get_version = lambda: '3.3'
 
 
+@only_os('posix')
 class TestCreateAgentAmqp(BaseTest, TestCase):
     @staticmethod
     @patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())

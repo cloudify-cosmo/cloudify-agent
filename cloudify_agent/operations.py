@@ -35,6 +35,7 @@ from cloudify.utils import (get_rest_token,
                             get_manager_rest_service_host,
                             ManagerVersion,
                             get_local_rest_certificate)
+from cloudify._compat import reraise
 
 from cloudify_agent.celery_app import get_celery_app
 from cloudify_agent.api.plugins.installer import PluginInstaller
@@ -65,7 +66,7 @@ def install_plugins(plugins, **_):
         except exceptions.PluginInstallationError as e:
             # preserve traceback
             tpe, value, tb = sys.exc_info()
-            raise NonRecoverableError, NonRecoverableError(str(e)), tb
+            reraise(NonRecoverableError, NonRecoverableError(str(e)), tb)
 
 
 @operation
