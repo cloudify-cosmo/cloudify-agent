@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import os
 from setuptools import setup
 
 install_requires = [
@@ -28,11 +27,6 @@ install_requires = [
     'pip==9.0.1',
     'PyYAML==3.10'
 ]
-if os.name != 'nt':
-    install_requires += [
-        'fabric==2.5.0',
-    ]
-
 
 setup(
     name='cloudify-agent',
@@ -92,6 +86,9 @@ setup(
         ],
         'celery': [
             'celery==3.1.17',
+        ],
+        'fabric': [
+            'fabric==2.5.0',
         ]
     }
 )

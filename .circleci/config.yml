@@ -47,7 +47,7 @@ commands:
             - << parameters.cache_prefix >>-venv-{{ checksum "dev-requirements.txt" }}-{{ checksum "test-requirements.txt" }}-{{ checksum "setup.py" }}
       - run: ~/venv/bin/pip install -r dev-requirements.txt
       - run: ~/venv/bin/pip install -r test-requirements.txt
-      - run: ~/venv/bin/pip install -e .
+      - run: ~/venv/bin/pip install -e '.[fabric]'
       - save_cache:
           paths:
             - ~/venv
