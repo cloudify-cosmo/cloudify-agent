@@ -41,13 +41,21 @@ commands:
       cache_prefix:
         type: string
         default: py27
+      optional:
+        type: string
+        default: ''
     steps:
       - restore_cache:
           keys:
             - << parameters.cache_prefix >>-venv-{{ checksum "dev-requirements.txt" }}-{{ checksum "test-requirements.txt" }}-{{ checksum "setup.py" }}
       - run: ~/venv/bin/pip install -r dev-requirements.txt
       - run: ~/venv/bin/pip install -r test-requirements.txt
-      - run: ~/venv/bin/pip install -e '.[fabric]'
+      - run: |
+          if [[ -n "<<parameters.optional >>" ]]; then
+            ~/venv/bin/pip install -e '.[<< parameters.optional >>]'
+          else
+            ~/venv/bin/pip install -e .
+          fi
       - save_cache:
           paths:
             - ~/venv
@@ -136,7 +144,6 @@ jobs:
                    sudo apt-get update
                    sudo apt-get install -y build-essential zlib1g-dev xz-utils
                    pyenv install 2.6.9
-                   pyenv local 2.6.9
       - run:
           # python 2.6 will require pyyaml to be built, rather than installed
           # from a wheel, and so we need to provide headers
@@ -144,7 +151,7 @@ jobs:
           command: sudo apt-get install libpython-dev
       - install_cron
       - run: pip install virtualenv==15.1.0 --user
-      - run: ~/.local/bin/virtualenv ~/venv
+      - run: virtualenv -p "$(~/.pyenv/bin/pyenv prefix 2.6.9)/bin/python" ~/venv
       - install_test_dependencies:
           cache_prefix: py26
       - pytest
@@ -156,7 +163,8 @@ jobs:
       - install_cron
       - run: pip install virtualenv==15.1.0 --user
       - run: virtualenv ~/venv
-      - install_test_dependencies
+      - install_test_dependencies:
+          optional: fabric
       - pytest
 
   py36:
@@ -167,6 +175,7 @@ jobs:
       - run: virtualenv ~/venv
       - install_test_dependencies:
           cache_prefix: py36
+          optional: fabric
       - pytest
 
   py3_compat:
@@ -199,16 +208,16 @@ workflows:
 
   run_test:
     jobs: &build_jobs
-      - py3_compat
-      - flake8
-      - flake8_py36
+      # - py3_compat
+      # - flake8
+      # - flake8_py36
       - py26
-      - py27
-      - py36
-      - build_agent
-      - build_rpm:
-          requires:
-            - build_agent
+      # - py27
+      # - py36
+      # - build_agent
+      # - build_rpm:
+      #     requires:
+      #       - build_agent
   nightly:
     triggers:
       - schedule:
