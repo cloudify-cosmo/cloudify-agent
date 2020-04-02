@@ -84,6 +84,23 @@ class FabricRunner(object):
             raise exceptions.AgentInstallerConfigurationError(
                 'Must specify either key or password')
 
+    def _load_private_key(self, key_contents):
+        """Load the private key and return a paramiko PKey subclass.
+
+        :param key_contents: the contents of a keyfile, as a string starting
+            with "---BEGIN"
+        :return: A paramiko PKey subclass - RSA, ECDSA or Ed25519
+        """
+        for cls in (RSAKey, ECDSAKey, Ed25519Key):
+            try:
+                return cls.from_private_key(StringIO(key_contents))
+            except SSHException:
+                continue
+        raise exceptions.AgentInstallerConfigurationError(
+            'Could not load the private key as an '
+            'RSA, ECDSA, or Ed25519 key'
+        )
+
     def _set_env(self):
         env = {
             'host': self.host,
@@ -93,19 +110,8 @@ class FabricRunner(object):
         }
         if self.key:
             if self.key.startswith(PRIVATE_KEY_PREFIX):
-                for cls in (RSAKey, ECDSAKey, Ed25519Key):
-                    try:
-                        env['connect_kwargs']['pkey'] = \
-                            cls.from_private_key(StringIO(self.key))
-                    except SSHException:
-                        continue
-                    else:
-                        break
-                else:
-                    raise exceptions.AgentInstallerConfigurationError(
-                        'Could not load the private key as an '
-                        'RSA, ECDSA, or Ed25519 key'
-                    )
+                env['connect_kwargs']['pkey'] = \
+                    self._load_private_key(self.key)
             else:
                 env['connect_kwargs']['key_filename'] = self.key
         if self.password:
