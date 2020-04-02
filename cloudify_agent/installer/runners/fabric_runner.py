@@ -18,8 +18,9 @@ import sys
 import logging
 
 from fabric import Connection
+from paramiko import RSAKey
 
-from cloudify._compat import reraise
+from cloudify._compat import reraise, StringIO
 from cloudify.utils import CommandExecutionResponse
 from cloudify.utils import setup_logger
 from cloudify.exceptions import CommandExecutionException
@@ -92,7 +93,8 @@ class FabricRunner(object):
         }
         if self.key:
             if self.key.startswith(RSA_PRIVATE_KEY_PREFIX):
-                env['connect_kwargs']['key'] = self.key
+                env['connect_kwargs']['pkey'] = \
+                    RSAKey.from_private_key(StringIO(self.key))
             else:
                 env['connect_kwargs']['key_filename'] = self.key
         if self.password:
