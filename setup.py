@@ -25,7 +25,6 @@ install_requires = [
     'wagon==0.6.3',
     'pika==0.11.2',
     'pip==9.0.1',
-    'PyYAML==3.10'
 ]
 
 setup(
