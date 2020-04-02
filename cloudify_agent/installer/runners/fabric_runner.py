@@ -18,7 +18,7 @@ import sys
 import logging
 
 from fabric import Connection
-from paramiko import RSAKey
+from paramiko import RSAKey, ECDSAKey, Ed25519Key, SSHException
 
 from cloudify._compat import reraise, StringIO
 from cloudify.utils import CommandExecutionResponse
@@ -32,7 +32,7 @@ from cloudify_agent.api import utils as api_utils
 from cloudify_rest_client.utils import is_kerberos_env
 
 DEFAULT_REMOTE_EXECUTION_PORT = 22
-RSA_PRIVATE_KEY_PREFIX = '-----BEGIN RSA PRIVATE KEY-----'
+PRIVATE_KEY_PREFIX = '-----BEGIN'
 
 COMMON_ENV = {
     'forward_agent': True,
@@ -92,9 +92,20 @@ class FabricRunner(object):
             'connect_kwargs': {}
         }
         if self.key:
-            if self.key.startswith(RSA_PRIVATE_KEY_PREFIX):
-                env['connect_kwargs']['pkey'] = \
-                    RSAKey.from_private_key(StringIO(self.key))
+            if self.key.startswith(PRIVATE_KEY_PREFIX):
+                for cls in (RSAKey, ECDSAKey, Ed25519Key):
+                    try:
+                        env['connect_kwargs']['pkey'] = \
+                            cls.from_private_key(StringIO(self.key))
+                    except SSHException:
+                        continue
+                    else:
+                        break
+                else:
+                    raise exceptions.AgentInstallerConfigurationError(
+                        'Could not load the private key as an '
+                        'RSA, ECDSA, or Ed25519 key'
+                    )
             else:
                 env['connect_kwargs']['key_filename'] = self.key
         if self.password:
