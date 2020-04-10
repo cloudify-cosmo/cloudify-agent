@@ -55,7 +55,7 @@ class TestDefaults(BaseTest, TestCase):
 @only_os('posix')
 class TestValidations(BaseTest, TestCase):
     def test_no_host(self):
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             exceptions.AgentInstallerConfigurationError,
             'Missing host',
             FabricRunner,
@@ -64,7 +64,7 @@ class TestValidations(BaseTest, TestCase):
             password='password')
 
     def test_no_user(self):
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             exceptions.AgentInstallerConfigurationError,
             'Missing user',
             FabricRunner,
@@ -73,7 +73,7 @@ class TestValidations(BaseTest, TestCase):
             password='password')
 
     def test_no_key_no_password(self):
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             exceptions.AgentInstallerConfigurationError,
             'Must specify either key or password',
             FabricRunner,
