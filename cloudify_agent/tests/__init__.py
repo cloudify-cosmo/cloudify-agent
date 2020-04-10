@@ -30,6 +30,12 @@ from cloudify_agent.api import utils as agent_utils
 from cloudify_agent.tests import utils as test_utils
 
 try:
+    from configparser import RawConfigParser
+except ImportError:
+    # py2
+    from ConfigParser import RawConfigParser
+
+try:
     win_error = WindowsError
 except NameError:
     win_error = None
@@ -151,12 +157,15 @@ class _AgentPackageGenerator(object):
             prefix='file-server-resource-base')
         self._fs = utils.FileServer(root_path=self._resources_dir, ssl=False)
         self._fs.start()
-        config = {
-            'cloudify_agent_module': utils.get_source_uri(),
-            'requirements_file': utils.get_requirements_uri(),
-            'python_path': os.path.join(
-                getattr(sys, 'real_prefix', sys.prefix), 'bin', 'python'),
-        }
+        config = RawConfigParser()
+        config.add_section('install')
+        config.set('install', 'cloudify_agent_module', utils.get_source_uri())
+        config.set('install', 'requirements_file',
+                   utils.get_requirements_uri())
+        config.add_section('system')
+        config.set('system', 'python_path',
+                   os.path.join(getattr(sys, 'real_prefix', sys.prefix),
+                                'bin', 'python'))
         package_name = utils.create_agent_package(self._resources_dir, config)
         self._package_url = 'http://localhost:{0}/{1}'.format(
             self._fs.port, package_name)
