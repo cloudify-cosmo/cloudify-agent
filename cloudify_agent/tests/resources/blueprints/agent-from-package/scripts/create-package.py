@@ -17,13 +17,23 @@ from cloudify import ctx
 from cloudify._compat import PY2
 from cloudify_agent.tests.utils import create_agent_package
 
-config = {
-    'cloudify_agent_module': ctx.node.properties['cloudify_agent_module'],
-    'requirements_file': ctx.node.properties.get('requirements_file')
-}
+try:
+    from configparser import RawConfigParser
+except ImportError:
+    # py2
+    from ConfigParser import RawConfigParser
+
+config = RawConfigParser()
+config.add_section('install')
+config.set('install', 'cloudify_agent_module',
+           ctx.node.properties['cloudify_agent_module'])
+config.set('install', 'requirements_file',
+           ctx.node.properties.get('requirements_file'))
 if not PY2:
     # unfortunate, but this is what the agent-packager has us do.
-    config['python_path'] = '/usr/local/bin/python3.6'
+    config.add_section('system')
+    config.set('system', 'python_path',
+               '/usr/local/bin/python3.6')
 
 
 resource_base = ctx.node.properties['resource_base']
