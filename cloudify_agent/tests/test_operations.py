@@ -256,9 +256,9 @@ class TestCreateAgentAmqp(BaseTest, TestCase):
                 'cloudify_agent']['agent_dir']
             new_queue = ctx.instance.runtime_properties[
                 'cloudify_agent']['queue']
-            self.assertNotEquals(old_name, new_name)
-            self.assertNotEquals(old_agent_dir, new_agent_dir)
-            self.assertNotEquals(old_queue, new_queue)
+            self.assertNotEqual(old_name, new_name)
+            self.assertNotEqual(old_agent_dir, new_agent_dir)
+            self.assertNotEqual(old_queue, new_queue)
 
     def _create_cloudify_agent_dir(self):
         agent_script_dir = os.path.join(self.temp_folder, 'cloudify_agent')

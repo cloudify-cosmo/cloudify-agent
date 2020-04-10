@@ -145,14 +145,17 @@ def create_windows_installer(config, logger):
     wheelhouse = resources.get_resource('winpackage/source/wheels')
 
     pip_cmd = 'pip wheel --wheel-dir {wheel_dir} --requirement {req_file}'.\
-        format(wheel_dir=wheelhouse, req_file=config['requirements_file'])
+        format(wheel_dir=wheelhouse,
+               req_file=config.get('install', 'requirements_file'))
 
     logger.info('Building wheels into: {0}'.format(wheelhouse))
     runner.run(pip_cmd)
 
     pip_cmd = 'pip wheel --find-links {wheel_dir} --wheel-dir {wheel_dir} ' \
-              '{repo_url}'.format(wheel_dir=wheelhouse,
-                                  repo_url=config['cloudify_agent_module'])
+              '{repo_url}'\
+              .format(
+                  wheel_dir=wheelhouse,
+                  repo_url=config.get('install', 'cloudify_agent_module'))
     runner.run(pip_cmd)
 
     iscc_cmd = 'C:\\Program Files (x86)\\Inno Setup 5\\iscc.exe {0}'\
