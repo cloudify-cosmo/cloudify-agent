@@ -1,4 +1,6 @@
-python_path: /usr/bin/python
-cloudify_agent_module: .
-requirements_file: dev-requirements.txt
-keep_virtualenv: true
+[install]
+requirements_file=dev-requirements.txt
+cloudify_agent_module=.
+
+[output]
+keep_virtualenv=true
