@@ -31,7 +31,7 @@ function install_deps() {
 
 function install_requirements() {
 	sudo pip install setuptools==36.8.0 --upgrade &&
-	sudo pip install cloudify-agent-packager==4.0.2
+	sudo pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip
 }
 
 
@@ -66,12 +66,12 @@ if [[ ! -z $BRANCH ]] && [[ "$BRANCH" != "master" ]];then
         test_tar_file_inside="$?"
         if [ "$test_gzip_file" == "0" ] && [ "$test_tar_file_inside" == "0" ]; then
             rm -rf $BRANCH.tar.gz
-            sed -i "s|cloudify-agent\/archive\/.*\.zip|cloudify-agent\/archive\/$BRANCH\.zip|" /vagrant/linux/packager.yaml
-            sed -i "s|cloudify-agent\/.*\/dev-requirements.txt|cloudify-agent\/$BRANCH\/dev-requirements.txt|" /vagrant/linux/packager.yaml
+            sed -i "s|cloudify-agent\/archive\/.*\.zip|cloudify-agent\/archive\/$BRANCH\.zip|" /vagrant/linux/packager.ini
+            sed -i "s|cloudify-agent\/.*\/dev-requirements.txt|cloudify-agent\/$BRANCH\/dev-requirements.txt|" /vagrant/linux/packager.ini
             export AWS_S3_PATH="$AWS_S3_PATH/$BRANCH"
         fi
     popd
 fi
-cd /tmp && cfy-ap -c /vagrant/linux/packager.yaml -f -v &&
+cd /tmp && cfy-ap -c /vagrant/linux/packager.ini -f -v &&
 create_md5 "tar.gz" &&
 [ -z ${AWS_ACCESS_KEY} ] || upload_to_s3 "tar.gz" && upload_to_s3 "md5"

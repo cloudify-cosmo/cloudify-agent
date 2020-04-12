@@ -4,8 +4,8 @@ FROM ${BASE_IMAGE}
 RUN  pip install --upgrade \
      setuptools==36.8.0 \
      wheel==0.29.0 \
-     cloudify-agent-packager==4.0.2
-COPY ["linux/docker/provision.sh", "linux/packager.yaml", "/opt/"]
+     https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip
+COPY ["linux/docker/provision.sh", "linux/packager.ini", "/opt/"]
 RUN  chmod +x /opt/provision.sh
 WORKDIR /opt
 ENV  GITHUB_USERNAME=${GITHUB_USERNAME} \
