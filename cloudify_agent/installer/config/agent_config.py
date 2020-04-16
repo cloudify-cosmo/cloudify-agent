@@ -355,9 +355,6 @@ class CloudifyAgentConfig(dict):
                 cloudify_utils.get_broker_ssl_cert_path()
 
     def _set_package_url(self, runner):
-        if self.get('package_url'):
-            return
-
         agent_package_name = None
 
         if self.is_windows:
