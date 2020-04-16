@@ -15,25 +15,12 @@
 
 import click
 import json
-import os
 
 from cloudify_agent.api import defaults
 from cloudify_agent.api import utils as api_utils
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.shell import env
 from cloudify_agent.shell.decorators import handle_failures
-
-from cloudify.utils import (ENV_CFY_EXEC_TEMPDIR,
-                            ENV_AGENT_LOG_LEVEL,
-                            ENV_AGENT_LOG_MAX_BYTES,
-                            ENV_AGENT_LOG_MAX_HISTORY)
-
-
-class _ExpandUserPath(click.Path):
-    """Like click.Path but also calls os.path.expanduser"""
-    def convert(self, value, param, ctx):
-        value = os.path.expanduser(value)
-        return super(_ExpandUserPath, self).convert(value, param, ctx)
 
 
 @click.command(context_settings=dict(ignore_unknown_options=True))
@@ -48,8 +35,7 @@ class _ExpandUserPath(click.Path):
               help='The IP or host name of the REST service [env {0}]'
               .format(env.CLOUDIFY_REST_HOST),
               required=True,
-              envvar=env.CLOUDIFY_REST_HOST,
-              callback=api_utils._parse_comma_separated)
+              envvar=env.CLOUDIFY_REST_HOST)
 @click.option('--rest-port',
               help='The manager REST port to connect to. [env {0}]'
               .format(env.CLOUDIFY_REST_PORT),
@@ -75,7 +61,7 @@ class _ExpandUserPath(click.Path):
               help='The path to a local copy of the REST public cert, used for'
                    ' cert verification, if required [env {0}]'
               .format(env.CLOUDIFY_LOCAL_REST_CERT_PATH),
-              type=_ExpandUserPath(exists=True, readable=True, file_okay=True),
+              type=click.Path(exists=True, readable=True, file_okay=True),
               envvar=env.CLOUDIFY_LOCAL_REST_CERT_PATH)
 @click.option('--name',
               help='The name of the daemon. [env {0}]'
@@ -101,13 +87,11 @@ class _ExpandUserPath(click.Path):
               help='Working directory for runtime files (pid, log). '
                    'Defaults to current working directory. [env {0}]'
                    .format(env.CLOUDIFY_DAEMON_WORKDIR),
-              type=_ExpandUserPath(file_okay=False),
               envvar=env.CLOUDIFY_DAEMON_WORKDIR)
 @click.option('--broker-ip',
               help='The broker host name or ip to connect to. [env {0}]'
                    .format(env.CLOUDIFY_BROKER_IP),
-              envvar=env.CLOUDIFY_BROKER_IP,
-              callback=api_utils._parse_comma_separated)
+              envvar=env.CLOUDIFY_BROKER_IP)
 @click.option('--broker-vhost',
               help='The broker virtual host to connect to. [env {0}]'
                    .format(env.CLOUDIFY_BROKER_VHOST),
@@ -134,13 +118,13 @@ class _ExpandUserPath(click.Path):
                    'Only used when broker-ssl-enable is "true" [env {0}]'
                    .format(env.CLOUDIFY_BROKER_SSL_CERT),
               default=None,
-              type=_ExpandUserPath(exists=True, readable=True, file_okay=True),
+              type=click.Path(exists=True, readable=True, file_okay=True),
               envvar=env.CLOUDIFY_BROKER_SSL_CERT)
 @click.option('--broker-ssl-cert-path',
               help='The path to a local copy of the Broker public cert, '
                    'used for cert verification, if required [env {0}]'
               .format(env.CLOUDIFY_BROKER_SSL_CERT_PATH),
-              type=_ExpandUserPath(readable=False, file_okay=True),
+              type=click.Path(exists=False, readable=False, file_okay=True),
               envvar=env.CLOUDIFY_BROKER_SSL_CERT_PATH
               )
 @click.option('--heartbeat',
@@ -162,19 +146,17 @@ class _ExpandUserPath(click.Path):
               envvar=env.CLOUDIFY_DAEMON_MAX_WORKERS)
 @click.option('--log-level',
               help='Log level of the daemon. [env {0}]'
-              .format(ENV_AGENT_LOG_LEVEL),
-              envvar=ENV_AGENT_LOG_LEVEL)
+              .format(env.CLOUDIFY_DAEMON_LOG_LEVEL),
+              envvar=env.CLOUDIFY_DAEMON_LOG_LEVEL)
 @click.option('--pid-file',
               help='Path to a location where the daemon pid file will be '
                    'stored. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_PID_FILE),
-              type=_ExpandUserPath(),
               envvar=env.CLOUDIFY_DAEMON_PID_FILE)
 @click.option('--log-dir',
               help='Path to a location where the daemon log files will be '
                    'stored. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_LOG_DIR),
-              type=_ExpandUserPath(file_okay=False),
               envvar=env.CLOUDIFY_DAEMON_LOG_DIR)
 @click.option('--extra-env-path',
               help='Path to an environment file to be added to the daemon. ['
@@ -190,17 +172,11 @@ class _ExpandUserPath(click.Path):
                    .format(env.CLOUDIFY_NETWORK_NAME),
               envvar=env.CLOUDIFY_NETWORK_NAME,
               is_eager=True)
-@click.option('--executable-temp-path',
-              help='Alternative path for temporary executable files',
-              type=_ExpandUserPath(file_okay=False),
-              envvar=ENV_CFY_EXEC_TEMPDIR)
-@click.option('--log-max-bytes',
-              help='Maximum size (in bytes) of a log file before it rolls '
-                   'over',
-              envvar=ENV_AGENT_LOG_MAX_BYTES)
-@click.option('--log-max-history',
-              help='Maximum number of historical log files to keep',
-              envvar=ENV_AGENT_LOG_MAX_HISTORY)
+@click.option('--cluster',
+              help='List of nodes in a cluster [env {0}]'
+                   .format(env.CLOUDIFY_CLUSTER_NODES),
+              envvar=env.CLOUDIFY_CLUSTER_NODES,
+              callback=api_utils._parse_cluster_nodes)
 # this is defined in order to allow passing any kind of option to the
 # command line. in order to support creating daemons of different kind via
 # the same command line. this argument is parsed as keyword arguments which

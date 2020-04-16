@@ -112,7 +112,6 @@ class DetachedDaemon(CronRespawnDaemonMixin):
             config_path=self.config_path,
             queue=self.queue,
             name=self.name,
-            user=self.user,
             max_workers=self.max_workers,
             virtualenv_path=VIRTUALENV,
             workdir=self.workdir,
@@ -143,4 +142,5 @@ class DetachedDaemon(CronRespawnDaemonMixin):
             storage_dir=utils.internal.get_storage_directory(self.user),
             workdir=self.workdir,
             executable_temp_path=self.executable_temp_path,
+            cluster_settings_path=self.cluster_settings_path
         )

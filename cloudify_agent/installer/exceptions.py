@@ -17,7 +17,6 @@ from cloudify import exceptions
 
 
 class AgentInstallerConfigurationError(exceptions.NonRecoverableError):
-    def __init__(self, msg):
-        super(AgentInstallerConfigurationError, self).__init__(
-            'Failed configuring agent installer: {0}'.format(msg)
-        )
+
+    def __str__(self):
+        return 'Failed configuring agent installer: {0}'.format(self.message)

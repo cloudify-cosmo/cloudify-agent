@@ -18,14 +18,8 @@ import sys
 
 import click
 
-from virtualenv import (OK_ABS_SCRIPTS, path_locations,
+from virtualenv import (OK_ABS_SCRIPTS, is_win, path_locations,
                         fixup_pth_and_egg_link, relative_script)
-
-try:
-    # Later versions of virtualenv
-    from virtualenv import IS_WIN as is_win
-except ImportError:
-    from virtualenv import is_win
 
 from cloudify.utils import LocalCommandRunner
 

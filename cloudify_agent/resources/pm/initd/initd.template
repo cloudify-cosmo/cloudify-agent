@@ -34,20 +34,17 @@ start() {
     echo 'Service already running' >&2
     return 0
   fi
-  sudo mkdir -p $(dirname "$PIDFILE")
-  sudo chown {{ user }} $(dirname "$PIDFILE")
   . {{ config_path }}
   enable_cron_respawn
   if [ -d "{{ log_dir }}" ]; then
     PROCESS_LOG="{{ log_dir }}/process.log"
-    chown "$RUNAS" "$PROCESS_LOG"
   else
     PROCESS_LOG=/dev/null
   fi
 
   echo 'Starting service...' >&2
-  local CMD="$CMD &> \"$PROCESS_LOG\" & echo \$!"
-  su -c "$CMD" "$RUNAS" > "$PIDFILE"
+  nohup sudo -Eu ${RUNAS} ${CMD} </dev/null >$PROCESS_LOG 2>&1 &
+  echo $! > ${PIDFILE}
   echo 'Service started' >&2
 }
 

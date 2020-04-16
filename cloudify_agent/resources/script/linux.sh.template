@@ -13,8 +13,8 @@ export -f add_ssl_cert
 export_daemon_env()
 {
     export_agent_cli_env
-    {% for env_key, env_value in daemon_env.items() %}
-        export {{ env_key }}="{{ env_value }}"
+    {% for env_key, env_value in daemon_env.iteritems() %}
+        export {{ env_key }}={{ env_value }}
     {% endfor %}
 }
 export -f export_daemon_env
@@ -41,7 +41,7 @@ download()
 {
     echo "Downloading $1..."
     if command -v wget > /dev/null 2>&1; then
-        wget $1 -O $2 --header="{{ auth_token_header }}: {{ auth_token_value }}" -nv --ca-certificate {{ ssl_cert_path }}
+        wget $1 -O $2 --header="{{ auth_token_header }}: {{ auth_token_value }}" --ca-certificate {{ ssl_cert_path }}
     elif command -v curl > /dev/null 2>&1; then
         STATUS_CODE=$(curl -L -o $2 --write-out "%{http_code}" $1 -H "{{ auth_token_header }}: {{ auth_token_value }}" --cacert {{ ssl_cert_path }})
         if [ "${STATUS_CODE}" -ne "200" ] ; then
@@ -110,7 +110,7 @@ disable_requiretty()
     {% if conf.disable_requiretty %}
         export_daemon_env
         echo "Disabling TTY requirement for sudo..."
-        cfy-agent {{ debug_flag }} configure --disable-requiretty --no-sudo
+        cfy-agent configure --disable-requiretty --no-sudo
         echo "TTY requirement for sudo disabled"
     {% else %}
         echo "Skipped disabling of TTY requirement"
@@ -140,7 +140,7 @@ create_custom_env_file()
 {% if conf.process_management.name == 'init.d' -%}
 #!/bin/bash
 {% endif %}
-{% for env_key, env_value in custom_env.items() %}
+{% for env_key, env_value in custom_env.iteritems() %}
 {% if conf.process_management.name == 'init.d' %}export {% endif %}{{ env_key }}="{{ env_value }}"
 {% endfor %}
 EOF
@@ -155,18 +155,18 @@ start_daemon()
     export_daemon_env
     if ! cfy-agent daemons list | grep -x "${CLOUDIFY_DAEMON_NAME}"; then
         echo "Creating daemon..."
-        cfy-agent {{ debug_flag }} daemons create {{ pm_options }}
+        cfy-agent daemons create {{ pm_options }}
         echo "Daemon created successfully"
     else
         echo "Agent already created, skipping create agent."
     fi
 
     echo "Configuring daemon..."
-    cfy-agent {{ debug_flag }} daemons configure
+    cfy-agent daemons configure
     echo "Daemon configured successfully"
 
     echo "Starting daemon..."
-    cfy-agent {{ debug_flag }} daemons start
+    cfy-agent daemons start
     echo "Daemon started successfully"
 }
 export -f start_daemon

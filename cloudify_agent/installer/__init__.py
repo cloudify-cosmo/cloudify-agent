@@ -14,9 +14,11 @@
 #  * limitations under the License.
 
 import os
+import json
 import shutil
 import ntpath
 import copy
+import base64
 
 try:
     # Python 3.3+
@@ -26,13 +28,10 @@ except ImportError:
     from pipes import quote
 
 from cloudify_agent.installer.runners.local_runner import LocalCommandRunner
-from cloudify.utils import (setup_logger,
+from cloudify.utils import (get_tenant,
+                            setup_logger,
                             get_rest_token,
-                            get_is_bypass_maintenance,
-                            ENV_CFY_EXEC_TEMPDIR,
-                            ENV_AGENT_LOG_LEVEL,
-                            ENV_AGENT_LOG_MAX_BYTES,
-                            ENV_AGENT_LOG_MAX_HISTORY)
+                            get_is_bypass_maintenance)
 
 from cloudify_agent.shell import env
 from cloudify_agent.api import utils, defaults
@@ -67,14 +66,9 @@ class AgentInstaller(object):
             .format(command, self.cloudify_agent['name']),
             execution_env=execution_env)
 
-    def _get_local_ssl_cert_paths(self):
-        if self.cloudify_agent.get('ssl_cert_path'):
-            return [self.cloudify_agent['ssl_cert_path']]
-        else:
-            return [
-                os.environ[env.CLOUDIFY_LOCAL_REST_CERT_PATH],
-                os.environ[env.CLOUDIFY_BROKER_SSL_CERT_PATH],
-            ]
+    def _get_local_ssl_cert_path(self):
+        default_path = os.environ[env.CLOUDIFY_LOCAL_REST_CERT_PATH]
+        return self.cloudify_agent.setdefault('ssl_cert_path', default_path)
 
     def _get_remote_ssl_cert_path(self):
         agent_dir = os.path.expanduser(self.cloudify_agent['agent_dir'])
@@ -127,8 +121,7 @@ class AgentInstaller(object):
         raise NotImplementedError('Must be implemented by sub-class')
 
     def _create_agent_env(self):
-        # pop to not leave creds around
-        tenant = self.cloudify_agent.pop('tenant')
+        tenant = get_tenant()
         tenant_name = tenant.get('name', defaults.DEFAULT_TENANT_NAME)
         tenant_user = tenant.get('rabbitmq_username',
                                  broker_config.broker_username)
@@ -140,26 +133,24 @@ class AgentInstaller(object):
         broker_user = self.cloudify_agent.get('broker_user', tenant_user)
         broker_pass = self.cloudify_agent.get('broker_pass', tenant_pass)
 
-        network = self.cloudify_agent.get('network')
+        manager_ip = self.cloudify_agent.get_manager_ip()
         execution_env = {
             # mandatory values calculated before the agent
             # is actually created
             env.CLOUDIFY_DAEMON_QUEUE: self.cloudify_agent['queue'],
             env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
-            env.CLOUDIFY_REST_HOST: ','.join(self.cloudify_agent['rest_host']),
-            env.CLOUDIFY_BROKER_IP: ','.join(self.cloudify_agent['broker_ip']),
+            env.CLOUDIFY_REST_HOST: manager_ip,
+            env.CLOUDIFY_BROKER_IP: manager_ip,
 
             # Optional broker values
             env.CLOUDIFY_BROKER_USER: broker_user,
             env.CLOUDIFY_BROKER_PASS: broker_pass,
             env.CLOUDIFY_BROKER_VHOST: broker_vhost,
             env.CLOUDIFY_BROKER_SSL_ENABLED: broker_config.broker_ssl_enabled,
-            env.CLOUDIFY_BROKER_SSL_CERT_PATH: (
-                self.cloudify_agent['broker_ssl_cert_path']
-            ),
-            env.CLOUDIFY_HEARTBEAT: (
-                self.cloudify_agent.get('heartbeat')
-            ),
+            env.CLOUDIFY_BROKER_SSL_CERT_PATH:
+                self.cloudify_agent['broker_ssl_cert_path'],
+            env.CLOUDIFY_HEARTBEAT:
+                self.cloudify_agent.get('heartbeat'),
 
             # these are variables that have default values that will be set
             # by the agent on the remote host if not set here
@@ -178,16 +169,11 @@ class AgentInstaller(object):
             self.create_custom_env_file_on_target(
                 self.cloudify_agent.get('env', {})),
             env.CLOUDIFY_BYPASS_MAINTENANCE_MODE: get_is_bypass_maintenance(),
-            env.CLOUDIFY_LOCAL_REST_CERT_PATH: (
-                self.cloudify_agent['agent_rest_cert_path']
-            ),
-            env.CLOUDIFY_NETWORK_NAME: network,
-            ENV_CFY_EXEC_TEMPDIR: self.cloudify_agent.get(
-                'executable_temp_path'),
-            ENV_AGENT_LOG_LEVEL: self.cloudify_agent.get('log_level'),
-            ENV_AGENT_LOG_MAX_BYTES: self.cloudify_agent.get('log_max_bytes'),
-            ENV_AGENT_LOG_MAX_HISTORY: self.cloudify_agent.get(
-                'log_max_history')
+            env.CLOUDIFY_LOCAL_REST_CERT_PATH:
+                self.cloudify_agent['agent_rest_cert_path'],
+            env.CLOUDIFY_CLUSTER_NODES: base64.b64encode(json.dumps(
+                self.cloudify_agent.get('cluster', []))),
+            env.CLOUDIFY_NETWORK_NAME: self.cloudify_agent.get('network')
         }
 
         execution_env = utils.purge_none_values(execution_env)
@@ -207,7 +193,7 @@ class AgentInstaller(object):
         # actually passed separately via an
         # environment variable
         process_management.pop('name')
-        for key, value in process_management.items():
+        for key, value in process_management.iteritems():
             options.append("--{0}={1}".format(key, quote(value)))
 
         return ' '.join(options)

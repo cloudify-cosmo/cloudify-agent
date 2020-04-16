@@ -17,8 +17,7 @@ from cloudify.decorators import operation
 from cloudify.amqp_client import get_client
 from cloudify.models_states import AgentState
 from cloudify import ctx, utils as cloudify_utils
-from cloudify.exceptions import (CommandExecutionError,
-                                 CommandExecutionException)
+from cloudify.exceptions import CommandExecutionError
 from cloudify.agent_utils import (create_agent_record,
                                   update_agent_record,
                                   delete_agent_rabbitmq_user)
@@ -41,10 +40,13 @@ def create(cloudify_agent, installer, **_):
             ctx.logger.info('Creating Agent {0}'.format(
                 cloudify_agent['name']))
             try:
-                installer.runner.run_script(script_path)
-            except (CommandExecutionError, CommandExecutionException):
-                ctx.logger.error("Failed creating agent; marking agent as "
-                                 "failed")
+                response = installer.runner.run_script(script_path)
+                output = response.std_out
+                if output:
+                    for line in output.splitlines():
+                        ctx.logger.info(line)
+            except CommandExecutionError as e:
+                ctx.logger.error(str(e))
                 update_agent_record(cloudify_agent, AgentState.FAILED)
                 raise
             ctx.logger.info(

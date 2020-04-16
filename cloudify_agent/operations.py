@@ -23,19 +23,18 @@ from posixpath import join as urljoin
 from contextlib import contextmanager
 
 from cloudify import amqp_client, ctx
-from cloudify import broker_config as global_broker_config
 from cloudify.decorators import operation
 from cloudify.manager import get_rest_client
 from cloudify.models_states import AgentState
 from cloudify.constants import BROKER_PORT_SSL
+from cloudify.broker_config import broker_hostname
 from cloudify.error_handling import deserialize_known_exception
 from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.agent_utils import create_agent_record, update_agent_record
-from cloudify.utils import (get_rest_token,
-                            get_manager_rest_service_host,
+from cloudify.utils import (get_tenant,
+                            get_rest_token,
                             ManagerVersion,
                             get_local_rest_certificate)
-from cloudify._compat import reraise
 
 from cloudify_agent.celery_app import get_celery_app
 from cloudify_agent.api.plugins.installer import PluginInstaller
@@ -66,7 +65,7 @@ def install_plugins(plugins, **_):
         except exceptions.PluginInstallationError as e:
             # preserve traceback
             tpe, value, tb = sys.exc_info()
-            reraise(NonRecoverableError, NonRecoverableError(str(e)), tb)
+            raise NonRecoverableError, NonRecoverableError(str(e)), tb
 
 
 @operation
@@ -98,7 +97,8 @@ def restart(new_name=None, delay_period=5, **_):
     # make the current master stop listening to the current queue
     # to avoid a situation where we have two masters listening on the
     # same queue.
-    app = get_celery_app(tenant=ctx.tenant)
+    rest_tenant = get_tenant()
+    app = get_celery_app(tenant=rest_tenant)
     app.control.cancel_consumer(
         queue=daemon.queue,
         destination=['celery@{0}'.format(daemon.name)]
@@ -171,11 +171,13 @@ def _set_default_new_agent_config_values(old_agent, new_agent):
     new_agent['name'] = utils.internal.generate_new_agent_name(
         old_agent['name']
     )
-    new_agent['broker_ip'] = global_broker_config.broker_hostname
+    # Set the broker IP explicitly to the current manager's IP
+    new_agent['broker_ip'] = broker_hostname
     new_agent['old_agent_version'] = old_agent['version']
     new_agent['disable_requiretty'] = False
     new_agent['install_with_sudo'] = True
     new_agent['networks'] = ctx.bootstrap_context.cloudify_agent.networks
+    new_agent['cluster'] = ctx.bootstrap_context.cloudify_agent.cluster or []
 
 
 def _copy_values_from_old_agent_config(old_agent, new_agent):
@@ -295,8 +297,7 @@ def _get_cloudify_context(agent, task_name):
             'workflow_id': ctx.workflow_id,
             'execution_id': ctx.execution_id,
             'tenant': ctx.tenant,
-            'rest_token': get_rest_token(),
-            'rest_host': get_manager_rest_service_host()
+            'rest_token': get_rest_token()
         }
     }
 
@@ -336,13 +337,14 @@ def _get_amqp_client(agent):
         broker_config = _get_broker_config(agent)
         ssl_cert_path = get_local_rest_certificate()
 
+    tenant = get_tenant()
     try:
         yield amqp_client.get_client(
             amqp_host=broker_config.get('broker_ip'),
-            amqp_user=ctx.tenant.get('rabbitmq_username'),
+            amqp_user=tenant.get('rabbitmq_username'),
             amqp_port=broker_config.get('broker_port'),
-            amqp_pass=ctx.tenant.get('rabbitmq_password'),
-            amqp_vhost=ctx.tenant.get('rabbitmq_vhost'),
+            amqp_pass=tenant.get('rabbitmq_password'),
+            amqp_vhost=tenant.get('rabbitmq_vhost'),
             ssl_enabled=broker_config.get('broker_ssl_enabled'),
             ssl_cert_path=ssl_cert_path
         )
@@ -466,16 +468,9 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
     installing the new one
     """
     old_agent = _validate_agent()
-    original_agent = copy.deepcopy(old_agent)
     update_agent_record(old_agent, AgentState.UPGRADING)
     _update_broker_config(old_agent, manager_ip, manager_certificate)
-
-    try:
-        agents = _run_install_script(old_agent, install_agent_timeout)
-    except Exception:
-        update_agent_runtime_properties(original_agent)
-        raise
-
+    agents = _run_install_script(old_agent, install_agent_timeout)
     new_agent = agents['new']
     ctx.logger.info('Installed agent {0}'.format(new_agent['name']))
     create_agent_record(new_agent, AgentState.STARTING)
@@ -483,7 +478,6 @@ def create_agent_amqp(install_agent_timeout=300, manager_ip=None,
     result = _validate_current_amqp(new_agent)
     if not result['agent_alive']:
         update_agent_record(new_agent, AgentState.FAILED)
-        update_agent_runtime_properties(original_agent)
         raise RecoverableError('New agent did not start and connect')
 
     update_agent_record(new_agent, AgentState.STARTED)

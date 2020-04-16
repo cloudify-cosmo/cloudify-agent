@@ -24,7 +24,7 @@ BROKER_URL = 'amqp://{username}:{password}@{host}:{port}/{vhost}'
 DELETE_AMQP_QUEUE_BEFORE_START = False
 DAEMON_FORCE_DELETE = False
 CLOUDIFY_AGENT_PREFIX = 'cfy-agent'
-LOG_LEVEL = 'info'
+LOG_LEVEL = 'debug'
 LOG_FILE_SIZE = 5 * 1024 * 1024
 LOG_BACKUPS = 7
 

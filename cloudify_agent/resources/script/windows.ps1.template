@@ -3,7 +3,7 @@
 # All output should be UTF-8 (default is UTF-16).
 $PSDefaultParameterValues['*:Encoding'] = 'utf8'
 
-# Stop whenever a non-terminating cmdlet generates an error.
+# Stop whenever an external command fails.
 $ErrorActionPreference = "Stop"
 
 {% if add_ssl_cert %}
@@ -52,7 +52,7 @@ function InstallAgent()
 function ExportDaemonEnv()
 {
     $env:Path = "{{ conf.envdir }}\Scripts" + ";" + $env:Path
-    {% for env_key, env_value in daemon_env.items() %}
+    {% for env_key, env_value in daemon_env.iteritems() %}
         $env:{{ env_key }} = "{{ env_value }}"
     {% endfor %}
 }
@@ -61,7 +61,7 @@ function CreateCustomEnvFile()
 {
     {% if custom_env is not none %}
         Set-Content "{{ custom_env_path }}" ""
-        {% for env_key, env_value in custom_env.items() %}
+        {% for env_key, env_value in custom_env.iteritems() %}
              Add-Content "{{ custom_env_path }}" 'set {{ env_key }}="{{ env_value }}"'
         {% endfor %}
     {% else %}
@@ -75,11 +75,7 @@ function ConfigureAgent()
     CreateCustomEnvFile
 
     Write-Output "Configuring agent..."
-    cfy-agent {{ debug_flag }} configure {{ configure_flags }}
-    if (!$?) {
-        Write-Output "Failed configuring agent (rc=$LASTEXITCODE)"
-        Exit 1
-    }
+    cfy-agent configure {{ configure_flags }}
     Write-Output "Agent configured successfully"
 }
 {% endif %}
@@ -89,30 +85,18 @@ function StartAgent()
 {
     if (-Not ($Agentlist | Select-String $env:CLOUDIFY_DAEMON_NAME)) {
         Write-Output "Creating daemon..."
-        cfy-agent {{ debug_flag }} daemons create {{ pm_options }}
-        if (!$?) {
-            Write-Output "Failed creating daemon (rc=$LASTEXITCODE)"
-            Exit 1
-        }
+        cfy-agent daemons create {{ pm_options }}
         Write-Output "Daemon created successfully"
     } else {
         Write-Output "Agent already created, skipping create agent."
     }
 
     Write-Output "Configuring daemon..."
-    cfy-agent {{ debug_flag }} daemons configure
-    if (!$?) {
-        Write-Output "Failed configuring daemon (rc=$LASTEXITCODE)"
-        Exit 1
-    }
+    cfy-agent daemons configure
     Write-Output "Daemon configured successfully"
 
     Write-Output "Starting daemon..."
-    cfy-agent {{ debug_flag }} daemons start
-    if (!$?) {
-        Write-Output "Failed starting daemon (rc=$LASTEXITCODE)"
-        Exit 1
-    }
+    cfy-agent daemons start
     Write-Output "Daemon started successfully"
 }
 {% endif %}
