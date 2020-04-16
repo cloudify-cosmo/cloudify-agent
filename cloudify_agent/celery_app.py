@@ -13,7 +13,6 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-import os
 from cloudify import broker_config
 from cloudify.utils import internal
 from cloudify.constants import (CELERY_TASK_RESULT_EXPIRES,
@@ -73,16 +72,20 @@ def get_celery_app(broker_url=None,
     return celery_client
 
 
-def _broker_options():
-    heartbeat = broker_config.broker_heartbeat
-    if heartbeat and os.name != 'nt':
-        return '?heartbeat={0}'.format(heartbeat)
-    else:
-        return ''
-
-
-URL_TEMPLATE = \
-    'amqp://{username}:{password}@{hostname}:{port}/{vhost}{options}'
+def get_cluster_celery_app(broker_urls, cluster, ssl_enabled,
+                           broker_ssl_cert_path=None):
+    err = None
+    for broker_url in broker_urls:
+        try:
+            return get_celery_app(
+                broker_url=broker_url,
+                broker_ssl_cert_path=broker_ssl_cert_path,
+                broker_ssl_enabled=ssl_enabled,
+                max_retries=1)
+        except Exception as err:
+            continue
+    if err is not None:
+        raise err
 
 
 def _get_broker_url(tenant, target, broker_ssl_enabled):
@@ -91,31 +94,17 @@ def _get_broker_url(tenant, target, broker_ssl_enabled):
     the default broker URL. Otherwise, create a tenant-specific one
     """
     if target == MGMTWORKER_QUEUE or not tenant:
-        port = BROKER_PORT_SSL if broker_ssl_enabled else BROKER_PORT_NO_SSL
-        options = _broker_options()
-        return ';'.join(
-            URL_TEMPLATE.format(
-                username=broker_config.broker_username,
-                password=broker_config.broker_hostname,
-                hostname=hostname,
-                port=port,
-                vhost=broker_config.broker_vhost,
-                options=options
-            ) for hostname in broker_config.broker_hostname)
-
+        return broker_config.BROKER_URL
     else:
         return _get_tenant_broker_url(tenant, broker_ssl_enabled)
 
 
 def _get_tenant_broker_url(tenant, broker_ssl_enabled):
-    port = BROKER_PORT_SSL if broker_ssl_enabled else BROKER_PORT_NO_SSL
-    options = _broker_options()
-    return ';'.join(
-        URL_TEMPLATE.format(
-            username=tenant['rabbitmq_username'],
-            password=tenant['rabbitmq_password'],
-            hostname=hostname,
-            port=port,
-            vhost=tenant['rabbitmq_vhost'],
-            options=options
-        ) for hostname in broker_config.broker_hostname)
+    return broker_config.URL_TEMPLATE.format(
+        username=tenant['rabbitmq_username'],
+        password=tenant['rabbitmq_password'],
+        hostname=broker_config.broker_hostname,
+        port=BROKER_PORT_SSL if broker_ssl_enabled else BROKER_PORT_NO_SSL,
+        vhost=tenant['rabbitmq_vhost'],
+        options=''
+    )

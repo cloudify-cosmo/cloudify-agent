@@ -37,7 +37,10 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         super(AgentInstallationScriptBuilder, self).__init__(cloudify_agent)
         self.custom_env = None
         self.file_server_root = cloudify_utils.get_manager_file_server_root()
-        self.file_server_url = cloudify_agent['file_server_url']
+        self.file_server_url = utils.get_manager_file_server_url(
+            cloudify_agent.get_manager_ip(),
+            cloudify_agent['rest_port']
+        )
 
         basedir = self.cloudify_agent['basedir']
         if cloudify_agent.is_windows:
@@ -62,15 +65,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         """
         template = self._get_template(self.install_script_template)
         # Called before creating the agent env to populate all the variables
-        if add_ssl_cert:
-            rest_cert = self.cloudify_agent['rest_ssl_cert'].strip()
-            broker_cert = self.cloudify_agent['broker_ssl_cert'].strip()
-            certs = [rest_cert]
-            if broker_cert and broker_cert != rest_cert:
-                certs.append(broker_cert)
-            cert_content = '\n'.join(certs)
-        else:
-            cert_content = ''
+        cert_content = self._get_local_cert_content() if add_ssl_cert else ''
         remote_ssl_cert_path = self._get_remote_ssl_cert_path()
         # Called before rendering the template to populate all the variables
         daemon_env = self._create_agent_env()
@@ -89,11 +84,14 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             install=not self.cloudify_agent.is_provided,
             configure=True,
             start=True,
-            add_ssl_cert=add_ssl_cert,
-            tmpdir=self.cloudify_agent.tmpdir,
-            debug_flag='--debug' if self.cloudify_agent.get(
-                'log_level', '').lower() == 'debug' else ''
+            add_ssl_cert=add_ssl_cert
         )
+
+    def _get_local_cert_content(self):
+        local_cert_path = os.path.expanduser(self._get_local_ssl_cert_path())
+        with open(local_cert_path, 'r') as f:
+            cert_content = f.read().strip()
+        return cert_content
 
     def create_custom_env_file_on_target(self, environment):
         if not environment:
@@ -174,13 +172,8 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         args_dict = dict(
             link=script_url,
             sudo=sudo,
-            ssl_cert_content='\n'.join([
-                self.cloudify_agent['rest_ssl_cert'],
-                self.cloudify_agent['broker_ssl_cert'],
-            ]),
-            ssl_cert_path=self._get_remote_ssl_cert_path(),
-            tmpdir=self.cloudify_agent.tmpdir,
-            name=self.cloudify_agent['name']
+            ssl_cert_content=self._get_local_cert_content(),
+            ssl_cert_path=self._get_remote_ssl_cert_path()
         )
         if not self.cloudify_agent.is_windows:
             args_dict['user'] = self.cloudify_agent['user']

@@ -31,8 +31,7 @@ from cloudify_agent.shell.commands import configure
 
 
 _logger = setup_logger('cloudify_agent.shell.main',
-                       logger_format='%(asctime)s [%(levelname)-5s] '
-                                     '[%(name)s] %(message)s',
+                       logger_format='%(message)s',
                        logger_level=logging.INFO)
 
 
@@ -54,6 +53,7 @@ def show_version(ctx, param, value):
 @click.option('--version', is_flag=True, callback=show_version,
               expose_value=False, is_eager=True, help='Show version and exit')
 def main(debug):
+
     if debug:
 
         # configure global logger level

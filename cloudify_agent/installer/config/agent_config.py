@@ -23,15 +23,14 @@ from posixpath import join as posix_join
 
 from cloudify_agent.installer import exceptions
 from cloudify_agent.api import utils as agent_utils
-from cloudify_agent.api import defaults
 
 from cloudify import ctx
 from cloudify import constants
 from cloudify import utils as cloudify_utils
-from cloudify.exceptions import CommandExecutionException
 
 from .installer_config import create_runner, get_installer
 from .config_errors import raise_missing_attribute, raise_missing_attributes
+from ..runners.fabric_runner import FabricCommandExecutionException
 
 
 def create_agent_config_and_installer(func=None,
@@ -89,10 +88,7 @@ class CloudifyAgentConfig(dict):
         """
 
         if new_agent:
-            # BS context is 5th (to be deprecated)
-            self.update(_get_bootstrap_agent_config())
-            # config stored on the mannager is the 4th
-            self.update(_get_stored_config())
+            self.update(_get_bootstrap_agent_config())  # BS context is 4th
             self.update(_get_node_properties())         # node props are 3rd
         self.update(_get_runtime_properties())      # runtime props are 2nd
         self.update(_get_agent_inputs(kwargs))      # inputs are 1st in order
@@ -127,38 +123,24 @@ class CloudifyAgentConfig(dict):
     def is_windows(self):
         return self['windows']
 
-    @property
-    def tmpdir(self):
-        try:
-            return self['env'][cloudify_utils.ENV_CFY_EXEC_TEMPDIR]
-        except KeyError:
-            return None
-
     def set_default_values(self):
         self._set_name()
         self.setdefault('network', constants.DEFAULT_NETWORK_NAME)
-        self._set_ips_and_certs()
-        self._set_tenant()
-        # Remove the networks dict as it's no longer needed
-        if 'networks' in self:
-            self.pop('networks')
+        self._set_ips()
         self.setdefault('node_instance_id', ctx.instance.id)
         self.setdefault('queue', self['name'])
         self.setdefault('rest_port',
                         cloudify_utils.get_manager_rest_service_port())
         self.setdefault('bypass_maintenance',
                         cloudify_utils.get_is_bypass_maintenance())
-        self.setdefault('min_workers', defaults.MIN_WORKERS)
-        self.setdefault('max_workers', defaults.MAX_WORKERS)
+        self.setdefault('min_workers', 0)
+        self.setdefault('max_workers', 20)
         self.setdefault('disable_requiretty', True)
         self.setdefault('env', {})
         self.setdefault('fabric_env', {})
         self.setdefault('system_python', 'python')
         self.setdefault('heartbeat', None)
         self.setdefault('version', agent_utils.get_agent_version())
-        self.setdefault('log_level', defaults.LOG_LEVEL)
-        self.setdefault('log_max_bytes', defaults.LOG_FILE_SIZE)
-        self.setdefault('log_max_history', defaults.LOG_BACKUPS)
 
     def _set_process_management(self, runner):
         """
@@ -191,7 +173,7 @@ class CloudifyAgentConfig(dict):
             return 'init.d'
         try:
             runner.run('which systemctl')
-        except CommandExecutionException as e:
+        except FabricCommandExecutionException as e:
             if e.code != 1:
                 raise
             return 'init.d'
@@ -218,49 +200,27 @@ class CloudifyAgentConfig(dict):
             name = ctx.instance.id
         self['name'] = name
 
-    def _set_ips_and_certs(self):
-        network = self['network']
-        managers = ctx.get_managers(network=network)
-        brokers = ctx.get_brokers(network=network)
+    def get_manager_ip(self):
+        default_networks = ctx.bootstrap_context.cloudify_agent.networks
+        networks = self.pop('networks', default_networks)
+        if networks:
+            manager_ip = networks.get(self['network'])
+            if not manager_ip:
+                raise exceptions.AgentInstallerConfigurationError(
+                    'The network associated with the agent (`{0}`) does not '
+                    'appear in the list of manager networks assigned at '
+                    'bootstrap ({1})'.format(self['network'],
+                                             ', '.join(networks))
+                )
+        else:
+            # Might be getting here when working in local workflows (or tests)
+            manager_ip = cloudify_utils.get_manager_rest_service_host()
+        return manager_ip
 
-        self['rest_host'] = [manager.networks[network] for manager in managers]
-        self['broker_ip'] = [broker.networks[network] for broker in brokers]
-
-        self['rest_ssl_cert'] = '\n'.join(
-            manager.ca_cert_content.strip() for manager in
-            managers if manager.ca_cert_content
-        )
-        self['broker_ssl_cert'] = '\n'.join(
-            broker.ca_cert_content.strip() for broker in
-            brokers if broker.ca_cert_content
-        )
-
-        # setting fileserver url:
-        # using the mgmtworker-local one, not all in the cluster.
-        # This is because mgmtworker will write a script
-        # that is supposed to be downloaded by the agent installer, and that
-        # script will only be served by the local restservice, because other
-        # restservices would only have it available after the delay of
-        # filesystem replication
-        local_manager_hostname = cloudify_utils.get_manager_name()
-        local_manager_network_ip = None
-        for manager in managers:
-            if manager.hostname == local_manager_hostname:
-                local_manager_network_ip = manager.networks[network]
-                break
-        if not local_manager_network_ip:
-            raise RuntimeError(
-                'No fileserver url for manager {0} on network {1}'
-                .format(local_manager_hostname, self['network']))
-        self['file_server_url'] = agent_utils.get_manager_file_server_url(
-            local_manager_network_ip,
-            cloudify_utils.get_manager_rest_service_port(),
-            scheme=cloudify_utils.get_manager_file_server_scheme()
-        )
-
-    def _set_tenant(self):
-        if not self.get('tenant'):
-            self['tenant'] = ctx.tenant
+    def _set_ips(self):
+        manager_ip = self.get_manager_ip()
+        self['rest_host'] = manager_ip
+        self['broker_ip'] = manager_ip
 
     def set_execution_params(self):
         self.setdefault('local', False)
@@ -413,10 +373,11 @@ class CloudifyAgentConfig(dict):
                 )
 
         if agent_package_name:
-
+            file_server_url = agent_utils.get_manager_file_server_url(
+                self['rest_host'], self['rest_port']
+            )
             self['package_url'] = posix_join(
-                self['file_server_url'], 'packages', 'agents',
-                agent_package_name
+                file_server_url, 'packages', 'agents', agent_package_name
             )
 
     def _set_agent_distro(self, runner):
@@ -466,12 +427,6 @@ def _get_bootstrap_agent_config():
     agent_context = ctx.bootstrap_context.cloudify_agent._cloudify_agent or {}
     agent_config = agent_context.copy()
     return _parse_extra_values(agent_config)
-
-
-def _get_stored_config():
-    return dict(
-        (item.name, item.value) for item in ctx.get_config(scope='agent')
-    )
 
 
 def _get_agent_config(params, params_location, allow_both_params=False):

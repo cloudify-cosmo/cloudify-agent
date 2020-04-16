@@ -1,11 +1,5 @@
 #ps1_sysnative
 
-# All output should be UTF-8 (default is UTF-16).
-$PSDefaultParameterValues['*:Encoding'] = 'utf8'
-
-# Stop whenever a non-terminating cmdlet generates an error.
-$ErrorActionPreference = "Stop"
-
 function AddSSLCert()
 {
     # Make sure the cert directory exists
@@ -30,22 +24,6 @@ function Download()
 AddSSLCert
 Download
 
-$LogDir = $env:ProgramData + "\Cloudify\cloudify-agent\logs"
-$LogFile = $LogDir + "\{{ name }}-install.log"
-
-If (!(test-path $LogDir))
-{
-    Write-Output "Creating directory: $LogDir"
-    New-Item -ItemType Directory -Path $LogDir
-}
-
-Write-Output "Executing agent installer, log will be written to $LogFile"
-.\agent_installer.ps1 *>> $LogFile
-if (!$?) {
-    Write-Output "Failed configuring agent (rc=$LASTEXITCODE)"
-    Exit 1
-}
-
-Write-Output "Agent installation completed"
+.\agent_installer.ps1
 
 Remove-Item .\agent_installer.ps1 -Force

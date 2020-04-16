@@ -17,21 +17,15 @@ import os
 
 from cloudify import ctx
 from cloudify.utils import LocalCommandRunner
-from cloudify.exceptions import CommandExecutionError, NonRecoverableError
+from cloudify.exceptions import CommandExecutionError
 
 from cloudify_agent.installer.linux import LocalLinuxAgentInstaller
 from cloudify_agent.installer.linux import RemoteLinuxAgentInstaller
 from cloudify_agent.installer.windows import LocalWindowsAgentInstaller
 from cloudify_agent.installer.windows import RemoteWindowsAgentInstaller
+from cloudify_agent.installer.runners.fabric_runner import FabricRunner
+from cloudify_agent.installer.runners.winrm_runner import WinRMRunner
 from cloudify_agent.installer.runners.stub_runner import StubRunner
-try:
-    from cloudify_agent.installer.runners.fabric_runner import FabricRunner
-except ImportError:
-    FabricRunner = None
-try:
-    from cloudify_agent.installer.runners.winrm_runner import WinRMRunner
-except ImportError:
-    WinRMRunner = None
 
 
 def get_installer(cloudify_agent, runner):
@@ -58,8 +52,6 @@ def create_runner(agent_config, validate_connection):
         host = agent_config['ip']
         try:
             if agent_config.is_windows:
-                if WinRMRunner is None:
-                    raise NonRecoverableError('winrm not installed')
                 runner = WinRMRunner(
                     host=host,
                     port=agent_config.get('port'),
@@ -69,11 +61,8 @@ def create_runner(agent_config, validate_connection):
                     uri=agent_config.get('uri'),
                     transport=agent_config.get('transport'),
                     logger=ctx.logger,
-                    tmpdir=agent_config.tmpdir,
                     validate_connection=validate_connection)
             else:
-                if FabricRunner is None:
-                    raise NonRecoverableError('fabric not installed')
                 runner = FabricRunner(
                     host=host,
                     port=agent_config.get('port'),
@@ -82,7 +71,6 @@ def create_runner(agent_config, validate_connection):
                     password=agent_config.get('password'),
                     fabric_env=agent_config.get('fabric_env'),
                     logger=ctx.logger,
-                    tmpdir=agent_config.tmpdir,
                     validate_connection=validate_connection)
         except CommandExecutionError as e:
             message = e.error

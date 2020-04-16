@@ -28,7 +28,6 @@ from cloudify_agent.installer import utils
 from cloudify_agent.api import utils as api_utils
 
 from cloudify_rest_client.utils import is_kerberos_env
-from functools import reduce
 
 DEFAULT_WINRM_PORT = '5985'
 DEFAULT_WINRM_URI = 'wsman'
@@ -62,8 +61,7 @@ class WinRMRunner(object):
                  uri=None,
                  transport=None,
                  validate_connection=True,
-                 logger=None,
-                 tmpdir=None):
+                 logger=None):
 
         logger = logger or setup_logger('WinRMRunner')
 
@@ -76,7 +74,6 @@ class WinRMRunner(object):
             'password': password,
             'transport': transport or DEFAULT_TRANSPORT
         }
-        self.tmpdir = tmpdir
 
         # Validations - [host, user, password]
         validate(self.session_config)
@@ -162,8 +159,7 @@ class WinRMRunner(object):
                     output=res.std_out)
                 if raise_on_failure:
                     raise error
-                self.logger.error("WinRM command ended with an error",
-                                  error)
+                self.logger.error(error)
 
         self.logger.debug(
             '[{0}] run: {1}'.format(
@@ -231,8 +227,6 @@ class WinRMRunner(object):
         :rtype: str
 
         """
-        if self.tmpdir is not None:
-            return self.tmpdir
         return self.run(
             '@powershell -Command "[System.IO.Path]::GetTempPath()"'
         ).std_out.strip()

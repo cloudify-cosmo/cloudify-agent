@@ -10,18 +10,14 @@ export AGENT_LOG_MAX_BYTES="{{ log_max_bytes }}"
 export AGENT_LOG_MAX_HISTORY="{{ log_max_history }}"
 export AGENT_LOG_DIR="{{ log_dir }}"
 export AGENT_LOG_LEVEL={{ log_level }}
-export MANAGER_FILE_SERVER_URL={% for host in rest_host -%}
-    https://{{ host }}:{{ rest_port }}/resources
-    {%- if not loop.last %},{% endif %}
-{%- endfor %}
+export MANAGER_FILE_SERVER_URL="https://{{ rest_host }}:{{ rest_port }}/resources"
 export LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}"
-export REST_HOST="{{ rest_host|join(',') }}"
+export REST_HOST="{{ rest_host }}"
 export REST_PORT="{{ rest_port }}"
+export CLOUDIFY_CLUSTER_SETTINGS_PATH="{{ cluster_settings_path }}"
 
-{%- if executable_temp_path -%}
 # Executable tempfiles directory override
 export CFY_EXEC_TEMP="{{ executable_temp_path }}"
-{% endif %}
 
 # Extra environment variables provided by users
 EXTRA_ENV_PATH={{ extra_env_path }}

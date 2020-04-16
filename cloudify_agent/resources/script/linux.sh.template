@@ -13,8 +13,8 @@ export -f add_ssl_cert
 export_daemon_env()
 {
     export_agent_cli_env
-    {% for env_key, env_value in daemon_env.items() %}
-        export {{ env_key }}="{{ env_value }}"
+    {% for env_key, env_value in daemon_env.iteritems() %}
+        export {{ env_key }}={{ env_value }}
     {% endfor %}
 }
 export -f export_daemon_env
@@ -41,7 +41,7 @@ download()
 {
     echo "Downloading $1..."
     if command -v wget > /dev/null 2>&1; then
-        wget $1 -O $2 --header="{{ auth_token_header }}: {{ auth_token_value }}" -nv --ca-certificate {{ ssl_cert_path }}
+        wget $1 -O $2 --header="{{ auth_token_header }}: {{ auth_token_value }}" --ca-certificate {{ ssl_cert_path }}
     elif command -v curl > /dev/null 2>&1; then
         STATUS_CODE=$(curl -L -o $2 --write-out "%{http_code}" $1 -H "{{ auth_token_header }}: {{ auth_token_value }}" --cacert {{ ssl_cert_path }})
         if [ "${STATUS_CODE}" -ne "200" ] ; then
@@ -97,11 +97,9 @@ export -f install_agent
 configure_virtualenv()
 {
     export_daemon_env
-    # configure command is run explictly as the virtualenv has not been "fixed"
+    # configure command is run explicily as the virtualenv has not been "fixed"
     # yet
-    echo "Configuring virtualenv..."
     ${AGENT_PYTHON_INTERPRETER} ${AGENT_CLI} configure --relocated-env
-    echo "Virtualenv configured successfully"
 }
 export -f configure_virtualenv
 
@@ -109,21 +107,17 @@ disable_requiretty()
 {
     {% if conf.disable_requiretty %}
         export_daemon_env
-        echo "Disabling TTY requirement for sudo..."
-        cfy-agent {{ debug_flag }} configure --disable-requiretty --no-sudo
-        echo "TTY requirement for sudo disabled"
+        cfy-agent configure --disable-requiretty --no-sudo
     {% else %}
-        echo "Skipped disabling of TTY requirement"
+        echo "Skipping disable_requiretty part"
     {% endif %}
 }
 export -f disable_requiretty
 
 configure_agent()
 {
-    echo "Configuring agent..."
     su {{ conf.user }} --shell /bin/bash -c "set -e; configure_virtualenv"
     disable_requiretty
-    echo "Agent configured successfully"
 }
 export -f configure_agent
 {% endif %}
@@ -137,15 +131,13 @@ create_custom_env_file()
 {
     {% if custom_env is not none %}
     cat <<EOF > {{ custom_env_path }}
-{% if conf.process_management.name == 'init.d' -%}
 #!/bin/bash
-{% endif %}
-{% for env_key, env_value in custom_env.items() %}
-{% if conf.process_management.name == 'init.d' %}export {% endif %}{{ env_key }}="{{ env_value }}"
+{% for env_key, env_value in custom_env.iteritems() %}
+export {{ env_key }}="{{ env_value }}"
 {% endfor %}
 EOF
     {% else %}
-	echo "No custom env configured"
+        echo "No custom env configured"
     {% endif %}
 }
 export -f create_custom_env_file
@@ -153,21 +145,10 @@ export -f create_custom_env_file
 start_daemon()
 {
     export_daemon_env
-    if ! cfy-agent daemons list | grep -x "${CLOUDIFY_DAEMON_NAME}"; then
-        echo "Creating daemon..."
-        cfy-agent {{ debug_flag }} daemons create {{ pm_options }}
-        echo "Daemon created successfully"
-    else
-        echo "Agent already created, skipping create agent."
-    fi
+    cfy-agent daemons create {{ pm_options }}
 
-    echo "Configuring daemon..."
-    cfy-agent {{ debug_flag }} daemons configure
-    echo "Daemon configured successfully"
-
-    echo "Starting daemon..."
-    cfy-agent {{ debug_flag }} daemons start
-    echo "Daemon started successfully"
+    cfy-agent daemons configure
+    cfy-agent daemons start
 }
 export -f start_daemon
 
@@ -192,7 +173,5 @@ main()
     {% endif %}
 }
 export -f main
-{% if tmpdir %}
-export TMPDIR={{ tmpdir }}
-{% endif %}
+
 main

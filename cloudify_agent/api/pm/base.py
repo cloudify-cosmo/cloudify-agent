@@ -13,15 +13,14 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import copy
 import getpass
 import json
-import logging
 import os
 import time
 
 from cloudify.utils import (LocalCommandRunner,
-                            setup_logger)
+                            setup_logger,
+                            get_exec_tempdir)
 from cloudify import constants
 from cloudify.amqp_client import get_client
 from cloudify.exceptions import CommandExecutionException
@@ -206,14 +205,6 @@ class Daemon(object):
         # save params
         self._params = params
 
-        if self._logger.isEnabledFor(logging.DEBUG):
-            printed_params = copy.deepcopy(self._params)
-            for hidden_field in ['broker_pass',
-                                 'service_password']:
-                printed_params.pop(hidden_field, None)
-            self._logger.debug("Daemon attributes: %s", json.dumps(
-                printed_params, indent=4))
-
         # configure command runner
         self._runner = LocalCommandRunner(logger=self._logger)
 
@@ -222,6 +213,7 @@ class Daemon(object):
         self.rest_host = params['rest_host']
         self.broker_ip = params['broker_ip']
         self.local_rest_cert_file = params['local_rest_cert_file']
+        self.cluster = params.get('cluster', [])
 
         # Optional parameters - REST client
         self.validate_optional()
@@ -257,17 +249,15 @@ class Daemon(object):
                                         defaults.LOG_FILE_SIZE)
         self.log_max_history = params.get('log_max_history',
                                           defaults.LOG_BACKUPS)
-        self.executable_temp_path = params.get('executable_temp_path')
+        self.executable_temp_path = params.get('executable_temp_path') or \
+            get_exec_tempdir()
 
         self.extra_env_path = params.get('extra_env_path')
         self.log_level = params.get('log_level') or defaults.LOG_LEVEL
         self.log_dir = params.get('log_dir') or self.workdir
-        # CentOS / RHEL 6 don't have /run; they have /var/run which is cleared
-        # at boot time.
-        # CentOS / RHEL 7 mount /run on tmpfs, and symlink /var/run to it.
-        # We'll use /var/run globally for the time being.
         self.pid_file = params.get(
-            'pid_file') or '/var/run/cloudify.{0}/agent.pid'.format(self.name)
+            'pid_file') or os.path.join(self.workdir,
+                                        '{0}.pid'.format(self.name))
 
         # create working directory if its missing
         if not os.path.exists(self.workdir):
@@ -278,6 +268,7 @@ class Daemon(object):
         # we will make use of these values when loading agents by name.
         self.process_management = self.PROCESS_MANAGEMENT
         self.virtualenv = VIRTUALENV
+        self.cluster_settings_path = params.get('cluster_settings_path')
         self.network = params.get('network') or 'default'
 
     def create_broker_conf(self):
@@ -289,6 +280,7 @@ class Daemon(object):
             'broker_password': self.broker_pass,
             'broker_hostname': self.broker_ip,
             'broker_vhost': self.broker_vhost,
+            'cluster': self.cluster,
             'broker_heartbeat': self.heartbeat,
         }
         broker_conf_path = os.path.join(self.workdir, 'broker_config.json')
@@ -334,17 +326,7 @@ class Daemon(object):
 
     def _is_daemon_running(self):
         self._logger.debug('Checking if agent daemon is running...')
-        client = self._get_client()
-        with client:
-            # precreate the queue that the agent will use, so that the
-            # message is already waiting for the agent when it starts up
-            client.channel_method(
-                'queue_declare',
-                queue='{0}_service'.format(self.queue),
-                auto_delete=False,
-                durable=True)
-            return utils.is_agent_alive(
-                self.queue, client, timeout=3, connect=False)
+        return utils.is_agent_alive(self.queue, self._get_client(), timeout=3)
 
     ########################################################################
     # the following methods must be implemented by the sub-classes as they
@@ -628,10 +610,14 @@ class Daemon(object):
             deployment_id=self.deployment_id,
             _get_all_results=True)
 
-        matched = [
-            ni for ni in node_instances
-            if ni.host_id == ni.id and self.host == ni.runtime_properties['ip']
-        ]
+        def match_ip(node_instance):
+            host_id = node_instance.host_id
+            if host_id == node_instance.id:
+                # compute node instance
+                return self.host == node_instance.runtime_properties['ip']
+            return False
+
+        matched = filter(match_ip, node_instances)
 
         if len(matched) > 1:
             raise exceptions.DaemonConfigurationError(
@@ -707,12 +693,7 @@ class GenericLinuxDaemonMixin(Daemon):
     def __init__(self, logger=None, **params):
         super(GenericLinuxDaemonMixin, self).__init__(logger=logger, **params)
 
-        # CY-1852: When reading a daemon, 'service_name' is guaranteed to be
-        # there. When creating a daemon, 'service_name' isn't there - it's
-        # supposed to be set in this function.
-        self.service_name = params.get('service_name')
-        if not self.service_name:
-            self.service_name = 'cloudify-worker-{0}'.format(self.name)
+        self.service_name = 'cloudify-worker-{0}'.format(self.name)
         self.script_path = self._get_script_path()
         self.config_path = os.path.join(self.CONFIG_DIR, self.service_name)
 
@@ -721,7 +702,7 @@ class GenericLinuxDaemonMixin(Daemon):
             self._runner.run(self.status_command())
             return True
         except CommandExecutionException as e:
-            self._logger.debug('%s', e)
+            self._logger.debug(str(e))
             return False
 
     def create_script(self):
@@ -797,30 +778,28 @@ class CronRespawnDaemonMixin(Daemon):
         """
         raise NotImplementedError('Must be implemented by a subclass')
 
-    @property
-    def cron_respawn_path(self):
-        return os.path.join(
-            self.workdir, '{0}-respawn.sh'.format(self.name))
-
     def create_enable_cron_script(self):
 
         enable_cron_script = os.path.join(
             self.workdir, '{0}-enable-cron.sh'.format(self.name))
 
+        cron_respawn_path = os.path.join(
+            self.workdir, '{0}-respawn.sh'.format(self.name))
+
         self._logger.debug('Rendering respawn script from template')
         utils.render_template_to_file(
             template_path='respawn.sh.template',
-            file_path=self.cron_respawn_path,
+            file_path=cron_respawn_path,
             start_command=self.start_command(),
             status_command=self.status_command()
         )
-        self._runner.run('chmod +x {0}'.format(self.cron_respawn_path))
+        self._runner.run('chmod +x {0}'.format(cron_respawn_path))
         self._logger.debug('Rendering enable cron script from template')
         utils.render_template_to_file(
             template_path='crontab/enable.sh.template',
             file_path=enable_cron_script,
             cron_respawn_delay=self.cron_respawn_delay,
-            cron_respawn_path=self.cron_respawn_path,
+            cron_respawn_path=cron_respawn_path,
             workdir=self.workdir,
             name=self.name
         )

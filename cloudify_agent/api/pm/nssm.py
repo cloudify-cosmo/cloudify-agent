@@ -75,16 +75,14 @@ class NonSuckingServiceManagerDaemon(Daemon):
         self.startup_policy = params.get('startup_policy', 'auto')
         self.failure_reset_timeout = params.get('failure_reset_timeout', 60)
         self.failure_restart_delay = params.get('failure_restart_delay', 5000)
-        self.service_user = params.get('service_user', '')
-        self.service_password = params.get('service_password', '')
 
     def create_script(self):
         pass
 
     def create_config(self):
         # creating the installation script
-        self._logger.info('Rendering configuration script "{0}" from template'
-                          .format(self.config_path))
+        self._logger.debug('Rendering configuration script "{0}" from template'
+                           .format(self.config_path))
         utils.render_template_to_file(
             template_path='pm/nssm/nssm.conf.template',
             file_path=self.config_path,
@@ -96,8 +94,6 @@ class NonSuckingServiceManagerDaemon(Daemon):
             log_max_history=self.log_max_history,
             workdir=self.workdir,
             user=self.user,
-            service_user=self.service_user,
-            service_password=self.service_password,
             rest_host=self.rest_host,
             rest_port=self.rest_port,
             local_rest_cert_file=self.local_rest_cert_file,
@@ -110,22 +106,16 @@ class NonSuckingServiceManagerDaemon(Daemon):
             failure_reset_timeout=self.failure_reset_timeout,
             failure_restart_delay=self.failure_restart_delay,
             storage_dir=utils.internal.get_storage_directory(self.user),
+            cluster_settings_path=self.cluster_settings_path
         )
 
-        self._logger.info('Rendered configuration script: {0}'.format(
+        self._logger.debug('Rendered configuration script: {0}'.format(
             self.config_path))
 
         # run the configuration script
         self._logger.info('Running configuration script')
-        try:
-            self._runner.run(self.config_path)
-        except Exception:
-            # Log the exception here, then re-raise it. This is done in order
-            # to ensure that the full exception message is shown.
-            self._logger.exception("Failure encountered while running "
-                                   "configuration script")
-            raise
-        self._logger.info('Successfully executed configuration script')
+        self._runner.run(self.config_path)
+        self._logger.debug('Successfully executed configuration script')
 
     def before_self_stop(self):
         if self.startup_policy in ['boot', 'system', 'auto']:
