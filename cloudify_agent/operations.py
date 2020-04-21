@@ -32,7 +32,6 @@ from cloudify.error_handling import deserialize_known_exception
 from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.agent_utils import create_agent_record, update_agent_record
 from cloudify.utils import (get_rest_token,
-                            get_manager_rest_service_host,
                             ManagerVersion,
                             get_local_rest_certificate)
 from cloudify._compat import reraise
