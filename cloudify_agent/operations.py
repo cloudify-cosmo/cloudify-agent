@@ -281,30 +281,36 @@ def _validate_created_agent(new_agent):
     return created_agent
 
 
-def _get_cloudify_context(agent, task_name):
+def _get_cloudify_context(agent, task_name, new_agent_connection=None):
     """
     Return the cloudify context that would be set in tasks sent to the old
     agent
     """
-    return {
-        '__cloudify_context': {
-            'type': 'operation',
-            'task_name': task_name,
-            'task_target': agent['queue'],
-            'node_id': ctx.instance.id,
-            'workflow_id': ctx.workflow_id,
-            'execution_id': ctx.execution_id,
-            'tenant': ctx.tenant,
-            'rest_token': get_rest_token(),
-            'rest_host': get_manager_rest_service_host()
-        }
+    cloudify_context = {
+        'type': 'operation',
+        'task_name': task_name,
+        'task_target': agent['queue'],
+        'node_id': ctx.instance.id,
+        'workflow_id': ctx.workflow_id,
+        'execution_id': ctx.execution_id,
+        'tenant': ctx.tenant,
+        'rest_token': get_rest_token(),
+        'rest_host': agent['rest_host']
     }
 
+    if new_agent_connection:
+        cloudify_context['rest_host'] = new_agent_connection['rest_host']
+        cloudify_context['rest_ssl_cert'] = \
+            new_agent_connection['rest_ssl_cert']
 
-def _build_install_script_params(agent, script_url):
+    return {'__cloudify_context': cloudify_context}
+
+
+def _build_install_script_params(agent, script_url, new_agent_connection=None):
     kwargs = _get_cloudify_context(
         agent=agent,
-        task_name='script_runner.tasks.run'
+        task_name='script_runner.tasks.run',
+        new_agent_connection=new_agent_connection
     )
     kwargs['script_path'] = script_url
     kwargs['ssl_cert_content'] = _get_ssl_cert_content(agent['version'])
@@ -375,9 +381,10 @@ def _send_task(agent, params, timeout):
         _send_celery_task(agent, params, timeout)
 
 
-def _run_script(agent, script_url, timeout):
-    params = _build_install_script_params(agent, script_url)
-
+def _run_script(agent, script_url, timeout, new_agent_connection=None):
+    params = _build_install_script_params(
+        agent, script_url, new_agent_connection=new_agent_connection
+    )
     try:
         _send_task(agent, params, timeout)
     finally:
@@ -391,12 +398,20 @@ def _run_install_script(old_agent, timeout):
         # this agent was installed by current manager.
         old_agent['version'] = str(_get_manager_version())
     new_agent = create_new_agent_config(old_agent)
+    ctx.logger.info('New Agent Config: {0}'.format(new_agent))
     _, script_url = _get_init_script_path_and_url(
         new_agent, old_agent['version']
     )
-
-    _run_script(old_agent, script_url, timeout)
-
+    new_agent_connection = {
+        'rest_ssl_cert': new_agent['rest_ssl_cert'],
+        'rest_host': new_agent['rest_host']
+    }
+    _run_script(
+        old_agent,
+        script_url,
+        timeout,
+        new_agent_connection=new_agent_connection
+    )
     created_agent = _validate_created_agent(new_agent)
     return {'old': old_agent, 'new': created_agent}
 
