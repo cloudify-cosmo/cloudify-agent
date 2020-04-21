@@ -398,7 +398,6 @@ def _run_install_script(old_agent, timeout):
         # this agent was installed by current manager.
         old_agent['version'] = str(_get_manager_version())
     new_agent = create_new_agent_config(old_agent)
-    ctx.logger.info('New Agent Config: {0}'.format(new_agent))
     _, script_url = _get_init_script_path_and_url(
         new_agent, old_agent['version']
     )
