@@ -82,15 +82,14 @@ class PluginInstallerTest(BaseTest, TestCase):
 
     def setUp(self):
         super(PluginInstallerTest, self).setUp()
-        self.installer = installer.PluginInstaller(logger=self.logger)
         self.mock_ctx_with_tenant()
 
     def tearDown(self):
         super(PluginInstallerTest, self).tearDown()
-        self.installer.uninstall_source(plugin=self._plugin_struct(''))
-        self.installer.uninstall_source(plugin=self._plugin_struct(''),
-                                        deployment_id='deployment')
-        self.installer.uninstall_wagon(PACKAGE_NAME, PACKAGE_VERSION)
+        installer.uninstall_source(plugin=self._plugin_struct(''))
+        installer.uninstall_source(plugin=self._plugin_struct(''),
+                                   deployment_id='deployment')
+        installer.uninstall_wagon(PACKAGE_NAME, PACKAGE_VERSION)
 
     @classmethod
     def tearDownClass(cls):
@@ -138,7 +137,7 @@ class PluginInstallerTest(BaseTest, TestCase):
                                   package_version=package_version))
 
     def test_install_from_source(self):
-        self.installer.install(self._plugin_struct(source='mock-plugin.tar'))
+        installer.install(self._plugin_struct(source='mock-plugin.tar'))
         self._assert_task_runnable('mock_plugin.tasks.run',
                                    expected_return='run')
         self._assert_task_runnable('mock_plugin.tasks.call_entry_point',
@@ -146,15 +145,15 @@ class PluginInstallerTest(BaseTest, TestCase):
 
     def test_install_from_source_with_deployment_id(self):
         deployment_id = 'deployment'
-        self.installer.install(self._plugin_struct(source='mock-plugin.tar'),
-                               deployment_id=deployment_id)
+        installer.install(self._plugin_struct(source='mock-plugin.tar'),
+                          deployment_id=deployment_id)
         self._assert_task_not_runnable('mock_plugin.tasks.run')
         self._assert_task_runnable('mock_plugin.tasks.run',
                                    expected_return='run',
                                    deployment_id=deployment_id)
 
     def test_install_from_source_with_requirements(self):
-        self.installer.install(self._plugin_struct(
+        installer.install(self._plugin_struct(
             source='mock-plugin-with-requirements.tar',
             args='-r requirements.txt'))
         self._assert_task_runnable(
@@ -163,39 +162,38 @@ class PluginInstallerTest(BaseTest, TestCase):
                             'Santraginus V')
 
     def test_install_from_source_already_exists(self):
-        self.installer.install(self._plugin_struct(source='mock-plugin.tar'))
+        installer.install(self._plugin_struct(source='mock-plugin.tar'))
         try:
-            self.installer.install(
-                self._plugin_struct(source='mock-plugin.tar'))
+            installer.install(self._plugin_struct(source='mock-plugin.tar'))
         except exceptions.PluginInstallationError as e:
             self.assertIn('already exists', str(e))
         else:
             self.fail('PluginInstallationError not raised')
 
     def test_uninstall_from_source(self):
-        self.installer.install(self._plugin_struct(source='mock-plugin.tar'))
+        installer.install(self._plugin_struct(source='mock-plugin.tar'))
         self._assert_task_runnable('mock_plugin.tasks.run',
                                    expected_return='run')
-        self.installer.uninstall_source(plugin=self._plugin_struct())
+        installer.uninstall_source(plugin=self._plugin_struct())
         self._assert_task_not_runnable('mock_plugin.tasks.run')
 
     def test_uninstall_from_source_with_deployment_id(self):
         deployment_id = 'deployment'
-        self.installer.install(self._plugin_struct(source='mock-plugin.tar'),
-                               deployment_id=deployment_id)
+        installer.install(self._plugin_struct(source='mock-plugin.tar'),
+                          deployment_id=deployment_id)
         self._assert_task_not_runnable('mock_plugin.tasks.run')
         self._assert_task_runnable('mock_plugin.tasks.run',
                                    expected_return='run',
                                    deployment_id=deployment_id)
-        self.installer.uninstall_source(plugin=self._plugin_struct(),
-                                        deployment_id=deployment_id)
+        installer.uninstall_source(plugin=self._plugin_struct(),
+                                   deployment_id=deployment_id)
         self._assert_task_not_runnable('mock_plugin.tasks.run',
                                        deployment_id=deployment_id)
 
     def test_install_from_wagon(self):
         with _patch_for_install_wagon(PACKAGE_NAME, PACKAGE_VERSION,
                                       download_path=self.wagons[PACKAGE_NAME]):
-            self.installer.install(self._plugin_struct())
+            installer.install(self._plugin_struct())
         self._assert_wagon_plugin_installed()
 
     # No forking on windows.
@@ -216,7 +214,7 @@ class PluginInstallerTest(BaseTest, TestCase):
             self.logger.addHandler(handler)
             try:
                 def installer_func(dep_id='__system__'):
-                    self.installer.install(self._plugin_struct(), dep_id)
+                    installer.install(self._plugin_struct(), dep_id)
                 installers = [multiprocessing.Process(target=installer_func),
                               multiprocessing.Process(target=installer_func,
                                                       args=('id',))]
@@ -250,9 +248,8 @@ class PluginInstallerTest(BaseTest, TestCase):
 
     def test_install_from_wagon_already_exists_but_missing_plugin_id(self):
         self.test_install_from_wagon()
-        plugin_dir = self.installer._full_dst_dir('{0}-{1}'
-                                                  .format(PACKAGE_NAME,
-                                                          PACKAGE_VERSION))
+        plugin_dir = installer._full_dst_dir(
+            '{0}-{1}'.format(PACKAGE_NAME, PACKAGE_VERSION))
         plugin_id_path = os.path.join(plugin_dir, 'plugin.id')
         os.remove(plugin_id_path)
         # the installation here should identify a plugin.id missing
@@ -271,7 +268,7 @@ class PluginInstallerTest(BaseTest, TestCase):
                 download_path=self.wagons['mock-plugin-modified'],
                 plugin_id='2'):
             try:
-                self.installer.install(self._plugin_struct())
+                installer.install(self._plugin_struct())
             except exceptions.PluginInstallationError as e:
                 self.assertIn('does not match the ID', str(e))
             else:
@@ -282,7 +279,7 @@ class PluginInstallerTest(BaseTest, TestCase):
                                       download_path=self.wagons[PACKAGE_NAME],
                                       archive_name='some_archive'):
             try:
-                self.installer.install(self._plugin_struct(
+                installer.install(self._plugin_struct(
                     executor='central_deployment_agent'),
                     deployment_id='deployment')
             except exceptions.PluginInstallationError as e:
@@ -292,7 +289,7 @@ class PluginInstallerTest(BaseTest, TestCase):
 
     def test_uninstall_from_wagon(self):
         self.test_install_from_wagon()
-        self.installer.uninstall_wagon(PACKAGE_NAME, PACKAGE_VERSION)
+        installer.uninstall_wagon(PACKAGE_NAME, PACKAGE_VERSION)
         self._assert_task_not_runnable('mock_plugin.tasks.run',
                                        package_name=PACKAGE_NAME,
                                        package_version=PACKAGE_VERSION)
@@ -318,7 +315,7 @@ class PluginInstallerTest(BaseTest, TestCase):
 
     def test_install_no_source_or_managed_plugin(self):
         try:
-            self.installer.install(self._plugin_struct())
+            installer.install(self._plugin_struct())
             self.fail()
         except cloudify_exceptions.NonRecoverableError as e:
             self.assertIn('source or managed', str(e))
@@ -332,7 +329,7 @@ class PluginInstallerTest(BaseTest, TestCase):
 
     def test_install_dependencies_versions_conflict(self):
         def extract_requests_version():
-            pip_freeze = self.installer._pip_freeze().split('\n')
+            pip_freeze = installer._pip_freeze().split('\n')
             for package in pip_freeze:
                 if package.startswith('requests=='):
                     requests_version = package.split('==')[0]
@@ -353,18 +350,18 @@ class PluginInstallerTest(BaseTest, TestCase):
         plugin_struct = self._plugin_struct(source=requests_tar,
                                             name=requests_plugin)
         try:
-            self.installer.install(plugin_struct)
+            installer.install(plugin_struct)
             after_requests_version = extract_requests_version()
         finally:
-            self.installer.uninstall_source(plugin=plugin_struct)
+            installer.uninstall_source(plugin=plugin_struct)
         self.assertEqual(before_requests_version, after_requests_version)
         try:
             with _patch_for_install_wagon(requests_plugin, '0.1',
                                           download_path=requests_wagon):
-                self.installer.install(self._plugin_struct())
+                installer.install(self._plugin_struct())
             after_requests_version = extract_requests_version()
         finally:
-            self.installer.uninstall_wagon(requests_plugin, '0.1')
+            installer.uninstall_wagon(requests_plugin, '0.1')
         self.assertEqual(before_requests_version, after_requests_version)
 
 

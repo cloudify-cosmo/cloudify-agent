@@ -28,7 +28,7 @@ from cloudify.error_handling import deserialize_known_exception
 from cloudify_agent.api import utils
 from cloudify_agent.api import exceptions
 from cloudify_agent.api.factory import DaemonFactory
-from cloudify_agent.api.plugins.installer import PluginInstaller
+from cloudify_agent.api.plugins import installer
 
 from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests import resources
@@ -126,16 +126,11 @@ def patch_get_source(fn):
 
 
 class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
-
-    def setUp(self):
-        super(BaseDaemonProcessManagementTest, self).setUp()
-        self.installer = PluginInstaller(logger=self.logger)
-
     def tearDown(self):
         super(BaseDaemonProcessManagementTest, self).tearDown()
-        self.installer.uninstall_source(plugin=self.plugin_struct())
-        self.installer.uninstall_source(plugin=self.plugin_struct(),
-                                        deployment_id=DEPLOYMENT_ID)
+        installer.uninstall_source(plugin=self.plugin_struct())
+        installer.uninstall_source(plugin=self.plugin_struct(),
+                                   deployment_id=DEPLOYMENT_ID)
 
     @property
     def daemon_cls(self):
@@ -264,7 +259,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon = self.create_daemon()
         daemon.create()
         daemon.configure()
-        self.installer.install(self.plugin_struct())
+        installer.install(self.plugin_struct())
         daemon.start()
         daemon.restart()
 
@@ -288,7 +283,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon = self.create_daemon()
         daemon.create()
         daemon.configure()
-        self.installer.install(self.plugin_struct())
+        installer.install(self.plugin_struct())
         daemon.start()
 
         expected = {
@@ -322,7 +317,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         )
         daemon.create()
         daemon.configure()
-        self.installer.install(self.plugin_struct())
+        installer.install(self.plugin_struct())
         daemon.start()
 
         # check the env file was properly sourced by querying the env
@@ -338,7 +333,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon = self.create_daemon()
         daemon.create()
         daemon.configure()
-        self.installer.install(self.plugin_struct())
+        installer.install(self.plugin_struct())
         daemon.start()
 
         # check that cloudify.dispatch.dispatch 'execution_env' processing
@@ -378,9 +373,9 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon = self.create_daemon()
         daemon.create()
         daemon.configure()
-        self.installer.install(self.plugin_struct())
-        self.installer.install(self.plugin_struct(),
-                               deployment_id=DEPLOYMENT_ID)
+        installer.install(self.plugin_struct())
+        installer.install(self.plugin_struct(),
+                          deployment_id=DEPLOYMENT_ID)
         daemon.start()
 
         def log_and_assert(_message, _deployment_id=None):
