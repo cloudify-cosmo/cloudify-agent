@@ -37,7 +37,7 @@ from cloudify.utils import (get_rest_token,
 from cloudify._compat import reraise
 
 from cloudify_agent.celery_app import get_celery_app
-from cloudify_agent.api.plugins.installer import PluginInstaller
+from cloudify_agent.api.plugins import installer as plugin_installer
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
@@ -55,13 +55,13 @@ CELERY_TASK_RESULT_EXPIRES = 600
 
 @operation
 def install_plugins(plugins, **_):
-    installer = PluginInstaller(logger=ctx.logger)
     for plugin in plugins:
         ctx.logger.info('Installing plugin: {0}'.format(plugin['name']))
         try:
-            installer.install(plugin=plugin,
-                              deployment_id=ctx.deployment.id,
-                              blueprint_id=ctx.blueprint.id)
+            plugin_installer.install(
+                plugin=plugin,
+                deployment_id=ctx.deployment.id,
+                blueprint_id=ctx.blueprint.id)
         except exceptions.PluginInstallationError as e:
             # preserve traceback
             tpe, value, tb = sys.exc_info()
@@ -70,11 +70,10 @@ def install_plugins(plugins, **_):
 
 @operation
 def uninstall_plugins(plugins, delete_managed_plugins=True, **_):
-    installer = PluginInstaller(logger=ctx.logger)
     for plugin in plugins:
         ctx.logger.info('Uninstalling plugin: {0}'.format(plugin['name']))
-        installer.uninstall(plugin,
-                            delete_managed_plugins=delete_managed_plugins)
+        plugin_installer.uninstall(
+            plugin, delete_managed_plugins=delete_managed_plugins)
 
 
 @operation

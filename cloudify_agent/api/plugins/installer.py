@@ -29,8 +29,7 @@ import fasteners
 
 from cloudify import ctx
 from cloudify._compat import reraise, urljoin, pathname2url
-from cloudify.utils import setup_logger
-from cloudify.utils import extract_archive
+from cloudify.utils import extract_archive, setup_logger
 from cloudify.manager import get_rest_client
 from cloudify.utils import LocalCommandRunner
 from cloudify.constants import MANAGER_PLUGINS_PATH
@@ -54,314 +53,316 @@ PLUGIN_QUERY_INTERVAL = 1
 INSTALLATION_TIMEOUT = 75
 
 
-class PluginInstaller(object):
+logger = setup_logger('PluginInstaller')
+runner = LocalCommandRunner(logger=logger)
 
-    def __init__(self, logger=None):
-        self.logger = logger or setup_logger(self.__class__.__name__)
-        self.runner = LocalCommandRunner(logger=self.logger)
 
-    def install(self,
-                plugin,
-                deployment_id=None,
-                blueprint_id=None):
-        """
-        Install the plugin to the current virtualenv.
+def install(plugin,
+            deployment_id=None,
+            blueprint_id=None):
+    """
+    Install the plugin to the current virtualenv.
 
-        :param plugin: A plugin structure as defined in the blueprint.
-        :param deployment_id: The deployment id associated with this
-                              installation.
-        :param blueprint_id: The blueprint id associated with this
-                             installation. if specified, will be used
-                             when downloading plugins that were included
-                             as part of the blueprint itself.
-        """
-        # deployment_id may be empty in some tests.
-        deployment_id = deployment_id or SYSTEM_DEPLOYMENT
-        managed_plugin = get_managed_plugin(plugin)
-        source = get_plugin_source(plugin, blueprint_id)
-        args = get_plugin_args(plugin)
-        self._create_plugins_dir_if_missing()
+    :param plugin: A plugin structure as defined in the blueprint.
+    :param deployment_id: The deployment id associated with this
+                          installation.
+    :param blueprint_id: The blueprint id associated with this
+                         installation. if specified, will be used
+                         when downloading plugins that were included
+                         as part of the blueprint itself.
+    """
+    # deployment_id may be empty in some tests.
+    deployment_id = deployment_id or SYSTEM_DEPLOYMENT
+    managed_plugin = get_managed_plugin(plugin)
+    source = get_plugin_source(plugin, blueprint_id)
+    args = get_plugin_args(plugin)
+    _create_plugins_dir_if_missing()
 
-        (current_platform,
-         current_distro,
-         current_distro_release) = _extract_platform_and_distro_info()
+    (current_platform,
+     current_distro,
+     current_distro_release) = _extract_platform_and_distro_info()
 
-        self.logger.debug('Installing plugin {0} '
-                          '[current_platform={1},'
-                          ' current_distro={2},'
-                          ' current_distro_release={3}]'
-                          .format(plugin['name'],
-                                  current_platform,
-                                  current_distro,
-                                  current_distro_release))
+    logger.debug('Installing plugin {0} '
+                 '[current_platform={1},'
+                 ' current_distro={2},'
+                 ' current_distro_release={3}]'
+                 .format(plugin['name'],
+                         current_platform,
+                         current_distro,
+                         current_distro_release))
 
-        if managed_plugin:
-            self._install_managed_plugin(
-                deployment_id=deployment_id,
-                managed_plugin=managed_plugin,
-                plugin=plugin,
-                args=args)
-        elif source:
-            self._install_source_plugin(
-                deployment_id=deployment_id,
-                plugin=plugin,
-                source=source,
-                args=args)
+    if managed_plugin:
+        _install_managed_plugin(
+            deployment_id=deployment_id,
+            managed_plugin=managed_plugin,
+            plugin=plugin,
+            args=args)
+    elif source:
+        _install_source_plugin(
+            deployment_id=deployment_id,
+            plugin=plugin,
+            source=source,
+            args=args)
+    else:
+        raise NonRecoverableError(
+            'No source or managed plugin found for {0} '
+            '[current_platform={1},'
+            ' current_distro={2},'
+            ' current_distro_release={3}]'
+            .format(plugin,
+                    current_platform,
+                    current_distro,
+                    current_distro_release))
+
+
+def _make_virtualenv(path):
+    runner.run([
+        sys.executable, '-m', 'virtualenv',
+        '--no-download',
+        path
+    ])
+
+
+def _install_managed_plugin(deployment_id,
+                            managed_plugin,
+                            plugin,
+                            args):
+    matching_existing_installation = False
+    dst_dir = '{0}-{1}'.format(managed_plugin.package_name,
+                               managed_plugin.package_version)
+    dst_dir = _full_dst_dir(dst_dir, managed_plugin)
+    logger.debug('Checking if managed plugin installation exists '
+                 'in {0}'.format(dst_dir))
+
+    # create_deployment_env should wait for the install_plugin wf to finish
+    deadline = time.time() + INSTALLATION_TIMEOUT
+    while (_is_plugin_installing(managed_plugin.id) and
+           deployment_id != SYSTEM_DEPLOYMENT):
+        if time.time() < deadline:
+            time.sleep(PLUGIN_QUERY_INTERVAL)
         else:
-            raise NonRecoverableError(
-                'No source or managed plugin found for {0} '
-                '[current_platform={1},'
-                ' current_distro={2},'
-                ' current_distro_release={3}]'
-                .format(plugin,
-                        current_platform,
-                        current_distro,
-                        current_distro_release))
-
-    def _make_virtualenv(self, path):
-        self.runner.run([
-            sys.executable, '-m', 'virtualenv',
-            '--no-download',
-            path
-        ])
-
-    def _install_managed_plugin(self,
-                                deployment_id,
-                                managed_plugin,
-                                plugin,
-                                args):
-        matching_existing_installation = False
-        dst_dir = '{0}-{1}'.format(managed_plugin.package_name,
-                                   managed_plugin.package_version)
-        dst_dir = self._full_dst_dir(dst_dir, managed_plugin)
-        self.logger.debug('Checking if managed plugin installation exists '
-                          'in {0}'.format(dst_dir))
-
-        # create_deployment_env should wait for the install_plugin wf to finish
-        deadline = time.time() + INSTALLATION_TIMEOUT
-        while (self._is_plugin_installing(managed_plugin.id) and
-               deployment_id != SYSTEM_DEPLOYMENT):
-            if time.time() < deadline:
-                time.sleep(PLUGIN_QUERY_INTERVAL)
-            else:
-                raise exceptions.PluginInstallationError(
-                    'Timeout waiting for plugin to be installed. '
-                    'Plugin info: [{0}] '.format(managed_plugin))
-        if os.path.exists(dst_dir):
-            self.logger.debug('Plugin path exists {0}'.format(dst_dir))
-            plugin_id_path = os.path.join(dst_dir, 'plugin.id')
-            if os.path.exists(plugin_id_path):
-                self.logger.debug('Plugin id path exists {0}'.
-                                  format(plugin_id_path))
-                with open(plugin_id_path) as f:
-                    existing_plugin_id = f.read().strip()
-                matching_existing_installation = (
-                    existing_plugin_id == managed_plugin.id)
-                if not matching_existing_installation:
-                    raise exceptions.PluginInstallationError(
-                        'Managed plugin installation found but its ID '
-                        'does not match the ID of the plugin currently '
-                        'on the manager. [existing: {0}, new: {1}]'
-                        .format(existing_plugin_id,
-                                managed_plugin.id))
-            else:
-                raise exceptions.PluginInstallationError(
-                    'Managed plugin installation found but it is '
-                    'in a corrupted state. [{0}]'.format(managed_plugin))
-        fields = ['package_name',
-                  'package_version',
-                  'supported_platform',
-                  'distribution',
-                  'distribution_release']
-        description = ', '.join('{0}: {1}'.format(
-            field, managed_plugin.get(field))
-            for field in fields if managed_plugin.get(field))
-
-        if matching_existing_installation:
-            self.logger.info(
-                'Using existing installation of managed plugin: {0} [{1}]'
-                .format(managed_plugin.id, description))
-        elif (deployment_id != SYSTEM_DEPLOYMENT and
-              plugin['executor'] == 'central_deployment_agent'):
             raise exceptions.PluginInstallationError(
-                'Central deployment agent managed plugins can only be '
-                'installed using the REST plugins API. [{0}]'
-                .format(managed_plugin))
+                'Timeout waiting for plugin to be installed. '
+                'Plugin info: [{0}] '.format(managed_plugin))
+    if os.path.exists(dst_dir):
+        logger.debug('Plugin path exists {0}'.format(dst_dir))
+        plugin_id_path = os.path.join(dst_dir, 'plugin.id')
+        if os.path.exists(plugin_id_path):
+            logger.debug('Plugin id path exists {0}'.
+                         format(plugin_id_path))
+            with open(plugin_id_path) as f:
+                existing_plugin_id = f.read().strip()
+            matching_existing_installation = (
+                existing_plugin_id == managed_plugin.id)
+            if not matching_existing_installation:
+                raise exceptions.PluginInstallationError(
+                    'Managed plugin installation found but its ID '
+                    'does not match the ID of the plugin currently '
+                    'on the manager. [existing: {0}, new: {1}]'
+                    .format(existing_plugin_id,
+                            managed_plugin.id))
         else:
-            try:
-                self.logger.info('Installing managed plugin: {0} [{1}]'
-                                 .format(managed_plugin.id, description))
-                wait_for_wagon_in_directory(managed_plugin.id)
-                # Wait for Syncthing to sync resources for the wagons
+            raise exceptions.PluginInstallationError(
+                'Managed plugin installation found but it is '
+                'in a corrupted state. [{0}]'.format(managed_plugin))
+    fields = ['package_name',
+              'package_version',
+              'supported_platform',
+              'distribution',
+              'distribution_release']
+    description = ', '.join('{0}: {1}'.format(
+        field, managed_plugin.get(field))
+        for field in fields if managed_plugin.get(field))
+
+    if matching_existing_installation:
+        logger.info(
+            'Using existing installation of managed plugin: {0} [{1}]'
+            .format(managed_plugin.id, description))
+    elif (deployment_id != SYSTEM_DEPLOYMENT and
+          plugin['executor'] == 'central_deployment_agent'):
+        raise exceptions.PluginInstallationError(
+            'Central deployment agent managed plugins can only be '
+            'installed using the REST plugins API. [{0}]'
+            .format(managed_plugin))
+    else:
+        try:
+            logger.info('Installing managed plugin: {0} [{1}]'
+                        .format(managed_plugin.id, description))
+            wait_for_wagon_in_directory(managed_plugin.id)
+            # Wait for Syncthing to sync resources for the wagons
+            if syncthing_utils:
+                syncthing_utils.wait_for_plugins_sync(
+                    sync_dir=syncthing_utils.RESOURCES_DIR)
+            _make_virtualenv(dst_dir)
+            _wagon_install(
+                plugin=managed_plugin, venv=dst_dir, args=args)
+            with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
+                f.write(managed_plugin.id)
+
+            if _is_plugin_installing(managed_plugin.id):
+                # Wait for Syncthing to sync plugin files on all managers
                 if syncthing_utils:
-                    syncthing_utils.wait_for_plugins_sync(
-                        sync_dir=syncthing_utils.RESOURCES_DIR)
-                self._make_virtualenv(dst_dir)
-                self._wagon_install(
-                    plugin=managed_plugin, venv=dst_dir, args=args)
-                with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
-                    f.write(managed_plugin.id)
+                    syncthing_utils.wait_for_plugins_sync()
+                _update_plugin_status(managed_plugin.id)
+        except Exception as e:
+            tpe, value, tb = sys.exc_info()
+            exc = NonRecoverableError('Failed installing managed '
+                                      'plugin: {0} [{1}][{2}]'
+                                      .format(managed_plugin.id,
+                                              plugin, e))
+            reraise(NonRecoverableError, exc, tb)
 
-                if self._is_plugin_installing(managed_plugin.id):
-                    # Wait for Syncthing to sync plugin files on all managers
-                    if syncthing_utils:
-                        syncthing_utils.wait_for_plugins_sync()
-                    self._update_plugin_status(managed_plugin.id)
-            except Exception as e:
-                tpe, value, tb = sys.exc_info()
-                exc = NonRecoverableError('Failed installing managed '
-                                          'plugin: {0} [{1}][{2}]'
-                                          .format(managed_plugin.id,
-                                                  plugin, e))
-                reraise(NonRecoverableError, exc, tb)
 
-    @staticmethod
-    def _update_plugin_status(plugin_id):
-        """
-        Completing plugin installation process after installing it on relevant
-        locations and syncing across all Managers if needed.
-        :param plugin_id:
-        """
-        client = get_rest_client()
-        client.plugins.finish_installation(plugin_id)
+def _update_plugin_status(plugin_id):
+    """
+    Completing plugin installation process after installing it on relevant
+    locations and syncing across all Managers if needed.
+    :param plugin_id:
+    """
+    client = get_rest_client()
+    client.plugins.finish_installation(plugin_id)
 
-    @staticmethod
-    def _is_plugin_installing(plugin_id):
-        client = get_rest_client()
-        plugin = client.plugins.get(plugin_id)
-        return plugin.archive_name.startswith(INSTALLING_PREFIX)
 
-    def _wagon_install(self, plugin, venv, args):
-        client = get_rest_client()
-        wagon_dir = tempfile.mkdtemp(prefix='{0}-'.format(plugin.id))
-        wagon_path = os.path.join(wagon_dir, 'wagon.tar.gz')
-        try:
-            self.logger.debug('Downloading plugin {0} from manager into {1}'
-                              .format(plugin.id, wagon_path))
-            client.plugins.download(plugin_id=plugin.id,
-                                    output_file=wagon_path)
-            self.logger.debug('Installing plugin {0} using wagon'
-                              .format(plugin.id))
-            wagon.install(
-                wagon_path,
-                ignore_platform=True,
-                install_args=args,
-                venv=venv
+def _is_plugin_installing(plugin_id):
+    client = get_rest_client()
+    plugin = client.plugins.get(plugin_id)
+    return plugin.archive_name.startswith(INSTALLING_PREFIX)
+
+
+def _wagon_install(plugin, venv, args):
+    client = get_rest_client()
+    wagon_dir = tempfile.mkdtemp(prefix='{0}-'.format(plugin.id))
+    wagon_path = os.path.join(wagon_dir, 'wagon.tar.gz')
+    try:
+        logger.debug('Downloading plugin {0} from manager into {1}'
+                     .format(plugin.id, wagon_path))
+        client.plugins.download(plugin_id=plugin.id,
+                                output_file=wagon_path)
+        logger.debug('Installing plugin {0} using wagon'
+                     .format(plugin.id))
+        wagon.install(
+            wagon_path,
+            ignore_platform=True,
+            install_args=args,
+            venv=venv
+        )
+    finally:
+        logger.debug('Removing directory: {0}'.format(wagon_dir))
+        _rmtree(wagon_dir)
+
+
+def _install_source_plugin(deployment_id,
+                           plugin,
+                           source,
+                           args):
+    dst_dir = '{0}-{1}'.format(deployment_id, plugin['name'])
+    dst_dir = _full_dst_dir(dst_dir)
+    if os.path.exists(dst_dir):
+        raise exceptions.PluginInstallationError(
+            'Source plugin {0} already exists for deployment {1}. '
+            'This probably means a previous deployment with the '
+            'same name was not cleaned properly.'
+            .format(plugin['name'], deployment_id))
+    logger.info('Installing plugin from source: %s', plugin['name'])
+    _make_virtualenv(dst_dir)
+    _pip_install(source=source, venv=dst_dir, args=args)
+
+
+def _pip_install(source, venv, args):
+    plugin_dir = None
+    try:
+        if os.path.isabs(source):
+            plugin_dir = source
+        else:
+            logger.debug('Extracting archive: {0}'.format(source))
+            plugin_dir = extract_package_to_dir(source)
+        package_name = extract_package_name(plugin_dir)
+        logger.debug('Installing from directory: {0} '
+                     '[args={1}, package_name={2}]'
+                     .format(plugin_dir, args, package_name))
+        command = [
+            get_python_path(venv), '-m', 'pip', 'install'
+        ] + args + [plugin_dir]
+
+        runner.run(command=command, cwd=plugin_dir)
+        logger.debug('Retrieved package name: {0}'
+                     .format(package_name))
+    except CommandExecutionException as e:
+        logger.debug('Failed running pip install. Output:\n{0}'
+                     .format(e.output))
+        raise exceptions.PluginInstallationError(
+            'Failed running pip install. ({0})'.format(e.error))
+    finally:
+        if plugin_dir and not os.path.isabs(source):
+            logger.debug('Removing directory: {0}'
+                         .format(plugin_dir))
+            _rmtree(plugin_dir)
+
+
+def uninstall_source(plugin, deployment_id=None):
+    """Uninstall a previously installed plugin (only supports source
+    plugins) """
+    deployment_id = deployment_id or SYSTEM_DEPLOYMENT
+    logger.info('Uninstalling plugin from source: %s', plugin['name'])
+    dst_dir = '{0}-{1}'.format(deployment_id, plugin['name'])
+    dst_dir = _full_dst_dir(dst_dir)
+    if os.path.isdir(dst_dir):
+        _rmtree(dst_dir)
+
+
+def uninstall_wagon(package_name, package_version):
+    """Uninstall a wagon (used by tests and by the plugins REST API)"""
+    dst_dir = '{0}-{1}'.format(package_name, package_version)
+    dst_dir = _full_dst_dir(dst_dir)
+    if os.path.isdir(dst_dir):
+        _rmtree(dst_dir)
+
+    lock_file = '{0}.lock'.format(dst_dir)
+    if os.path.exists(lock_file):
+        os.remove(lock_file)
+
+
+def uninstall(plugin, delete_managed_plugins=True):
+    if plugin.get('wagon'):
+        if delete_managed_plugins:
+            uninstall_wagon(
+                plugin['package_name'],
+                plugin['package_version']
             )
-        finally:
-            self.logger.debug('Removing directory: {0}'
-                              .format(wagon_dir))
-            self._rmtree(wagon_dir)
+        else:
+            logger.info('Not uninstalling managed plugin: {0} {1}'
+                        .format(plugin['package_name'],
+                                plugin['package_version']))
+    else:
+        uninstall_source(plugin, ctx.deployment.id)
 
-    def _install_source_plugin(self,
-                               deployment_id,
-                               plugin,
-                               source,
-                               args):
-        dst_dir = '{0}-{1}'.format(deployment_id, plugin['name'])
-        dst_dir = self._full_dst_dir(dst_dir)
-        if os.path.exists(dst_dir):
-            raise exceptions.PluginInstallationError(
-                'Source plugin {0} already exists for deployment {1}. '
-                'This probably means a previous deployment with the '
-                'same name was not cleaned properly.'
-                .format(plugin['name'], deployment_id))
-        self.logger.info('Installing plugin from source: %s', plugin['name'])
-        self._make_virtualenv(dst_dir)
-        self._pip_install(source=source, venv=dst_dir, args=args)
 
-    def _pip_install(self, source, venv, args):
-        plugin_dir = None
+def _create_plugins_dir_if_missing():
+    plugins_dir = os.path.join(VIRTUALENV, 'plugins')
+    if not os.path.exists(plugins_dir):
         try:
-            if os.path.isabs(source):
-                plugin_dir = source
-            else:
-                self.logger.debug('Extracting archive: {0}'.format(source))
-                plugin_dir = extract_package_to_dir(source)
-            package_name = extract_package_name(plugin_dir)
-            self.logger.debug('Installing from directory: {0} '
-                              '[args={1}, package_name={2}]'
-                              .format(plugin_dir, args, package_name))
-            command = [
-                get_python_path(venv), '-m', 'pip', 'install'
-            ] + args + [plugin_dir]
+            os.makedirs(plugins_dir)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
 
-            self.runner.run(command=command, cwd=plugin_dir)
-            self.logger.debug('Retrieved package name: {0}'
-                              .format(package_name))
-        except CommandExecutionException as e:
-            self.logger.debug('Failed running pip install. Output:\n{0}'
-                              .format(e.output))
-            raise exceptions.PluginInstallationError(
-                'Failed running pip install. ({0})'.format(e.error))
-        finally:
-            if plugin_dir and not os.path.isabs(source):
-                self.logger.debug('Removing directory: {0}'
-                                  .format(plugin_dir))
-                self._rmtree(plugin_dir)
 
-    def uninstall_source(self, plugin, deployment_id=None):
-        """Uninstall a previously installed plugin (only supports source
-        plugins) """
-        deployment_id = deployment_id or SYSTEM_DEPLOYMENT
-        self.logger.info('Uninstalling plugin from source: %s', plugin['name'])
-        dst_dir = '{0}-{1}'.format(deployment_id, plugin['name'])
-        dst_dir = self._full_dst_dir(dst_dir)
-        if os.path.isdir(dst_dir):
-            self._rmtree(dst_dir)
+def _full_dst_dir(dst_dir, managed_plugin=None):
+    if managed_plugin and managed_plugin['visibility'] \
+            == VisibilityState.GLOBAL:
+        tenant_name = managed_plugin['tenant_name']
+    else:
+        tenant_name = ctx.tenant_name
+    plugins_dir = os.path.join(VIRTUALENV, 'plugins')
+    return os.path.join(plugins_dir, tenant_name, dst_dir)
 
-    def uninstall_wagon(self, package_name, package_version):
-        """Uninstall a wagon (used by tests and by the plugins REST API)"""
-        dst_dir = '{0}-{1}'.format(package_name, package_version)
-        dst_dir = self._full_dst_dir(dst_dir)
-        if os.path.isdir(dst_dir):
-            self._rmtree(dst_dir)
 
-        lock_file = '{0}.lock'.format(dst_dir)
-        if os.path.exists(lock_file):
-            os.remove(lock_file)
+def _lock(path):
+    return fasteners.InterProcessLock('{0}.lock'.format(path))
 
-    def uninstall(self, plugin, delete_managed_plugins=True):
-        if plugin.get('wagon'):
-            if delete_managed_plugins:
-                self.uninstall_wagon(
-                    plugin['package_name'],
-                    plugin['package_version']
-                )
-            else:
-                self.logger.info('Not uninstalling managed plugin: {0} {1}'
-                                 .format(plugin['package_name'],
-                                         plugin['package_version']))
-        else:
-            self.uninstall_source(plugin, ctx.deployment.id)
 
-    @staticmethod
-    def _create_plugins_dir_if_missing():
-        plugins_dir = os.path.join(VIRTUALENV, 'plugins')
-        if not os.path.exists(plugins_dir):
-            try:
-                os.makedirs(plugins_dir)
-            except OSError as e:
-                if e.errno != errno.EEXIST:
-                    raise
-
-    @staticmethod
-    def _full_dst_dir(dst_dir, managed_plugin=None):
-        if managed_plugin and managed_plugin['visibility'] \
-                == VisibilityState.GLOBAL:
-            tenant_name = managed_plugin['tenant_name']
-        else:
-            tenant_name = ctx.tenant_name
-        plugins_dir = os.path.join(VIRTUALENV, 'plugins')
-        return os.path.join(plugins_dir, tenant_name, dst_dir)
-
-    @staticmethod
-    def _lock(path):
-        return fasteners.InterProcessLock('{0}.lock'.format(path))
-
-    @staticmethod
-    def _rmtree(path):
-        shutil.rmtree(path, ignore_errors=True)
+def _rmtree(path):
+    shutil.rmtree(path, ignore_errors=True)
 
 
 def extract_package_to_dir(package_url):
