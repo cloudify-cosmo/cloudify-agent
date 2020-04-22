@@ -29,7 +29,7 @@ import fasteners
 
 from cloudify import ctx
 from cloudify._compat import reraise, urljoin, pathname2url
-from cloudify.utils import extract_archive, setup_logger
+from cloudify.utils import extract_archive
 from cloudify.manager import get_rest_client
 from cloudify.utils import LocalCommandRunner
 from cloudify.constants import MANAGER_PLUGINS_PATH
@@ -53,8 +53,7 @@ PLUGIN_QUERY_INTERVAL = 1
 INSTALLATION_TIMEOUT = 75
 
 
-logger = setup_logger('PluginInstaller')
-runner = LocalCommandRunner(logger=logger)
+runner = LocalCommandRunner()
 
 
 def install(plugin,
@@ -78,19 +77,6 @@ def install(plugin,
     args = get_plugin_args(plugin)
     _create_plugins_dir_if_missing()
 
-    (current_platform,
-     current_distro,
-     current_distro_release) = _extract_platform_and_distro_info()
-
-    logger.debug('Installing plugin {0} '
-                 '[current_platform={1},'
-                 ' current_distro={2},'
-                 ' current_distro_release={3}]'
-                 .format(plugin['name'],
-                         current_platform,
-                         current_distro,
-                         current_distro_release))
-
     if managed_plugin:
         _install_managed_plugin(
             deployment_id=deployment_id,
@@ -104,15 +90,11 @@ def install(plugin,
             source=source,
             args=args)
     else:
+        platform, distro, release = _extract_platform_and_distro_info()
         raise NonRecoverableError(
             'No source or managed plugin found for {0} '
-            '[current_platform={1},'
-            ' current_distro={2},'
-            ' current_distro_release={3}]'
-            .format(plugin,
-                    current_platform,
-                    current_distro,
-                    current_distro_release))
+            '[current platform={1}, distro={2}, release={3}]'
+            .format(plugin, platform, distro, release))
 
 
 def _make_virtualenv(path):
@@ -131,8 +113,8 @@ def _install_managed_plugin(deployment_id,
     dst_dir = '{0}-{1}'.format(managed_plugin.package_name,
                                managed_plugin.package_version)
     dst_dir = _full_dst_dir(dst_dir, managed_plugin)
-    logger.debug('Checking if managed plugin installation exists '
-                 'in {0}'.format(dst_dir))
+    ctx.logger.debug('Checking if managed plugin installation exists '
+                     'in %s', dst_dir)
 
     # create_deployment_env should wait for the install_plugin wf to finish
     deadline = time.time() + INSTALLATION_TIMEOUT
@@ -145,11 +127,10 @@ def _install_managed_plugin(deployment_id,
                 'Timeout waiting for plugin to be installed. '
                 'Plugin info: [{0}] '.format(managed_plugin))
     if os.path.exists(dst_dir):
-        logger.debug('Plugin path exists {0}'.format(dst_dir))
+        ctx.logger.debug('Plugin path exists: %s', dst_dir)
         plugin_id_path = os.path.join(dst_dir, 'plugin.id')
         if os.path.exists(plugin_id_path):
-            logger.debug('Plugin id path exists {0}'.
-                         format(plugin_id_path))
+            ctx.logger.debug('Plugin id path exists: %s', plugin_id_path)
             with open(plugin_id_path) as f:
                 existing_plugin_id = f.read().strip()
             matching_existing_installation = (
@@ -175,9 +156,9 @@ def _install_managed_plugin(deployment_id,
         for field in fields if managed_plugin.get(field))
 
     if matching_existing_installation:
-        logger.info(
-            'Using existing installation of managed plugin: {0} [{1}]'
-            .format(managed_plugin.id, description))
+        ctx.logger.info(
+            'Using existing installation of managed plugin: %s [%s]',
+            managed_plugin.id, description)
     elif (deployment_id != SYSTEM_DEPLOYMENT and
           plugin['executor'] == 'central_deployment_agent'):
         raise exceptions.PluginInstallationError(
@@ -186,8 +167,8 @@ def _install_managed_plugin(deployment_id,
             .format(managed_plugin))
     else:
         try:
-            logger.info('Installing managed plugin: {0} [{1}]'
-                        .format(managed_plugin.id, description))
+            ctx.logger.info('Installing managed plugin: %s [%s]',
+                            managed_plugin.id, description)
             wait_for_wagon_in_directory(managed_plugin.id)
             # Wait for Syncthing to sync resources for the wagons
             if syncthing_utils:
@@ -234,12 +215,11 @@ def _wagon_install(plugin, venv, args):
     wagon_dir = tempfile.mkdtemp(prefix='{0}-'.format(plugin.id))
     wagon_path = os.path.join(wagon_dir, 'wagon.tar.gz')
     try:
-        logger.debug('Downloading plugin {0} from manager into {1}'
-                     .format(plugin.id, wagon_path))
+        ctx.logger.debug('Downloading plugin %s from manager into %s',
+                         plugin.id, wagon_path)
         client.plugins.download(plugin_id=plugin.id,
                                 output_file=wagon_path)
-        logger.debug('Installing plugin {0} using wagon'
-                     .format(plugin.id))
+        ctx.logger.debug('Installing plugin %s using wagon', plugin.id)
         wagon.install(
             wagon_path,
             ignore_platform=True,
@@ -247,7 +227,7 @@ def _wagon_install(plugin, venv, args):
             venv=venv
         )
     finally:
-        logger.debug('Removing directory: {0}'.format(wagon_dir))
+        ctx.logger.debug('Removing directory: %s', wagon_dir)
         _rmtree(wagon_dir)
 
 
@@ -263,7 +243,7 @@ def _install_source_plugin(deployment_id,
             'This probably means a previous deployment with the '
             'same name was not cleaned properly.'
             .format(plugin['name'], deployment_id))
-    logger.info('Installing plugin from source: %s', plugin['name'])
+    ctx.logger.info('Installing plugin from source: %s', plugin['name'])
     _make_virtualenv(dst_dir)
     _pip_install(source=source, venv=dst_dir, args=args)
 
@@ -274,28 +254,25 @@ def _pip_install(source, venv, args):
         if os.path.isabs(source):
             plugin_dir = source
         else:
-            logger.debug('Extracting archive: {0}'.format(source))
+            ctx.logger.debug('Extracting archive: %s', source)
             plugin_dir = extract_package_to_dir(source)
         package_name = extract_package_name(plugin_dir)
-        logger.debug('Installing from directory: {0} '
-                     '[args={1}, package_name={2}]'
-                     .format(plugin_dir, args, package_name))
+        ctx.logger.debug('Installing from directory: %s '
+                         '[args=%s, package_name=%s]',
+                         plugin_dir, args, package_name)
         command = [
             get_python_path(venv), '-m', 'pip', 'install'
         ] + args + [plugin_dir]
 
         runner.run(command=command, cwd=plugin_dir)
-        logger.debug('Retrieved package name: {0}'
-                     .format(package_name))
+        ctx.logger.debug('Retrieved package name: %s', package_name)
     except CommandExecutionException as e:
-        logger.debug('Failed running pip install. Output:\n{0}'
-                     .format(e.output))
+        ctx.logger.debug('Failed running pip install. Output:\n%s', e.output)
         raise exceptions.PluginInstallationError(
             'Failed running pip install. ({0})'.format(e.error))
     finally:
         if plugin_dir and not os.path.isabs(source):
-            logger.debug('Removing directory: {0}'
-                         .format(plugin_dir))
+            ctx.logger.debug('Removing directory: %s', plugin_dir)
             _rmtree(plugin_dir)
 
 
@@ -303,7 +280,7 @@ def uninstall_source(plugin, deployment_id=None):
     """Uninstall a previously installed plugin (only supports source
     plugins) """
     deployment_id = deployment_id or SYSTEM_DEPLOYMENT
-    logger.info('Uninstalling plugin from source: %s', plugin['name'])
+    ctx.logger.info('Uninstalling plugin from source: %s', plugin['name'])
     dst_dir = '{0}-{1}'.format(deployment_id, plugin['name'])
     dst_dir = _full_dst_dir(dst_dir)
     if os.path.isdir(dst_dir):
@@ -330,9 +307,8 @@ def uninstall(plugin, delete_managed_plugins=True):
                 plugin['package_version']
             )
         else:
-            logger.info('Not uninstalling managed plugin: {0} {1}'
-                        .format(plugin['package_name'],
-                                plugin['package_version']))
+            ctx.logger.info('Not uninstalling managed plugin: %s %s',
+                            plugin['package_name'], plugin['package_version'])
     else:
         uninstall_source(plugin, ctx.deployment.id)
 
