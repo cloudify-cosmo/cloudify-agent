@@ -318,21 +318,22 @@ def content_to_file(content, file_path=None, executable=False):
     return file_path
 
 
-def get_executable_path(executable):
+def get_executable_path(executable, venv=None):
 
     """
     Lookup the path to the executable, os agnostic
 
     :param executable: the name of the executable
     """
+    venv = venv or VIRTUALENV
 
     if os.name == 'posix':
-        return '{0}/bin/{1}'.format(VIRTUALENV, executable)
+        return '{0}/bin/{1}'.format(venv, executable)
     else:
-        return '{0}\\Scripts\\{1}'.format(VIRTUALENV, executable)
+        return '{0}\\Scripts\\{1}'.format(venv, executable)
 
 
-def get_cfy_agent_path():
+def get_cfy_agent_path(venv=None):
 
     """
     Lookup the path to the cfy-agent executable, os agnostic
@@ -340,10 +341,10 @@ def get_cfy_agent_path():
     :return: path to the cfy-agent executable
     """
 
-    return get_executable_path('cfy-agent')
+    return get_executable_path('cfy-agent', venv=venv)
 
 
-def get_pip_path():
+def get_pip_path(venv=None):
 
     """
     Lookup the path to the pip executable, os agnostic
@@ -351,10 +352,10 @@ def get_pip_path():
     :return: path to the pip executable
     """
 
-    return get_executable_path('pip')
+    return get_executable_path('pip', venv=venv)
 
 
-def get_celery_path():
+def get_celery_path(venv=None):
 
     """
     Lookup the path to the celery executable, os agnostic
@@ -362,10 +363,10 @@ def get_celery_path():
     :return: path to the celery executable
     """
 
-    return get_executable_path('celery')
+    return get_executable_path('celery', venv=venv)
 
 
-def get_python_path():
+def get_python_path(venv=None):
 
     """
     Lookup the path to the python executable, os agnostic
@@ -373,7 +374,7 @@ def get_python_path():
     :return: path to the python executable
     """
 
-    return get_executable_path('python')
+    return get_executable_path('python', venv=venv)
 
 
 def env_to_file(env_variables, destination_path=None, posix=True):
