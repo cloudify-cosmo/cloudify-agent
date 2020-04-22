@@ -78,8 +78,14 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
 
         original_create_op_context = operations._get_cloudify_context
 
-        def mock_create_op_context(agent, task_name):
-            context = original_create_op_context(agent, task_name)
+        def mock_create_op_context(agent,
+                                   task_name,
+                                   new_agent_connection=None):
+            context = original_create_op_context(
+                agent,
+                task_name,
+                new_agent_connection=new_agent_connection
+            )
             context['__cloudify_context']['local'] = True
             return context
 
