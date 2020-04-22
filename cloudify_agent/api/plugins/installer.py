@@ -40,7 +40,7 @@ from cloudify.exceptions import NonRecoverableError, CommandExecutionException
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import plugins
 from cloudify_agent.api import exceptions
-from cloudify_agent.api.utils import get_pip_path
+from cloudify_agent.api.utils import get_python_path
 from cloudify_rest_client.constants import VisibilityState
 
 try:
@@ -80,12 +80,6 @@ class PluginInstaller(object):
         managed_plugin = get_managed_plugin(plugin)
         source = get_plugin_source(plugin, blueprint_id)
         args = get_plugin_args(plugin)
-        tmp_plugin_dir = tempfile.mkdtemp(prefix='{0}-'.format(plugin['name']))
-        constraint = os.path.join(tmp_plugin_dir, 'constraint.txt')
-        with open(constraint, 'w') as f:
-            f.write(self._pip_freeze())
-        args.extend(['--prefix={0}'.format(tmp_plugin_dir),
-                     '--constraint={0}'.format(constraint)])
         self._create_plugins_dir_if_missing()
 
         (current_platform,
@@ -101,41 +95,41 @@ class PluginInstaller(object):
                                   current_distro,
                                   current_distro_release))
 
-        try:
-            if managed_plugin:
-                self._install_managed_plugin(
-                    deployment_id=deployment_id,
-                    managed_plugin=managed_plugin,
-                    plugin=plugin,
-                    args=args,
-                    tmp_plugin_dir=tmp_plugin_dir)
-            elif source:
-                self._install_source_plugin(
-                    deployment_id=deployment_id,
-                    plugin=plugin,
-                    source=source,
-                    args=args,
-                    tmp_plugin_dir=tmp_plugin_dir,
-                    constraint=constraint)
-            else:
-                raise NonRecoverableError(
-                    'No source or managed plugin found for {0} '
-                    '[current_platform={1},'
-                    ' current_distro={2},'
-                    ' current_distro_release={3}]'
-                    .format(plugin,
-                            current_platform,
-                            current_distro,
-                            current_distro_release))
-        finally:
-            self._rmtree(tmp_plugin_dir)
+        if managed_plugin:
+            self._install_managed_plugin(
+                deployment_id=deployment_id,
+                managed_plugin=managed_plugin,
+                plugin=plugin,
+                args=args)
+        elif source:
+            self._install_source_plugin(
+                deployment_id=deployment_id,
+                plugin=plugin,
+                source=source,
+                args=args)
+        else:
+            raise NonRecoverableError(
+                'No source or managed plugin found for {0} '
+                '[current_platform={1},'
+                ' current_distro={2},'
+                ' current_distro_release={3}]'
+                .format(plugin,
+                        current_platform,
+                        current_distro,
+                        current_distro_release))
+
+    def _make_virtualenv(self, path):
+        self.runner.run([
+            sys.executable, '-m', 'virtualenv',
+            '--no-download',
+            path
+        ])
 
     def _install_managed_plugin(self,
                                 deployment_id,
                                 managed_plugin,
                                 plugin,
-                                args,
-                                tmp_plugin_dir):
+                                args):
         matching_existing_installation = False
         dst_dir = '{0}-{1}'.format(managed_plugin.package_name,
                                    managed_plugin.package_version)
@@ -202,10 +196,9 @@ class PluginInstaller(object):
                 if syncthing_utils:
                     syncthing_utils.wait_for_plugins_sync(
                         sync_dir=syncthing_utils.RESOURCES_DIR)
-                self._wagon_install(plugin=managed_plugin, args=args)
-                self.logger.debug('Moving plugin from tmp dir `{0}` to `{1}`'.
-                                  format(tmp_plugin_dir, dst_dir))
-                shutil.move(tmp_plugin_dir, dst_dir)
+                self._make_virtualenv(dst_dir)
+                self._wagon_install(
+                    plugin=managed_plugin, venv=dst_dir, args=args)
                 with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
                     f.write(managed_plugin.id)
 
@@ -238,7 +231,7 @@ class PluginInstaller(object):
         plugin = client.plugins.get(plugin_id)
         return plugin.archive_name.startswith(INSTALLING_PREFIX)
 
-    def _wagon_install(self, plugin, args):
+    def _wagon_install(self, plugin, venv, args):
         client = get_rest_client()
         wagon_dir = tempfile.mkdtemp(prefix='{0}-'.format(plugin.id))
         wagon_path = os.path.join(wagon_dir, 'wagon.tar.gz')
@@ -253,7 +246,7 @@ class PluginInstaller(object):
                 wagon_path,
                 ignore_platform=True,
                 install_args=args,
-                venv=VIRTUALENV
+                venv=venv
             )
         finally:
             self.logger.debug('Removing directory: {0}'
@@ -264,9 +257,7 @@ class PluginInstaller(object):
                                deployment_id,
                                plugin,
                                source,
-                               args,
-                               tmp_plugin_dir,
-                               constraint):
+                               args):
         dst_dir = '{0}-{1}'.format(deployment_id, plugin['name'])
         dst_dir = self._full_dst_dir(dst_dir)
         if os.path.exists(dst_dir):
@@ -276,19 +267,10 @@ class PluginInstaller(object):
                 'same name was not cleaned properly.'
                 .format(plugin['name'], deployment_id))
         self.logger.info('Installing plugin from source: %s', plugin['name'])
-        self._pip_install(source=source, args=args, constraint=constraint)
-        self.logger.info('Moving the install dir from {0} to {1}'.format(
-            tmp_plugin_dir, dst_dir))
-        shutil.move(tmp_plugin_dir, dst_dir)
+        self._make_virtualenv(dst_dir)
+        self._pip_install(source=source, venv=dst_dir, args=args)
 
-    def _pip_freeze(self):
-        try:
-            return self.runner.run([get_pip_path(), 'freeze', '--all']).std_out
-        except CommandExecutionException as e:
-            raise exceptions.PluginInstallationError(
-                'Failed running pip freeze. ({0})'.format(e))
-
-    def _pip_install(self, source, args, constraint):
+    def _pip_install(self, source, venv, args):
         plugin_dir = None
         try:
             if os.path.isabs(source):
@@ -297,15 +279,12 @@ class PluginInstaller(object):
                 self.logger.debug('Extracting archive: {0}'.format(source))
                 plugin_dir = extract_package_to_dir(source)
             package_name = extract_package_name(plugin_dir)
-            if self._package_installed_in_agent_env(constraint, package_name):
-                self.logger.warn('Skipping source plugin {0} installation, '
-                                 'as the plugin is already installed in the '
-                                 'agent virtualenv.'.format(package_name))
-                return
             self.logger.debug('Installing from directory: {0} '
                               '[args={1}, package_name={2}]'
                               .format(plugin_dir, args, package_name))
-            command = [get_pip_path(), 'install'] + args + [plugin_dir]
+            command = [
+                get_python_path(venv), '-m', 'pip', 'install'
+            ] + args + [plugin_dir]
 
             self.runner.run(command=command, cwd=plugin_dir)
             self.logger.debug('Retrieved package name: {0}'
@@ -320,16 +299,6 @@ class PluginInstaller(object):
                 self.logger.debug('Removing directory: {0}'
                                   .format(plugin_dir))
                 self._rmtree(plugin_dir)
-
-    @staticmethod
-    def _package_installed_in_agent_env(constraint, package_name):
-        package_name = package_name.lower()
-        with open(constraint) as f:
-            constraints = f.read().split(os.linesep)
-        return any(
-            (c.lower().startswith('{0}=='.format(package_name)) or
-             'egg={0}'.format(package_name.replace('-', '_')) in c.lower())
-            for c in constraints)
 
     def uninstall_source(self, plugin, deployment_id=None):
         """Uninstall a previously installed plugin (only supports source
@@ -411,7 +380,7 @@ def extract_package_to_dir(package_url):
         # multi-threaded scenario (i.e snapshot restore).
         # We don't use `curl` because pip can handle different kinds of files,
         # including .git.
-        command = [get_pip_path(), 'download', '-d',
+        command = [get_python_path(), '-m', 'pip', 'download', '-d',
                    archive_dir, '--no-deps', package_url]
         runner.run(command=command)
         archive = _get_archive(archive_dir, package_url)
