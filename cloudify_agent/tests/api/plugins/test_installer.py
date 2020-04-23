@@ -18,7 +18,7 @@ import logging
 import os
 import platform
 import shutil
-import multiprocessing
+import threading
 from contextlib import contextmanager
 
 import wagon
@@ -28,6 +28,7 @@ from testtools import TestCase
 
 from cloudify import dispatch
 from cloudify import exceptions as cloudify_exceptions
+from cloudify.state import ctx, current_ctx
 from cloudify.utils import setup_logger
 from cloudify.utils import LocalCommandRunner
 from cloudify.exceptions import NonRecoverableError
@@ -196,38 +197,29 @@ class PluginInstallerTest(BaseTest, TestCase):
             installer.install(self._plugin_struct())
         self._assert_wagon_plugin_installed()
 
-    # No forking on windows.
-    @only_os('posix')
     def test_install_from_wagon_concurrent(self):
-        fd, output_path = tempfile.mkstemp()
-        os.close(fd)
-        self.addCleanup(lambda: os.remove(output_path))
+        ctx_obj = ctx._get_current_object()
+
+        def installer_func(dep_id='__system__'):
+            with current_ctx.push(ctx_obj):
+                installer.install(self._plugin_struct(), dep_id)
+
+        installers = [threading.Thread(target=installer_func),
+                      threading.Thread(target=installer_func, args=('id',))]
+
         with _patch_for_install_wagon(PACKAGE_NAME, PACKAGE_VERSION,
                                       download_path=self.wagons[PACKAGE_NAME],
-                                      concurrent=True):
-            class TestLoggingHandler(logging.Handler):
-                def emit(self, record):
-                    if 'Using' in record.message:
-                        with open(output_path, 'w') as of:
-                            of.write(record.message)
-            handler = TestLoggingHandler()
-            self.logger.addHandler(handler)
-            try:
-                def installer_func(dep_id='__system__'):
-                    installer.install(self._plugin_struct(), dep_id)
-                installers = [multiprocessing.Process(target=installer_func),
-                              multiprocessing.Process(target=installer_func,
-                                                      args=('id',))]
-                for installer_process in installers:
-                    installer_process.start()
-                for installer_process in installers:
-                    installer_process.join(timeout=100)
-            finally:
-                self.logger.removeHandler(handler)
+                                      concurrent=True), \
+                patch.object(ctx_obj, '_mock_context_logger') as mock_logger:
+            for installer_process in installers:
+                installer_process.start()
+            for installer_process in installers:
+                installer_process.join(timeout=100)
+
         self._assert_wagon_plugin_installed()
-        with open(output_path) as f:
-            self.assertIn('Using existing installation of managed plugin',
-                          f.read())
+        logs = [args[0] for level, args, kwargs in mock_logger.mock_calls]
+        self.assertTrue(
+            any('Using existing installation' in msg for msg in logs))
 
     def _assert_wagon_plugin_installed(self):
         self._assert_task_runnable('mock_plugin.tasks.run',
