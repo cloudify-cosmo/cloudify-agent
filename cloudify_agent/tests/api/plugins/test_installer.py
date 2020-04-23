@@ -327,43 +327,6 @@ class PluginInstallerTest(BaseTest, TestCase):
             'mock-plugin',
             installer.extract_package_name(package_dir))
 
-    def test_install_dependencies_versions_conflict(self):
-        def extract_requests_version():
-            pip_freeze = installer._pip_freeze().split('\n')
-            for package in pip_freeze:
-                if package.startswith('requests=='):
-                    requests_version = package.split('==')[0]
-                    return requests_version
-            raise AssertionError('Expected requests to be installed.')
-        requests_plugin = test_utils.create_mock_plugin(
-            basedir=self.plugins_work_dir,
-            install_requires=['requests==2.6.0'])
-        requests_tar = test_utils.create_plugin_tar(
-            basedir=self.plugins_work_dir,
-            plugin_dir_name=requests_plugin,
-            target_directory=self.file_server_resource_base)
-        requests_wagon = test_utils.create_plugin_wagon(
-            basedir=self.plugins_work_dir,
-            plugin_dir_name=requests_plugin,
-            target_directory=self.file_server_resource_base)
-        before_requests_version = extract_requests_version()
-        plugin_struct = self._plugin_struct(source=requests_tar,
-                                            name=requests_plugin)
-        try:
-            installer.install(plugin_struct)
-            after_requests_version = extract_requests_version()
-        finally:
-            installer.uninstall_source(plugin=plugin_struct)
-        self.assertEqual(before_requests_version, after_requests_version)
-        try:
-            with _patch_for_install_wagon(requests_plugin, '0.1',
-                                          download_path=requests_wagon):
-                installer.install(self._plugin_struct())
-            after_requests_version = extract_requests_version()
-        finally:
-            installer.uninstall_wagon(requests_plugin, '0.1')
-        self.assertEqual(before_requests_version, after_requests_version)
-
 
 class TestGetSourceAndGetArgs(BaseTest, TestCase):
 
