@@ -333,39 +333,6 @@ def get_executable_path(executable, venv=None):
         return '{0}\\Scripts\\{1}'.format(venv, executable)
 
 
-def get_cfy_agent_path(venv=None):
-
-    """
-    Lookup the path to the cfy-agent executable, os agnostic
-
-    :return: path to the cfy-agent executable
-    """
-
-    return get_executable_path('cfy-agent', venv=venv)
-
-
-def get_pip_path(venv=None):
-
-    """
-    Lookup the path to the pip executable, os agnostic
-
-    :return: path to the pip executable
-    """
-
-    return get_executable_path('pip', venv=venv)
-
-
-def get_celery_path(venv=None):
-
-    """
-    Lookup the path to the celery executable, os agnostic
-
-    :return: path to the celery executable
-    """
-
-    return get_executable_path('celery', venv=venv)
-
-
 def get_python_path(venv=None):
 
     """

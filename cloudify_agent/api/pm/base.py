@@ -645,45 +645,6 @@ class Daemon(object):
             )
         self._runtime_properties = matched[0].runtime_propreties
 
-    def _list_plugin_files(self, plugin_name):
-
-        """
-        Retrieves python files related to the plugin.
-        __init__ file are filtered out.
-
-        :param plugin_name: The plugin name.
-
-        :return: A list of file paths.
-        :rtype: list of str
-        """
-
-        module_paths = []
-        runner = LocalCommandRunner(self._logger)
-
-        files = runner.run(
-            '{0} show -f {1}'
-            .format(utils.get_pip_path(), plugin_name)
-        ).std_out.splitlines()
-        for module in files:
-            if self._is_valid_module(module):
-                # the file paths are relative to the
-                # package __init__.py file.
-                prefix = '../' if os.name == 'posix' else '..\\'
-                module_paths.append(
-                    module.replace(prefix, '')
-                    .replace(os.sep, '.').replace('.py', '').strip())
-        return module_paths
-
-    @staticmethod
-    def _is_valid_module(module):
-        if not module.endswith('py'):
-            return False
-        if '__init__' in module:
-            return False
-        if '-' in os.path.basename(module):
-            return False
-        return True
-
 
 class GenericLinuxDaemonMixin(Daemon):
     SCRIPT_DIR = None
