@@ -15,6 +15,8 @@
 
 import os
 import sys
+import glob
+import json
 import time
 import errno
 import shutil
@@ -103,6 +105,7 @@ def _make_virtualenv(path):
         '--no-download',
         path
     ])
+    _link_virtualenv(path)
 
 
 def _install_managed_plugin(deployment_id,
@@ -548,3 +551,34 @@ def wait_for_wagon_in_directory(plugin_id, retries=30, interval=1):
                 (any(File.endswith('.wgn') for File in os.listdir(path))):
             return
         time.sleep(interval)
+
+
+def _link_virtualenv(venv):
+    own_site_packages = get_pth_dir()
+    target = get_pth_dir(venv)
+    with open(os.path.join(target, 'agent.pth'), 'w') as agent_link:
+        agent_link.write('# link to the agent virtualenv, created by '
+                         'the plugin installer\n')
+        agent_link.write('{0}\n'.format(own_site_packages))
+
+        for filename in glob.glob(os.path.join(own_site_packages, '*.pth')):
+            pth_path = os.path.join(own_site_packages, filename)
+            with open(pth_path) as pth:
+                agent_link.write('\n# copied from {0}:\n'.format(pth_path))
+                agent_link.write(pth.read())
+                agent_link.write('\n')
+
+
+def get_pth_dir(venv=None):
+    output = runner.run([
+        get_python_path(venv),
+        '-c',
+        'import json, sys; print(json.dumps([sys.prefix, sys.version[:3]]))'
+    ]).std_out
+    prefix, version = json.loads(output)
+    if os.name == 'nt':
+        return '{0}/Lib/site-packages'.format(prefix)
+    elif os.name == 'posix':
+        return '{0}/lib/python{1}/site-packages'.format(prefix, version)
+    else:
+        raise NonRecoverableError('Unsupported OS: {0}'.format(os.name))
