@@ -108,6 +108,7 @@ def _make_virtualenv(path):
     runner.run([
         sys.executable, '-m', 'virtualenv',
         '--no-download',
+        '--no-pip', '--no-wheel', '--no-setuptools',
         path
     ])
     _link_virtualenv(path)
