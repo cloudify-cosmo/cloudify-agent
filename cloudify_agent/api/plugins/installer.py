@@ -31,7 +31,7 @@ import fasteners
 
 from cloudify import ctx
 from cloudify._compat import reraise, urljoin, pathname2url
-from cloudify.utils import extract_archive
+from cloudify.utils import extract_archive, get_python_path
 from cloudify.manager import get_rest_client
 from cloudify.utils import LocalCommandRunner
 from cloudify.constants import MANAGER_PLUGINS_PATH
@@ -41,7 +41,6 @@ from cloudify.exceptions import NonRecoverableError, CommandExecutionException
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import plugins
 from cloudify_agent.api import exceptions
-from cloudify_agent.api.utils import get_python_path
 from cloudify_rest_client.constants import VisibilityState
 
 try:
@@ -366,7 +365,7 @@ def extract_package_to_dir(package_url):
         # multi-threaded scenario (i.e snapshot restore).
         # We don't use `curl` because pip can handle different kinds of files,
         # including .git.
-        command = [get_python_path(), '-m', 'pip', 'download', '-d',
+        command = [get_python_path(VIRTUALENV), '-m', 'pip', 'download', '-d',
                    archive_dir, '--no-deps', package_url]
         runner.run(command=command)
         archive = _get_archive(archive_dir, package_url)
@@ -567,7 +566,7 @@ def _link_virtualenv(venv):
     Also copy .pth files' contents from the current venv, so that the
     target venv also uses editable packages from the source venv.
     """
-    own_site_packages = get_pth_dir()
+    own_site_packages = get_pth_dir(VIRTUALENV)
     target = get_pth_dir(venv)
     with open(os.path.join(target, 'agent.pth'), 'w') as agent_link:
         agent_link.write('# link to the agent virtualenv, created by '

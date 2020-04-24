@@ -38,7 +38,6 @@ from cloudify.constants import (SECURED_PROTOCOL,
 from cloudify.utils import is_agent_alive  # noqa
 
 import cloudify_agent
-from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
 
 logger = setup_logger('cloudify_agent.api.utils')
@@ -316,32 +315,6 @@ def content_to_file(content, file_path=None, executable=False):
         f.write(content)
         f.write(os.linesep)
     return file_path
-
-
-def get_executable_path(executable, venv=None):
-
-    """
-    Lookup the path to the executable, os agnostic
-
-    :param executable: the name of the executable
-    """
-    venv = venv or VIRTUALENV
-
-    if os.name == 'posix':
-        return '{0}/bin/{1}'.format(venv, executable)
-    else:
-        return '{0}\\Scripts\\{1}'.format(venv, executable)
-
-
-def get_python_path(venv=None):
-
-    """
-    Lookup the path to the python executable, os agnostic
-
-    :return: path to the python executable
-    """
-
-    return get_executable_path('python', venv=venv)
 
 
 def env_to_file(env_variables, destination_path=None, posix=True):
