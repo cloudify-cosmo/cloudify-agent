@@ -100,6 +100,12 @@ def install(plugin,
 
 
 def _make_virtualenv(path):
+    """Make a venv and link the current venv to it.
+
+    The new venv will have the current venv linked, ie. it will be
+    able to import libraries from the current venv, but libraries
+    installed directly will have precedence.
+    """
     runner.run([
         sys.executable, '-m', 'virtualenv',
         '--no-download',
@@ -554,6 +560,13 @@ def wait_for_wagon_in_directory(plugin_id, retries=30, interval=1):
 
 
 def _link_virtualenv(venv):
+    """Add current venv's libs to the target venv.
+
+    Add a .pth file with a link to the current venv, to the target
+    venv's site-packages.
+    Also copy .pth files' contents from the current venv, so that the
+    target venv also uses editable packages from the source venv.
+    """
     own_site_packages = get_pth_dir()
     target = get_pth_dir(venv)
     with open(os.path.join(target, 'agent.pth'), 'w') as agent_link:
@@ -570,6 +583,13 @@ def _link_virtualenv(venv):
 
 
 def get_pth_dir(venv=None):
+    """Get the directory suitable for .pth files in this venv.
+
+    This will return the site-packages directory, which is one of the
+    targets that is scanned for .pth files.
+    This is mostly a reimplementation of sysconfig.get_path('purelib'),
+    but sysconfig is not available in 2.6.
+    """
     output = runner.run([
         get_python_path(venv),
         '-c',
