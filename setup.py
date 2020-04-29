@@ -22,7 +22,7 @@ install_requires = [
     'jinja2==2.10',
     'fasteners==0.13.0',
     'virtualenv==15.1.0',
-    'wagon==0.6.3',
+    'wagon>=0.9.1',
     'pika==0.11.2',
     'pip==9.0.1',
 ]
