@@ -38,7 +38,6 @@ from cloudify.constants import (SECURED_PROTOCOL,
 from cloudify.utils import is_agent_alive  # noqa
 
 import cloudify_agent
-from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import defaults
 
 logger = setup_logger('cloudify_agent.api.utils')
@@ -316,64 +315,6 @@ def content_to_file(content, file_path=None, executable=False):
         f.write(content)
         f.write(os.linesep)
     return file_path
-
-
-def get_executable_path(executable):
-
-    """
-    Lookup the path to the executable, os agnostic
-
-    :param executable: the name of the executable
-    """
-
-    if os.name == 'posix':
-        return '{0}/bin/{1}'.format(VIRTUALENV, executable)
-    else:
-        return '{0}\\Scripts\\{1}'.format(VIRTUALENV, executable)
-
-
-def get_cfy_agent_path():
-
-    """
-    Lookup the path to the cfy-agent executable, os agnostic
-
-    :return: path to the cfy-agent executable
-    """
-
-    return get_executable_path('cfy-agent')
-
-
-def get_pip_path():
-
-    """
-    Lookup the path to the pip executable, os agnostic
-
-    :return: path to the pip executable
-    """
-
-    return get_executable_path('pip')
-
-
-def get_celery_path():
-
-    """
-    Lookup the path to the celery executable, os agnostic
-
-    :return: path to the celery executable
-    """
-
-    return get_executable_path('celery')
-
-
-def get_python_path():
-
-    """
-    Lookup the path to the python executable, os agnostic
-
-    :return: path to the python executable
-    """
-
-    return get_executable_path('python')
 
 
 def env_to_file(env_variables, destination_path=None, posix=True):

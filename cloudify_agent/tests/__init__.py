@@ -103,7 +103,8 @@ class BaseTest(object):
 
     def mock_ctx_with_tenant(self):
         self.original_ctx = current_ctx
-        current_ctx.set(mocks.MockContext({'tenant_name': 'default_tenant'}))
+        current_ctx.set(
+            mocks.MockCloudifyContext(tenant={'name': 'default_tenant'}))
         self.addCleanup(self._restore_ctx)
 
     def _restore_ctx(self):
