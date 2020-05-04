@@ -1,0 +1,181 @@
+pipeline {
+    agent none
+
+    parameters {
+        string(name: 'VERSION', defaultValue: '', description: 'Cloudify version label, to be used in the filenames (eg. "5.1.0")')
+        string(name: 'PRERELEASE', defaultValue: '', description: 'A prerelase/milestone label, to be used in the filenames (eg. ".dev1")')
+        string(name: 'BRANCH', defaultValue: 'master', description: 'Branch name for cloudify-agent')
+    }
+    environment {
+        VERSION = "${params.VERSION}"
+        PRERELEASE = "${params.PRERELEASE}"
+    }
+
+    stages {
+        stage('Download RHEL base images'){
+            steps {
+                build job: 'fetch_rhel_images'
+            }
+        }
+        stage('Build agents'){
+            parallel {
+                // those stages are all the same, they only differ by
+                // the stage name and the dockerfile dir
+                // if you  are able to abstract it out to a function or a loop,
+                // go ahead. I wasn't able to.
+                stage('rhel 6') {
+                    agent {
+                        dockerfile {
+                            dir 'packaging/docker-files/rhel_6'
+                            filename 'Dockerfile'
+                        }
+                    }
+                    steps {
+                        sh '/opt/packager/bin/cfy-ap -v -c packaging/local.ini'
+                    }
+                    post {
+                        success {
+                            archiveArtifacts artifacts: '*.tar.gz', fingerprint: true
+                        }
+                        cleanup {
+                            cleanWs()
+                        }
+                    }
+                }
+                stage('rhel 7') {
+                    agent {
+                        dockerfile {
+                            dir 'packaging/docker-files/rhel_7'
+                            filename 'Dockerfile'
+                        }
+                    }
+                    steps {
+                        sh '/opt/packager/bin/cfy-ap -v -c packaging/local.ini'
+                    }
+                    post {
+                        success {
+                            archiveArtifacts artifacts: '*.tar.gz', fingerprint: true
+                        }
+                        cleanup {
+                            cleanWs()
+                        }
+                    }
+                }
+                stage('centos 6') {
+                    agent {
+                        dockerfile {
+                            dir 'packaging/docker-files/centos_6'
+                            filename 'Dockerfile'
+                        }
+                    }
+                    steps {
+                        sh '/opt/packager/bin/cfy-ap -v -c packaging/local.ini'
+                    }
+                    post {
+                        success {
+                            archiveArtifacts artifacts: '*.tar.gz', fingerprint: true
+                        }
+                        cleanup {
+                            cleanWs()
+                        }
+                    }
+                }
+                stage('centos 7') {
+                    agent {
+                        dockerfile {
+                            dir 'packaging/docker-files/centos_7'
+                            filename 'Dockerfile'
+                        }
+                    }
+                    steps {
+                        sh '/opt/packager/bin/cfy-ap -v -c packaging/local.ini'
+                    }
+                    post {
+                        success {
+                            archiveArtifacts artifacts: '*.tar.gz', fingerprint: true
+                        }
+                        cleanup {
+                            cleanWs()
+                        }
+                    }
+                }
+                stage('ubuntu 14.04') {
+                    agent {
+                        dockerfile {
+                            dir 'packaging/docker-files/ubuntu_14_04'
+                            filename 'Dockerfile'
+                        }
+                    }
+                    steps {
+                        sh '/opt/packager/bin/cfy-ap -v -c packaging/local.ini'
+                    }
+                    post {
+                        success {
+                            archiveArtifacts artifacts: '*.tar.gz', fingerprint: true
+                        }
+                        cleanup {
+                            cleanWs()
+                        }
+                    }
+                }
+                stage('ubuntu 16.04') {
+                    agent {
+                        dockerfile {
+                            dir 'packaging/docker-files/ubuntu_16_04'
+                            filename 'Dockerfile'
+                        }
+                    }
+                    steps {
+                        sh '/opt/packager/bin/cfy-ap -v -c packaging/local.ini'
+                    }
+                    post {
+                        success {
+                            archiveArtifacts artifacts: '*.tar.gz', fingerprint: true
+                        }
+                        cleanup {
+                            cleanWs()
+                        }
+                    }
+                }
+                stage('ubuntu 18.04') {
+                    agent {
+                        dockerfile {
+                            dir 'packaging/docker-files/ubuntu_18_04'
+                            filename 'Dockerfile'
+                        }
+                    }
+                    steps {
+                        sh '/opt/packager/bin/cfy-ap -v -c packaging/local.ini'
+                    }
+                    post {
+                        success {
+                            archiveArtifacts artifacts: '*.tar.gz', fingerprint: true
+                        }
+                        cleanup {
+                            cleanWs()
+                        }
+                    }
+                }
+                stage('ubuntu 20.04') {
+                    agent {
+                        dockerfile {
+                            dir 'packaging/docker-files/ubuntu_20_04'
+                            filename 'Dockerfile'
+                        }
+                    }
+                    steps {
+                        sh '/opt/packager/bin/cfy-ap -v -c packaging/local.ini'
+                    }
+                    post {
+                        success {
+                            archiveArtifacts artifacts: '*.tar.gz', fingerprint: true
+                        }
+                        cleanup {
+                            cleanWs()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

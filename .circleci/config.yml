@@ -74,7 +74,7 @@ jobs:
       - run: python get-pip.py
       - run: yum install -y python-devel git gcc gcc-c++
       - run: pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip
-      - run: cfy-ap -c packaging/local.yaml -f -v
+      - run: cfy-ap -c packaging/local.ini -f -v
       - persist_to_workspace:
           root: ~/project
           paths:
