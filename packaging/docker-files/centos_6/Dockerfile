@@ -2,8 +2,7 @@ FROM centos:6
 RUN  yum -y install  \
     python \
     gcc \
-    epel-release \
-    git
+    epel-release
 RUN yum -y install \
     python-virtualenv
 RUN virtualenv /opt/packager && \
