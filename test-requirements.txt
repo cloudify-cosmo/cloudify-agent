@@ -1,4 +1,4 @@
-https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip#egg=cloudify-cosmo[dispatcher]
+https://github.com/cloudify-cosmo/cloudify-common/archive/bump-flask-on-rest-service.zip#egg=cloudify-cosmo[dispatcher]
 testtools==2.3.0
 mock==1.0.1
 unittest2
@@ -10,6 +10,6 @@ xmltodict==0.11.0
 idna==2.7
 
 # for creating the agent package in tests
-https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip
+https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/bump-flask-on-rest-service.zip
 pytest
 pytest-cov

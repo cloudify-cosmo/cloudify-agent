@@ -1,2 +1,2 @@
 requests==2.17.0
-https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip
+https://github.com/cloudify-cosmo/cloudify-common/archive/bump-flask-on-rest-service.zip
