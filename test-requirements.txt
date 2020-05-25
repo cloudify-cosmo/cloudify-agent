@@ -10,6 +10,6 @@ xmltodict==0.11.0
 idna==2.7
 
 # for creating the agent package in tests
-https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/bump-flask-on-rest-service.zip
+https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip
 pytest
 pytest-cov
