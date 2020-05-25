@@ -19,7 +19,7 @@ install_requires = [
     'cloudify-common==5.1.0.dev1',
     'appdirs==1.4.3',
     'click>7,<8',
-    'jinja2==2.11.2',
+    'jinja2==2.10.1',
     'fasteners==0.13.0',
     'virtualenv==15.1.0',
     'wagon>=0.9.1',
