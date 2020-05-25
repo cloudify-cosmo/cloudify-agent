@@ -1,4 +1,4 @@
-https://github.com/cloudify-cosmo/cloudify-common/archive/bump-flask-on-rest-service.zip#egg=cloudify-cosmo[dispatcher]
+https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip#egg=cloudify-cosmo[dispatcher]
 testtools==2.3.0
 mock==1.0.1
 unittest2
