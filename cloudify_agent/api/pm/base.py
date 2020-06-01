@@ -499,7 +499,7 @@ class Daemon(object):
             status = self.status()
             if not status:
                 self._logger.debug('Daemon {0} has shutdown'
-                                   .format(self.name, interval))
+                                   .format(self.name))
                 return
             self._logger.debug('Daemon {0} is still running. '
                                'Sleeping for {1} seconds...'

@@ -400,8 +400,8 @@ def _get_plugin_path(plugin_dir_parent, package_url):
     return os.path.join(plugin_dir_parent, plugin_dir_name)
 
 
-def _assert_list_len(l, expected_len, package_url, archive_dir):
-    if len(l) != expected_len:
+def _assert_list_len(lst, expected_len, package_url, archive_dir):
+    if len(lst) != expected_len:
         _remove_tempdir_and_raise_proper_exception(package_url, archive_dir)
 
 
