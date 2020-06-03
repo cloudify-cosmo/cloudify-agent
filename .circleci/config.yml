@@ -146,7 +146,7 @@ jobs:
       - run: pip install virtualenv==15.1.0 --user
       - run: ~/.local/bin/virtualenv -p ~/.pyenv/versions/2.6.9/bin/python ~/venv
       - install_test_dependencies:
-          cache_prefix: py26
+          cache_prefix: py269
       - pytest
 
   py27:
