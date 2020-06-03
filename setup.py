@@ -13,12 +13,12 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import sys
 from setuptools import setup
 
 install_requires = [
     'cloudify-common==5.1.0.dev1',
     'appdirs==1.4.3',
-    'click>7,<8',
     'jinja2>=2.10,<2.11',
     'fasteners==0.13.0',
     'virtualenv==15.1.0',
@@ -26,6 +26,15 @@ install_requires = [
     'pika==0.11.2',
     'pip==9.0.1',
 ]
+
+if sys.version_info[:2] == (2, 6):
+    install_requires += [
+        'click==6.7'
+    ]
+else:
+    install_requires += [
+        'click>7,<8'
+    ]
 
 setup(
     name='cloudify-agent',
