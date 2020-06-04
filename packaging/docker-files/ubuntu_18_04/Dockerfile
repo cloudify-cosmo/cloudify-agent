@@ -4,4 +4,4 @@ RUN  apt-get -y update && apt-get install -y \
      python-pip \
      python-virtualenv
 RUN virtualenv /opt/packager && \
-    /opt/packager/bin/pip install cloudify-agent-packager==5.0.4
+    /opt/packager/bin/pip install cloudify-agent-packager==5.0.6
