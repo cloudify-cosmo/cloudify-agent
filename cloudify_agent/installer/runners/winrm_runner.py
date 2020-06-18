@@ -151,15 +151,15 @@ class WinRMRunner(object):
             if res.status_code == 0:
                 return WinRMCommandExecutionResponse(
                     command=command,
-                    std_err=res.std_err,
-                    std_out=res.std_out,
+                    std_err=res.std_err.decode('utf-8'),
+                    std_out=res.std_out.decode('utf-8'),
                     return_code=res.status_code)
             else:
                 error = WinRMCommandExecutionException(
                     command=command,
-                    code=res.status_code,
-                    error=res.std_err,
-                    output=res.std_out)
+                    error=res.std_err.decode('utf-8'),
+                    output=res.std_out.decode('utf-8'),
+                    code=res.status_code)
                 if raise_on_failure:
                     raise error
                 self.logger.error("WinRM command ended with an error",
