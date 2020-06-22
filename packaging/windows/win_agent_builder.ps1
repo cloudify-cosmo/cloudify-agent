@@ -1,51 +1,20 @@
-param($VERSION,$PRERELEASE,$DEV_BRANCH)
+param(
+    $VERSION,
+    $PRERELEASE,
+    $DEV_BRANCH = "master"
+)
+Set-StrictMode -Version 1.0
+$ErrorActionPreference="stop"
+# Use TLSv1.2 for Invoke-Restmethod
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-function resolve_current_build_branch_urls() {
-    echo "### Resolve current build branch urls ###"
-    $env:AWS_S3_PATH = "s3://cloudify-release-eu/cloudify/$VERSION/$PRERELEASE-build"
-    $env:current_branch = "master"
+$AGENT_PATH = "C:\Program Files\Cloudify Agent"
+$GET_PIP_URL = "http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/get-pip-20.py"
+$PIP_VERSION = "9.0.1"
+$PY_URL = "http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/python-3.8.3-embed-amd64.zip"
+$REPO_URL = "https://github.com/cloudify-cosmo/cloudify-agent/archive/$DEV_BRANCH.zip"
+$INNO_SETUP_URL = "http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/inno_setup_6.exe"
 
-    if ("$DEV_BRANCH" -ne "" -And $DEV_BRANCH -ne "master") {
-        $branch_exists = $( git rev-parse --verify --quiet $DEV_BRANCH )
-        if ($branch_exists -ne "") {
-            $env:current_branch = $DEV_BRANCH
-            $env:AWS_S3_PATH = "$env:AWS_S3_PATH/$env:current_branch"
-        }
-    }
-
-    # Required urls
-    $env:DEV_REQUIREMENTS_URL = "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/$env:current_branch/dev-requirements.txt"
-    $env:REPO_ZIP_URL = "https://github.com/cloudify-cosmo/cloudify-agent/archive/$env:current_branch.zip"
-
-    echo "Chosen branch to build from $env:current_branch."
-}
-
-
-function preparation () {
-    echo "### Preparation ###"
-    pip install wheel
-
-    echo "dev requirement url of the agent $env:DEV_REQUIREMENTS_URL"
-    echo "Path to ziped repo of the agent $env:REPO_ZIP_URL"
-    pip wheel --wheel-dir packaging/source/wheels --requirement $env:DEV_REQUIREMENTS_URL
-    pip wheel --find-links packaging/source/wheels --wheel-dir packaging/source/wheels $env:REPO_ZIP_URL
-
-    pushd packaging\source
-        New-Item -ItemType directory "pip","python","virtualenv"
-        Invoke-RestMethod -Uri http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/get-pip.py -OutFile pip\get-pip.py
-        Invoke-RestMethod -Uri http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/pip-6.1.1-py2.py3-none-any.whl -OutFile pip\pip-6.1.1-py2.py3-none-any.whl
-        Invoke-RestMethod -Uri http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/setuptools-15.2-py2.py3-none-any.whl -OutFile pip\setuptools-15.2-py2.py3-none-any.whl
-        Invoke-RestMethod -Uri http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/python.msi -OutFile python\python.msi
-        Invoke-RestMethod -Uri http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/virtualenv-15.1.0-py2.py3-none-any.whl -OutFile virtualenv\virtualenv-15.1.0-py2.py3-none-any.whl
-    popd
-}
-
-function build_win_agent ($VERSION,$PRERELEASE) {
-    echo "### Build windows agent ###"
-    $env:VERSION = $VERSION
-    $env:PRERELEASE = $PRERELEASE
-    & "C:\Program Files (x86)\Inno Setup 5\ISCC.exe" packaging/create_install_wizard.iss
-}
 
 function s3_uploader ($s3_path) {
     echo "### Upload to S3 ###"
@@ -59,17 +28,87 @@ function s3_uploader ($s3_path) {
 }
 
 
+function run {
+    # Use this to get set -e alike behaviour, rather than running commands directly
+    & $args[0] $args[1..($args.Length)]
+    if ($LastExitCode -ne 0) {
+        Write-Error "Error running @args"
+    }
+}
+
+
+function rm_rf {
+    # Because if you use "-ErrorAction Ignore" then you ignore all errors, not just
+    # missing targets
+    if (Test-Path $args[0]) {
+        Remove-Item -Recurse -Force -Path $args[0]
+    }
+}
+
 ### Main ###
 
-# resolving git branch releated settings
-git clone https://github.com/cloudify-cosmo/cloudify-agent.git
-cd cloudify-agent\
-resolve_current_build_branch_urls
-git checkout $env:current_branch
+Write-Host "Deleting existing artifacts"
+rm_rf cloudify-agent.zip
+rm_rf cloudify-agent
+rm_rf python.zip
+rm_rf get-pip.py
+rm_rf "C:\Program Files\Cloudify Agent"
+rm_rf inno_setup.exe
 
-cd packaging\windows
-preparation
-build_win_agent $VERSION $PRERELEASE
+Write-Host "Checking whether Inno Setup needs installing..."
+if (-Not (Test-Path "C:\Program Files (x86)\Inno Setup 6")) {
+    Write-Host "Inno Setup not installed, downloading from $INNO_SETUP_URL"
+    Invoke-RestMethod -Uri $INNO_SETUP_URL -OutFile inno_setup.exe
+    Write-Host "Installing Inno Setup"
+    # Cannot be invoked by run as it doesn't set LastExitCode
+    & .\inno_setup.exe /VERYSILENT /SUPPRESSMSGBOXES
+} else {
+    Write-Host "Inno Setup is already installed."
+}
 
-echo "S3 url: $env:AWS_S3_PATH"
-s3_uploader $env:AWS_S3_PATH
+Write-Host "Getting agent repository from $REPO_URL"
+Invoke-RestMethod -Uri $REPO_URL -OutFile cloudify-agent.zip
+Expand-Archive -Path cloudify-agent.zip
+pushd cloudify-agent
+    cd cloudify-agent-$DEV_BRANCH
+        move * ..
+    cd ..
+    rm_rf cloudify-agent-$DEV_BRANCH
+popd
+
+Write-Host "Getting embeddable python from $PY_URL"
+Invoke-RestMethod -Uri $PY_URL -OutFile python.zip
+
+Write-Host "Getting get-pip from $GET_PIP_URL"
+Invoke-RestMethod -Uri $GET_PIP_URL -OutFile get-pip.py
+
+Write-Host "Preparing agent path"
+mkdir $AGENT_PATH
+Expand-Archive -Path python.zip -DestinationPath $AGENT_PATH
+
+Write-Host "Adding pip to embedded python"
+Set-Content -Path "c:\program files\cloudify agent\python38._pth" -Value "python38.zip
+. 
+.\Lib\site-packages
+
+# Uncomment to run site.main() automatically
+import site"
+run $AGENT_PATH\python.exe get-pip.py pip==$PIP_VERSION
+
+Write-Host "Installing agent"
+pushd cloudify-agent
+    run $AGENT_PATH\scripts\pip.exe install --prefix="C:\Program Files\Cloudify Agent" -r dev-requirements.txt
+    run $AGENT_PATH\scripts\pip.exe install --prefix="C:\Program Files\Cloudify Agent" .
+popd
+
+Write-Host "Building agent package"
+$env:VERSION = $VERSION
+$env:PRERELEASE = $PRERELEASE
+run "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" cloudify-agent\packaging\windows\packaging\create_install_wizard.iss
+
+if (Test-Path env:AWS_S3_PATH) {
+    Write-Host "Uploading to S3 url: $env:AWS_S3_PATH"
+    s3_uploader $env:AWS_S3_PATH
+} else {
+    Write-Host 'Skipping S3 upload as $env:AWS_S3_PATH is not set.'
+}
