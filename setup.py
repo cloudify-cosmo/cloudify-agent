@@ -25,6 +25,7 @@ install_requires = [
     'wagon>=0.9.1',
     'pika==0.11.2',
     'pip==9.0.1',
+    'requests>=2.7.0,<3.0.0',
 ]
 
 if sys.version_info[:2] == (2, 6):
