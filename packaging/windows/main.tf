@@ -28,6 +28,10 @@ resource "aws_instance" "builder" {
     Name = "Windows Agent Builder"
   }
 
+  timeouts {
+    create = "15m"  # Win2016 can take its time starting
+  }
+
   provisioner "file" {
     source      = "win_agent_builder.ps1"
     destination = "C:\\Users\\Administrator\\win_agent_builder.ps1"
