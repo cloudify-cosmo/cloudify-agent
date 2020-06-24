@@ -13,12 +13,7 @@ data "aws_ami" "windows_agent_builder" {
 
   filter {
     name   = "name"
-    values = ["win_agent_builder-ami*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
+    values = ["Windows_Server-2016-English-Full-Base-*"]
   }
 
   owners = ["263721492972"] # Cloudify - ec2automation
