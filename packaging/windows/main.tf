@@ -16,7 +16,7 @@ data "aws_ami" "windows_agent_builder" {
     values = ["Windows_Server-2016-English-Full-Base-*"]
   }
 
-  owners = ["263721492972"] # Cloudify - ec2automation
+  owners = ["801119661308"] # This is the amazon owner ID for a bunch of their marketplace images
 }
 
 resource "aws_instance" "builder" {
