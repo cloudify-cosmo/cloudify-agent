@@ -89,7 +89,7 @@ setup(
     },
     extras_require={
         'kerberos': [
-            'pywinrm[Kerberos]==0.3.0',
+            'pywinrm[Kerberos]==0.4.1',
             'python-gssapi==0.6.4'
         ],
         'celery': [
