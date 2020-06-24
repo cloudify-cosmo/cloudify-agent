@@ -2,7 +2,7 @@ https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip#egg=cloudif
 testtools==2.3.0
 mock==1.0.1
 unittest2
-pywinrm==0.3.0
+pywinrm==0.4.1
 cryptography==2.1.4
 
 #for python 2.6 support
