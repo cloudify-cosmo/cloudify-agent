@@ -28,9 +28,7 @@ resource "aws_instance" "builder" {
     Name = "Windows Agent Builder"
   }
 
-  timeouts {
-    create = "15m"  # Win2016 can take its time starting
-  }
+  user_data = "&netsh advfirewall firewall add rule name=\"WinRM 5986\" protocol=TCP dir=in localport=5986 action=allow"
 
   provisioner "file" {
     source      = "win_agent_builder.ps1"
