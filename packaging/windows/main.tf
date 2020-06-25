@@ -28,7 +28,7 @@ resource "aws_instance" "builder" {
     Name = "Windows Agent Builder"
   }
 
-  user_data = "&netsh advfirewall firewall add rule name=\"WinRM 5986\" protocol=TCP dir=in localport=5986 action=allow"
+  user_data = "#ps1_sysnative\n$PSDefaultParameterValues['*:Encoding'] = 'utf8'\nwinrm quickconfig -q\nwinrm set winrm/config '@{{MaxTimeoutms=\"1800000\"}}'\nwinrm set winrm/config/winrs '@{{MaxMemoryPerShellMB=\"300\"}}'\nwinrm set winrm/config/service '@{{AllowUnencrypted=\"true\"}}'\nwinrm set winrm/config/service/auth '@{{Basic=\"true\"}}\n&netsh advfirewall firewall add rule name=\"WinRM 5986\" protocol=TCP dir=in localport=5986 action=allow"
 
   provisioner "file" {
     source      = "win_agent_builder.ps1"
