@@ -28,7 +28,7 @@ resource "aws_instance" "builder" {
     Name = "Windows Agent Builder"
   }
 
-  user_data = << EOF
+  user_data = <<-EOT
     <powershell>
     $thumbprint = (New-SelfSignedCertificate -DnsName "winagentbuild" -CertStoreLocation Cert:\LocalMachine\My).ThumbPrint
     cmd.exe /c winrm quickconfig -q
@@ -44,12 +44,12 @@ resource "aws_instance" "builder" {
     netsh advfirewall firewall add rule name="WinRM 5986" protocol=TCP dir=in localport=5986 action=allow
     netsh advfirewall firewall add rule name="RDP for troubleshooting" protocol=TCP dir=in localport=3389 action=allow
     $user = [ADSI]"WinNT://localhost/Administrator"
-    $user.SetPassword("Cloudify123")
+    $user.SetPassword("${var.password}")
     $user.SetInfo()
     # Allow older winrdp clients to connect (because remmina's clipboard sync is being unreliable)
     (Get-WmiObject -class Win32_TSGeneralSetting -Namespace root\cimv2\terminalservices -ComputerName $env:ComputerName -Filter "TerminalName='RDP-tcp'").SetUserAuthenticationRequired(0)
     </powershell>
-  EOF
+  EOT
 
   provisioner "file" {
     source      = "win_agent_builder.ps1"
