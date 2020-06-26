@@ -28,8 +28,28 @@ resource "aws_instance" "builder" {
     Name = "Windows Agent Builder"
   }
 
-  user_data = "<script>\nwinrm quickconfig -q\nwinrm set winrm/config '@{MaxTimeoutms=\"1800000\"}'\nwinrm set winrm/config/winrs '@{MaxMemoryPerShellMB=\"300\"}'\nwinrm set winrm/config/service '@{AllowUnencrypted=\"true\"}'\nwinrm set winrm/config/service/auth '@{Basic=\"true\"}\n</script>\n<powershell>\nnetsh advfirewall firewall add rule name=\"WinRM 5985\" protocol=TCP dir=in localport=5985 action=allow\nnetsh advfirewall firewall add rule name=\"WinRM 5986\" protocol=TCP dir=in localport=5986 action=allow\nnetsh advfirewall firewall add rule name=\"RDP for troubleshooting\" protocol=TCP dir=in localport=3389 action=allow\n$PSDefaultParameterValues['*:Encoding'] = 'utf8'\n$user = [ADSI]\"WinNT://localhost/Administrator\"\n$user.SetPassword(\"${var.password}\")\n$user.SetInfo()\n</powershell>"
-
+  user_data = << EOF
+    <powershell>
+    $thumbprint = (New-SelfSignedCertificate -DnsName "winagentbuild" -CertStoreLocation Cert:\LocalMachine\My).ThumbPrint
+    cmd.exe /c winrm quickconfig -q
+    cmd.exe /c winrm set winrm/config '@{MaxTimeoutms="1800000"}'
+    cmd.exe /c winrm set winrm/config/winrs '@{MaxMemoryPerShellMB="300"}'
+    cmd.exe /c winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+    cmd.exe /c winrm set winrm/config/service/auth '@{Basic="true"}'
+    cmd.exe /c winrm create "winrm/config/listener?Address=*+Transport=HTTPS" "@{Port=`"5986`"; Hostname=`"winagentbuild`"; CertificateThumbprint=`"$($Thumbprint)`"}"
+    cmd.exe /c net stop winrm
+    cmd.exe /c sc config winrm start= auto
+    cmd.exe /c net start winrm
+    netsh advfirewall firewall add rule name="WinRM 5985" protocol=TCP dir=in localport=5985 action=allow
+    netsh advfirewall firewall add rule name="WinRM 5986" protocol=TCP dir=in localport=5986 action=allow
+    netsh advfirewall firewall add rule name="RDP for troubleshooting" protocol=TCP dir=in localport=3389 action=allow
+    $user = [ADSI]"WinNT://localhost/Administrator"
+    $user.SetPassword("Cloudify123")
+    $user.SetInfo()
+    # Allow older winrdp clients to connect (because remmina's clipboard sync is being unreliable)
+    (Get-WmiObject -class Win32_TSGeneralSetting -Namespace root\cimv2\terminalservices -ComputerName $env:ComputerName -Filter "TerminalName='RDP-tcp'").SetUserAuthenticationRequired(0)
+    </powershell>
+  EOF
 
   provisioner "file" {
     source      = "win_agent_builder.ps1"
