@@ -28,7 +28,8 @@ resource "aws_instance" "builder" {
     Name = "Windows Agent Builder"
   }
 
-  user_data = "<script>\nwinrm quickconfig -q\nwinrm set winrm/config '@{MaxTimeoutms=\"1800000\"}'\nwinrm set winrm/config/winrs '@{MaxMemoryPerShellMB=\"300\"}'\nwinrm set winrm/config/service '@{AllowUnencrypted=\"true\"}'\nwinrm set winrm/config/service/auth '@{Basic=\"true\"}\nnetsh advfirewall firewall add rule name=\"WinRM 5985\" protocol=TCP dir=in localport=5985 action=allow\nnetsh advfirewall firewall add rule name=\"WinRM 5986\" protocol=TCP dir=in localport=5986 action=allow\nnetsh advfirewall firewall add rule name=\"RDP for troubleshooting\" protocol=TCP dir=in localport=3389 action=allow\n</script>\n<powershell>\n$PSDefaultParameterValues['*:Encoding'] = 'utf8'\n$user = [ADSI]\"WinNT://localhost/Administrator\"\n$user.SetPassword(\"${var.password}\")\n$user.SetInfo()\n</powershell>"
+  user_data = "<script>\nwinrm quickconfig -q\nwinrm set winrm/config '@{MaxTimeoutms=\"1800000\"}'\nwinrm set winrm/config/winrs '@{MaxMemoryPerShellMB=\"300\"}'\nwinrm set winrm/config/service '@{AllowUnencrypted=\"true\"}'\nwinrm set winrm/config/service/auth '@{Basic=\"true\"}\n</script>\n<powershell>\nnetsh advfirewall firewall add rule name=\"WinRM 5985\" protocol=TCP dir=in localport=5985 action=allow\nnetsh advfirewall firewall add rule name=\"WinRM 5986\" protocol=TCP dir=in localport=5986 action=allow\nnetsh advfirewall firewall add rule name=\"RDP for troubleshooting\" protocol=TCP dir=in localport=3389 action=allow\n$PSDefaultParameterValues['*:Encoding'] = 'utf8'\n$user = [ADSI]\"WinNT://localhost/Administrator\"\n$user.SetPassword(\"${var.password}\")\n$user.SetInfo()\n</powershell>"
+
 
   provisioner "file" {
     source      = "win_agent_builder.ps1"
