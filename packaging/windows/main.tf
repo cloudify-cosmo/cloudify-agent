@@ -75,4 +75,8 @@ resource "aws_instance" "builder" {
       password = "${var.password}"
     }
   }
+
+  provisioner "local-exec" {
+    command = "curl -O http://${self.public_ip}:6945/cloudify-windows-agent_${var.VERSION}-${var.PRERELEASE}.exe"
+  }
 }

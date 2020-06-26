@@ -108,9 +108,6 @@ $env:VERSION = $VERSION
 $env:PRERELEASE = $PRERELEASE
 run "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" cloudify-agent\packaging\windows\packaging\create_install_wizard.iss
 
-if (Test-Path env:AWS_S3_PATH) {
-    Write-Host "Uploading to S3 url: $env:AWS_S3_PATH"
-    s3_uploader $env:AWS_S3_PATH
-} else {
-    Write-Host 'Skipping S3 upload as $env:AWS_S3_PATH is not set.'
-}
+Write-Host "Making built package available for download"
+run netsh advfirewall firewall add rule name="Agent download" protocol=TCP dir=in localport=6945 action=allow
+Start-Job { cd C:\Users\Administrator\cloudify-agent\packaging\windows\packaging\output\; python -m SimpleHTTPServer 6945 }
