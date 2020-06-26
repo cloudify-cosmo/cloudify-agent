@@ -47,6 +47,8 @@ function rm_rf {
 
 ### Main ###
 
+dir env:
+
 Write-Host "Deleting existing artifacts"
 rm_rf cloudify-agent.zip
 rm_rf cloudify-agent
