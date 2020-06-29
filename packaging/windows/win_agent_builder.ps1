@@ -106,9 +106,16 @@ $env:VERSION = $VERSION
 $env:PRERELEASE = $PRERELEASE
 run "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" cloudify-agent\packaging\windows\packaging\create_install_wizard.iss
 
-if (Test-Path env:AWS_S3_PATH) {
-    Write-Host "Uploading to S3 url: $env:AWS_S3_PATH"
-    s3_uploader $env:AWS_S3_PATH
-} else {
-    Write-Host 'Skipping S3 upload as $env:AWS_S3_PATH is not set.'
-}
+Write-Host "Preparing AWS CLI"
+run "C:\Program Files\Cloudify Agent\Scripts\pip.exe" install --prefix="C:\Program Files\Cloudify Agent" awscli
+Set-Content -Path "c:\program files\cloudify agent\scripts\aws.py" -Value "import awscli.clidriver
+import sys
+sys.exit(awscli.clidriver.main())"
+
+Write-Host "Uploading agent to S3"
+pushd cloudify-agent\packaging\windows\packaging\output
+  $artifact = "cloudify-windows-agent_$env:VERSION-$env:PRERELEASE.exe"
+  $artifact_md5 = $(Get-FileHash -Path $artifact -Algorithm MD5).Hash
+  $s3_path = "s3://cloudify-release-eu/cloudify/$env:VERSION/$env:PRERELEASE-build"
+  run "C:\Program Files\Cloudify Agent\python.exe" "C:\Program Files\Cloudify Agent\Scripts\aws.py" s3 cp .\ $s3_path --acl public-read --recursive
+popd
