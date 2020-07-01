@@ -33,11 +33,11 @@ OutputDir=output\
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "C:\Program Files\Cloudify Agent\*"; DestDir: "{app}"; Excludes: "*.pyc,\__pycache__\*"; Flags: createallsubdirs recursesubdirs
+Source: "C:\Program Files\Cloudify Agents\*"; DestDir: "{app}"; Excludes: "*.pyc,\__pycache__\*"; Flags: createallsubdirs recursesubdirs
 Source: "source\icons\Cloudify.ico"; DestDir: "{app}"
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop icon";
 
 [Icons]
-Name: "{commondesktop}\Cloudify Agent"; Filename: "{cmd}"; Parameters: "/k ""{app}\Scripts\activate.bat"""; WorkingDir: "{app}"; IconFilename: "{app}\Cloudify.ico"; Tasks: "desktopicon";
+Name: "{commondesktop}\Cloudify Agents"; Filename: "{cmd}"; Parameters: "/k ""{app}\Scripts\activate.bat"""; WorkingDir: "{app}"; IconFilename: "{app}\Cloudify.ico"; Tasks: "desktopicon";
