@@ -5,7 +5,6 @@ environment:
 
   TOX_ENV: pywin
 
-  choco_cache_location: C:\Temp\choco
   rabbitmq_download_url: https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.7.7/rabbitmq-server-3.7.7.exe
   rabbitmq_installer_path: C:\Users\appveyor\rabbitmq.exe
 
@@ -13,17 +12,9 @@ environment:
     - PYTHON: C:\Python27
 
 cache:
-  - "%choco_cache_location%"
   - "%rabbitmq_installer_path%"
 
 install:
-
-  #################################
-  # Installing Inno Setup
-  #################################
-  - choco config set cacheLocation %choco_cache_location%
-  - choco install -y InnoSetup
-  - set PATH="C:\Program Files (x86)\Inno Setup 5";%PATH%
 
   #################################
   # Download and install RabbitMQ

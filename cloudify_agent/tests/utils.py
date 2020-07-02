@@ -125,32 +125,34 @@ def get_requirements_uri():
     return os.path.join(get_source_uri(), 'dev-requirements.txt')
 
 
-# This should be integrated into packager
-# For now, this is the best place
 def create_windows_installer(config, logger):
     runner = LocalCommandRunner()
-    wheelhouse = resources.get_resource('winpackage/source/wheels')
+    agent_builder = os.path.join(
+        get_source_uri(), 'packaging', 'windows', 'win_agent_builder.ps1'
+    )
 
-    pip_cmd = 'pip wheel --wheel-dir {wheel_dir} --requirement {req_file}'.\
-        format(wheel_dir=wheelhouse,
-               req_file=config.get('install', 'requirements_file'))
-
-    logger.info('Building wheels into: {0}'.format(wheelhouse))
-    runner.run(pip_cmd)
-
-    pip_cmd = 'pip wheel --find-links {wheel_dir} --wheel-dir {wheel_dir} ' \
-              '{repo_url}'\
-              .format(
-                  wheel_dir=wheelhouse,
-                  repo_url=config.get('install', 'cloudify_agent_module'))
-    runner.run(pip_cmd)
-
-    iscc_cmd = 'C:\\Program Files (x86)\\Inno Setup 5\\iscc.exe {0}'\
-        .format(resources.get_resource(
-            os.path.join('winpackage', 'create.iss')))
-    os.environ['VERSION'] = '0'
-    os.environ['iscc_output'] = os.getcwd()
-    runner.run(iscc_cmd)
+    # Run the agent builder with version 0, prerelease '.test', '.' dev branch
+    # (so that the repo won't be redownloaded) and no upload flag.
+    runner.run(
+        [
+             'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',
+             agent_builder,
+             '1',
+             '.test',
+             '.',
+             '',
+        ],
+        cwd=os.path.join(get_source_uri(), '..'),
+        stdout_pipe=False,
+        stderr_pipe=False,
+    )
+    os.rename(
+        (
+            'C:\\projects\\cloudify-agent\\packaging\\windows\\packaging\\'
+            'output\\cloudify-windows-agent_1-.test.exe'
+        ),
+        os.path.join(os.getcwd(), 'cloudify-windows-agent-1-.test.exe'),
+    )
 
 
 def create_agent_package(directory, config, package_logger=None):
@@ -170,7 +172,7 @@ def create_agent_package(directory, config, package_logger=None):
             return '{0}-{1}-agent.tar.gz'.format(distname, distid)
         elif platform.system() == 'Windows':
             create_windows_installer(config, logger)
-            return 'cloudify_agent_0.exe'
+            return 'cloudify-windows-agent-1-.test.exe'
         else:
             raise NonRecoverableError('Platform not supported: {0}'
                                       .format(platform.system()))
