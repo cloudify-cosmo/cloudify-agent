@@ -1,7 +1,8 @@
 param(
     $VERSION,
     $PRERELEASE,
-    $DEV_BRANCH = "master"
+    $DEV_BRANCH = "master",
+    $UPLOAD = ""
 )
 Set-StrictMode -Version 1.0
 $ErrorActionPreference="stop"
@@ -48,8 +49,6 @@ function rm_rf {
 ### Main ###
 
 Write-Host "Deleting existing artifacts"
-rm_rf cloudify-agent.zip
-rm_rf cloudify-agent
 rm_rf python.zip
 rm_rf get-pip.py
 rm_rf $AGENT_PATH
@@ -66,15 +65,23 @@ if (-Not (Test-Path "C:\Program Files (x86)\Inno Setup 6")) {
     Write-Host "Inno Setup is already installed."
 }
 
-Write-Host "Getting agent repository from $REPO_URL"
-Invoke-RestMethod -Uri $REPO_URL -OutFile cloudify-agent.zip
-Expand-Archive -Path cloudify-agent.zip
-pushd cloudify-agent
-    cd cloudify-agent-$DEV_BRANCH
-        move * ..
-    cd ..
-    rm_rf cloudify-agent-$DEV_BRANCH
-popd
+# We use . because passing "" to the script causes the default to be used
+if ( $DEV_BRANCH -ne "." ) {
+    Write-Host "Deleting existing downloaded agent."
+    rm_rf cloudify-agent.zip
+    rm_rf cloudify-agent
+    Write-Host "Getting agent repository from $REPO_URL"
+    Invoke-RestMethod -Uri $REPO_URL -OutFile cloudify-agent.zip
+    Expand-Archive -Path cloudify-agent.zip
+    pushd cloudify-agent
+        cd cloudify-agent-$DEV_BRANCH
+            move * ..
+        cd ..
+        rm_rf cloudify-agent-$DEV_BRANCH
+    popd
+} else {
+    Write-Host "Using local cloudify-agent directory."
+}
 
 Write-Host "Getting embeddable python from $PY_URL"
 Invoke-RestMethod -Uri $PY_URL -OutFile python.zip
@@ -106,16 +113,18 @@ $env:VERSION = $VERSION
 $env:PRERELEASE = $PRERELEASE
 run "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" cloudify-agent\packaging\windows\packaging\create_install_wizard.iss
 
-Write-Host "Preparing AWS CLI"
-run "$AGENT_PATH\Scripts\pip.exe" install --prefix="$AGENT_PATH" awscli
-Set-Content -Path "$AGENT_PATH\scripts\aws.py" -Value "import awscli.clidriver
-import sys
-sys.exit(awscli.clidriver.main())"
+if ( $env:UPLOAD -eq "upload" ) {
+    Write-Host "Preparing AWS CLI"
+    run "$AGENT_PATH\Scripts\pip.exe" install --prefix="$AGENT_PATH" awscli
+    Set-Content -Path "$AGENT_PATH\scripts\aws.py" -Value "import awscli.clidriver
+    import sys
+    sys.exit(awscli.clidriver.main())"
 
-Write-Host "Uploading agent to S3"
-pushd cloudify-agent\packaging\windows\packaging\output
-  $artifact = "cloudify-windows-agent_$env:VERSION-$env:PRERELEASE.exe"
-  $artifact_md5 = $(Get-FileHash -Path $artifact -Algorithm MD5).Hash
-  $s3_path = "s3://cloudify-release-eu/cloudify/$env:VERSION/$env:PRERELEASE-build"
-  run "$AGENT_PATH\python.exe" "$AGENT_PATH\Scripts\aws.py" s3 cp .\ $s3_path --acl public-read --recursive
-popd
+    Write-Host "Uploading agent to S3"
+    pushd cloudify-agent\packaging\windows\packaging\output
+        $artifact = "cloudify-windows-agent_$env:VERSION-$env:PRERELEASE.exe"
+        $artifact_md5 = $(Get-FileHash -Path $artifact -Algorithm MD5).Hash
+        $s3_path = "s3://cloudify-release-eu/cloudify/$env:VERSION/$env:PRERELEASE-build"
+        run "$AGENT_PATH\python.exe" "$AGENT_PATH\Scripts\aws.py" s3 cp .\ $s3_path --acl public-read --recursive
+    popd
+}
