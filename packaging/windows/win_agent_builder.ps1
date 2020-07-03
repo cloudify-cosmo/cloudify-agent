@@ -51,7 +51,7 @@ function rm_rf {
 Write-Host "Deleting existing artifacts"
 rm_rf python.zip
 rm_rf get-pip.py
-rm_rf $AGENT_PATH
+rm_rf "$AGENT_PATH"
 rm_rf inno_setup.exe
 
 Write-Host "Checking whether Inno Setup needs installing..."
@@ -93,9 +93,18 @@ Write-Host "Preparing agent path"
 mkdir $AGENT_PATH
 Expand-Archive -Path python.zip -DestinationPath $AGENT_PATH
 
+# We need to expand this to make virtualenv work
+pushd "$AGENT_PATH"
+    Expand-Archive -Path python38.zip
+    rm_rf python38.zip
+    mkdir Lib
+    move python38\* Lib
+    rmdir python38
+popd
+
 Write-Host "Adding pip to embedded python"
-Set-Content -Path "$AGENT_PATH\python38._pth" -Value "python38.zip
-. 
+Set-Content -Path "$AGENT_PATH\python38._pth" -Value ".
+.\Lib
 .\Lib\site-packages
 
 # Uncomment to run site.main() automatically
