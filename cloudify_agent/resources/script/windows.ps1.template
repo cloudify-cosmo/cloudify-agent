@@ -6,6 +6,16 @@ $PSDefaultParameterValues['*:Encoding'] = 'utf8'
 # Stop whenever a non-terminating cmdlet generates an error.
 $ErrorActionPreference = "Stop"
 
+
+function run {
+    # Use this to get set -e alike behaviour, rather than running commands directly
+    & $args[0] $args[1..($args.Length)]
+    if ($LastExitCode -ne 0) {
+        Write-Error "Error running @args"
+    }
+}
+
+
 {% if add_ssl_cert %}
 function AddSSLCert()
 {
@@ -38,7 +48,7 @@ function InstallAgent()
     {% if add_ssl_cert %}
     AddSSLCert
     {% endif %}
-    if (-Not ([System.IO.File]::Exists("C:\Program Files\Cloudify Agents"))) {
+    if (-Not ([System.IO.File]::Exists("{{ conf.basedir }}"))) {
         Write-Output "Installing cloudify agent package"
         Download "{{ conf.package_url }}" "{{ conf.basedir }}\cloudify-windows-agent-package.exe"
         # This call is not blocking so we pipe the output to null to make it blocking
@@ -46,20 +56,13 @@ function InstallAgent()
     } else {
         Write-Output "Agent package already installed"
     }
-
-    if (-Not ([System.IO.File]::Exists("{{ conf.envdir }}\Scripts"))) {
-        Write-Output "Creating agent env in {{ conf.envdir }}."
-        & "C:\Program Files\Cloudify Agents\Scripts\virtualenv.exe" --no-download --system-site-packages "{{ conf.envdir }}"
-    } else {
-        Write-Output "Agent env already installed in {{ conf.envdir }}."
-    }
 }
 {% endif %}
 
 {% if configure %}
 function ExportDaemonEnv()
 {
-    $env:Path = "{{ conf.envdir }}\Scripts" + ";" + $env:Path
+    $env:Path = "{{ conf.basedir }}\Scripts" + ";" + $env:Path
     {% for env_key, env_value in daemon_env.items() %}
         $env:{{ env_key }} = "{{ env_value }}"
     {% endfor %}
@@ -83,11 +86,7 @@ function ConfigureAgent()
     CreateCustomEnvFile
 
     Write-Output "Configuring agent..."
-    cfy-agent {{ debug_flag }} configure {{ configure_flags }}
-    if (!$?) {
-        Write-Output "Failed configuring agent (rc=$LASTEXITCODE)"
-        Exit 1
-    }
+    run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" {{ debug_flag }} configure {{ configure_flags }}
     Write-Output "Agent configured successfully"
 }
 {% endif %}
@@ -97,30 +96,18 @@ function StartAgent()
 {
     if (-Not ($Agentlist | Select-String $env:CLOUDIFY_DAEMON_NAME)) {
         Write-Output "Creating daemon..."
-        cfy-agent {{ debug_flag }} daemons create {{ pm_options }}
-        if (!$?) {
-            Write-Output "Failed creating daemon (rc=$LASTEXITCODE)"
-            Exit 1
-        }
+        run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons create {{ pm_options }}
         Write-Output "Daemon created successfully"
     } else {
         Write-Output "Agent already created, skipping create agent."
     }
 
     Write-Output "Configuring daemon..."
-    cfy-agent {{ debug_flag }} daemons configure
-    if (!$?) {
-        Write-Output "Failed configuring daemon (rc=$LASTEXITCODE)"
-        Exit 1
-    }
+    run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons configure
     Write-Output "Daemon configured successfully"
 
     Write-Output "Starting daemon..."
-    cfy-agent {{ debug_flag }} daemons start
-    if (!$?) {
-        Write-Output "Failed starting daemon (rc=$LASTEXITCODE)"
-        Exit 1
-    }
+    run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons start
     Write-Output "Daemon started successfully"
 }
 {% endif %}
