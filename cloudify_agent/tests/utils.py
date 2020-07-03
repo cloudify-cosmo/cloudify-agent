@@ -126,32 +126,38 @@ def get_requirements_uri():
 
 
 def create_windows_installer(config, logger):
-    runner = LocalCommandRunner()
-    agent_builder = os.path.join(
-        get_source_uri(), 'packaging', 'windows', 'win_agent_builder.ps1'
+    built_agent_path = (
+        'C:\\projects\\cloudify-agent\\packaging\\windows\\packaging\\'
+        'output\\cloudify-windows-agent_1-.test.exe'
     )
+    temp_agent_path = os.path.join(
+        os.getcwd(), 'cloudify-windows-agent-1-.test.exe')
 
-    # Run the agent builder with version 0, prerelease '.test', '.' dev branch
-    # (so that the repo won't be redownloaded) and no upload flag.
-    runner.run(
-        [
-             'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',
-             agent_builder,
-             '1',
-             '.test',
-             '.',
-             '',
-        ],
-        cwd=os.path.join(get_source_uri(), '..'),
-        stdout_pipe=False,
-        stderr_pipe=False,
-    )
+    if not os.path.exists(built_agent_path):
+        runner = LocalCommandRunner()
+        agent_builder = os.path.join(
+            get_source_uri(), 'packaging', 'windows', 'win_agent_builder.ps1'
+        )
+
+        # Run the agent builder with version 0, prerelease '.test', '.' dev branch
+        # (so that the repo won't be redownloaded) and no upload flag.
+        runner.run(
+            [
+                 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',
+                 agent_builder,
+                 '1',
+                 '.test',
+                 '.',
+                 '',
+            ],
+            cwd=os.path.join(get_source_uri(), '..'),
+            stdout_pipe=False,
+            stderr_pipe=False,
+        )
+
     os.rename(
-        (
-            'C:\\projects\\cloudify-agent\\packaging\\windows\\packaging\\'
-            'output\\cloudify-windows-agent_1-.test.exe'
-        ),
-        os.path.join(os.getcwd(), 'cloudify-windows-agent-1-.test.exe'),
+        built_agent_path,
+        temp_agent_path,
     )
 
 
