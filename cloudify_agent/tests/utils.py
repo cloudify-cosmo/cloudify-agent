@@ -403,17 +403,18 @@ HcB0lztLEyipHnG93A9RI2HtCHsL3BcOgWEzUdkoIstLo/fRAh5TELRvLW+ArvU2
 W6ymlKLurKPd5YI4Q0y6irWmVMoeaQ==
 -----END PRIVATE KEY-----"""
 
-    @staticmethod
-    def get_local_cert_path(temp_folder=None):
+    def __init__(self, base_folder):
+        self.temp_folder = base_folder
+
+    def get_local_cert_path(self):
         with tempfile.NamedTemporaryFile(
-                delete=False, dir=temp_folder, mode='w') as f:
+                delete=False, dir=self.temp_folder, mode='w') as f:
             f.write(_AgentSSLCert.DUMMY_CERT)
         return f.name
 
-    @staticmethod
-    def local_key_path(temp_folder=None):
+    def local_key_path(self):
         with tempfile.NamedTemporaryFile(
-                delete=False, dir=temp_folder, mode='w') as f:
+                delete=False, dir=self.temp_folder, mode='w') as f:
             f.write(_AgentSSLCert.PRIVATE_KEY)
         return f.name
 
