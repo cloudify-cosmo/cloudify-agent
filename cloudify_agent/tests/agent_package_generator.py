@@ -1,8 +1,7 @@
-try:
-    from configparser import RawConfigParser
-except ImportError:
-    # py2
-    from ConfigParser import RawConfigParser
+import os
+import shutil
+import sys
+import tempfile
 
 from cloudify_agent.tests.utils import (
     create_agent_package,
@@ -10,6 +9,12 @@ from cloudify_agent.tests.utils import (
     get_requirements_uri,
     get_source_uri,
 )
+
+try:
+    from configparser import RawConfigParser
+except ImportError:
+    # py2
+    from ConfigParser import RawConfigParser
 
 
 class AgentPackageGenerator(object):
