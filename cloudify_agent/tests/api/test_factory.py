@@ -15,9 +15,8 @@
 
 import uuid
 import os
+import pytest
 import shutil
-
-from testtools import TestCase
 
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
@@ -25,7 +24,7 @@ from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.tests import get_storage_directory, BaseTest
 
 
-class TestDaemonFactory(BaseTest, TestCase):
+class TestDaemonFactory(BaseTest):
 
     def setUp(self):
         super(TestDaemonFactory, self).setUp()
@@ -45,17 +44,16 @@ class TestDaemonFactory(BaseTest, TestCase):
 
     def test_new_initd(self):
         daemon = self.factory.new(**self.daemon_params)
-        self.assertEqual(self.daemon_name, daemon.name)
-        self.assertEqual('queue', daemon.queue)
-        self.assertEqual('127.0.0.1', daemon.rest_host)
-        self.assertEqual('user', daemon.user)
-        self.assertEqual(self._rest_cert_path,
-                         daemon.local_rest_cert_file)
+        assert self.daemon_name == daemon.name
+        assert 'queue' == daemon.queue
+        assert '127.0.0.1' == daemon.rest_host
+        assert 'user' == daemon.user
+        assert self._rest_cert_path == daemon.local_rest_cert_file
 
     def test_new_no_implementation(self):
-        self.assertRaises(exceptions.DaemonNotImplementedError,
-                          self.factory.new,
-                          process_management='no-impl')
+        pytest.raises(exceptions.DaemonNotImplementedError,
+                      self.factory.new,
+                      process_management='no-impl')
 
     def test_save_load_delete(self):
 
@@ -63,19 +61,19 @@ class TestDaemonFactory(BaseTest, TestCase):
 
         self.factory.save(daemon)
         loaded = self.factory.load(self.daemon_name)
-        self.assertEqual('init.d', loaded.PROCESS_MANAGEMENT)
-        self.assertEqual(self.daemon_name, loaded.name)
-        self.assertEqual('queue', loaded.queue)
-        self.assertEqual('127.0.0.1', loaded.rest_host)
-        self.assertEqual('user', loaded.user)
+        assert 'init.d' == loaded.PROCESS_MANAGEMENT
+        assert self.daemon_name == loaded.name
+        assert 'queue' == loaded.queue
+        assert '127.0.0.1' == loaded.rest_host
+        assert 'user' == loaded.user
         self.factory.delete(daemon.name)
-        self.assertRaises(exceptions.DaemonNotFoundError,
-                          self.factory.load, daemon.name)
+        pytest.raises(exceptions.DaemonNotFoundError,
+                      self.factory.load, daemon.name)
 
     def test_load_non_existing(self):
-        self.assertRaises(exceptions.DaemonNotFoundError,
-                          self.factory.load,
-                          'non_existing_name')
+        pytest.raises(exceptions.DaemonNotFoundError,
+                      self.factory.load,
+                      'non_existing_name')
 
     def test_load_all(self):
 
@@ -89,13 +87,13 @@ class TestDaemonFactory(BaseTest, TestCase):
             shutil.rmtree(get_storage_directory())
 
         daemons = self.factory.load_all()
-        self.assertEquals(0, len(daemons))
+        assert 0 == len(daemons)
         _save_daemon(utils.internal.generate_agent_name())
         _save_daemon(utils.internal.generate_agent_name())
         _save_daemon(utils.internal.generate_agent_name())
 
         daemons = self.factory.load_all()
-        self.assertEquals(3, len(daemons))
+        assert 3 == len(daemons)
 
     def test_new_existing_agent(self):
         daemon = self.factory.new(**self.daemon_params)
@@ -105,7 +103,7 @@ class TestDaemonFactory(BaseTest, TestCase):
         # without no_overwrite, this will overwrite the existing daemon
         daemon = self.factory.new(**self.daemon_params)
 
-        self.assertRaises(exceptions.DaemonAlreadyExistsError,
-                          self.factory.new,
-                          no_overwrite=True,
-                          **self.daemon_params)
+        pytest.raises(exceptions.DaemonAlreadyExistsError,
+                      self.factory.new,
+                      no_overwrite=True,
+                      **self.daemon_params)

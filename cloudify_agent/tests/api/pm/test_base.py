@@ -14,9 +14,8 @@
 #  * limitations under the License.
 
 import getpass
-
 from mock import patch
-from testtools import TestCase
+import pytest
 
 from cloudify_agent.api.pm.base import Daemon
 from cloudify_agent.api import exceptions
@@ -27,7 +26,7 @@ from cloudify_agent.tests import get_storage_directory
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-class TestDaemonDefaults(BaseTest, TestCase):
+class TestDaemonDefaults(BaseTest):
 
     def setUp(self):
         super(TestDaemonDefaults, self).setUp()
@@ -42,31 +41,30 @@ class TestDaemonDefaults(BaseTest, TestCase):
         )
 
     def test_default_workdir(self):
-        self.assertEqual(self.temp_folder, self.daemon.workdir)
+        assert self.temp_folder == self.daemon.workdir
 
     def test_default_rest_port(self):
-        self.assertEqual(53333, self.daemon.rest_port)
+        assert 53333 == self.daemon.rest_port
 
     def test_default_min_workers(self):
-        self.assertEqual(0, self.daemon.min_workers)
+        assert 0 == self.daemon.min_workers
 
     def test_default_max_workers(self):
-        self.assertEqual(5, self.daemon.max_workers)
+        assert 5 == self.daemon.max_workers
 
     def test_default_user(self):
-        self.assertEqual(getpass.getuser(), self.daemon.user)
+        assert getpass.getuser() == self.daemon.user
 
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-class TestDaemonValidations(BaseTest, TestCase):
+class TestDaemonValidations(BaseTest):
     def setUp(self):
         super(TestDaemonValidations, self).setUp()
 
     def test_missing_rest_host(self):
-        with self.assertRaisesRegex(
-                exceptions.DaemonMissingMandatoryPropertyError,
-                'rest_host is mandatory'):
+        with pytest.raises(exceptions.DaemonMissingMandatoryPropertyError,
+                           match='.*rest_host is mandatory.*'):
             Daemon(
                 name='name',
                 queue='queue',
@@ -78,9 +76,10 @@ class TestDaemonValidations(BaseTest, TestCase):
             )
 
     def test_bad_min_workers(self):
-        with self.assertRaisesRegex(
-                exceptions.DaemonPropertiesError,
-                'min_workers is supposed to be a number'):
+        with pytest.raises(
+            exceptions.DaemonPropertiesError,
+            match='.*min_workers is supposed to be a number.*',
+        ):
             Daemon(
                 name='name',
                 queue='queue',
@@ -95,9 +94,9 @@ class TestDaemonValidations(BaseTest, TestCase):
             )
 
     def test_bad_max_workers(self):
-        with self.assertRaisesRegex(
-                exceptions.DaemonPropertiesError,
-                'max_workers is supposed to be a number'):
+        with pytest.raises(exceptions.DaemonPropertiesError,
+                           match=(
+                               '.*max_workers is supposed to be a number.*')):
             Daemon(
                 name='name',
                 queue='queue',
@@ -112,9 +111,10 @@ class TestDaemonValidations(BaseTest, TestCase):
             )
 
     def test_min_workers_larger_than_max_workers(self):
-        with self.assertRaisesRegex(
-                exceptions.DaemonPropertiesError,
-                'min_workers cannot be greater than max_workers'):
+        with pytest.raises(
+            exceptions.DaemonPropertiesError,
+            match='.*min_workers cannot be greater than max_workers.*',
+        ):
             Daemon(
                 name='name',
                 queue='queue',
@@ -132,7 +132,7 @@ class TestDaemonValidations(BaseTest, TestCase):
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-class TestNotImplemented(BaseTest, TestCase):
+class TestNotImplemented(BaseTest):
 
     def setUp(self):
         super(TestNotImplemented, self).setUp()
@@ -147,13 +147,13 @@ class TestNotImplemented(BaseTest, TestCase):
         )
 
     def test_start_command(self):
-        self.assertRaises(NotImplementedError, self.daemon.start_command)
+        pytest.raises(NotImplementedError, self.daemon.start_command)
 
     def test_stop_command(self):
-        self.assertRaises(NotImplementedError, self.daemon.stop_command)
+        pytest.raises(NotImplementedError, self.daemon.stop_command)
 
     def test_configure(self):
-        self.assertRaises(NotImplementedError, self.daemon.configure)
+        pytest.raises(NotImplementedError, self.daemon.configure)
 
     def test_delete(self):
-        self.assertRaises(NotImplementedError, self.daemon.delete)
+        pytest.raises(NotImplementedError, self.daemon.delete)

@@ -16,8 +16,6 @@
 import os
 import tempfile
 
-from testtools import TestCase
-
 from cloudify.utils import setup_logger
 
 import cloudify_agent
@@ -29,7 +27,7 @@ from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests import utils as test_utils
 
 
-class TestUtils(BaseTest, TestCase):
+class TestUtils(BaseTest):
 
     def setUp(self):
         super(TestUtils, self).setUp()
@@ -57,17 +55,17 @@ class TestUtils(BaseTest, TestCase):
             'pm',
             'nssm',
             'nssm.exe')
-        self.assertEqual(expected, full_path)
+        assert expected == full_path
 
     def test_daemon_to_dict(self):
         daemon = Daemon(rest_host=['127.0.0.1'], name='name',
                         queue='queue', broker_ip=['127.0.0.1'],
                         local_rest_cert_file=self._rest_cert_path)
         daemon_json = utils.internal.daemon_to_dict(daemon)
-        self.assertEqual(daemon_json['rest_host'], ['127.0.0.1'])
-        self.assertEqual(daemon_json['broker_ip'], ['127.0.0.1'])
-        self.assertEqual(daemon_json['name'], 'name')
-        self.assertEqual(daemon_json['queue'], 'queue')
+        assert daemon_json['rest_host'] == ['127.0.0.1']
+        assert daemon_json['broker_ip'] == ['127.0.0.1']
+        assert daemon_json['name'] == 'name'
+        assert daemon_json['queue'] == 'queue'
 
     def test_get_resource(self):
         resource = utils.get_resource(os.path.join(
@@ -75,7 +73,7 @@ class TestUtils(BaseTest, TestCase):
             'initd',
             'initd.conf.template'
         ))
-        self.assertIsNotNone(resource)
+        assert resource is not None
 
     def test_rendered_template_to_file(self):
         temp = utils.render_template_to_file(
@@ -84,26 +82,24 @@ class TestUtils(BaseTest, TestCase):
         )
         with open(temp) as f:
             rendered = f.read()
-            self.assertTrue('export REST_HOST="127.0.0.1"' in rendered)
+            assert 'export REST_HOST="127.0.0.1"' in rendered
 
     def test_resource_to_tempfile(self):
         temp = utils.resource_to_tempfile(
             resource_path=os.path.join('pm', 'initd', 'initd.conf.template')
         )
-        self.assertTrue(os.path.exists(temp))
+        assert os.path.exists(temp)
 
     def test_content_to_tempfile(self):
         temp = utils.content_to_file(
             content='content'
         )
         with open(temp) as f:
-            self.assertEqual('content{0}'
-                             .format(os.linesep),
-                             f.read())
+            assert 'content{0}'.format(os.linesep) == f.read()
 
     def test_generate_agent_name(self):
         name = utils.internal.generate_agent_name()
-        self.assertIn(defaults.CLOUDIFY_AGENT_PREFIX, name)
+        assert defaults.CLOUDIFY_AGENT_PREFIX in name
 
     def test_get_broker_url(self):
         config = dict(broker_ip='10.50.50.3',
@@ -111,5 +107,5 @@ class TestUtils(BaseTest, TestCase):
                       broker_pass='pa$$word',
                       broker_vhost='vh0$t',
                       broker_ssl_enabled=True)
-        self.assertEqual('amqp://us%23er:pa%24%24word@10.50.50.3:5671/vh0$t',
-                         utils.internal.get_broker_url(config))
+        assert 'amqp://us%23er:pa%24%24word@10.50.50.3:5671/vh0$t' == \
+            utils.internal.get_broker_url(config)

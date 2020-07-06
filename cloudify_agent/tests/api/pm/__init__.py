@@ -14,12 +14,11 @@
 #  * limitations under the License.
 
 import os
-import unittest
 
-import pytest
-from mock import patch
 from functools import wraps
 from mock import _get_target
+from mock import patch
+import pytest
 
 from cloudify import amqp_client, constants
 from cloudify.utils import LocalCommandRunner
@@ -71,19 +70,6 @@ def only_ci(func):
         func(*args, **kwargs)
 
     return wrapper
-
-
-if hasattr(unittest, 'skipIf'):
-    skip_if = unittest.skipIf
-else:
-    # 2.6 unittest didn't have skipIf
-    def skip_if(condition, reason):
-        if condition:
-            def _decorator(f):
-                # don't even return a test function
-                return None
-            return _decorator
-        return lambda f: f
 
 
 def only_os(os_type):
@@ -207,34 +193,28 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon = self.create_daemon(log_dir=log_dir)
         daemon.create()
         daemon.configure()
-        try:
+        if os.name == 'nt':
+            expected_error = '.*WATT_NONEXISTENT_DIR.*'
+        else:
+            expected_error = ".*Permission denied: /root/no_permission.*"
+        with pytest.raises(exceptions.DaemonError, match=expected_error):
             daemon.start(timeout=5)
-            self.fail('Expected start operation to fail due to bad log_dir')
-        except exceptions.DaemonError as e:
-            if os.name == 'nt':
-                # windows messages vary, and will be escaped, so let's just
-                # check that the dir name is there
-                expected_error = 'WATT_NONEXISTENT_DIR'
-            else:
-                expected_error = "Permission denied: '{0}"
-            self.assertIn(expected_error.format(log_dir), str(e))
 
     def test_start_short_timeout(self):
         daemon = self.create_daemon()
         daemon.create()
         daemon.configure()
-        try:
+        with pytest.raises(exceptions.DaemonStartupTimeout,
+                           match='.*failed to start in -1 seconds.*'):
             daemon.start(timeout=-1)
-        except exceptions.DaemonStartupTimeout as e:
-            self.assertTrue('failed to start in -1 seconds' in str(e))
 
     def test_status(self):
         daemon = self.create_daemon()
         daemon.create()
         daemon.configure()
-        self.assertFalse(daemon.status())
+        assert not daemon.status()
         daemon.start()
-        self.assertTrue(daemon.status())
+        assert daemon.status()
 
     def test_stop(self):
         daemon = self.create_daemon()
@@ -249,10 +229,9 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.create()
         daemon.configure()
         daemon.start()
-        try:
+        with pytest.raises(exceptions.DaemonShutdownTimeout,
+                           match='.*failed to stop in -1 seconds.*'):
             daemon.stop(timeout=-1)
-        except exceptions.DaemonShutdownTimeout as e:
-            self.assertTrue('failed to stop in -1 seconds' in str(e))
 
     @patch_get_source
     def test_restart(self):
@@ -303,7 +282,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
 
         def _check_env_var(var, expected_value):
             _value = _get_env_var(var)
-            self.assertEqual(_value, expected_value)
+            assert _value == expected_value
 
         for key, value in expected.items():
             _check_env_var(key, value)
@@ -326,7 +305,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             task_name='mock_plugin.tasks.get_env_variable',
             queue=daemon.queue,
             kwargs={'env_variable': 'TEST_ENV_KEY'})
-        self.assertEqual(value, 'TEST_ENV_VALUE')
+        assert value == 'TEST_ENV_VALUE'
 
     @patch_get_source
     def test_execution_env(self):
@@ -345,7 +324,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             queue=daemon.queue,
             kwargs={'env_variable': 'TEST_ENV_KEY2'},
             execution_env={'TEST_ENV_KEY2': 'TEST_ENV_VALUE2'})
-        self.assertEqual(value, 'TEST_ENV_VALUE2')
+        assert value == 'TEST_ENV_VALUE2'
 
     def test_delete(self):
         raise NotImplementedError('Must be implemented by sub-class')
@@ -355,8 +334,8 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
         daemon.create()
         daemon.configure()
         daemon.start()
-        self.assertRaises(exceptions.DaemonStillRunningException,
-                          daemon.delete)
+        pytest.raises(exceptions.DaemonStillRunningException,
+                      daemon.delete)
 
     def test_delete_before_stop_with_force(self):
         daemon = self.create_daemon()
@@ -390,7 +369,7 @@ class BaseDaemonProcessManagementTest(BaseDaemonLiveTestCase):
             logfile = os.path.join(logdir, '{0}.log'.format(name))
             try:
                 with open(logfile) as f:
-                    self.assertIn(_message, f.read())
+                    assert _message in f.read()
             except IOError:
                 self.logger.warning('{0} content: {1}'
                                     .format(logdir, os.listdir(logdir)))

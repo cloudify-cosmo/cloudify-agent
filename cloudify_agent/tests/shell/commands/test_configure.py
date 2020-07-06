@@ -13,15 +13,13 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from testtools import TestCase
-
 from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.tests.api.pm import only_os
 
 from cloudify_agent.tests.shell.commands import BaseCommandLineTestCase
 
 
-class TestConfigureCommandLine(BaseCommandLineTestCase, TestCase):
+class TestConfigureCommandLine(BaseCommandLineTestCase):
 
     @only_ci
     @only_os('posix')

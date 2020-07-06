@@ -16,7 +16,6 @@
 import os
 
 from mock import patch
-from testtools import TestCase
 
 from cloudify_agent.api.pm.initd import InitDDaemon
 from cloudify_agent.tests import get_storage_directory
@@ -60,7 +59,7 @@ CONFIG_DIR = '/tmp/etc/default'
     'cloudify_agent.api.pm.initd.stop_command',
     _non_service_stop_command)
 @only_os('posix')
-class TestInitDDaemon(BaseDaemonProcessManagementTest, TestCase):
+class TestInitDDaemon(BaseDaemonProcessManagementTest):
 
     @property
     def daemon_cls(self):
@@ -71,8 +70,8 @@ class TestInitDDaemon(BaseDaemonProcessManagementTest, TestCase):
         daemon.create()
 
         daemon.configure()
-        self.assertTrue(os.path.exists(daemon.script_path))
-        self.assertTrue(os.path.exists(daemon.config_path))
+        assert os.path.exists(daemon.script_path)
+        assert os.path.exists(daemon.config_path)
 
     def test_delete(self):
         daemon = self.create_daemon()
@@ -81,8 +80,8 @@ class TestInitDDaemon(BaseDaemonProcessManagementTest, TestCase):
         daemon.start()
         daemon.stop()
         daemon.delete()
-        self.assertFalse(os.path.exists(daemon.script_path))
-        self.assertFalse(os.path.exists(daemon.config_path))
+        assert not os.path.exists(daemon.script_path)
+        assert not os.path.exists(daemon.config_path)
 
     @only_ci
     def test_configure_start_on_boot(self):
@@ -99,7 +98,7 @@ class TestInitDDaemon(BaseDaemonProcessManagementTest, TestCase):
         # initd daemon's cron is for root, so that respawning the daemon can
         # use the init system which requires root
         crontab = self.runner.run('sudo crontab -lu root').std_out
-        self.assertIn(daemon.cron_respawn_path, crontab)
+        assert daemon.cron_respawn_path in crontab
 
         self.runner.run("pkill -9 -f 'cloudify_agent.worker'")
         self.wait_for_daemon_dead(daemon.queue)
@@ -114,4 +113,4 @@ class TestInitDDaemon(BaseDaemonProcessManagementTest, TestCase):
         self.wait_for_daemon_dead(daemon.queue)
 
         crontab = self.runner.run('sudo crontab -lu root').std_out
-        self.assertNotIn(daemon.cron_respawn_path, crontab)
+        assert daemon.cron_respawn_path not in crontab

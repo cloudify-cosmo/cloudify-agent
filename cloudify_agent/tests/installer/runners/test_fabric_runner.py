@@ -14,7 +14,7 @@
 #  * limitations under the License.
 
 from mock import Mock, patch
-from testtools import TestCase
+import pytest
 
 from cloudify_agent.installer import exceptions
 
@@ -42,48 +42,48 @@ from cloudify_agent.tests.api.pm import only_os
 ##############################################################################
 
 @only_os('posix')
-class TestDefaults(BaseTest, TestCase):
+class TestDefaults(BaseTest):
     def test_default_port(self):
         runner = FabricRunner(
             validate_connection=False,
             user='user',
             host='host',
             password='password')
-        self.assertTrue(runner.port, 22)
+        assert runner.port == 22
 
 
 @only_os('posix')
-class TestValidations(BaseTest, TestCase):
+class TestValidations(BaseTest):
     def test_no_host(self):
-        self.assertRaisesRegex(
-            exceptions.AgentInstallerConfigurationError,
-            'Missing host',
-            FabricRunner,
-            validate_connection=False,
-            user='user',
-            password='password')
+        with pytest.raises(exceptions.AgentInstallerConfigurationError,
+                           match='.*Missing host.*'):
+            FabricRunner(
+                validate_connection=False,
+                user='user',
+                password='password'
+            )
 
     def test_no_user(self):
-        self.assertRaisesRegex(
-            exceptions.AgentInstallerConfigurationError,
-            'Missing user',
-            FabricRunner,
-            validate_connection=False,
-            host='host',
-            password='password')
+        with pytest.raises(exceptions.AgentInstallerConfigurationError,
+                           match='.*Missing user.*'):
+            FabricRunner(
+                validate_connection=False,
+                host='host',
+                password='password',
+            )
 
     def test_no_key_no_password(self):
-        self.assertRaisesRegex(
-            exceptions.AgentInstallerConfigurationError,
-            'Must specify either key or password',
-            FabricRunner,
-            validate_connection=False,
-            host='host',
-            user='password')
+        with pytest.raises(exceptions.AgentInstallerConfigurationError,
+                           match='.*Must specify either key or password.*'):
+            FabricRunner(
+                validate_connection=False,
+                host='host',
+                user='password',
+            )
 
 
 @only_os('posix')
-class TestAbortException(BaseTest, TestCase):
+class TestAbortException(BaseTest):
     """Test behavior on fabric abort."""
 
     def test_exception_message(self):
@@ -108,6 +108,6 @@ class TestAbortException(BaseTest, TestCase):
             try:
                 runner.run('a command')
             except FabricCommandExecutionException as e:
-                self.assertEqual(e.error, expected_message)
+                assert e.error == expected_message
             else:
                 self.fail('FabricCommandExecutionException not raised')

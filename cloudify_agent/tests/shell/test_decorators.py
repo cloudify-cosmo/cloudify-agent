@@ -15,15 +15,13 @@
 
 import click
 
-from testtools import TestCase
-
 from cloudify_agent.api import exceptions
 from cloudify_agent.shell.decorators import handle_failures
 
 from cloudify_agent.tests.shell.commands import BaseCommandLineTestCase
 
 
-class TestDecorators(BaseCommandLineTestCase, TestCase):
+class TestDecorators(BaseCommandLineTestCase):
 
     def test_api_exceptions_conversion(self):
 
@@ -38,7 +36,7 @@ class TestDecorators(BaseCommandLineTestCase, TestCase):
             self._run('cfy-agent raise-error', raise_system_exit=True)
             self.fail('Expected failure of command execution')
         except SystemExit as e:
-            self.assertEqual(e.code, 101)
+            assert e.code == 101
 
     def test_api_errors_conversion(self):
 
@@ -53,4 +51,4 @@ class TestDecorators(BaseCommandLineTestCase, TestCase):
             self._run('cfy-agent raise-error', raise_system_exit=True)
             self.fail('Expected failure of command execution')
         except SystemExit as e:
-            self.assertEqual(e.code, 201)
+            assert e.code == 201

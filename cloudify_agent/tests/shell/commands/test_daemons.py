@@ -16,7 +16,6 @@
 import os
 
 from mock import patch
-from testtools import TestCase
 
 import cloudify_agent.shell.env as env_constants
 from cloudify_agent.api import utils
@@ -32,7 +31,7 @@ from cloudify_agent.tests import get_storage_directory
 @patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load')
 @patch('cloudify_agent.shell.commands.daemons.DaemonFactory.delete')
 @patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load_all')
-class TestPatchedDaemonCommandLine(BaseCommandLineTestCase, TestCase):
+class TestPatchedDaemonCommandLine(BaseCommandLineTestCase):
 
     PROCESS_MANAGEMENT = 'init.d'
 
@@ -225,14 +224,14 @@ class TestPatchedDaemonCommandLine(BaseCommandLineTestCase, TestCase):
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-class TestDaemonCommandLine(BaseCommandLineTestCase, TestCase):
+class TestDaemonCommandLine(BaseCommandLineTestCase):
 
     def test_inspect_non_existing_agent(self):
         try:
             self._run('cfy-agent daemons inspect --name=non-existing',
                       raise_system_exit=True)
         except SystemExit as e:
-            self.assertEqual(e.code, 203)
+            assert e.code == 203
 
     def test_list(self):
         self._run('cfy-agent daemons create '

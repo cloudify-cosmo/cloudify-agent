@@ -16,7 +16,7 @@
 import os
 
 from mock import patch
-from testtools import TestCase
+import pytest
 
 from cloudify.state import current_ctx
 from cloudify import utils as cloudify_utils
@@ -28,7 +28,7 @@ from cloudify_agent.tests.api.pm import only_os
 from cloudify_agent.tests.installer.config import mock_context
 
 
-class BaseInstallScriptTest(BaseTest, TestCase):
+class BaseInstallScriptTest(BaseTest):
 
     windows = None
 
@@ -93,7 +93,7 @@ class BaseInstallScriptTest(BaseTest, TestCase):
 
 
 @only_os('posix')
-class TestLinuxInstallScript(BaseInstallScriptTest, TestCase):
+class TestLinuxInstallScript(BaseInstallScriptTest):
     windows = False
 
     def test_download_curl(self):
@@ -102,7 +102,7 @@ class TestLinuxInstallScript(BaseInstallScriptTest, TestCase):
                   'PATH=$PWD',
                   'download http://localhost:{0} download.output'
                   .format(self.server.port))
-        self.assertTrue(os.path.isfile('download.output'))
+        assert os.path.isfile('download.output')
 
     def test_download_wget(self):
         self._serve()
@@ -110,20 +110,21 @@ class TestLinuxInstallScript(BaseInstallScriptTest, TestCase):
                   'PATH=$PWD',
                   'download http://localhost:{0} download.output'
                   .format(self.server.port))
-        self.assertTrue(os.path.isfile('download.output'))
+        assert os.path.isfile('download.output')
 
     def test_download_no_curl_or_wget(self):
         self._serve()
-        self.assertRaises(
+        pytest.raises(
             exceptions.CommandExecutionException,
             self._run,
             'PATH=$PWD',
             'download http://localhost:{0} download.output'
-            .format(self.server.port))
+            .format(self.server.port),
+        )
 
     def test_package_url_implicit(self):
         output = self._run('package_url')
-        self.assertIn('-agent.tar.gz', output)
+        assert '-agent.tar.gz' in output
 
     def test_package_url_explicit(self):
         self.input_cloudify_agent.update({
@@ -131,17 +132,17 @@ class TestLinuxInstallScript(BaseInstallScriptTest, TestCase):
             'distro_codename': 'two'
         })
         output = self._run('package_url')
-        self.assertIn('one-two-agent.tar.gz', output)
+        assert 'one-two-agent.tar.gz' in output
 
     def test_create_custom_env_file(self):
         self.input_cloudify_agent.update({'env': {'one': 'one'}})
         self._run('create_custom_env_file')
         with open('custom_agent_env.sh') as f:
-            self.assertIn('export one="one"', f.read())
+            assert 'export one="one"' in f.read()
 
     def test_no_create_custom_env_file(self):
         self._run('create_custom_env_file')
-        self.assertFalse(os.path.isfile('custom_agent_env.sh'))
+        assert not os.path.isfile('custom_agent_env.sh')
 
     def test_create_ssl_cert(self):
         self._run('add_ssl_cert')
@@ -151,31 +152,31 @@ class TestLinuxInstallScript(BaseInstallScriptTest, TestCase):
 
     def test_add_ssl_func_not_rendered(self):
         install_script = self._get_install_script(add_ssl_cert=False)
-        self.assertNotIn('add_ssl_cert', install_script)
+        assert 'add_ssl_cert' not in install_script
 
     def test_install_is_rendered_by_default(self):
         install_script = self._get_install_script()
-        self.assertIn('install_agent', install_script)
+        assert 'install_agent' in install_script
 
     def test_install_not_rendered_in_provided_mode(self):
         self._set_mock_context(install_method='provided')
         install_script = self._get_install_script()
-        self.assertNotIn('install_agent', install_script)
+        assert 'install_agent' not in install_script
 
 
 @only_os('nt')
-class TestWindowsInstallScript(BaseInstallScriptTest, TestCase):
+class TestWindowsInstallScript(BaseInstallScriptTest):
     windows = True
 
     def test_create_custom_env_file(self):
         self.input_cloudify_agent.update({'env': {'one': 'one'}})
         self._run('CreateCustomEnvFile')
         with open('custom_agent_env.bat') as f:
-            self.assertIn('set one="one"', f.read())
+            assert 'set one="one"' in f.read()
 
     def test_no_create_custom_env_file(self):
         self._run('CreateCustomEnvFile')
-        self.assertFalse(os.path.isfile('custom_agent_env.bat'))
+        assert not os.path.isfile('custom_agent_env.bat')
 
     def test_create_ssl_cert(self):
         self._run('AddSSLCert')
@@ -185,9 +186,9 @@ class TestWindowsInstallScript(BaseInstallScriptTest, TestCase):
 
     def test_add_ssl_func_not_rendered(self):
         install_script = self._get_install_script(add_ssl_cert=False)
-        self.assertNotIn('AddSSLCert', install_script)
+        assert 'AddSSLCert' not in install_script
 
     def test_install_not_rendered_in_provided_mode(self):
         self._set_mock_context(install_method='provided')
         install_script = self._get_install_script()
-        self.assertNotIn('InstallAgent', install_script)
+        assert 'InstallAgent' not in install_script

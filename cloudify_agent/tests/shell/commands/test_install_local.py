@@ -19,7 +19,6 @@ import uuid
 import shutil
 
 from mock import patch
-from testtools import TestCase
 
 from cloudify import ctx
 from cloudify.utils import LocalCommandRunner
@@ -32,7 +31,7 @@ from cloudify_agent.installer.operations import create as create_agent
 from cloudify_agent.tests.installer.config import mock_context
 
 
-class TestInstaller(BaseTest, TestCase):
+class TestInstaller(BaseTest):
 
     def setUp(self):
         super(TestInstaller, self).setUp()
@@ -90,4 +89,4 @@ class TestInstaller(BaseTest, TestCase):
     def test_installation_no_basedir(self):
         agent_config = self._get_agent_config()
         new_agent = self._test_agent_installation(agent_config)
-        self.assertIn('basedir', new_agent)
+        assert 'basedir' in new_agent

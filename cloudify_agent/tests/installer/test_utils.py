@@ -13,28 +13,26 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from testtools import TestCase
-
 from cloudify_agent.installer import utils
 
 from cloudify_agent.tests import BaseTest
 
 
-class TestUtils(BaseTest, TestCase):
+class TestUtils(BaseTest):
     def test_env_to_file(self):
         file_path = utils.env_to_file({'key': 'value', 'key2': 'value2'})
         with open(file_path) as f:
             content = f.read()
-        self.assertIn('export key=value', content)
-        self.assertIn('export key2=value2', content)
+        assert 'export key=value' in content
+        assert 'export key2=value2' in content
 
     def test_env_to_file_nt(self):
         file_path = utils.env_to_file({'key': 'value', 'key2': 'value2'},
                                       posix=False)
         with open(file_path) as f:
             content = f.read()
-        self.assertIn('set key=value', content)
-        self.assertIn('set key2=value2', content)
+        assert 'set key=value' in content
+        assert 'set key2=value2' in content
 
     def test_stringify_values(self):
 
@@ -47,9 +45,9 @@ class TestUtils(BaseTest, TestCase):
         }
 
         stringified = utils.stringify_values(dictionary=env)
-        self.assertEqual(stringified['key'], 'string-value')
-        self.assertEqual(stringified['key2'], '5')
-        self.assertEqual(stringified['dict-key']['key3'], '10')
+        assert stringified['key'] == 'string-value'
+        assert stringified['key2'] == '5'
+        assert stringified['dict-key']['key3'] == '10'
 
     def test_purge_none_values(self):
 
@@ -59,5 +57,5 @@ class TestUtils(BaseTest, TestCase):
         }
 
         purged = utils.purge_none_values(dictionary)
-        self.assertEqual(purged['key'], 'value')
-        self.assertNotIn('key2', purged)
+        assert purged['key'] == 'value'
+        assert 'key2' not in purged

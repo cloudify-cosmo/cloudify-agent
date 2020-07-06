@@ -14,7 +14,6 @@
 #    * limitations under the License.
 
 from mock import patch
-from testtools import TestCase
 
 from cloudify_agent.tests.resources import get_resource
 
@@ -23,7 +22,7 @@ from cloudify.workflows import local
 from cloudify_agent.installer import AgentInstaller
 
 
-class InstallAgentTest(TestCase):
+class InstallAgentTest:
     """
     These tests validate that when using older blueprints (3.2), the new
     cloudify_agent operations are invoked
@@ -70,7 +69,7 @@ class InstallAgentTest(TestCase):
                 }
             })
             result = installer._create_process_management_options()
-            self.assertEquals(result, "--param={0}".format(expected or value))
+            assert result == "--param={0}".format(expected or value)
 
         _test_param('value1')
         _test_param('value2with$sign', "'value2with$sign'")

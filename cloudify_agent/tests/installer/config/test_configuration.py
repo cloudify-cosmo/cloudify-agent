@@ -18,7 +18,6 @@ import os
 import platform
 
 from mock import patch
-from testtools import TestCase
 
 from cloudify import constants
 from cloudify_agent.api import utils
@@ -28,7 +27,7 @@ from cloudify_agent.tests.installer.config import mock_context
 from cloudify_agent.tests import agent_ssl_cert
 
 
-class TestConfiguration(BaseTest, TestCase):
+class TestConfiguration(BaseTest):
     def test_prepare(self):
         expected = self._get_distro_package_url(rest_port=80)
         expected['rest_port'] = 80
@@ -122,7 +121,7 @@ class TestConfiguration(BaseTest, TestCase):
         # property, it would be propagated to the cloudify agent dict
         cloudify_agent = CloudifyAgentConfig()
         cloudify_agent.set_initial_values(True, agent_config={'local': True})
-        self.assertEqual(cloudify_agent['ssl_cert_path'], '/tmp/blabla')
+        assert cloudify_agent['ssl_cert_path'] == '/tmp/blabla'
 
     def _test_prepare(self, agent_config, expected_values, context=None):
 
@@ -200,4 +199,4 @@ class TestConfiguration(BaseTest, TestCase):
         cloudify_agent.set_execution_params()
         cloudify_agent.set_default_values()
         cloudify_agent.set_installation_params(None)
-        self.assertDictEqual(expected, cloudify_agent)
+        assert expected == cloudify_agent

@@ -21,12 +21,11 @@ import pkgutil
 import click
 
 import mock
-from testtools import TestCase
 
 from cloudify_agent.tests.shell.commands import BaseCommandLineTestCase
 
 
-class TestCommandLine(BaseCommandLineTestCase, TestCase):
+class TestCommandLine(BaseCommandLineTestCase):
 
     def test_debug_command_line(self):
 
@@ -40,16 +39,16 @@ class TestCommandLine(BaseCommandLineTestCase, TestCase):
 
         # assert all loggers are now at debug level
         from cloudify_agent.api.utils import logger
-        self.assertEqual(logger.level, logging.DEBUG)
+        assert logger.level == logging.DEBUG
 
     def test_version(self):
         mock_logger = mock.Mock()
         with mock.patch('cloudify_agent.shell.main.get_logger',
                         return_value=mock_logger):
             self._run('cfy-agent --version')
-        self.assertEqual(1, len(mock_logger.mock_calls))
+        assert 1 == len(mock_logger.mock_calls)
         version = json.loads(
             pkgutil.get_data('cloudify_agent', 'VERSION'))['version']
         log_args = mock_logger.mock_calls[0][1]
         logged_output = log_args[0]
-        self.assertIn(version, logged_output)
+        assert version in logged_output

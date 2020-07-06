@@ -17,6 +17,7 @@ import tempfile
 import logging
 import os
 import platform
+import pytest
 import shutil
 import threading
 from contextlib import contextmanager
@@ -24,7 +25,6 @@ from contextlib import contextmanager
 import wagon
 
 from mock import patch
-from testtools import TestCase
 
 from cloudify import dispatch
 from cloudify import exceptions as cloudify_exceptions
@@ -49,7 +49,7 @@ PACKAGE_NAME = 'mock-plugin'
 PACKAGE_VERSION = '1.0'
 
 
-class PluginInstallerTest(BaseTest, TestCase):
+class PluginInstallerTest(BaseTest):
 
     @classmethod
     def setUpClass(cls):
@@ -115,20 +115,20 @@ class PluginInstallerTest(BaseTest, TestCase):
                               package_name=None,
                               package_version=None,
                               deployment_id=None):
-        self.assertEqual(
+        assert (
             dispatch.dispatch(test_utils.op_context(
                 task_name,
                 plugin_name=PLUGIN_NAME,
                 package_name=package_name,
                 package_version=package_version,
-                deployment_id=deployment_id)),
-            expected_return)
+                deployment_id=deployment_id))
+        ) == expected_return
 
     def _assert_task_not_runnable(self, task_name,
                                   deployment_id=None,
                                   package_name=None,
                                   package_version=None):
-        self.assertRaises(
+        pytest.raises(
             cloudify_exceptions.NonRecoverableError,
             dispatch.dispatch,
             test_utils.op_context(task_name,
@@ -164,12 +164,9 @@ class PluginInstallerTest(BaseTest, TestCase):
 
     def test_install_from_source_already_exists(self):
         installer.install(self._plugin_struct(source='mock-plugin.tar'))
-        try:
+        with pytest.raises(exceptions.PluginInstallationError,
+                           match='.*already exists.*'):
             installer.install(self._plugin_struct(source='mock-plugin.tar'))
-        except exceptions.PluginInstallationError as e:
-            self.assertIn('already exists', str(e))
-        else:
-            self.fail('PluginInstallationError not raised')
 
     def test_uninstall_from_source(self):
         installer.install(self._plugin_struct(source='mock-plugin.tar'))
@@ -218,8 +215,7 @@ class PluginInstallerTest(BaseTest, TestCase):
 
         self._assert_wagon_plugin_installed()
         logs = [args[0] for level, args, kwargs in mock_logger.mock_calls]
-        self.assertTrue(
-            any('Using existing installation' in msg for msg in logs))
+        assert any('Using existing installation' in msg for msg in logs)
 
     def _assert_wagon_plugin_installed(self):
         self._assert_task_runnable('mock_plugin.tasks.run',
@@ -246,12 +242,9 @@ class PluginInstallerTest(BaseTest, TestCase):
         os.remove(plugin_id_path)
         # the installation here should identify a plugin.id missing
         # and re-install the plugin
-        try:
+        with pytest.raises(exceptions.PluginInstallationError,
+                           match='.*corrupted state.*'):
             self.test_install_from_wagon()
-        except exceptions.PluginInstallationError as e:
-            self.assertIn('corrupted state', str(e))
-        else:
-            self.fail('PluginInstallationError not raised')
 
     def test_install_from_wagon_overriding_same_version(self):
         self.test_install_from_wagon()
@@ -259,12 +252,19 @@ class PluginInstallerTest(BaseTest, TestCase):
                 PACKAGE_NAME, PACKAGE_VERSION,
                 download_path=self.wagons['mock-plugin-modified'],
                 plugin_id='2'):
-            try:
+            with pytest.raises(exceptions.PluginInstallationError,
+                               match='.*does not match the ID.*'):
                 installer.install(self._plugin_struct())
-            except exceptions.PluginInstallationError as e:
-                self.assertIn('does not match the ID', str(e))
-            else:
-                self.fail('PluginInstallationError not raised')
+
+    def test_install_from_wagon_central_deployment(self):
+        with _patch_for_install_wagon(PACKAGE_NAME, PACKAGE_VERSION,
+                                      download_path=self.wagons[PACKAGE_NAME],
+                                      archive_name='some_archive'):
+            with pytest.raises(exceptions.PluginInstallationError,
+                               match='.*REST plugins API.*'):
+                installer.install(self._plugin_struct(
+                    executor='central_deployment_agent'),
+                    deployment_id='deployment')
 
     def test_uninstall_from_wagon(self):
         self.test_install_from_wagon()
@@ -288,33 +288,29 @@ class PluginInstallerTest(BaseTest, TestCase):
 
         extracted_plugin_path = installer.extract_package_to_dir(
             plugin_tar_url)
-        self.assertTrue(test_utils.are_dir_trees_equal(
+        assert test_utils.are_dir_trees_equal(
             plugin_source_path,
-            extracted_plugin_path))
+            extracted_plugin_path)
 
     def test_install_no_source_or_managed_plugin(self):
-        try:
+        with pytest.raises(cloudify_exceptions.NonRecoverableError,
+                           match='.*source or managed.*'):
             installer.install(self._plugin_struct())
-            self.fail()
-        except cloudify_exceptions.NonRecoverableError as e:
-            self.assertIn('source or managed', str(e))
 
     def test_extract_package_name(self):
         package_dir = os.path.join(resources.get_resource('plugins'),
                                    'mock-plugin')
-        self.assertEqual(
-            'mock-plugin',
-            installer.extract_package_name(package_dir))
+        assert 'mock-plugin' == installer.extract_package_name(package_dir)
 
 
-class TestGetSourceAndGetArgs(BaseTest, TestCase):
+class TestGetSourceAndGetArgs(BaseTest):
 
     def test_get_url_and_args_http_no_args(self):
         plugin = {'source': 'http://google.com'}
         url = installer.get_plugin_source(plugin)
         args = installer.get_plugin_args(plugin)
-        self.assertEqual(url, 'http://google.com')
-        self.assertEqual(args, [])
+        assert url == 'http://google.com'
+        assert args == []
 
     def test_get_url_https(self):
         plugin = {
@@ -324,13 +320,13 @@ class TestGetSourceAndGetArgs(BaseTest, TestCase):
         url = installer.get_plugin_source(plugin)
         args = installer.get_plugin_args(plugin)
 
-        self.assertEqual(url, 'https://google.com')
-        self.assertEqual(args, ['--pre'])
+        assert url == 'https://google.com'
+        assert args == ['--pre']
 
     def test_get_url_faulty_schema(self):
-        self.assertRaises(NonRecoverableError,
-                          installer.get_plugin_source,
-                          {'source': 'bla://google.com'})
+        pytest.raises(NonRecoverableError,
+                      installer.get_plugin_source,
+                      {'source': 'bla://google.com'})
 
     def test_get_plugin_source_from_blueprints_dir(self):
         plugin = {
@@ -344,21 +340,21 @@ class TestGetSourceAndGetArgs(BaseTest, TestCase):
                 blueprint_id='blueprint_id')
         prefix = 'file:///C:' if os.name == 'nt' else 'file://'
         expected = '{0}{1}'.format(prefix, file_path)
-        self.assertEqual(expected, source)
+        assert expected == source
 
 
-class TestGetManagedPlugin(BaseTest, TestCase):
+class TestGetManagedPlugin(BaseTest):
 
     def test_no_package_name(self):
         with _patch_client(plugins=[]) as client:
-            self.assertIsNone(installer.get_managed_plugin(plugin={}))
-            self.assertIsNone(client.plugins.kwargs)
+            assert installer.get_managed_plugin(plugin={}) is None
+            assert client.plugins.kwargs is None
 
     def test_no_managed_plugins(self):
         plugin = {'package_name': 'p', 'package_version': '1'}
         with _patch_client(plugins=[]) as client:
-            self.assertIsNone(installer.get_managed_plugin(plugin=plugin))
-            self.assertEqual(plugin, client.plugins.kwargs)
+            assert installer.get_managed_plugin(plugin=plugin) is None
+            assert plugin == client.plugins.kwargs
 
     def test_implicit_supported_platform(self):
         plugins = [
@@ -373,8 +369,7 @@ class TestGetManagedPlugin(BaseTest, TestCase):
                   'distribution_release': 'x',
                   'package_version': '1'}
         with _patch_client(plugins=plugins):
-            self.assertEquals('3',
-                              installer.get_managed_plugin(plugin=plugin).id)
+            assert '3' == installer.get_managed_plugin(plugin=plugin).id
 
     @only_os('posix')
     def test_implicit_dist_and_dist_release(self):
@@ -392,8 +387,7 @@ class TestGetManagedPlugin(BaseTest, TestCase):
         plugin = {'package_name': 'plugin', 'supported_platform': 'x',
                   'package_version': '1'}
         with _patch_client(plugins=plugins):
-            self.assertEquals('4',
-                              installer.get_managed_plugin(plugin=plugin).id)
+            assert '4' == installer.get_managed_plugin(plugin=plugin).id
 
     def test_list_filter_query_builder(self):
         plugin1 = {'package_name': 'a', 'package_version': '1'}
@@ -406,7 +400,7 @@ class TestGetManagedPlugin(BaseTest, TestCase):
         for plugin in [plugin1, plugin2]:
             with _patch_client(plugins=[]) as client:
                 installer.get_managed_plugin(plugin)
-                self.assertEqual(plugin, client.plugins.kwargs)
+                assert plugin == client.plugins.kwargs
 
 
 @contextmanager

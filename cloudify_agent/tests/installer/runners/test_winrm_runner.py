@@ -13,7 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from testtools import TestCase
+import pytest
 
 from cloudify_agent.installer.runners import winrm_runner
 from cloudify_agent.installer.runners.winrm_runner import split_into_chunks
@@ -28,14 +28,14 @@ from cloudify_agent.tests import BaseTest
 ##############################################################################
 
 
-class TestValidations(BaseTest, TestCase):
+class TestValidations(BaseTest):
     def test_validate_host(self):
         # Missing host
         session_config = {
             'user': 'test_user',
             'password': 'test_password'
         }
-        with self.assertRaisesRegex(ValueError, 'Invalid host'):
+        with pytest.raises(ValueError, match='.*Invalid host.*'):
             winrm_runner.validate(session_config)
 
     def test_validate_user(self):
@@ -44,7 +44,7 @@ class TestValidations(BaseTest, TestCase):
             'host': 'test_host',
             'password': 'test_password'
         }
-        with self.assertRaisesRegex(ValueError, 'Invalid user'):
+        with pytest.raises(ValueError, match='.*Invalid user.*'):
             winrm_runner.validate(session_config)
 
     def test_validate_password(self):
@@ -53,11 +53,11 @@ class TestValidations(BaseTest, TestCase):
             'host': 'test_host',
             'user': 'test_user'
         }
-        with self.assertRaisesRegex(ValueError, 'Invalid password'):
+        with pytest.raises(ValueError, match='.*Invalid password.*'):
             winrm_runner.validate(session_config)
 
 
-class TestDefaults(BaseTest, TestCase):
+class TestDefaults(BaseTest):
 
     def test_defaults(self):
 
@@ -67,45 +67,39 @@ class TestDefaults(BaseTest, TestCase):
             user='test_user',
             password='test_password')
 
-        self.assertEquals(
-            runner.session_config['protocol'],
-            winrm_runner.DEFAULT_WINRM_PROTOCOL)
-        self.assertEquals(
-            runner.session_config['uri'],
-            winrm_runner.DEFAULT_WINRM_URI)
-        self.assertEquals(
-            runner.session_config['port'],
-            winrm_runner.DEFAULT_WINRM_PORT)
-        self.assertEquals(
-            runner.session_config['transport'],
-            winrm_runner.DEFAULT_TRANSPORT)
+        assert runner.session_config['protocol'] == \
+            winrm_runner.DEFAULT_WINRM_PROTOCOL
+        assert runner.session_config['uri'] == \
+            winrm_runner.DEFAULT_WINRM_URI
+        assert runner.session_config['port'] == \
+            winrm_runner.DEFAULT_WINRM_PORT
+        assert runner.session_config['transport'] == \
+            winrm_runner.DEFAULT_TRANSPORT
 
 
-class TestSplitIntoChunks(TestCase):
+class TestSplitIntoChunks:
     """Test content splitting into chunks."""
 
     def test_empty_string(self):
         """An empty string is not splitted."""
         contents = ''
         expected_chunks = ['']
-        self.assertEqual(split_into_chunks(contents), expected_chunks)
+        assert split_into_chunks(contents) == expected_chunks
 
     def test_one_line(self):
         """A single is not splitted."""
         contents = 'this is a string'
         expected_chunks = [contents]
-        self.assertEqual(split_into_chunks(contents), expected_chunks)
+        assert split_into_chunks(contents) == expected_chunks
 
     def test_multiple_lines(self):
         """Multiple lines are splitted as expected."""
         contents = 'a\nfew\nshort\nlines'
         expected_chunks = ['a\nfew', 'short', 'lines']
-        self.assertEqual(
-            split_into_chunks(contents, max_size=10, separator='\n'),
-            expected_chunks,
-        )
+        assert split_into_chunks(contents, max_size=10, separator='\n') == \
+            expected_chunks
 
     def test_line_too_long(self):
         """Exception raised on line too long."""
         contents = 'a very long line'
-        self.assertRaises(ValueError, split_into_chunks, contents, max_size=1)
+        pytest.raises(ValueError, split_into_chunks, contents, max_size=1)

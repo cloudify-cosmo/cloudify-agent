@@ -1,7 +1,5 @@
 https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip#egg=cloudify-cosmo[dispatcher]
-testtools==2.3.0
 mock==1.0.1
-unittest2
 pywinrm==0.4.1
 cryptography==2.1.4
 

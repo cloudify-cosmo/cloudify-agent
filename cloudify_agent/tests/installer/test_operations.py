@@ -18,7 +18,6 @@ import tempfile
 import uuid
 
 from mock import patch
-from testtools import TestCase
 
 from cloudify.workflows import local
 from cloudify.utils import setup_logger
@@ -43,11 +42,11 @@ from cloudify_rest_client.manager import ManagerItem
 # it should support both windows and linux machines. and thus, testing the
 # LocalWindowsAgentInstaller and LocalLinuxAgentInstaller.
 # the remote use cases are tested as system tests because they require
-# actually launching VM's from the test.
+# actually launching VMs from the test.
 ##############################################################################
 
 
-class TestAgentInstallerLocal(BaseDaemonLiveTestCase, TestCase):
+class TestAgentInstallerLocal(BaseDaemonLiveTestCase):
     """
     these tests run local workflows in order to invoke the installer
     operations. the remote use case is tested as part of the system tests.

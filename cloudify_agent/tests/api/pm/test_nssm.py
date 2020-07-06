@@ -17,7 +17,7 @@ import os
 import time
 
 from mock import patch
-from testtools import TestCase
+import pytest
 
 from cloudify.exceptions import CommandExecutionException
 
@@ -31,8 +31,7 @@ from cloudify_agent.tests import get_storage_directory
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
 @only_os('nt')
-class TestNonSuckingServiceManagerDaemon(BaseDaemonProcessManagementTest,
-                                         TestCase):
+class TestNonSuckingServiceManagerDaemon(BaseDaemonProcessManagementTest):
 
     @property
     def daemon_cls(self):
@@ -42,7 +41,7 @@ class TestNonSuckingServiceManagerDaemon(BaseDaemonProcessManagementTest,
         daemon = self.create_daemon()
         daemon.create()
         daemon.configure()
-        self.assertTrue(os.path.exists(daemon.config_path))
+        assert os.path.exists(daemon.config_path)
 
     def test_delete(self):
         daemon = self.create_daemon()
@@ -51,8 +50,8 @@ class TestNonSuckingServiceManagerDaemon(BaseDaemonProcessManagementTest,
         daemon.start()
         daemon.stop()
         daemon.delete()
-        self.assertFalse(os.path.exists(daemon.config_path))
-        self.assertRaises(
+        assert not os.path.exists(daemon.config_path)
+        pytest.raises(
             CommandExecutionException,
             self.runner.run,
             'sc getdisplayname {0}'.format(daemon.name))
@@ -61,7 +60,7 @@ class TestNonSuckingServiceManagerDaemon(BaseDaemonProcessManagementTest,
         daemon = self.create_daemon()
         daemon.create()
         daemon.configure()
-        self.assertFalse(daemon.status())
+        assert not daemon.status()
         daemon.start()
         # on windows, the daemon.start completes and returns fast enough
         # that the service state is still SERVICE_START_PENDING

@@ -117,10 +117,10 @@ class BaseTest(object):
             timeout=timeout)
 
     def assert_daemon_alive(self, name):
-        self.assertTrue(self._is_agent_alive(name))
+        assert self._is_agent_alive(name)
 
     def assert_daemon_dead(self, name):
-        self.assertFalse(self._is_agent_alive(name))
+        assert not self._is_agent_alive(name)
 
     def wait_for_daemon_alive(self, name, timeout=10):
         deadline = time.time() + timeout

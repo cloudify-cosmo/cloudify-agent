@@ -16,7 +16,6 @@
 import os
 
 from mock import patch
-from testtools import TestCase
 
 from cloudify_agent.api.pm.detach import DetachedDaemon
 
@@ -28,7 +27,7 @@ from cloudify_agent.tests import get_storage_directory
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
 @only_os('posix')
-class TestDetachedDaemon(BaseDaemonProcessManagementTest, TestCase):
+class TestDetachedDaemon(BaseDaemonProcessManagementTest):
 
     @property
     def daemon_cls(self):
@@ -39,8 +38,8 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest, TestCase):
         daemon.create()
 
         daemon.configure()
-        self.assertTrue(os.path.exists(daemon.script_path))
-        self.assertTrue(os.path.exists(daemon.config_path))
+        assert os.path.exists(daemon.script_path)
+        assert os.path.exists(daemon.config_path)
 
     def test_delete(self):
         daemon = self.create_daemon()
@@ -49,9 +48,9 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest, TestCase):
         daemon.start()
         daemon.stop()
         daemon.delete()
-        self.assertFalse(os.path.exists(daemon.script_path))
-        self.assertFalse(os.path.exists(daemon.config_path))
-        self.assertFalse(os.path.exists(daemon.pid_file))
+        assert not os.path.exists(daemon.script_path)
+        assert not os.path.exists(daemon.config_path)
+        assert not os.path.exists(daemon.pid_file)
 
     def test_cron_respawn(self):
         daemon = self.create_daemon(cron_respawn=True, cron_respawn_delay=1)
@@ -60,7 +59,7 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest, TestCase):
         daemon.start()
 
         crontab = self.runner.run('crontab -l').std_out
-        self.assertIn(daemon.cron_respawn_path, crontab)
+        assert daemon.cron_respawn_path in crontab
 
         # lets kill the process
         self.runner.run("pkill -9 -f 'cloudify_agent.worker'")
@@ -76,4 +75,4 @@ class TestDetachedDaemon(BaseDaemonProcessManagementTest, TestCase):
         self.wait_for_daemon_dead(daemon.queue)
 
         crontab = self.runner.run('crontab -l').std_out
-        self.assertNotIn(daemon.cron_respawn_path, crontab)
+        assert daemon.cron_respawn_path not in crontab

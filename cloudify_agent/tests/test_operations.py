@@ -18,7 +18,6 @@ import shutil
 from contextlib import contextmanager
 
 from mock import patch, MagicMock
-from testtools import TestCase
 
 from cloudify import constants
 from cloudify import ctx
@@ -46,7 +45,7 @@ from cloudify_agent.tests.api.pm import only_ci, only_os
 from cloudify_rest_client.manager import ManagerItem
 
 
-class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
+class TestInstallNewAgent(BaseDaemonLiveTestCase):
     @contextmanager
     def _manager_env(self):
         port = 8756
@@ -143,7 +142,7 @@ class TestInstallNewAgent(BaseDaemonLiveTestCase, TestCase):
             agent_dict = self.get_agent_dict(env, 'new_agent_host')
             agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
             new_agent_name = agent_dict['name']
-            self.assertNotEqual(new_agent_name, agent_name)
+            assert new_agent_name != agent_name
             self.assert_daemon_alive(new_agent_name)
             env.execute('uninstall', task_retries=1)
             self.wait_for_daemon_dead(name=agent_name)
@@ -156,7 +155,7 @@ rest_mock.manager.get_version = lambda: '3.3'
 
 
 @only_os('posix')
-class TestCreateAgentAmqp(BaseTest, TestCase):
+class TestCreateAgentAmqp(BaseTest):
     @staticmethod
     @patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())
     @patch('cloudify.utils.ctx', mock_context())
@@ -223,22 +222,22 @@ class TestCreateAgentAmqp(BaseTest, TestCase):
             third_agent = operations.create_new_agent_config(new_agent)
             equal_keys = ['ip', 'basedir', 'user']
             for k in equal_keys:
-                self.assertEqual(old_agent[k], new_agent[k])
-                self.assertEqual(old_agent[k], third_agent[k])
+                assert old_agent[k] == new_agent[k]
+                assert old_agent[k] == third_agent[k]
             nonequal_keys = ['agent_dir', 'workdir', 'envdir', 'name',
                              'rest_host']
             for k in nonequal_keys:
-                self.assertNotEqual(old_agent[k], new_agent[k])
-                self.assertNotEqual(old_agent[k], third_agent[k])
+                assert old_agent[k] != new_agent[k]
+                assert old_agent[k] != third_agent[k]
             old_name = old_agent['name']
             new_name = new_agent['name']
             third_name = third_agent['name']
-            self.assertIn(old_name, new_name)
-            self.assertIn(old_name, third_name)
-            self.assertLessEqual(len(third_name), len(new_name))
+            assert old_name in new_name
+            assert old_name in third_name
+            assert len(third_name) <= len(new_name)
             new_agent['name'] = '{0}{1}'.format(new_agent['name'], 'not-uuid')
             agent = operations.create_new_agent_config(new_agent)
-            self.assertIn(new_agent['name'], agent['name'])
+            assert new_agent['name'] in agent['name']
 
     @patch('cloudify_agent.operations._send_amqp_task')
     @patch('cloudify_agent.api.utils.is_agent_alive',
@@ -262,9 +261,9 @@ class TestCreateAgentAmqp(BaseTest, TestCase):
                 'cloudify_agent']['agent_dir']
             new_queue = ctx.instance.runtime_properties[
                 'cloudify_agent']['queue']
-            self.assertNotEqual(old_name, new_name)
-            self.assertNotEqual(old_agent_dir, new_agent_dir)
-            self.assertNotEqual(old_queue, new_queue)
+            assert old_name != new_name
+            assert old_agent_dir != new_agent_dir
+            assert old_queue != new_queue
 
     def _create_cloudify_agent_dir(self):
         agent_script_dir = os.path.join(self.temp_folder, 'cloudify_agent')
