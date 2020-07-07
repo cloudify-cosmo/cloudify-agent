@@ -21,7 +21,7 @@ from cloudify_agent.tests.installer.config import mock_context
 @patch('cloudify.agent_utils.get_rest_client',
        return_value=MockRestclient())
 @patch('cloudify.utils.get_manager_name', return_value='cloudify')
-def _test_agent_installation(agent_ssl_cert, agent_config):
+def _test_agent_installation(agent_ssl_cert, agent_config, *_):
     new_ctx = mock_context(agent_ssl_cert)
     current_ctx.set(new_ctx)
 
