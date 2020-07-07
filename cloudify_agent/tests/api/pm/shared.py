@@ -13,7 +13,7 @@ from cloudify_agent.tests.daemon import (
     wait_for_daemon_alive,
     wait_for_daemon_dead,
 )
-from cloudify_agent.test.api.pm import DEPLOYMENT_ID
+from cloudify_agent.tests.api.pm import DEPLOYMENT_ID
 
 
 def patch_get_source(fn):
