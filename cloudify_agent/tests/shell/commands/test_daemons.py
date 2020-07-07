@@ -277,7 +277,7 @@ def test_required(*_):
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-def test_inspect_non_existing_agent(_):
+def test_inspect_non_existing_agent(*_):
     try:
         run_agent_command('cfy-agent daemons inspect --name=non-existing',
                           raise_system_exit=True)
@@ -287,7 +287,7 @@ def test_inspect_non_existing_agent(_):
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-def test_list(_):
+def test_list(*_):
     run_agent_command('cfy-agent daemons create '
                       '--process-management=init.d '
                       '--queue=queue --name=test-name --rest-host=127.0.0.1 '
