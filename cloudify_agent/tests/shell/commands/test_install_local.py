@@ -65,7 +65,7 @@ def test_installation(agent_package, tmpdir_factory, agent_ssl_cert):
     try:
         _test_agent_installation(agent_ssl_cert, agent_config)
     finally:
-        shutil.rmtree(base_dir)
+        shutil.rmtree(str(base_dir))
 
 
 @pytest.mark.only_ci
