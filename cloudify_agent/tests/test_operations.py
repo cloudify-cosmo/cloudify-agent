@@ -20,7 +20,7 @@ from cloudify_agent.api import utils
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 from cloudify_agent.tests import get_agent_dict
 from cloudify_agent.tests import resources
-from cloudify_agent.tests.daemons import (
+from cloudify_agent.tests.daemon import (
     assert_daemon_alive,
     wait_for_daemon_dead,
 )
