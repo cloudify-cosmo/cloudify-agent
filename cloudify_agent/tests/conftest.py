@@ -95,7 +95,8 @@ def pytest_collection_modifyitems(config, items):
         reason='Not relevant OS to run the test.'
     )
     for item in items:
-        if config.getoption('--run-ci-tests') and "only_ci" in item.keywords:
+        if "only_ci" in item.keywords and not config.getoption(
+                '--run-ci-tests'):
             item.add_marker(skip_ci)
         if "only_nt" in item.keywords and os.name != 'nt':
             item.add_marker(skip_os)
