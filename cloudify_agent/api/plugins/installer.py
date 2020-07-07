@@ -35,7 +35,6 @@ from cloudify.utils import extract_archive, get_python_path
 from cloudify.manager import get_rest_client
 from cloudify.utils import LocalCommandRunner
 from cloudify.constants import MANAGER_PLUGINS_PATH
-from cloudify.plugins.install_utils import INSTALLING_PREFIX
 from cloudify.exceptions import NonRecoverableError, CommandExecutionException
 
 from cloudify_agent import VIRTUALENV
@@ -125,16 +124,6 @@ def _install_managed_plugin(deployment_id,
     ctx.logger.debug('Checking if managed plugin installation exists '
                      'in %s', dst_dir)
 
-    # create_deployment_env should wait for the install_plugin wf to finish
-    deadline = time.time() + INSTALLATION_TIMEOUT
-    while (_is_plugin_installing(managed_plugin.id) and
-           deployment_id != SYSTEM_DEPLOYMENT):
-        if time.time() < deadline:
-            time.sleep(PLUGIN_QUERY_INTERVAL)
-        else:
-            raise exceptions.PluginInstallationError(
-                'Timeout waiting for plugin to be installed. '
-                'Plugin info: [{0}] '.format(managed_plugin))
     if os.path.exists(dst_dir):
         ctx.logger.debug('Plugin path exists: %s', dst_dir)
         plugin_id_path = os.path.join(dst_dir, 'plugin.id')
@@ -178,22 +167,11 @@ def _install_managed_plugin(deployment_id,
         try:
             ctx.logger.info('Installing managed plugin: %s [%s]',
                             managed_plugin.id, description)
-            wait_for_wagon_in_directory(managed_plugin.id)
-            # Wait for Syncthing to sync resources for the wagons
-            if syncthing_utils:
-                syncthing_utils.wait_for_plugins_sync(
-                    sync_dir=syncthing_utils.RESOURCES_DIR)
             _make_virtualenv(dst_dir)
             _wagon_install(
                 plugin=managed_plugin, venv=dst_dir, args=args)
             with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
                 f.write(managed_plugin.id)
-
-            if _is_plugin_installing(managed_plugin.id):
-                # Wait for Syncthing to sync plugin files on all managers
-                if syncthing_utils:
-                    syncthing_utils.wait_for_plugins_sync()
-                _update_plugin_status(managed_plugin.id)
         except Exception as e:
             tpe, value, tb = sys.exc_info()
             exc = NonRecoverableError('Failed installing managed '
@@ -201,22 +179,6 @@ def _install_managed_plugin(deployment_id,
                                       .format(managed_plugin.id,
                                               plugin, e))
             reraise(NonRecoverableError, exc, tb)
-
-
-def _update_plugin_status(plugin_id):
-    """
-    Completing plugin installation process after installing it on relevant
-    locations and syncing across all Managers if needed.
-    :param plugin_id:
-    """
-    client = get_rest_client()
-    client.plugins.finish_installation(plugin_id)
-
-
-def _is_plugin_installing(plugin_id):
-    client = get_rest_client()
-    plugin = client.plugins.get(plugin_id)
-    return plugin.archive_name.startswith(INSTALLING_PREFIX)
 
 
 def _wagon_install(plugin, venv, args):
