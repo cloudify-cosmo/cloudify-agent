@@ -1,18 +1,3 @@
-#########
-# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-#  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  * See the License for the specific language governing permissions and
-#  * limitations under the License.
-
 import filecmp
 import os
 import platform
@@ -41,6 +26,9 @@ from cloudify_agent.api.defaults import (SSL_CERTS_TARGET_DIR,
 
 logger = setup_logger('cloudify_agent.tests.utils')
 
+
+def get_daemon_storage(path):
+    return os.path.join(path, 'daemon_storage')
 
 @contextmanager
 def env(key, value):
@@ -254,7 +242,7 @@ class SSLWSGIServer(wsgiref.simple_server.WSGIServer):
 
 
 class FileServer(object):
-    def __init__(self, root_path=None, port=0, ssl=True):
+    def __init__(self, root_path=None, port=8756, ssl=True):
         self._port = port
         self.root_path = root_path or os.path.dirname(resources.__file__)
         self._server = None

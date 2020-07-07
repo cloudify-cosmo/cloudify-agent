@@ -1,7 +1,11 @@
 import pytest
 
 from cloudify_agent.tests.agent_package_generator import AgentPackageGenerator
-from cloudify_agent.tests.utils import _AgentSSLCert, FileServer
+from cloudify_agent.tests.utils import (
+    _AgentSSLCert,
+    FileServer,
+    get_daemon_storage,
+)
 
 
 @pytest.fixture(scope='function')
@@ -14,6 +18,11 @@ def agent_package():
 @pytest.fixture(scope='session')
 def agent_ssl_cert(tmpdir_factory):
     yield _AgentSSLCert(tmpdir_factory.mktemp())
+
+
+@pytest.fixture(scope='function')
+def daemon_factory(tmp_path):
+    yield DaemonFactory(storage=get_daemon_storage())
 
 
 @pytest.fixture(scope='session')
