@@ -10,7 +10,7 @@ logger = setup_logger(
     logger_level=logging.DEBUG)
 
 
-def run_agent_command(self, command, raise_system_exit=False):
+def run_agent_command(command, raise_system_exit=False):
     sys.argv = command.split()
     logger.info('Running cfy-agent command with '
                 'sys.argv={0}'.format(sys.argv))
