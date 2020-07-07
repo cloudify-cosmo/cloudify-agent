@@ -12,22 +12,22 @@ logger = setup_logger(
     logger_level=logging.DEBUG)
 
 
-def _is_agent_alive(self, name, timeout=10):
+def _is_agent_alive(name, timeout=10):
     return agent_utils.is_agent_alive(
         name,
         get_client(),
         timeout=timeout)
 
 
-def assert_daemon_alive(self, name):
+def assert_daemon_alive(name):
     assert _is_agent_alive(name)
 
 
-def assert_daemon_dead(self, name):
+def assert_daemon_dead(name):
     assert not _is_agent_alive(name)
 
 
-def wait_for_daemon_alive(self, name, timeout=10):
+def wait_for_daemon_alive(name, timeout=10):
     deadline = time.time() + timeout
 
     while time.time() < deadline:
@@ -40,7 +40,7 @@ def wait_for_daemon_alive(self, name, timeout=10):
                        'for {1} seconds'.format(name, timeout))
 
 
-def wait_for_daemon_dead(self, name, timeout=10):
+def wait_for_daemon_dead(name, timeout=10):
     deadline = time.time() + timeout
 
     while time.time() < deadline:

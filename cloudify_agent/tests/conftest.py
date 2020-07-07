@@ -18,7 +18,7 @@ def agent_ssl_cert(tmpdir_factory):
 
 @pytest.fixture(scope='session')
 def file_server(tmp_path):
-    server = FileServer(tmp_path, ssl=False)
+    server = FileServer(str(tmp_path), ssl=False)
     server.start()
     yield server
     server.stop()
