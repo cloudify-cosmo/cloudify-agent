@@ -122,8 +122,8 @@ rest_mock.manager.get_version = lambda: '3.3'
 
 def _create_agent(agent_ssl_cert):
     mock_ctx = mock_context(agent_ssl_cert)
-    with (patch('cloudify_agent.installer.config.agent_config.ctx', mock_ctx),
-          patch('cloudify.utils.ctx', mock_ctx)):
+    with patch('cloudify_agent.installer.config.agent_config.ctx',
+               mock_ctx), patch('cloudify.utils.ctx', mock_ctx):
         old_agent = CloudifyAgentConfig({
             'install_method': 'remote',
             'ip': '10.0.4.47',
