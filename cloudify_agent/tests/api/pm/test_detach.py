@@ -1,6 +1,7 @@
 import os
 
 from mock import patch
+import pytest
 
 from cloudify_agent.api.pm.detach import DetachedDaemon
 

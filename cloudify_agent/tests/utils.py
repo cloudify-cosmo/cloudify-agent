@@ -30,6 +30,7 @@ logger = setup_logger('cloudify_agent.tests.utils')
 def get_daemon_storage(path):
     return os.path.join(path, 'daemon_storage')
 
+
 @contextmanager
 def env(key, value):
     os.environ[key] = value
@@ -248,6 +249,10 @@ class FileServer(object):
         self._server = None
         self._server_thread = None
         self._ssl = ssl
+        self.url = '{proto}://localhost:{port}'.format(
+            proto='https' if ssl else 'http',
+            port=port,
+        )
 
     @property
     def port(self):
