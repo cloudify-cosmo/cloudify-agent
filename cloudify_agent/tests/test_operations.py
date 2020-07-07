@@ -181,7 +181,7 @@ def _set_context(agent_ssl_cert, tmp_path, host='localhost'):
 
 
 def _create_cloudify_agent_dir(tmp_path):
-    agent_script_dir = os.path.join(tmp_path, 'cloudify_agent')
+    agent_script_dir = os.path.join(str(tmp_path), 'cloudify_agent')
     os.makedirs(agent_script_dir)
 
 
@@ -194,12 +194,12 @@ def _manager_env(fileserver, tmp_path, ssl_cert, agent_package):
         dist = platform.dist()
         package_name = '{0}-{1}-agent.tar.gz'.format(dist[0].lower(),
                                                      dist[2].lower())
-    resources_dir = os.path.join(tmp_path, 'resources')
+    resources_dir = os.path.join(str(tmp_path), 'resources')
     agent_dir = os.path.join(resources_dir, 'packages', 'agents')
     agent_script_dir = os.path.join(resources_dir, 'cloudify_agent')
     os.makedirs(agent_dir)
     os.makedirs(agent_script_dir)
-    os.makedirs(os.path.join(tmp_path, 'cloudify'))
+    os.makedirs(os.path.join(str(tmp_path), 'cloudify'))
 
     agent_path = os.path.join(agent_dir, package_name)
     shutil.copyfile(agent_package.get_package_path(), agent_path)
