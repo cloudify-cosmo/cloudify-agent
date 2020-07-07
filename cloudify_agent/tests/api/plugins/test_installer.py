@@ -202,10 +202,10 @@ def test_extract_package_to_dir(file_server):
         extracted_plugin_path)
 
 
-def test_install_no_source_or_managed_plugin():
+def test_install_no_source_or_managed_plugin(file_server):
     with pytest.raises(cloudify_exceptions.NonRecoverableError,
                        match='.*source or managed.*'):
-        installer.install(plugins.plugin_struct())
+        installer.install(plugins.plugin_struct(file_server))
 
 
 def test_extract_package_name():
