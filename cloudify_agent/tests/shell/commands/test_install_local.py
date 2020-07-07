@@ -59,7 +59,7 @@ def _get_agent_config(agent_package, agent_ssl_cert):
 
 @pytest.mark.only_ci
 def test_installation(agent_package, tmpdir_factory, agent_ssl_cert):
-    base_dir = tmpdir_factory.mktemp()
+    base_dir = tmpdir_factory.mktemp('install_base_dir')
     agent_config = _get_agent_config(agent_package, agent_ssl_cert)
     agent_config['basedir'] = base_dir
     try:

@@ -36,7 +36,7 @@ def agent_package():
 
 @pytest.fixture(scope='session')
 def agent_ssl_cert(tmpdir_factory):
-    yield _AgentSSLCert(tmpdir_factory.mktemp())
+    yield _AgentSSLCert(tmpdir_factory.mktemp('agent_cert'))
 
 
 @pytest.fixture(scope='function')
