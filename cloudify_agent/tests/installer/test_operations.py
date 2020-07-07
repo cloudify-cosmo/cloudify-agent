@@ -13,9 +13,6 @@ from cloudify_agent.tests import resources
 from cloudify_agent.tests.utils import (
     get_source_uri,
     get_requirements_uri)
-from cloudify_agent.tests.api.pm import (
-    only_os,
-)
 from cloudify_agent.tests import get_agent_dict
 from cloudify_agent.tests.daemon import wait_for_daemon_dead
 from cloudify_agent.tests.installer.config import get_tenant_mock
@@ -35,7 +32,7 @@ logger = setup_logger(
 # actually launching VMs from the test.
 ##############################################################################
 
-@only_os('posix')
+@pytest.mark.only_posix
 @pytest.mark.only_ci
 def test_local_agent_from_package_posix(file_server, tmp_path,
                                         agent_ssl_cert, request):
@@ -46,7 +43,7 @@ def test_local_agent_from_package_posix(file_server, tmp_path,
                                    request)
 
 
-@only_os('nt')
+@pytest.mark.only_nt
 @pytest.mark.only_ci
 def test_local_agent_from_package_nt(file_server, tmp_path, agent_ssl_cert,
                                      request):

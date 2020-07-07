@@ -11,7 +11,6 @@ from cloudify import utils as cloudify_utils
 from cloudify import constants, exceptions
 
 from cloudify_agent.installer import script
-from cloudify_agent.tests.api.pm import only_os
 from cloudify_agent.tests.installer.config import mock_context
 
 
@@ -76,7 +75,7 @@ def run_install(commands, windows=False, extra_agent_params=None, cert=None):
     return response.std_out
 
 
-@only_os('posix')
+@pytest.mark.only_posix
 def test_download_curl(file_server, agent_ssl_cert):
     run_install(['ln -s $(which curl) curl',
                  'PATH=$PWD',
@@ -86,7 +85,7 @@ def test_download_curl(file_server, agent_ssl_cert):
     assert os.path.isfile('download.output')
 
 
-@only_os('posix')
+@pytest.mark.only_posix
 def test_download_wget(file_server, agent_ssl_cert):
     run_install(['ln -s $(which wget) wget',
                  'PATH=$PWD',
@@ -96,7 +95,7 @@ def test_download_wget(file_server, agent_ssl_cert):
     assert os.path.isfile('download.output')
 
 
-@only_os('posix')
+@pytest.mark.only_posix
 def test_download_no_curl_or_wget(file_server, agent_ssl_cert):
     pytest.raises(
         exceptions.CommandExecutionException,
@@ -108,13 +107,13 @@ def test_download_no_curl_or_wget(file_server, agent_ssl_cert):
     )
 
 
-@only_os('posix')
+@pytest.mark.only_posix
 def test_package_url_implicit(agent_ssl_cert):
     output = run_install(['package_url'], cert=agent_ssl_cert)
     assert '-agent.tar.gz' in output
 
 
-@only_os('posix')
+@pytest.mark.only_posix
 def test_package_url_explicit(agent_ssl_cert):
     output = run_install(
         ['package_url'],
@@ -127,7 +126,7 @@ def test_package_url_explicit(agent_ssl_cert):
     assert 'one-two-agent.tar.gz' in output
 
 
-@only_os('posix')
+@pytest.mark.only_posix
 def test_create_custom_env_file(agent_ssl_cert):
     run_install(
         ['create_custom_env_file'],
@@ -138,13 +137,13 @@ def test_create_custom_env_file(agent_ssl_cert):
         assert 'export one="one"' in f.read()
 
 
-@only_os('posix')
+@pytest.mark.only_posix
 def test_no_create_custom_env_file(agent_ssl_cert):
     run_install(['create_custom_env_file'], cert=agent_ssl_cert)
     assert not os.path.isfile('custom_agent_env.sh')
 
 
-@only_os('posix')
+@pytest.mark.only_posix
 def test_create_ssl_cert(tmp_path, agent_ssl_cert):
     run_install(['add_ssl_cert'], cert=agent_ssl_cert)
     # basedir + node_id
@@ -168,7 +167,7 @@ def test_install_not_rendered_in_provided_mode(tmp_path, agent_ssl_cert):
     assert 'install_agent' not in install_script
 
 
-@only_os('nt')
+@pytest.mark.only_nt
 def test_win_create_custom_env_file(agent_ssl_cert):
     run_install(['CreateCustomEnvFile'],
                 windows=True,
@@ -178,13 +177,13 @@ def test_win_create_custom_env_file(agent_ssl_cert):
         assert 'set one="one"' in f.read()
 
 
-@only_os('nt')
+@pytest.mark.only_nt
 def test_win_no_create_custom_env_file(agent_ssl_cert):
     run_install(['CreateCustomEnvFile'], windows=True, cert=agent_ssl_cert)
     assert not os.path.isfile('custom_agent_env.bat')
 
 
-@only_os('nt')
+@pytest.mark.only_nt
 def test_win_create_ssl_cert(tmp_path, agent_ssl_cert):
     run_install(['AddSSLCert'], windows=True, cert=agent_ssl_cert)
     # basedir + node_id

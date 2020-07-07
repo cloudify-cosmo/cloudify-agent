@@ -38,11 +38,16 @@ def pytest_addoption(parser):
 
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption('--run-ci-test'):
-        return
     skip_ci = pytest.mark.skip(
         reason="CI tests may contaminate system. Set --run-ci-tests to run."
     )
+    skip_os = pytest.mark.skip(
+        reason='Not relevant OS to run the test.'
+    )
     for item in items:
-        if "only_ci" in item.keywords:
+        if config.getoption('--run-ci-test') and "only_ci" in item.keywords:
             item.add_marker(skip_ci)
+        if "only_nt" in item.keywords and os.name != 'nt':
+            item.add_marker(skip_os)
+        if "only_posix" in item.keywords and os.name != 'posix':
+            item.add_marker(skip_os)

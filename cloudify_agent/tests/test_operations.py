@@ -28,7 +28,6 @@ from cloudify_agent.tests.installer.config import (
     mock_context,
     get_tenant_mock
 )
-from cloudify_agent.tests.api.pm import only_os
 
 
 @patch('cloudify_agent.installer.operations.delete_agent_rabbitmq_user')
@@ -61,7 +60,7 @@ def test_install_new_agent(file_server, tmp_path, agent_ssl_cert, request,
         wait_for_daemon_dead(name=new_agent_name)
 
 
-@only_os('posix')
+@pytest.mark.only_posix
 def test_create_agent_dict(tmp_path):
     with _set_context(tmp_path, host='192.0.2.98'):
         old_agent = _create_agent()
@@ -88,7 +87,7 @@ def test_create_agent_dict(tmp_path):
         assert new_agent['name'] in agent['name']
 
 
-@only_os('posix')
+@pytest.mark.only_posix
 @patch('cloudify_agent.operations._send_amqp_task')
 @patch('cloudify_agent.api.utils.is_agent_alive',
        MagicMock(return_value=True))

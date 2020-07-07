@@ -59,11 +59,6 @@ def patch_unless_ci(target, new):
         return patch(target, getattr(getter(), attribute))
 
 
-def only_os(os_type):
-    return pytest.mark.skipif(
-        os.name != os_type, reason='Not relevant OS to run the test.')
-
-
 class BaseDaemonLiveTestCase(BaseTest):
 
     def setUp(self):

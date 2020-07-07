@@ -15,8 +15,6 @@ except ImportError:
     FabricRunner = None
     FabricCommandExecutionException = None
 
-from cloudify_agent.tests.api.pm import only_os
-
 
 ##############################################################################
 # note that this file only tests validation and defaults of the fabric runner.
@@ -25,7 +23,7 @@ from cloudify_agent.tests.api.pm import only_os
 # tests framework
 ##############################################################################
 
-@only_os('posix')
+@pytest.mark.only_posix
 def test_default_port():
     runner = FabricRunner(
         validate_connection=False,
@@ -35,7 +33,7 @@ def test_default_port():
     assert runner.port == 22
 
 
-@only_os('posix')
+@pytest.mark.only_posix
 def test_no_host():
     with pytest.raises(exceptions.AgentInstallerConfigurationError,
                        match='.*Missing host.*'):
@@ -46,7 +44,7 @@ def test_no_host():
         )
 
 
-@only_os('posix')
+@pytest.mark.only_posix
 def test_no_user():
     with pytest.raises(exceptions.AgentInstallerConfigurationError,
                        match='.*Missing user.*'):
@@ -57,7 +55,7 @@ def test_no_user():
         )
 
 
-@only_os('posix')
+@pytest.mark.only_posix
 def test_no_key_no_password():
     with pytest.raises(exceptions.AgentInstallerConfigurationError,
                        match='.*Must specify either key or password.*'):
@@ -68,7 +66,7 @@ def test_no_key_no_password():
         )
 
 
-@only_os('posix')
+@pytest.mark.only_posix
 def test_exception_message():
     """Exception message is the same one used by fabric."""
     expected_message = '<message>'

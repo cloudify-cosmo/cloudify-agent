@@ -5,8 +5,7 @@ import pytest
 
 from cloudify_agent.api.pm.initd import InitDDaemon
 from cloudify_agent.tests import get_storage_directory
-from cloudify_agent.tests.api.pm import (only_os,
-                                         patch_unless_ci,
+from cloudify_agent.tests.api.pm import (patch_unless_ci,
                                          BaseDaemonProcessManagementTest)
 
 
@@ -43,7 +42,7 @@ CONFIG_DIR = '/tmp/etc/default'
 @patch_unless_ci(
     'cloudify_agent.api.pm.initd.stop_command',
     _non_service_stop_command)
-@only_os('posix')
+@pytest.mark.only_posix
 class TestInitDDaemon(BaseDaemonProcessManagementTest):
 
     @property
