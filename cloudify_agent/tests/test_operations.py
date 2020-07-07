@@ -61,9 +61,9 @@ def test_install_new_agent(file_server, tmp_path, agent_ssl_cert, request,
 
 
 @pytest.mark.only_posix
-def test_create_agent_dict(tmp_path):
-    with _set_context(tmp_path, host='192.0.2.98'):
-        old_agent = _create_agent()
+def test_create_agent_dict(agent_ssl_cert, tmp_path):
+    with _set_context(agent_ssl_cert, tmp_path, host='192.0.2.98'):
+        old_agent = _create_agent(agent_ssl_cert)
         new_agent = operations.create_new_agent_config(old_agent)
         new_agent['version'] = '3.4'
         third_agent = operations.create_new_agent_config(new_agent)
@@ -93,8 +93,8 @@ def test_create_agent_dict(tmp_path):
        MagicMock(return_value=True))
 @patch('cloudify.agent_utils.get_rest_client',
        return_value=MockRestclient())
-def test_create_agent_from_old_agent(tmp_path, *mocks):
-    with _set_context(tmp_path):
+def test_create_agent_from_old_agent(agent_ssl_cert, tmp_path, *mocks):
+    with _set_context(agent_ssl_cert, tmp_path):
         _create_cloudify_agent_dir(tmp_path)
         old_name = ctx.instance.runtime_properties[
             'cloudify_agent']['name']
@@ -120,45 +120,46 @@ rest_mock.manager = MagicMock()
 rest_mock.manager.get_version = lambda: '3.3'
 
 
-@patch('cloudify_agent.installer.config.agent_config.ctx', mock_context())
-@patch('cloudify.utils.ctx', mock_context())
-def _create_agent():
-    old_agent = CloudifyAgentConfig({
-        'install_method': 'remote',
-        'ip': '10.0.4.47',
-        'rest_host': '10.0.4.46',
-        'distro': 'ubuntu',
-        'distro_codename': 'trusty',
-        'basedir': '/home/vagrant',
-        'user': 'vagrant',
-        'key': '~/.ssh/id_rsa',
-        'windows': False,
-        'package_url': 'http://10.0.4.46:53229/packages/agents/'
-                       'ubuntu-trusty-agent.tar.gz',
-        'version': '4.4',
-        'broker_config': {
-            'broker_ip': '10.0.4.46',
-            'broker_pass': 'test_pass',
-            'broker_user': 'test_user',
-            'broker_ssl_cert': ''
-        }
-    })
+def _create_agent(agent_ssl_cert):
+    mock_ctx = mock_context(agent_ssl_cert)
+    with (patch('cloudify_agent.installer.config.agent_config.ctx', mock_ctx),
+          patch('cloudify.utils.ctx', mock_ctx)):
+        old_agent = CloudifyAgentConfig({
+            'install_method': 'remote',
+            'ip': '10.0.4.47',
+            'rest_host': '10.0.4.46',
+            'distro': 'ubuntu',
+            'distro_codename': 'trusty',
+            'basedir': '/home/vagrant',
+            'user': 'vagrant',
+            'key': '~/.ssh/id_rsa',
+            'windows': False,
+            'package_url': 'http://10.0.4.46:53229/packages/agents/'
+                           'ubuntu-trusty-agent.tar.gz',
+            'version': '4.4',
+            'broker_config': {
+                'broker_ip': '10.0.4.46',
+                'broker_pass': 'test_pass',
+                'broker_user': 'test_user',
+                'broker_ssl_cert': ''
+            }
+        })
 
-    old_agent.set_execution_params()
-    old_agent.set_default_values()
-    old_agent.set_installation_params(runner=None)
-    return old_agent
+        old_agent.set_execution_params()
+        old_agent.set_default_values()
+        old_agent.set_installation_params(runner=None)
+        return old_agent
 
 
 @contextmanager
-def _set_context(tmp_path, host='localhost'):
+def _set_context(agent_ssl_cert, tmp_path, host='localhost'):
     old_context = ctx
     try:
         os.environ[constants.MANAGER_FILE_SERVER_ROOT_KEY] = \
             str(tmp_path)
         os.environ[constants.MANAGER_NAME] = 'cloudify'
         properties = {}
-        properties['cloudify_agent'] = _create_agent()
+        properties['cloudify_agent'] = _create_agent(agent_ssl_cert)
         properties['agent_status'] = {'agent_alive_crossbroker': True}
         mock = mocks.MockCloudifyContext(
             node_id='host_af231',

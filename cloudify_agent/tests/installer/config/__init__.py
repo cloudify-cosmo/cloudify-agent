@@ -2,10 +2,10 @@ from mock import MagicMock, patch
 
 from cloudify.context import BootstrapContext
 from cloudify.mocks import MockCloudifyContext
-from cloudify_agent.tests import agent_ssl_cert
 
 
-def mock_context(agent_properties=None,
+def mock_context(agent_ssl_cert,
+                 agent_properties=None,
                  agent_runtime_properties=None,
                  agent_context=None,
                  **kwargs):

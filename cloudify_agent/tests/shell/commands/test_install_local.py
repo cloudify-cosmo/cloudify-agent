@@ -9,7 +9,6 @@ from cloudify import ctx
 from cloudify.utils import LocalCommandRunner
 from cloudify.state import current_ctx
 from cloudify.tests.mocks.mock_rest_client import MockRestclient
-from cloudify_agent.tests import agent_ssl_cert
 from cloudify_agent.tests.daemon import (
     assert_daemon_dead,
     wait_for_daemon_alive,
@@ -22,8 +21,8 @@ from cloudify_agent.tests.installer.config import mock_context
 @patch('cloudify.agent_utils.get_rest_client',
        return_value=MockRestclient())
 @patch('cloudify.utils.get_manager_name', return_value='cloudify')
-def _test_agent_installation(agent_config):
-    new_ctx = mock_context()
+def _test_agent_installation(agent_ssl_cert, agent_config):
+    new_ctx = mock_context(agent_ssl_cert)
     current_ctx.set(new_ctx)
 
     assert_daemon_dead(agent_config['name'])
@@ -64,7 +63,7 @@ def test_installation(agent_package, tmpdir_factory, agent_ssl_cert):
     agent_config = _get_agent_config(agent_package, agent_ssl_cert)
     agent_config['basedir'] = base_dir
     try:
-        _test_agent_installation(agent_config)
+        _test_agent_installation(agent_ssl_cert, agent_config)
     finally:
         shutil.rmtree(base_dir)
 
@@ -72,5 +71,5 @@ def test_installation(agent_package, tmpdir_factory, agent_ssl_cert):
 @pytest.mark.only_ci
 def test_installation_no_basedir(agent_package, agent_ssl_cert):
     agent_config = _get_agent_config(agent_package, agent_ssl_cert)
-    new_agent = _test_agent_installation(agent_config)
+    new_agent = _test_agent_installation(agent_ssl_cert, agent_config)
     assert 'basedir' in new_agent

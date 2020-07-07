@@ -20,7 +20,7 @@ logger = cloudify_utils.setup_logger(
 
 
 @contextmanager
-def set_mock_context(tmp_path, **override_properties):
+def set_mock_context(agent_ssl_cert, tmp_path, **override_properties):
     node_properties = {
         'agent_config': {
             'user': getpass.getuser(),
@@ -31,7 +31,8 @@ def set_mock_context(tmp_path, **override_properties):
         }
     }
     node_properties['agent_config'].update(**override_properties)
-    current_ctx.set(mock_context(node_id='d', properties=node_properties))
+    current_ctx.set(mock_context(agent_ssl_cert, node_id='d',
+                                 properties=node_properties))
     yield
     current_ctx.clear()
 
@@ -162,7 +163,8 @@ def test_install_is_rendered_by_default(agent_ssl_cert):
 
 
 def test_install_not_rendered_in_provided_mode(tmp_path, agent_ssl_cert):
-    with set_mock_context(tmp_path, install_method='provided'):
+    with set_mock_context(agent_ssl_cert, tmp_path,
+                          install_method='provided'):
         install_script = _get_install_script(agent_ssl_cert)
     assert 'install_agent' not in install_script
 

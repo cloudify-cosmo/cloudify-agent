@@ -9,29 +9,30 @@ from cloudify import constants
 from cloudify_agent.api import utils
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 from cloudify_agent.tests.installer.config import mock_context
-from cloudify_agent.tests import agent_ssl_cert
 
 
-def test_prepare():
+def test_prepare(agent_ssl_cert):
     expected = _get_distro_package_url()
 
     _test_prepare(
+        agent_ssl_cert,
         agent_config={'local': True},
         expected_values=expected
     )
 
 
-def test_prepare_secured():
+def test_prepare_secured(agent_ssl_cert):
     expected = _get_distro_package_url(rest_port=443)
     with patch('cloudify.utils.get_manager_rest_service_port',
                return_value=443):
         _test_prepare(
+            agent_ssl_cert,
             agent_config={'local': True, 'rest_port': '443'},
             expected_values=expected
         )
 
 
-def test_prepare_multi_networks():
+def test_prepare_multi_networks(agent_ssl_cert):
     manager_host = '10.0.0.1'
     network_name = 'test_network'
     expected = _get_distro_package_url(manager_host=manager_host)
@@ -39,6 +40,7 @@ def test_prepare_multi_networks():
     expected['broker_ip'] = [manager_host]
     expected['network'] = network_name
     _test_prepare(
+        agent_ssl_cert,
         agent_config={
             'local': True,
             'networks': {
@@ -74,18 +76,19 @@ def test_prepare_multi_networks():
     )
 
 
-@patch('cloudify_agent.installer.config.agent_config.ctx',
-       mock_context(
-           agent_runtime_properties={'extra': {
-               'ssl_cert_path': '/tmp/blabla',
-           }}
-       ))
-def test_connection_params_propagation():
-    # Testing that if a connection timeout is passed as an agent runtime
-    # property, it would be propagated to the cloudify agent dict
-    cloudify_agent = CloudifyAgentConfig()
-    cloudify_agent.set_initial_values(True, agent_config={'local': True})
-    assert cloudify_agent['ssl_cert_path'] == '/tmp/blabla'
+def test_connection_params_propagation(agent_ssl_cert):
+    with patch('cloudify_agent.installer.config.agent_config.ctx',
+               mock_context(
+                   agent_ssl_cert,
+                   agent_runtime_properties={'extra': {
+                       'ssl_cert_path': '/tmp/blabla',
+                   }}
+               )):
+        # Testing that if a connection timeout is passed as an agent runtime
+        # property, it would be propagated to the cloudify agent dict
+        cloudify_agent = CloudifyAgentConfig()
+        cloudify_agent.set_initial_values(True, agent_config={'local': True})
+        assert cloudify_agent['ssl_cert_path'] == '/tmp/blabla'
 
 
 def _get_distro_package_url(rest_port=80, manager_host='127.0.0.1'):
@@ -109,7 +112,8 @@ def _get_distro_package_url(rest_port=80, manager_host='127.0.0.1'):
     return result
 
 
-def _test_prepare(agent_config, expected_values, context=None):
+def _test_prepare(agent_ssl_cert, agent_config, expected_values,
+                  context=None):
     user = getpass.getuser()
     basedir = utils.get_home_dir(user)
     agent_dir = os.path.join(basedir, 'test_deployment')
@@ -161,7 +165,8 @@ def _test_prepare(agent_config, expected_values, context=None):
     expected.update(expected_values)
 
     # port is originally a string because it comes from envvars
-    with agent_config_patches(expected['rest_port'] == '443', context):
+    with agent_config_patches(agent_ssl_cert,
+                              expected['rest_port'] == '443', context):
         cloudify_agent = CloudifyAgentConfig()
         cloudify_agent.set_initial_values(
             True, agent_config=agent_config)
@@ -172,12 +177,12 @@ def _test_prepare(agent_config, expected_values, context=None):
 
 
 @contextmanager
-def agent_config_patches(ssl, context):
+def agent_config_patches(agent_ssl_cert, ssl, context):
     context = context or {}
-    ctx = mock_context(**context)
+    ctx = mock_context(agent_ssl_cert, **context)
     patches = [
         patch('cloudify_agent.installer.config.agent_config.ctx', ctx),
-        patch('cloudify.utils.ctx', mock_context()),
+        patch('cloudify.utils.ctx', mock_context(agent_ssl_cert)),
         patch('cloudify.utils.get_manager_name', return_value='cloudify')
     ]
     if not ssl:
