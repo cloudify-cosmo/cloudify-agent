@@ -1,18 +1,3 @@
-#########
-# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-#  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  * See the License for the specific language governing permissions and
-#  * limitations under the License.
-
 from mock import Mock, patch
 import pytest
 
@@ -30,7 +15,6 @@ except ImportError:
     FabricRunner = None
     FabricCommandExecutionException = None
 
-from cloudify_agent.tests import BaseTest
 from cloudify_agent.tests.api.pm import only_os
 
 
@@ -42,72 +26,71 @@ from cloudify_agent.tests.api.pm import only_os
 ##############################################################################
 
 @only_os('posix')
-class TestDefaults(BaseTest):
-    def test_default_port(self):
-        runner = FabricRunner(
-            validate_connection=False,
-            user='user',
-            host='host',
-            password='password')
-        assert runner.port == 22
+def test_default_port():
+    runner = FabricRunner(
+        validate_connection=False,
+        user='user',
+        host='host',
+        password='password')
+    assert runner.port == 22
 
 
 @only_os('posix')
-class TestValidations(BaseTest):
-    def test_no_host(self):
-        with pytest.raises(exceptions.AgentInstallerConfigurationError,
-                           match='.*Missing host.*'):
-            FabricRunner(
-                validate_connection=False,
-                user='user',
-                password='password'
-            )
-
-    def test_no_user(self):
-        with pytest.raises(exceptions.AgentInstallerConfigurationError,
-                           match='.*Missing user.*'):
-            FabricRunner(
-                validate_connection=False,
-                host='host',
-                password='password',
-            )
-
-    def test_no_key_no_password(self):
-        with pytest.raises(exceptions.AgentInstallerConfigurationError,
-                           match='.*Must specify either key or password.*'):
-            FabricRunner(
-                validate_connection=False,
-                host='host',
-                user='password',
-            )
+def test_no_host():
+    with pytest.raises(exceptions.AgentInstallerConfigurationError,
+                       match='.*Missing host.*'):
+        FabricRunner(
+            validate_connection=False,
+            user='user',
+            password='password'
+        )
 
 
 @only_os('posix')
-class TestAbortException(BaseTest):
-    """Test behavior on fabric abort."""
-
-    def test_exception_message(self):
-        """Exception message is the same one used by fabric."""
-        expected_message = '<message>'
-
-        runner = FabricRunner(
+def test_no_user():
+    with pytest.raises(exceptions.AgentInstallerConfigurationError,
+                       match='.*Missing user.*'):
+        FabricRunner(
             validate_connection=False,
-            user='user',
             host='host',
             password='password',
         )
 
-        connection_path = (
-            'cloudify_agent.installer.runners.fabric_runner.Connection'
+
+@only_os('posix')
+def test_no_key_no_password():
+    with pytest.raises(exceptions.AgentInstallerConfigurationError,
+                       match='.*Must specify either key or password.*'):
+        FabricRunner(
+            validate_connection=False,
+            host='host',
+            user='password',
         )
-        with patch(connection_path) as conn_factory:
-            conn_factory.return_value.run.return_value = Mock(
-                return_code=1,
-                stderr=expected_message
-            )
-            try:
-                runner.run('a command')
-            except FabricCommandExecutionException as e:
-                assert e.error == expected_message
-            else:
-                self.fail('FabricCommandExecutionException not raised')
+
+
+@only_os('posix')
+def test_exception_message():
+    """Exception message is the same one used by fabric."""
+    expected_message = '<message>'
+
+    runner = FabricRunner(
+        validate_connection=False,
+        user='user',
+        host='host',
+        password='password',
+    )
+
+    connection_path = (
+        'cloudify_agent.installer.runners.fabric_runner.Connection'
+    )
+    with patch(connection_path) as conn_factory:
+        conn_factory.return_value.run.return_value = Mock(
+            return_code=1,
+            stderr=expected_message
+        )
+        try:
+            runner.run('a command')
+        except FabricCommandExecutionException as e:
+            assert e.error == expected_message
+        else:
+            pytest.fail('FabricCommandExecutionException not raised')
