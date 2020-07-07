@@ -5,20 +5,7 @@ import pytest
 
 from cloudify_agent.api.pm.initd import InitDDaemon
 from cloudify_agent.tests import get_storage_directory
-from cloudify_agent.tests.api.pm import (patch_unless_ci,
-                                         BaseDaemonProcessManagementTest)
-
-
-def _non_service_start_command(daemon):
-    return 'sudo {0} start'.format(daemon.script_path)
-
-
-def _non_service_stop_command(daemon):
-    return 'sudo {0} stop'.format(daemon.script_path)
-
-
-def _non_service_status_command(daemon):
-    return 'sudo {0} status'.format(daemon.script_path)
+from cloudify_agent.tests.api.pm import BaseDaemonProcessManagementTest
 
 
 SCRIPT_DIR = '/tmp/etc/init.d'
@@ -27,21 +14,7 @@ CONFIG_DIR = '/tmp/etc/default'
 
 @patch('cloudify_agent.api.utils.internal.get_storage_directory',
        get_storage_directory)
-@patch_unless_ci(
-    'cloudify_agent.api.pm.initd.InitDDaemon.SCRIPT_DIR',
-    SCRIPT_DIR)
-@patch_unless_ci(
-    'cloudify_agent.api.pm.initd.InitDDaemon.CONFIG_DIR',
-    CONFIG_DIR)
-@patch_unless_ci(
-    'cloudify_agent.api.pm.initd.status_command',
-    _non_service_status_command)
-@patch_unless_ci(
-    'cloudify_agent.api.pm.initd.start_command',
-    _non_service_start_command)
-@patch_unless_ci(
-    'cloudify_agent.api.pm.initd.stop_command',
-    _non_service_stop_command)
+@pytest.mark.only_ci
 @pytest.mark.only_posix
 class TestInitDDaemon(BaseDaemonProcessManagementTest):
 

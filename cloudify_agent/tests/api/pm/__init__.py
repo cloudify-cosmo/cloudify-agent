@@ -42,23 +42,6 @@ PLUGIN_NAME = 'plugin'
 DEPLOYMENT_ID = 'deployment'
 
 
-def ci():
-    return True
-    for env_var in ['TRAVIS_BUILD_DIR', 'APPVEYOR', 'CIRCLE_BUILD_NUM']:
-        if env_var in os.environ:
-            return True
-    return False
-
-
-def patch_unless_ci(target, new):
-
-    if not ci():
-        return patch(target, new)
-    else:
-        getter, attribute = _get_target(target)
-        return patch(target, getattr(getter(), attribute))
-
-
 class BaseDaemonLiveTestCase(BaseTest):
 
     def setUp(self):
