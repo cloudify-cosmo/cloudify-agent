@@ -101,3 +101,19 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_os)
         if "only_posix" in item.keywords and os.name != 'posix':
             item.add_marker(skip_os)
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "only_ci: This test may contaminate the host system and should only "
+        "be run on CI or a system you don't care about."
+    )
+    config.addinivalue_line(
+        "markers",
+        "only_nt: This test can only be run on Windows systems.",
+    )
+    config.addinivalue_line(
+        "markers",
+        "only_posix: This test can only be run on Linux systems.",
+    )
