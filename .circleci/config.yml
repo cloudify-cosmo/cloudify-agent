@@ -59,7 +59,7 @@ commands:
           name: Run unittests
           command: |
             source ~/venv/bin/activate
-            ~/venv/bin/pytest --cov-report term-missing --cov=cloudify_agent cloudify_agent
+            ~/venv/bin/pytest --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent
 
 jobs:
   # build the agent, and a rpm containing this single agent, in CI.

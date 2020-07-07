@@ -61,5 +61,5 @@ before_test:
   - venv\Scripts\python.exe -m pip install -U .
 
 test_script:
-  - venv\Scripts\pytest.exe -sv .
+  - venv\Scripts\pytest.exe -sv --run-ci-tests .
 

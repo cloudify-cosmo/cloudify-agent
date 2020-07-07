@@ -1,8 +1,10 @@
-from cloudify_agent.tests.api.pm import only_ci, only_os
+import pytest
+
+from cloudify_agent.tests.api.pm import only_os
 from cloudify_agent.tests.shell.commands import run_agent_command
 
 
-@only_ci
+@pytest.mark.only_ci
 @only_os('posix')
 def test_configure():
     run_agent_command(

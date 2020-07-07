@@ -3,13 +3,13 @@ import uuid
 import shutil
 
 from mock import patch
+import pytest
 
 from cloudify import ctx
 from cloudify.utils import LocalCommandRunner
 from cloudify.state import current_ctx
 from cloudify.tests.mocks.mock_rest_client import MockRestclient
 from cloudify_agent.tests import agent_ssl_cert
-from cloudify_agent.tests.api.pm import only_ci
 from cloudify_agent.tests.daemon import (
     assert_daemon_dead,
     wait_for_daemon_alive,
@@ -58,7 +58,7 @@ def _get_agent_config(agent_package, agent_ssl_cert):
     })
 
 
-@only_ci
+@pytest.mark.only_ci
 def test_installation(agent_package, tmpdir_factory, agent_ssl_cert):
     base_dir = tmpdir_factory.mktemp()
     agent_config = _get_agent_config(agent_package, agent_ssl_cert)
@@ -69,7 +69,7 @@ def test_installation(agent_package, tmpdir_factory, agent_ssl_cert):
         shutil.rmtree(base_dir)
 
 
-@only_ci
+@pytest.mark.only_ci
 def test_installation_no_basedir(agent_package, agent_ssl_cert):
     agent_config = _get_agent_config(agent_package, agent_ssl_cert)
     new_agent = _test_agent_installation(agent_config)

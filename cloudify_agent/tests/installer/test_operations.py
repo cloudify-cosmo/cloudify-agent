@@ -2,6 +2,7 @@ import logging
 import uuid
 
 from mock import patch
+import pytest
 
 from cloudify.workflows import local
 from cloudify.utils import setup_logger
@@ -13,7 +14,6 @@ from cloudify_agent.tests.utils import (
     get_source_uri,
     get_requirements_uri)
 from cloudify_agent.tests.api.pm import (
-    only_ci,
     only_os,
 )
 from cloudify_agent.tests import get_agent_dict
@@ -36,7 +36,7 @@ logger = setup_logger(
 ##############################################################################
 
 @only_os('posix')
-@only_ci
+@pytest.mark.only_ci
 def test_local_agent_from_package_posix(file_server, tmp_path,
                                         agent_ssl_cert, request):
     # Check that agent still works with a filepath longer than 128 bytes
@@ -47,7 +47,7 @@ def test_local_agent_from_package_posix(file_server, tmp_path,
 
 
 @only_os('nt')
-@only_ci
+@pytest.mark.only_ci
 def test_local_agent_from_package_nt(file_server, tmp_path, agent_ssl_cert,
                                      request):
     agent_name = utils.internal.generate_agent_name()

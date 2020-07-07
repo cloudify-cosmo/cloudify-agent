@@ -4,20 +4,20 @@ import shutil
 from contextlib import contextmanager
 
 from mock import patch, MagicMock
+import pytest
 
 from cloudify import constants
 from cloudify import ctx
 from cloudify import mocks
-
 from cloudify.state import current_ctx
 from cloudify.workflows import local
 from cloudify.amqp_client import get_client
 from cloudify.tests.mocks.mock_rest_client import MockRestclient
+from cloudify_rest_client.manager import ManagerItem
 
 from cloudify_agent import operations
 from cloudify_agent.api import utils
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
-
 from cloudify_agent.tests import get_agent_dict
 from cloudify_agent.tests import resources
 from cloudify_agent.tests.daemons import (
@@ -28,15 +28,13 @@ from cloudify_agent.tests.installer.config import (
     mock_context,
     get_tenant_mock
 )
-
-from cloudify_agent.tests.api.pm import only_ci, only_os
-from cloudify_rest_client.manager import ManagerItem
+from cloudify_agent.tests.api.pm import only_os
 
 
 @patch('cloudify_agent.installer.operations.delete_agent_rabbitmq_user')
 @patch('cloudify.agent_utils.get_rest_client',
        return_value=MockRestclient())
-@only_ci
+@pytest.mark.only_ci
 def test_install_new_agent(file_server, tmp_path, agent_ssl_cert, request,
                            agent_package, *_):
     agent_name = utils.internal.generate_agent_name()

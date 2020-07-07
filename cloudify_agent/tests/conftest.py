@@ -22,3 +22,27 @@ def file_server(tmp_path):
     server.start()
     yield server
     server.stop()
+
+
+def pytest_addoption(parser):
+    """Tell the framework where to find the test file."""
+    parser.addoption(
+        '--run-ci-tests',
+        action='store_true',
+        default=False,
+        help=(
+            'Set this flag to run CI tests. '
+            'These may contaminate the machine on which they run.'
+        ),
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption('--run-ci-test'):
+        return
+    skip_ci = pytest.mark.skip(
+        reason="CI tests may contaminate system. Set --run-ci-tests to run."
+    )
+    for item in items:
+        if "only_ci" in item.keywords:
+            item.add_marker(skip_ci)

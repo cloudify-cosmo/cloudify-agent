@@ -59,19 +59,6 @@ def patch_unless_ci(target, new):
         return patch(target, getattr(getter(), attribute))
 
 
-def only_ci(func):
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if not ci():
-            raise RuntimeError('Error! This test cannot be executed '
-                               'outside of the circle CI system, since it '
-                               'may corrupt your local system files')
-        func(*args, **kwargs)
-
-    return wrapper
-
-
 def only_os(os_type):
     return pytest.mark.skipif(
         os.name != os_type, reason='Not relevant OS to run the test.')
