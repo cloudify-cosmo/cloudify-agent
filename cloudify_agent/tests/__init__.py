@@ -29,15 +29,6 @@ class BaseTest(object):
         super(BaseTest, self).setUp()
         self.temp_folder = tempfile.mkdtemp(prefix='cfy-agent-tests-')
 
-        agent_env_vars = {
-            constants.MANAGER_FILE_SERVER_URL_KEY: 'localhost',
-            constants.REST_HOST_KEY: 'localhost',
-            constants.REST_PORT_KEY: '80',
-            constants.BROKER_SSL_CERT_PATH: self._rest_cert_path,
-            constants.LOCAL_REST_CERT_FILE_KEY: self._rest_cert_path,
-            constants.MANAGER_FILE_SERVER_ROOT_KEY: 'localhost/resources'
-        }
-
         # change levels to 'DEBUG' to troubleshoot.
         self.logger = setup_logger(
             'cloudify-agent.tests',
@@ -46,8 +37,6 @@ class BaseTest(object):
         utils.logger.setLevel(logging.INFO)
 
         self.curr_dir = os.getcwd()
-        for key, value in agent_env_vars.items():
-            os.environ[key] = value
 
         def clean_folder(folder_name):
             try:
@@ -60,13 +49,8 @@ class BaseTest(object):
             if os.path.exists(get_storage_directory()):
                 clean_folder(get_storage_directory())
 
-        def clean_env():
-            for var in agent_env_vars:
-                del os.environ[var]
-
         self.addCleanup(clean_folder, folder_name=self.temp_folder)
         self.addCleanup(clean_storage_dir)
-        self.addCleanup(clean_env)
         os.chdir(self.temp_folder)
         self.addCleanup(lambda: os.chdir(self.curr_dir))
 

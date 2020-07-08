@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from cloudify import mocks
+from cloudify import constants, mocks
 from cloudify.state import current_ctx
 
 from cloudify_agent.api.factory import DaemonFactory
@@ -19,11 +19,27 @@ from cloudify_agent.tests.utils import (
 
 
 @pytest.fixture(scope='session', autouse=True)
-def mock_ctx_with_tenant():
+def base_test_management(agent_ssl_cert):
+    # Mock the context for all tests
     original_ctx = current_ctx
     current_ctx.set(
         mocks.MockCloudifyContext(tenant={'name': 'default_tenant'}))
+
+    # Make sure the right env vars are available for the agent
+    agent_env_vars = {
+        constants.MANAGER_FILE_SERVER_URL_KEY: 'localhost',
+        constants.REST_HOST_KEY: 'localhost',
+        constants.REST_PORT_KEY: '80',
+        constants.BROKER_SSL_CERT_PATH: agent_ssl_cert.get_local_cert_path(),
+        constants.LOCAL_REST_CERT_FILE_KEY: agent_ssl_cert.local_key_path(),
+        constants.MANAGER_FILE_SERVER_ROOT_KEY: 'localhost/resources'
+    }
+    for key, value in agent_env_vars.items():
+        os.environ[key] = value
+
     yield current_ctx
+
+    # Un-mock the context
     current_ctx.set(original_ctx)
 
 
