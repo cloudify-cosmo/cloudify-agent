@@ -1,28 +1,22 @@
 import os
 
-from mock import patch
-
 import cloudify_agent.shell.env as env_constants
 from cloudify_agent.api import utils
 from cloudify_agent.shell.main import get_logger
-from cloudify_agent.tests import get_storage_directory
 from cloudify_agent.tests.shell.commands import run_agent_command
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.new')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.save')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.delete')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load_all')
-def test_create(*factory_methods):
+def test_create(mock_daemon_factory_new,
+                mock_daemon_factory_save,
+                mock_daemon_factory_load,
+                mock_daemon_factory_delete,
+                mock_daemon_factory_load_all,
+                mock_get_storage_dir):
     run_agent_command('cfy-agent daemons create --name=name '
                       '--process-management=init.d --user=user '
                       '--queue=queue  --rest-host=127.0.0.1')
 
-    factory_new = factory_methods[4]
-    factory_new.assert_called_once_with(
+    mock_daemon_factory_new.assert_called_once_with(
         name='name',
         queue='queue',
         user='user',
@@ -61,26 +55,22 @@ def test_create(*factory_methods):
         log_max_history=None
     )
 
-    daemon = factory_new.return_value
+    daemon = mock_daemon_factory_new.return_value
     daemon.create.assert_called_once_with()
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.new')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.save')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.delete')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load_all')
-def test_create_with_custom_options(*factory_methods):
-
+def test_create_with_custom_options(mock_daemon_factory_new,
+                                    mock_daemon_factory_save,
+                                    mock_daemon_factory_load,
+                                    mock_daemon_factory_delete,
+                                    mock_daemon_factory_load_all,
+                                    mock_get_storage_dir):
     run_agent_command('cfy-agent daemons create --name=name --queue=queue '
                       '--rest-host=127.0.0.1 --broker-ip=127.0.0.1 '
                       '--process-management=init.d --rest-tenant=tenant '
                       '--user=user --key=value --complex-key=complex-value')
 
-    factory_new = factory_methods[4]
-    factory_new.assert_called_once_with(
+    mock_daemon_factory_new.assert_called_once_with(
         name='name',
         queue='queue',
         user='user',
@@ -122,43 +112,36 @@ def test_create_with_custom_options(*factory_methods):
     )
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.new')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.save')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.delete')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load_all')
-def test_configure(*factory_methods):
+def test_configure(mock_daemon_facotry_new,
+                   mock_daemon_factory_save,
+                   mock_daemon_factory_load,
+                   mock_daemon_factory_delete,
+                   mock_daemon_factory_load_all,
+                   mock_get_storage_dir):
     run_agent_command('cfy-agent daemons configure --name=name ')
 
-    factory_load = factory_methods[2]
-    factory_load.assert_called_once_with('name',
-                                         logger=get_logger())
+    mock_daemon_factory_load.assert_called_once_with('name',
+                                                     logger=get_logger())
 
-    daemon = factory_load.return_value
+    daemon = mock_daemon_factory_load.return_value
     daemon.configure.assert_called_once_with()
 
-    factory_save = factory_methods[3]
-    factory_save.assert_called_once_with(daemon)
+    mock_daemon_factory_save.assert_called_once_with(daemon)
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.new')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.save')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.delete')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load_all')
-def test_start(*factory_methods):
+def test_start(mock_daemon_factory_new,
+               mock_daemon_factory_save,
+               mock_daemon_factory_load,
+               mock_daemon_factory_delete,
+               mock_daemon_factory_load_all,
+               mock_get_storage_dir):
     run_agent_command('cfy-agent daemons start --name=name '
                       '--interval 5 --timeout 20 --no-delete-amqp-queue')
 
-    factory_load = factory_methods[2]
-    factory_load.assert_called_once_with('name',
-                                         logger=get_logger())
+    mock_daemon_factory_load.assert_called_once_with('name',
+                                                     logger=get_logger())
 
-    daemon = factory_load.return_value
+    daemon = mock_daemon_factory_load.return_value
     daemon.start.assert_called_once_with(
         interval=5,
         timeout=20,
@@ -166,118 +149,99 @@ def test_start(*factory_methods):
     )
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.new')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.save')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.delete')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load_all')
-def test_stop(*factory_methods):
+def test_stop(mock_daemon_factory_new,
+              mock_daemon_factory_save,
+              mock_daemon_factory_load,
+              mock_daemon_factory_delete,
+              mock_daemon_factory_load_all,
+              mock_get_storage_dir):
     run_agent_command('cfy-agent daemons stop --name=name '
                       '--interval 5 --timeout 20')
 
-    factory_load = factory_methods[2]
-    factory_load.assert_called_once_with('name',
-                                         logger=get_logger())
+    mock_daemon_factory_load.assert_called_once_with('name',
+                                                     logger=get_logger())
 
-    daemon = factory_load.return_value
+    daemon = mock_daemon_factory_load.return_value
     daemon.stop.assert_called_once_with(
         interval=5,
         timeout=20
     )
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.new')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.save')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.delete')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load_all')
-def test_delete(*factory_methods):
+def test_delete(mock_daemon_factory_new,
+                mock_daemon_factory_save,
+                mock_daemon_factory_load,
+                mock_daemon_factory_delete,
+                mock_daemon_factory_load_all,
+                mock_get_storage_dir):
     run_agent_command('cfy-agent daemons delete --name=name')
 
-    factory_load = factory_methods[2]
-    factory_load.assert_called_once_with('name',
-                                         logger=get_logger())
+    mock_daemon_factory_load.assert_called_once_with('name',
+                                                     logger=get_logger())
 
-    daemon = factory_load.return_value
+    daemon = mock_daemon_factory_load.return_value
     daemon.delete.assert_called_once_with()
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.new')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.save')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.delete')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load_all')
-def test_restart(*factory_methods):
+def test_restart(mock_daemon_factory_new,
+                 mock_daemon_factory_save,
+                 mock_daemon_factory_load,
+                 mock_daemon_factory_delete,
+                 mock_daemon_factory_load_all,
+                 mock_get_storage_dir):
     run_agent_command('cfy-agent daemons restart --name=name')
 
-    factory_load = factory_methods[2]
-    factory_load.assert_called_once_with('name',
-                                         logger=get_logger())
+    mock_daemon_factory_load.assert_called_once_with('name',
+                                                     logger=get_logger())
 
-    daemon = factory_load.return_value
+    daemon = mock_daemon_factory_load.return_value
     daemon.restart.assert_called_once_with()
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.new')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.save')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.delete')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load_all')
-@patch('cloudify_agent.shell.commands.daemons.api_utils'
-       '.internal.daemon_to_dict')
-def test_inspect(daemon_to_dict, *factory_methods):
+def test_inspect(mock_daemon_factory_new,
+                 mock_daemon_factory_save,
+                 mock_daemon_factory_load,
+                 mock_daemon_factory_delete,
+                 mock_daemon_factory_load_all,
+                 mock_daemon_api_internal_daemon_to_dict,
+                 mock_get_storage_dir):
 
-    daemon_to_dict.return_value = {}
+    mock_daemon_api_internal_daemon_to_dict.return_value = {}
 
     name = utils.internal.generate_agent_name()
     run_agent_command('cfy-agent daemons inspect --name={0}'.format(name))
 
-    factory_load = factory_methods[2]
-    factory_load.assert_called_once_with(name, logger=get_logger())
-    daemon = factory_load.return_value
+    mock_daemon_factory_load.assert_called_once_with(name,
+                                                     logger=get_logger())
+    daemon = mock_daemon_factory_load.return_value
 
-    daemon_to_dict.assert_called_once_with(daemon)
+    mock_daemon_api_internal_daemon_to_dict.assert_called_once_with(daemon)
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.new')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.save')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.delete')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load_all')
-def test_status(*factory_methods):
+def test_status(mock_daemon_factory_new,
+                mock_daemon_factory_save,
+                mock_daemon_factory_load,
+                mock_daemon_factory_delete,
+                mock_daemon_factory_load_all,
+                mock_get_storage_dir):
     name = utils.internal.generate_agent_name()
     run_agent_command('cfy-agent daemons status --name={0}'.format(name))
-    factory_load = factory_methods[2]
-    daemon = factory_load.return_value
+    daemon = mock_daemon_factory_load.return_value
     daemon.status.assert_called_once_with()
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.new')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.save')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.delete')
-@patch('cloudify_agent.shell.commands.daemons.DaemonFactory.load_all')
-def test_required(*_):
+def test_required(mock_daemon_factory_new,
+                  mock_daemon_factory_save,
+                  mock_daemon_factory_load,
+                  mock_daemon_factory_delete,
+                  mock_daemon_factory_load_all,
+                  mock_get_storage_dir):
     run_agent_command('cfy-agent daemons create --rest-host=manager '
                       '--broker-ip=manager '
                       '--process-management=init.d', raise_system_exit=True)
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-def test_inspect_non_existing_agent(*_):
+def test_inspect_non_existing_agent(mock_get_storage_dir):
     try:
         run_agent_command('cfy-agent daemons inspect --name=non-existing',
                           raise_system_exit=True)
@@ -285,9 +249,7 @@ def test_inspect_non_existing_agent(*_):
         assert e.code == 203
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-def test_list(*_):
+def test_list(mock_get_storage_dir):
     run_agent_command('cfy-agent daemons create '
                       '--process-management=init.d '
                       '--queue=queue --name=test-name --rest-host=127.0.0.1 '

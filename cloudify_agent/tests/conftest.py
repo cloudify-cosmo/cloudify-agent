@@ -1,9 +1,11 @@
 import os
 
+from mock import patch, MagicMock
 import pytest
 
 from cloudify import constants, mocks
 from cloudify.state import current_ctx
+from cloudify.tests.mocks.mock_rest_client import MockRestclient
 
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.api.plugins import installer
@@ -134,3 +136,87 @@ def pytest_configure(config):
         "markers",
         "only_posix: This test can only be run on Linux systems.",
     )
+
+
+@pytest.fixture(scope='function')
+def mock_delete_rmq_user():
+    with patch(
+        'cloudify_agent.installer.operations.delete_agent_rabbitmq_user'
+    ) as deleter:
+        yield deleter
+
+
+@pytest.fixture(scope='function')
+def mock_get_rest_client():
+    with patch('cloudify.agent_utils.get_rest_client',
+               return_value=MockRestclient()) as client:
+        yield client
+
+
+@pytest.fixture(scope='function')
+def mock_is_agent_alive():
+    with patch('cloudify_agent.api.utils.is_agent_alive',
+               MagicMock(return_value=True)) as is_alive:
+        yield is_alive
+
+
+@pytest.fixture(scope='function')
+def mock_send_amqp_task():
+    with patch('cloudify_agent.operations._send_amqp_task') as sender:
+        yield sender
+
+
+@pytest.fixture(scope='function')
+def mock_daemon_factory_new():
+    with patch(
+        'cloudify_agent.shell.commands.daemons.DaemonFactory.new'
+    ) as df:
+        yield df
+
+
+@pytest.fixture(scope='function')
+def mock_daemon_factory_save():
+    with patch(
+        'cloudify_agent.shell.commands.daemons.DaemonFactory.save'
+    ) as df:
+        yield df
+
+
+@pytest.fixture(scope='function')
+def mock_daemon_factory_load():
+    with patch(
+        'cloudify_agent.shell.commands.daemons.DaemonFactory.load'
+    ) as df:
+        yield df
+
+
+@pytest.fixture(scope='function')
+def mock_daemon_factory_delete():
+    with patch(
+        'cloudify_agent.shell.commands.daemons.DaemonFactory.delete'
+    ) as df:
+        yield df
+
+
+@pytest.fixture(scope='function')
+def mock_daemon_factory_load_all():
+    with patch(
+        'cloudify_agent.shell.commands.daemons.DaemonFactory.load_all'
+    ) as df:
+        yield df
+
+
+@pytest.fixture(scope='function')
+def mock_daemon_api_internal_daemon_to_dict():
+    with patch(
+        'cloudify_agent.shell.commands.daemons.api_utils'
+        '.internal_daemon_to_dict'
+    ) as idtd:
+        yield idtd
+
+
+@pytest.fixture(scope='function')
+def mock_get_storage_dir(get_storage_directory):
+    with patch('cloudify_agent.api.utils.internal.get_storage_directory',
+               return_value=get_storage_directory) as get_storage:
+        yield get_storage

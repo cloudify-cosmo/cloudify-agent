@@ -12,7 +12,6 @@ from cloudify import mocks
 from cloudify.state import current_ctx
 from cloudify.workflows import local
 from cloudify.amqp_client import get_client
-from cloudify.tests.mocks.mock_rest_client import MockRestclient
 from cloudify_rest_client.manager import ManagerItem
 
 from cloudify_agent import operations
@@ -30,12 +29,10 @@ from cloudify_agent.tests.installer.config import (
 )
 
 
-@patch('cloudify_agent.installer.operations.delete_agent_rabbitmq_user')
-@patch('cloudify.agent_utils.get_rest_client',
-       return_value=MockRestclient())
 @pytest.mark.only_ci
-def test_install_new_agent(file_server, tmp_path, agent_ssl_cert, request,
-                           agent_package, *_):
+def test_install_new_agent(mock_delete_rmq_user, mock_get_rest_client,
+                           file_server, tmp_path, agent_ssl_cert, request,
+                           agent_package):
     agent_name = utils.internal.generate_agent_name()
 
     blueprint_path = resources.get_resource(
@@ -88,12 +85,9 @@ def test_create_agent_dict(agent_ssl_cert, tmp_path):
 
 
 @pytest.mark.only_posix
-@patch('cloudify_agent.operations._send_amqp_task')
-@patch('cloudify_agent.api.utils.is_agent_alive',
-       MagicMock(return_value=True))
-@patch('cloudify.agent_utils.get_rest_client',
-       return_value=MockRestclient())
-def test_create_agent_from_old_agent(agent_ssl_cert, tmp_path, *mocks):
+def test_create_agent_from_old_agent(mock_get_rest_client, tmp_path,
+                                     mock_send_amqp_task,
+                                     mock_is_agent_alive, agent_ssl_cert):
     with _set_context(agent_ssl_cert, tmp_path):
         _create_cloudify_agent_dir(tmp_path)
         old_name = ctx.instance.runtime_properties[
