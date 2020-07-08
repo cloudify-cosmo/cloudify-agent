@@ -118,12 +118,15 @@ def pytest_addoption(parser):
 
 
 def pytest_collection_modifyitems(config, items):
+    # It would be better to do this before collecting, but the hooks were
+    # not co-operating.
     if config.getoption('--run-rabbit-tests'):
         try:
-            socket.create_connection(('localhost', 5671), timeout=1)
+            socket.create_connection(('localhost', 5672), timeout=1)
         except (socket.error, socket.timeout) as err:
             raise RuntimeError(
-                'Could not connect to rabbit: {err}'.format(err=err)
+                'Could not connect to rabbit on localhost:5672: '
+                '{err}'.format(err=err)
             )
 
     skip_ci = pytest.mark.skip(
