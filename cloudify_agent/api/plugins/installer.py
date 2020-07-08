@@ -22,8 +22,10 @@ import errno
 import shutil
 import tempfile
 import platform
+import threading
 
 from os import walk
+from contextlib import nested
 from distutils.version import LooseVersion
 
 import wagon
@@ -51,6 +53,7 @@ SYSTEM_DEPLOYMENT = '__system__'
 SYNCTHING_QUERY_INTERVAL = 1
 PLUGIN_QUERY_INTERVAL = 1
 INSTALLATION_TIMEOUT = 75
+PLUGIN_INSTALL_LOCK = threading.Lock()
 
 
 runner = LocalCommandRunner()
@@ -305,7 +308,12 @@ def _full_dst_dir(dst_dir, managed_plugin=None):
 
 
 def _lock(path):
-    return fasteners.InterProcessLock('{0}.lock'.format(path))
+    # lock with both a regular threading lock - for multithreaded access,
+    # and fasteners lock for multiprocess access
+    return nested(
+        PLUGIN_INSTALL_LOCK,
+        fasteners.InterProcessLock('{0}.lock'.format(path))
+    )
 
 
 def _rmtree(path):
