@@ -63,8 +63,8 @@ def daemon_factory(tmp_path):
     yield DaemonFactory(storage=get_daemon_storage(str(tmp_path)))
 
 
-@pytest.fixture(scope='session')
-def test_wagons(file_server):
+@pytest.fixture(scope='function')
+def test_plugins(file_server):
     plugins_to_be_installed = [
         'mock-plugin',
         'mock-plugin-modified',
@@ -87,7 +87,9 @@ def test_wagons(file_server):
 
 @pytest.fixture(scope='function')
 def file_server(tmp_path):
-    server = FileServer(str(tmp_path), ssl=False)
+    base_path = os.path.join(str(tmp_path), 'fileserver')
+    os.makedirs(base_path)
+    server = FileServer(base_path, ssl=False)
     server.start()
     yield server
     server.stop()

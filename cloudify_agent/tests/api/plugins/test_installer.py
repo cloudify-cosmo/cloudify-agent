@@ -31,7 +31,8 @@ logger = setup_logger('api.plugins.test_installer',
                       logger_level=logging.DEBUG)
 
 
-def test_install_from_source(file_server):
+@pytest.mark.only_rabbit
+def test_install_from_source(file_server, test_plugins):
     installer.install(plugins.plugin_struct(file_server,
                                             source='mock-plugin.tar'))
     _assert_task_runnable('mock_plugin.tasks.run',
@@ -40,7 +41,8 @@ def test_install_from_source(file_server):
                           expected_return='mock-plugin-entry-point')
 
 
-def test_install_from_source_with_deployment_id(file_server):
+@pytest.mark.only_rabbit
+def test_install_from_source_with_deployment_id(file_server, test_plugins):
     deployment_id = 'deployment'
     installer.install(plugins.plugin_struct(file_server,
                                             source='mock-plugin.tar'),
@@ -51,7 +53,8 @@ def test_install_from_source_with_deployment_id(file_server):
                           deployment_id=deployment_id)
 
 
-def test_install_from_source_with_requirements(file_server):
+@pytest.mark.only_rabbit
+def test_install_from_source_with_requirements(file_server, test_plugins):
     installer.install(plugins.plugin_struct(
         file_server,
         source='mock-plugin-with-requirements.tar',
@@ -62,7 +65,7 @@ def test_install_from_source_with_requirements(file_server):
                         'Santraginus V')
 
 
-def test_install_from_source_already_exists(file_server):
+def test_install_from_source_already_exists(file_server, test_plugins):
     installer.install(plugins.plugin_struct(file_server,
                                             source='mock-plugin.tar'))
     with pytest.raises(exceptions.PluginInstallationError,
@@ -71,7 +74,8 @@ def test_install_from_source_already_exists(file_server):
                                                 source='mock-plugin.tar'))
 
 
-def test_uninstall_from_source(file_server):
+@pytest.mark.only_rabbit
+def test_uninstall_from_source(file_server, test_plugins):
     installer.install(plugins.plugin_struct(file_server,
                                             source='mock-plugin.tar'))
     _assert_task_runnable('mock_plugin.tasks.run', expected_return='run')
@@ -79,7 +83,8 @@ def test_uninstall_from_source(file_server):
     _assert_task_not_runnable('mock_plugin.tasks.run')
 
 
-def test_uninstall_from_source_with_deployment_id(file_server):
+@pytest.mark.only_rabbit
+def test_uninstall_from_source_with_deployment_id(file_server, test_plugins):
     deployment_id = 'deployment'
     installer.install(
         plugins.plugin_struct(file_server, source='mock-plugin.tar'),
@@ -94,17 +99,17 @@ def test_uninstall_from_source_with_deployment_id(file_server):
                               deployment_id=deployment_id)
 
 
-def test_install_from_wagon(test_wagons, file_server):
+def test_install_from_wagon(file_server, test_plugins):
     with _patch_for_install_wagon(
         plugins.PACKAGE_NAME,
         plugins.PACKAGE_VERSION,
-        download_path=test_wagons[plugins.PACKAGE_NAME],
+        download_path=test_plugins[plugins.PACKAGE_NAME],
     ):
         installer.install(plugins.plugin_struct(file_server))
     _assert_wagon_plugin_installed()
 
 
-def test_install_from_wagon_concurrent(file_server, test_wagons):
+def test_install_from_wagon_concurrent(file_server, test_plugins):
     ctx_obj = ctx._get_current_object()
 
     def installer_func(dep_id='__system__'):
@@ -116,7 +121,7 @@ def test_install_from_wagon_concurrent(file_server, test_wagons):
 
     with _patch_for_install_wagon(
         plugins.PACKAGE_NAME, plugins.PACKAGE_VERSION,
-        download_path=test_wagons[plugins.PACKAGE_NAME],
+        download_path=test_plugins[plugins.PACKAGE_NAME],
         concurrent=True
     ), patch.object(ctx_obj, '_mock_context_logger') as mock_logger:
         for installer_process in installers:
@@ -129,16 +134,16 @@ def test_install_from_wagon_concurrent(file_server, test_wagons):
     assert any('Using existing installation' in msg for msg in logs)
 
 
-def test_install_from_wagon_already_exists(test_wagons, file_server):
-    test_install_from_wagon(test_wagons, file_server)
+def test_install_from_wagon_already_exists(test_plugins, file_server):
+    test_install_from_wagon(test_plugins, file_server)
     # the installation here should basically do nothing but the
     # assertion should still pass
-    test_install_from_wagon(test_wagons, file_server)
+    test_install_from_wagon(test_plugins, file_server)
 
 
-def test_install_from_wagon_already_exists_but_missing_plugin_id(test_wagons,
-                                                                 file_server):
-    test_install_from_wagon(test_wagons, file_server)
+def test_install_from_wagon_already_exists_missing_plugin_id(file_server,
+                                                             test_plugins):
+    test_install_from_wagon(test_plugins, file_server)
     plugin_dir = installer._full_dst_dir(
         '{0}-{1}'.format(plugins.PACKAGE_NAME, plugins.PACKAGE_VERSION))
     plugin_id_path = os.path.join(plugin_dir, 'plugin.id')
@@ -147,24 +152,24 @@ def test_install_from_wagon_already_exists_but_missing_plugin_id(test_wagons,
     # and re-install the plugin
     with pytest.raises(exceptions.PluginInstallationError,
                        match='.*corrupted state.*'):
-        test_install_from_wagon(test_wagons, file_server)
+        test_install_from_wagon(test_plugins, file_server)
 
 
-def test_install_from_wagon_overriding_same_version(test_wagons, file_server):
-    test_install_from_wagon(test_wagons, file_server)
+def test_install_from_wagon_overriding_same_version(file_server, test_plugins):
+    test_install_from_wagon(test_plugins, file_server)
     with _patch_for_install_wagon(
             plugins.PACKAGE_NAME, plugins.PACKAGE_VERSION,
-            download_path=test_wagons['mock-plugin-modified'],
+            download_path=test_plugins['mock-plugin-modified'],
             plugin_id='2'):
         with pytest.raises(exceptions.PluginInstallationError,
                            match='.*does not match the ID.*'):
             installer.install(plugins.plugin_struct(file_server))
 
 
-def test_install_from_wagon_central_deployment(test_wagons, file_server):
+def test_install_from_wagon_central_deployment(file_server, test_plugins):
     with _patch_for_install_wagon(
         plugins.PACKAGE_NAME, plugins.PACKAGE_VERSION,
-        download_path=test_wagons[plugins.PACKAGE_NAME],
+        download_path=test_plugins[plugins.PACKAGE_NAME],
         archive_name='some_archive',
     ):
         with pytest.raises(exceptions.PluginInstallationError,
@@ -175,15 +180,15 @@ def test_install_from_wagon_central_deployment(test_wagons, file_server):
                 deployment_id='deployment')
 
 
-def test_uninstall_from_wagon(test_wagons, file_server):
-    test_install_from_wagon(test_wagons, file_server)
+def test_uninstall_from_wagon(file_server, test_plugins):
+    test_install_from_wagon(test_plugins, file_server)
     installer.uninstall_wagon(plugins.PACKAGE_NAME, plugins.PACKAGE_VERSION)
     _assert_task_not_runnable('mock_plugin.tasks.run',
                               package_name=plugins.PACKAGE_NAME,
                               package_version=plugins.PACKAGE_VERSION)
 
 
-def test_extract_package_to_dir(file_server):
+def test_extract_package_to_dir(file_server, test_plugins):
     # create a plugin tar file and put it in the file server
     plugin_dir_name = 'mock-plugin-with-requirements'
     plugin_tar_name = test_utils.create_plugin_tar(
