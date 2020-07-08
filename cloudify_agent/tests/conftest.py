@@ -59,7 +59,7 @@ def agent_ssl_cert(tmpdir_factory):
 
 @pytest.fixture(scope='function')
 def daemon_factory(tmp_path):
-    yield DaemonFactory(storage=get_daemon_storage())
+    yield DaemonFactory(storage=get_daemon_storage(str(tmp_path)))
 
 
 @pytest.fixture(scope='session')

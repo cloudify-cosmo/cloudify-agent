@@ -48,7 +48,7 @@ def test_load_non_existing(daemon_factory):
                   'non_existing_name')
 
 
-def test_load_all(daemon_factory, agent_ssl_cert):
+def test_load_all(daemon_factory, agent_ssl_cert, tmp_path):
     def _save_daemon(name):
         daemon_name = 'test-daemon-{0}'.format(uuid.uuid4())
         params = get_daemon_params(daemon_name, agent_ssl_cert).copy()
@@ -56,8 +56,8 @@ def test_load_all(daemon_factory, agent_ssl_cert):
         daemon = daemon_factory.new(**params)
         daemon_factory.save(daemon)
 
-    if os.path.exists(get_daemon_storage()):
-        shutil.rmtree(get_daemon_storage())
+    if os.path.exists(get_daemon_storage(str(tmp_path))):
+        shutil.rmtree(get_daemon_storage(str(tmp_path)))
 
     daemons = daemon_factory.load_all()
     assert 0 == len(daemons)
