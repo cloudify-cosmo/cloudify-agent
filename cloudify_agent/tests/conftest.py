@@ -1,4 +1,5 @@
 import os
+import socket
 
 from mock import patch, MagicMock
 import pytest
@@ -103,16 +104,39 @@ def pytest_addoption(parser):
             'These may contaminate the machine on which they run.'
         ),
     )
+    parser.addoption(
+        '--run-rabbit-tests',
+        action='store_true',
+        default=False,
+        help=(
+            'Set this flag to run tests that require rabbit. '
+            'You will need rabbit installed for these to work.'
+        ),
+    )
 
 
 def pytest_collection_modifyitems(config, items):
+    if config.getoption('--run-rabbit-tests'):
+        try:
+            socket.create_connection(('localhost', 5671), timeout=1)
+        except (socket.error, socket.timeout) as err:
+            raise RuntimeError(
+                'Could not connect to rabbit: {err}'.format(err=err)
+            )
+
     skip_ci = pytest.mark.skip(
         reason="CI tests may contaminate system. Set --run-ci-tests to run."
     )
     skip_os = pytest.mark.skip(
         reason='Not relevant OS to run the test.'
     )
+    skip_rabbit = pytest.mark.skip(
+        reason='--run-rabbit-test not set. Install rabbit before using this.'
+    )
     for item in items:
+        if "only_rabbit" in item.keywords and not config.getoption(
+                '--run-rabbit-tests'):
+            item.add_marker(skip_rabbit)
         if "only_ci" in item.keywords and not config.getoption(
                 '--run-ci-tests'):
             item.add_marker(skip_ci)
@@ -127,6 +151,10 @@ def pytest_configure(config):
         "markers",
         "only_ci: This test may contaminate the host system and should only "
         "be run on CI or a system you don't care about."
+    )
+    config.addinivalue_line(
+        "markers",
+        "only_rabbit: This test can only be run with a local rabbit server.",
     )
     config.addinivalue_line(
         "markers",
