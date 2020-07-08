@@ -20,7 +20,7 @@ from cloudify_agent.tests.utils import (
 )
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope='function', autouse=True)
 def base_test_management(agent_ssl_cert):
     # Mock the context for all tests
     original_ctx = current_ctx
@@ -84,7 +84,7 @@ def test_wagons(file_server):
     installer.uninstall_wagon(plugins.PACKAGE_NAME, plugins.PACKAGE_VERSION)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def file_server(tmp_path):
     server = FileServer(str(tmp_path), ssl=False)
     server.start()
