@@ -1,4 +1,6 @@
 import getpass
+import os
+
 from mock import patch
 import pytest
 
@@ -25,7 +27,7 @@ def get_daemon(ssl_cert, params=None):
 
 
 def test_default_workdir(agent_ssl_cert):
-    assert agent_ssl_cert.temp_folder == get_daemon(agent_ssl_cert).workdir
+    assert os.getcwd() == get_daemon(agent_ssl_cert).workdir
 
 
 def test_default_rest_port(agent_ssl_cert):
