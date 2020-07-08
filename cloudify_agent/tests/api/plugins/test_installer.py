@@ -31,6 +31,14 @@ logger = setup_logger('api.plugins.test_installer',
                       logger_level=logging.DEBUG)
 
 
+@pytest.fixture(scope='function')
+def cleanup_plugins(file_server):
+    installer.uninstall_source(plugin=plugins.plugin_struct(file_server, ''))
+    installer.uninstall_source(plugin=plugins.plugin_struct(file_server, ''),
+                               deployment_id='deployment')
+    installer.uninstall_wagon(plugins.PACKAGE_NAME, plugins.PACKAGE_VERSION)
+
+
 @pytest.mark.only_rabbit
 def test_install_from_source(file_server, test_plugins):
     installer.install(plugins.plugin_struct(file_server,
