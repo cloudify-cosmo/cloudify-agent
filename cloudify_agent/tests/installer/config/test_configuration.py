@@ -22,7 +22,7 @@ def test_prepare(agent_ssl_cert):
 
 
 def test_prepare_secured(agent_ssl_cert):
-    expected = _get_distro_package_url(rest_port=443)
+    expected = _get_distro_package_url(rest_port='443')
     with patch('cloudify.utils.get_manager_rest_service_port',
                return_value=443):
         _test_prepare(
@@ -92,7 +92,7 @@ def test_connection_params_propagation(agent_ssl_cert):
 
 
 def _get_distro_package_url(rest_port=80, manager_host='127.0.0.1'):
-    result = {'port': rest_port}
+    result = {'rest_port': rest_port}
     base_url = utils.get_manager_file_server_url(manager_host, rest_port)
     agent_package_url = '{0}/packages/agents'.format(base_url)
     if os.name == 'posix':
@@ -105,7 +105,7 @@ def _get_distro_package_url(rest_port=80, manager_host='127.0.0.1'):
         package = 'cloudify-windows-agent.exe'
     result['package_url'] = '{0}/{1}'.format(agent_package_url, package)
     result['file_server_url'] = '{proto}://{addr}:{port}/resources'.format(
-        proto='https' if rest_port == 443 else 'http',
+        proto='https' if rest_port == '443' else 'http',
         addr=manager_host,
         port=rest_port,
     )
@@ -140,7 +140,7 @@ def _test_prepare(agent_ssl_cert, agent_config, expected_values,
         'disable_requiretty': True,
         'env': {},
         'fabric_env': {},
-        'file_server_url': 'http://127.0.0.1:80/resources',
+        'file_server_url': 'https://127.0.0.1:80/resources',
         'max_workers': 5,
         'min_workers': 0,
         'workdir': workdir,
