@@ -3,7 +3,6 @@ import os
 import platform
 import ssl
 import tarfile
-import tempfile
 import threading
 import uuid
 import wsgiref.simple_server
@@ -400,16 +399,16 @@ W6ymlKLurKPd5YI4Q0y6irWmVMoeaQ==
         self.temp_folder = base_folder
 
     def get_local_cert_path(self):
-        with tempfile.NamedTemporaryFile(
-                delete=False, dir=self.temp_folder, mode='w') as f:
+        path = os.path.join(self.temp_folder, 'local.crt')
+        with open(path, 'w') as f:
             f.write(_AgentSSLCert.DUMMY_CERT)
-        return f.name
+        return path
 
     def local_key_path(self):
-        with tempfile.NamedTemporaryFile(
-                delete=False, dir=self.temp_folder, mode='w') as f:
+        path = os.path.join(self.temp_folder, 'local.key')
+        with open(path, 'w') as f:
             f.write(_AgentSSLCert.PRIVATE_KEY)
-        return f.name
+        return path
 
     @staticmethod
     def _clean_cert(cert_content):
