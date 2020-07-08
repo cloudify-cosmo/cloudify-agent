@@ -231,9 +231,6 @@ class SSLWSGIServer(wsgiref.simple_server.WSGIServer):
             os.unlink(self._keyfile)
 
     def get_request(self):
-        if not self._certfile or not self._keyfile:
-            self._certfile = _AgentSSLCert.get_local_cert_path()
-            self._keyfile = _AgentSSLCert.local_key_path()
         socket, addr = wsgiref.simple_server.WSGIServer.get_request(self)
         socket = ssl.wrap_socket(
             socket, keyfile=self._keyfile, certfile=self._certfile,
@@ -242,7 +239,9 @@ class SSLWSGIServer(wsgiref.simple_server.WSGIServer):
 
 
 class FileServer(object):
-    def __init__(self, root_path=None, ssl=True):
+    def __init__(self, agent_ssl_cert, root_path=None, ssl=True):
+        self.certfile = agent_ssl_cert.get_local_cert_path()
+        self.keyfile = agent_ssl_cert.local_key_path()
         self.root_path = root_path or os.path.dirname(resources.__file__)
         self._server = None
         self._server_thread = None
@@ -268,9 +267,9 @@ class FileServer(object):
         server_class = SSLWSGIServer if self._ssl else \
             wsgiref.simple_server.WSGIServer
         self._server = wsgiref.simple_server.make_server(
-            '', 0, app, server_class=server_class)
+            '127.0.0.1', 0, app, server_class=server_class)
         self.url = '{proto}://localhost:{port}'.format(
-            proto='https' if ssl else 'http',
+            proto='https' if self._ssl else 'http',
             port=self._server.server_port,
         )
 

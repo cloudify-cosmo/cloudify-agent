@@ -86,10 +86,10 @@ def test_plugins(file_server):
 
 
 @pytest.fixture(scope='function')
-def file_server(tmp_path):
+def file_server(tmp_path, agent_ssl_cert):
     base_path = os.path.join(str(tmp_path), 'fileserver')
     os.makedirs(base_path)
-    server = FileServer(base_path)
+    server = FileServer(agent_ssl_cert, base_path, ssl=False)
     server.start()
     yield server
     server.stop()
