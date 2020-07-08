@@ -34,7 +34,7 @@ def test_daemon_to_dict(agent_ssl_cert):
     assert daemon_json['queue'] == 'queue'
 
 
-def test_get_resource(self):
+def test_get_resource():
     resource = utils.get_resource(os.path.join(
         'pm',
         'initd',
