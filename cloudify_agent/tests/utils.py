@@ -242,16 +242,11 @@ class SSLWSGIServer(wsgiref.simple_server.WSGIServer):
 
 
 class FileServer(object):
-    def __init__(self, root_path=None, port=8756, ssl=True):
-        self._port = port
+    def __init__(self, root_path=None, ssl=True):
         self.root_path = root_path or os.path.dirname(resources.__file__)
         self._server = None
         self._server_thread = None
         self._ssl = ssl
-        self.url = '{proto}://localhost:{port}'.format(
-            proto='https' if ssl else 'http',
-            port=port,
-        )
 
     @property
     def port(self):
@@ -273,7 +268,11 @@ class FileServer(object):
         server_class = SSLWSGIServer if self._ssl else \
             wsgiref.simple_server.WSGIServer
         self._server = wsgiref.simple_server.make_server(
-            '', self._port, app, server_class=server_class)
+            '', 0, app, server_class=server_class)
+        self.url = '{proto}://localhost:{port}'.format(
+            proto='https' if ssl else 'http',
+            port=self._server.server_port,
+        )
 
         self._server_thread = threading.Thread(
             target=self._server.serve_forever)

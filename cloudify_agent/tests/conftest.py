@@ -89,7 +89,7 @@ def test_plugins(file_server):
 def file_server(tmp_path):
     base_path = os.path.join(str(tmp_path), 'fileserver')
     os.makedirs(base_path)
-    server = FileServer(base_path, ssl=False)
+    server = FileServer(base_path)
     server.start()
     yield server
     server.stop()
