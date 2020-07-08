@@ -16,6 +16,7 @@ def test_configure(nssm_daemon):
     assert os.path.exists(daemon.config_path)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_delete(nssm_daemon):
     daemon = nssm_daemon.create_daemon()
@@ -31,6 +32,7 @@ def test_delete(nssm_daemon):
         'sc getdisplayname {0}'.format(daemon.name))
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_status(nssm_daemon):
     daemon = nssm_daemon.create_daemon()
@@ -48,81 +50,97 @@ def test_status(nssm_daemon):
         pytest.fail('Daemon failed to start')
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_create(nssm_daemon):
     shared._test_create(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_create_overwrite(nssm_daemon):
     shared._test_create_overwrite(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_start(nssm_daemon):
-    shared.test_start(nssm_daemon)
+    shared._test_start(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_start_delete_amqp_queue(nssm_daemon):
-    shared.test_start_delete_amqp_queue(nssm_daemon)
+    shared._test_start_delete_amqp_queue(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_start_with_error(nssm_daemon):
-    shared.test_start_with_error(nssm_daemon)
+    shared._test_start_with_error(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_start_short_timeout(nssm_daemon):
-    shared.test_start_short_timeout(nssm_daemon)
+    shared._test_start_short_timeout(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_stop(nssm_daemon):
-    shared.test_stop(nssm_daemon)
+    shared._test_stop(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_stop_short_timeout(nssm_daemon):
-    shared.test_stop_short_timeout(nssm_daemon)
+    shared._test_stop_short_timeout(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_restart(nssm_daemon):
-    shared.test_restart(nssm_daemon)
+    shared._test_restart(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_two_daemons(nssm_daemon):
-    shared.test_two_daemons(nssm_daemon)
+    shared._test_two_daemons(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_conf_env_variables(nssm_daemon):
-    shared.test_conf_env_Variables(nssm_daemon)
+    shared._test_conf_env_variables(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_extra_env(nssm_daemon):
-    shared.test_extra_env(nssm_daemon)
+    shared._test_extra_env(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_execution_env(nssm_daemon):
-    shared.test_execution_env(nssm_daemon)
+    shared._test_execution_env(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_delete_before_stop(nssm_daemon):
-    shared.test_delete_before_stop(nssm_daemon)
+    shared._test_delete_before_stop(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_delete_before_stop_with_force(nssm_daemon):
-    shared.test_delete_before_stop_with_force(nssm_daemon)
+    shared._test_delete_before_stop_with_force(nssm_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_logging(nssm_daemon):
-    shared.test_logging(nssm_daemon)
+    shared._test_logging(nssm_daemon)

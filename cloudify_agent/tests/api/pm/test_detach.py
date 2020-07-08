@@ -19,6 +19,7 @@ def test_configure(detach_daemon):
     assert os.path.exists(daemon.config_path)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_delete(detach_daemon):
     daemon = detach_daemon.create_daemon()
@@ -32,6 +33,7 @@ def test_delete(detach_daemon):
     assert not os.path.exists(daemon.pid_file)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_cron_respawn(detach_daemon):
     daemon = detach_daemon.create_daemon(cron_respawn=True,
@@ -65,81 +67,97 @@ def test_create(detach_daemon):
     shared._test_create(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_create_overwrite(detach_daemon):
     shared._test_create_overwrite(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_start(detach_daemon):
-    shared.test_start(detach_daemon)
+    shared._test_start(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_start_delete_amqp_queue(detach_daemon):
-    shared.test_start_delete_amqp_queue(detach_daemon)
+    shared._test_start_delete_amqp_queue(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_start_with_error(detach_daemon):
-    shared.test_start_with_error(detach_daemon)
+    shared._test_start_with_error(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_start_short_timeout(detach_daemon):
-    shared.test_start_short_timeout(detach_daemon)
+    shared._test_start_short_timeout(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_status(detach_daemon):
-    shared.test_status(detach_daemon)
+    shared._test_status(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_stop(detach_daemon):
-    shared.test_stop(detach_daemon)
+    shared._test_stop(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_stop_short_timeout(detach_daemon):
-    shared.test_stop_short_timeout(detach_daemon)
+    shared._test_stop_short_timeout(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_restart(detach_daemon):
-    shared.test_restart(detach_daemon)
+    shared._test_restart(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_two_daemons(detach_daemon):
-    shared.test_two_daemons(detach_daemon)
+    shared._test_two_daemons(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_conf_env_variables(detach_daemon):
-    shared.test_conf_env_Variables(detach_daemon)
+    shared._test_conf_env_variables(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_extra_env(detach_daemon):
-    shared.test_extra_env(detach_daemon)
+    shared._test_extra_env(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_execution_env(detach_daemon):
-    shared.test_execution_env(detach_daemon)
+    shared._test_execution_env(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_delete_before_stop(detach_daemon):
-    shared.test_delete_before_stop(detach_daemon)
+    shared._test_delete_before_stop(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_delete_before_stop_with_force(detach_daemon):
-    shared.test_delete_before_stop_with_force(detach_daemon)
+    shared._test_delete_before_stop_with_force(detach_daemon)
 
 
+@pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_logging(detach_daemon):
-    shared.test_logging(detach_daemon)
+    shared._test_logging(detach_daemon)

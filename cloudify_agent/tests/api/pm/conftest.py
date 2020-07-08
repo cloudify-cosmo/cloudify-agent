@@ -16,7 +16,7 @@ from cloudify_agent.tests.api.pm.daemons import (
 logger = setup_logger('cloudify_agent.tests.api.pm')
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def detach_daemon(tmp_path, agent_ssl_cert):
     daemon = TestDetachedDaemon(tmp_path, logger, agent_ssl_cert)
 
@@ -27,10 +27,11 @@ def detach_daemon(tmp_path, agent_ssl_cert):
     installer.uninstall_source(plugin=daemon.plugin_struct())
     installer.uninstall_source(plugin=daemon.plugin_struct(),
                                deployment_id=DEPLOYMENT_ID)
-    daemon.factory.delete(daemon.name)
+    for _daemon in daemon.daemons:
+        daemon.factory.delete(_daemon.name)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def initd_daemon(tmp_path, agent_ssl_cert):
     daemon = TestInitdDaemon(tmp_path, logger, agent_ssl_cert)
 
@@ -41,10 +42,11 @@ def initd_daemon(tmp_path, agent_ssl_cert):
     installer.uninstall_source(plugin=daemon.plugin_struct())
     installer.uninstall_source(plugin=daemon.plugin_struct(),
                                deployment_id=DEPLOYMENT_ID)
-    daemon.factory.delete(daemon.name)
+    for _daemon in daemon.daemons:
+        daemon.factory.delete(_daemon.name)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def nssm_daemon(tmp_path, agent_ssl_cert):
     daemon = TestNSSMDaemon(tmp_path, logger, agent_ssl_cert)
 
@@ -61,4 +63,5 @@ def nssm_daemon(tmp_path, agent_ssl_cert):
     installer.uninstall_source(plugin=daemon.plugin_struct())
     installer.uninstall_source(plugin=daemon.plugin_struct(),
                                deployment_id=DEPLOYMENT_ID)
-    daemon.factory.delete(daemon.name)
+    for _daemon in daemon.daemons:
+        daemon.factory.delete(_daemon.name)
