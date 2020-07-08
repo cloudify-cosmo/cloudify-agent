@@ -25,7 +25,7 @@ import platform
 import threading
 
 from os import walk
-from contextlib import nested
+from contextlib import contextmanager
 from distutils.version import LooseVersion
 
 import wagon
@@ -307,13 +307,13 @@ def _full_dst_dir(dst_dir, managed_plugin=None):
     return os.path.join(plugins_dir, tenant_name, dst_dir)
 
 
+@contextmanager
 def _lock(path):
     # lock with both a regular threading lock - for multithreaded access,
     # and fasteners lock for multiprocess access
-    return nested(
-        PLUGIN_INSTALL_LOCK,
-        fasteners.InterProcessLock('{0}.lock'.format(path))
-    )
+    with PLUGIN_INSTALL_LOCK:
+        with fasteners.InterProcessLock('{0}.lock'.format(path)):
+            yield
 
 
 def _rmtree(path):
