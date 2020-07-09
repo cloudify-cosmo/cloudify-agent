@@ -73,7 +73,7 @@ def _test_start_with_error(daemon_fixture):
     if os.name == 'nt':
         expected_error = '.*WATT_NONEXISTENT_DIR.*'
     else:
-        expected_error = ".*Permission denied: /root/no_permission.*"
+        expected_error = ".*Permission denied: '/root/no_permission.*"
     with pytest.raises(exceptions.DaemonError, match=expected_error):
         daemon.start(timeout=5)
 
