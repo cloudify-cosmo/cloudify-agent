@@ -16,6 +16,11 @@ from cloudify_agent.tests.api.pm.daemons import (
 logger = setup_logger('cloudify_agent.tests.api.pm')
 
 
+@pytest.fixture(scope='function', autouse=True)
+def always_mock_storage_dir(mock_get_storage_dir):
+    yield
+
+
 @pytest.fixture(scope='function')
 def detach_daemon(tmp_path, agent_ssl_cert):
     daemon = TestDetachedDaemon(tmp_path, logger, agent_ssl_cert)

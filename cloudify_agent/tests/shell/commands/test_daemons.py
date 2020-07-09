@@ -112,7 +112,7 @@ def test_create_with_custom_options(mock_daemon_factory_new,
     )
 
 
-def test_configure(mock_daemon_facotry_new,
+def test_configure(mock_daemon_factory_new,
                    mock_daemon_factory_save,
                    mock_daemon_factory_load,
                    mock_daemon_factory_delete,

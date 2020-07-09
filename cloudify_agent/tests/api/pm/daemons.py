@@ -13,7 +13,6 @@ from cloudify_agent.api.pm.detach import DetachedDaemon
 from cloudify_agent.api.pm.initd import InitDDaemon
 from cloudify_agent.api.pm.nssm import NonSuckingServiceManagerDaemon
 
-from cloudify_agent.tests import get_storage_directory
 from cloudify_agent.tests import resources
 from cloudify_agent.tests import utils as test_utils
 
@@ -25,8 +24,6 @@ BUILT_IN_TASKS = [
 PLUGIN_NAME = 'plugin'
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
 class BaseDaemon:
     def __init__(self, tmp_path, logger, ssl_cert):
         self.daemons = []

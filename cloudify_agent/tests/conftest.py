@@ -22,7 +22,7 @@ from cloudify_agent.tests.utils import (
 
 
 @pytest.fixture(scope='function', autouse=True)
-def base_test_management(agent_ssl_cert):
+def base_test_management(agent_ssl_cert, tmp_path):
     # Mock the context for all tests
     original_ctx = current_ctx
     current_ctx.set(
@@ -40,10 +40,15 @@ def base_test_management(agent_ssl_cert):
     for key, value in agent_env_vars.items():
         os.environ[key] = value
 
+    old_path = os.getcwd()
+    os.chdir(str(tmp_path))
+
     yield current_ctx
 
     # Un-mock the context
     current_ctx.set(original_ctx)
+
+    os.chdir(old_path)
 
 
 @pytest.fixture(scope='function')
@@ -243,7 +248,7 @@ def mock_daemon_factory_load_all():
 def mock_daemon_api_internal_daemon_to_dict():
     with patch(
         'cloudify_agent.shell.commands.daemons.api_utils'
-        '.internal_daemon_to_dict'
+        '.internal.daemon_to_dict'
     ) as idtd:
         yield idtd
 
@@ -253,3 +258,8 @@ def mock_get_storage_dir(get_storage_directory):
     with patch('cloudify_agent.api.utils.internal.get_storage_directory',
                return_value=get_storage_directory) as get_storage:
         yield get_storage
+
+
+@pytest.fixture(scope='function')
+def get_storage_directory(tmp_path):
+    yield os.path.join(str(tmp_path), 'cfy-agent-tests-daemons')

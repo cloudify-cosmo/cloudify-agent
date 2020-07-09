@@ -7,11 +7,7 @@ import pytest
 from cloudify_agent.api.pm.base import Daemon
 from cloudify_agent.api import exceptions
 
-from cloudify_agent.tests import get_storage_directory
 
-
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
 def get_daemon(ssl_cert, params=None):
     if not params:
         params = {
