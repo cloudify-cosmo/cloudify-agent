@@ -18,6 +18,24 @@ from cloudify_agent.installer.operations import create as create_agent
 from cloudify_agent.tests.installer.config import mock_context
 
 
+@pytest.mark.only_ci
+def test_installation(agent_package, tmpdir_factory, agent_ssl_cert):
+    base_dir = tmpdir_factory.mktemp('install_base_dir')
+    agent_config = _get_agent_config(agent_package, agent_ssl_cert)
+    agent_config['basedir'] = str(base_dir)
+    try:
+        _test_agent_installation(agent_ssl_cert, agent_config)
+    finally:
+        shutil.rmtree(str(base_dir))
+
+
+@pytest.mark.only_ci
+def test_installation_no_basedir(agent_package, agent_ssl_cert):
+    agent_config = _get_agent_config(agent_package, agent_ssl_cert)
+    new_agent = _test_agent_installation(agent_ssl_cert, agent_config)
+    assert 'basedir' in new_agent
+
+
 @patch('cloudify.agent_utils.get_rest_client',
        return_value=MockRestclient())
 @patch('cloudify.utils.get_manager_name', return_value='cloudify')
@@ -55,21 +73,3 @@ def _get_agent_config(agent_package, agent_ssl_cert):
         'local': True,
         'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
     })
-
-
-@pytest.mark.only_ci
-def test_installation(agent_package, tmpdir_factory, agent_ssl_cert):
-    base_dir = tmpdir_factory.mktemp('install_base_dir')
-    agent_config = _get_agent_config(agent_package, agent_ssl_cert)
-    agent_config['basedir'] = base_dir
-    try:
-        _test_agent_installation(agent_ssl_cert, agent_config)
-    finally:
-        shutil.rmtree(str(base_dir))
-
-
-@pytest.mark.only_ci
-def test_installation_no_basedir(agent_package, agent_ssl_cert):
-    agent_config = _get_agent_config(agent_package, agent_ssl_cert)
-    new_agent = _test_agent_installation(agent_ssl_cert, agent_config)
-    assert 'basedir' in new_agent
