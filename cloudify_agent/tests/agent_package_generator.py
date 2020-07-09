@@ -18,13 +18,15 @@ except ImportError:
 
 
 class AgentPackageGenerator(object):
-    def __init__(self):
+    def __init__(self, agent_ssl_cert):
         self.initialized = False
+        self.agent_ssl_cert = agent_ssl_cert
 
     def _initialize(self):
         self._resources_dir = tempfile.mkdtemp(
             prefix='file-server-resource-base')
-        self._fs = FileServer(root_path=self._resources_dir, ssl=False)
+        self._fs = FileServer(self.agent_ssl_cert,
+                              root_path=self._resources_dir, ssl=False)
         self._fs.start()
         config = RawConfigParser()
         config.add_section('install')
