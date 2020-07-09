@@ -266,19 +266,6 @@ class PluginInstallerTest(BaseTest, TestCase):
             else:
                 self.fail('PluginInstallationError not raised')
 
-    def test_install_from_wagon_central_deployment(self):
-        with _patch_for_install_wagon(PACKAGE_NAME, PACKAGE_VERSION,
-                                      download_path=self.wagons[PACKAGE_NAME],
-                                      archive_name='some_archive'):
-            try:
-                installer.install(self._plugin_struct(
-                    executor='central_deployment_agent'),
-                    deployment_id='deployment')
-            except exceptions.PluginInstallationError as e:
-                self.assertIn('REST plugins API', str(e))
-            else:
-                self.fail('PluginInstallationError not raised')
-
     def test_uninstall_from_wagon(self):
         self.test_install_from_wagon()
         installer.uninstall_wagon(PACKAGE_NAME, PACKAGE_VERSION)
