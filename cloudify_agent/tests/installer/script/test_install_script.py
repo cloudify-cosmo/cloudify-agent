@@ -27,7 +27,7 @@ def set_mock_context(agent_ssl_cert, tmp_path, **override_properties):
             'install_method': 'init_script',
             'rest_host': 'localhost',
             'windows': os.name == 'nt',
-            'basedir': tmp_path,
+            'basedir': str(tmp_path),
         }
     }
     node_properties['agent_config'].update(**override_properties)
@@ -148,7 +148,7 @@ def test_no_create_custom_env_file(agent_ssl_cert):
 def test_create_ssl_cert(tmp_path, agent_ssl_cert):
     run_install(['add_ssl_cert'], cert=agent_ssl_cert)
     # basedir + node_id
-    agent_dir = os.path.join(tmp_path, 'd')
+    agent_dir = os.path.join(str(tmp_path), 'd')
     agent_ssl_cert.verify_remote_cert(agent_dir)
 
 
@@ -189,5 +189,5 @@ def test_win_no_create_custom_env_file(agent_ssl_cert):
 def test_win_create_ssl_cert(tmp_path, agent_ssl_cert):
     run_install(['AddSSLCert'], windows=True, cert=agent_ssl_cert)
     # basedir + node_id
-    agent_dir = os.path.join(tmp_path, 'd')
+    agent_dir = os.path.join(str(tmp_path), 'd')
     agent_ssl_cert.verify_remote_cert(agent_dir)
