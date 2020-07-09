@@ -219,8 +219,8 @@ def are_dir_trees_equal(dir1, dir2):
 
 
 class SSLWSGIServer(wsgiref.simple_server.WSGIServer):
-    _certfile = None
-    _keyfile = None
+    certfile = None
+    keyfile = None
 
     def server_close(self):
         wsgiref.simple_server.WSGIServer.server_close(self)
@@ -232,7 +232,7 @@ class SSLWSGIServer(wsgiref.simple_server.WSGIServer):
     def get_request(self):
         socket, addr = wsgiref.simple_server.WSGIServer.get_request(self)
         socket = ssl.wrap_socket(
-            socket, keyfile=self._keyfile, certfile=self._certfile,
+            socket, keyfile=self.keyfile, certfile=self.certfile,
             server_side=True)
         return socket, addr
 
@@ -267,6 +267,9 @@ class FileServer(object):
             wsgiref.simple_server.WSGIServer
         self._server = wsgiref.simple_server.make_server(
             '127.0.0.1', 0, app, server_class=server_class)
+        if self._ssl:
+            self._server.certfile = self.certfile
+            self._server.keyfile = self.keyfile
         self.url = '{proto}://localhost:{port}'.format(
             proto='https' if self._ssl else 'http',
             port=self._server.server_port,
