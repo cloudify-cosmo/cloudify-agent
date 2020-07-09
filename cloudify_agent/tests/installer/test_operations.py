@@ -37,7 +37,7 @@ def test_local_agent_from_package_posix(file_server, tmp_path,
                                         agent_ssl_cert, request):
     # Check that agent still works with a filepath longer than 128 bytes
     # (paths longer than 128 bytes break shebangs on linux.)
-    agent_name = 'agent-' ''.join('a' for _ in range(128))
+    agent_name = 'agent-{0}'.format(''.join('a' for _ in range(128)))
     _test_local_agent_from_package(agent_name, file_server, agent_ssl_cert,
                                    request)
 
