@@ -146,7 +146,7 @@ def _create_agent(agent_ssl_cert):
 
 
 @contextmanager
-def _set_context(agent_ssl_cert, tmp_path, host='localhost'):
+def _set_context(agent_ssl_cert, tmp_path, host='127.0.0.1'):
     old_context = ctx
     try:
         os.environ[constants.MANAGER_FILE_SERVER_ROOT_KEY] = \

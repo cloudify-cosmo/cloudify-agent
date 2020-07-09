@@ -270,7 +270,7 @@ class FileServer(object):
         if self._ssl:
             self._server.certfile = self.certfile
             self._server.keyfile = self.keyfile
-        self.url = '{proto}://localhost:{port}'.format(
+        self.url = '{proto}://127.0.0.1:{port}'.format(
             proto='https' if self._ssl else 'http',
             port=self._server.server_port,
         )

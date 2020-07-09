@@ -40,7 +40,7 @@ resource_base = ctx.node.properties['resource_base']
 file_server_port = ctx.node.properties['file_server_port']
 
 package_name = create_agent_package(resource_base, config, ctx.logger)
-package_url = 'http://localhost:{0}/{1}'.format(
+package_url = 'http://127.0.0.1:{0}/{1}'.format(
     file_server_port,
     package_name
 )

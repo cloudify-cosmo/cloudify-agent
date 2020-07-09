@@ -30,12 +30,12 @@ def base_test_management(agent_ssl_cert, tmp_path):
 
     # Make sure the right env vars are available for the agent
     agent_env_vars = {
-        constants.MANAGER_FILE_SERVER_URL_KEY: 'localhost',
-        constants.REST_HOST_KEY: 'localhost',
+        constants.MANAGER_FILE_SERVER_URL_KEY: '127.0.0.1',
+        constants.REST_HOST_KEY: '127.0.0.1',
         constants.REST_PORT_KEY: '80',
         constants.BROKER_SSL_CERT_PATH: agent_ssl_cert.get_local_cert_path(),
         constants.LOCAL_REST_CERT_FILE_KEY: agent_ssl_cert.local_key_path(),
-        constants.MANAGER_FILE_SERVER_ROOT_KEY: 'localhost/resources'
+        constants.MANAGER_FILE_SERVER_ROOT_KEY: '127.0.0.1/resources'
     }
     for key, value in agent_env_vars.items():
         os.environ[key] = value
@@ -132,10 +132,10 @@ def pytest_collection_modifyitems(config, items):
     # not co-operating.
     if config.getoption('--run-rabbit-tests'):
         try:
-            socket.create_connection(('localhost', 5672), timeout=1)
+            socket.create_connection(('127.0.0.1', 5672), timeout=1)
         except (socket.error, socket.timeout) as err:
             raise RuntimeError(
-                'Could not connect to rabbit on localhost:5672: '
+                'Could not connect to rabbit on 127.0.0.1:5672: '
                 '{err}'.format(err=err)
             )
 

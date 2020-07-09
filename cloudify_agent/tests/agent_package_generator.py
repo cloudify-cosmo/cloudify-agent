@@ -38,7 +38,7 @@ class AgentPackageGenerator(object):
                    os.path.join(getattr(sys, 'real_prefix', sys.prefix),
                                 'bin', 'python'))
         package_name = create_agent_package(self._resources_dir, config)
-        self._package_url = 'http://localhost:{0}/{1}'.format(
+        self._package_url = 'http://127.0.0.1:{0}/{1}'.format(
             self._fs.port, package_name)
         self._package_path = os.path.join(self._resources_dir, package_name)
         self.initialized = True

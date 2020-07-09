@@ -24,7 +24,7 @@ def test_download_curl(file_server, tmp_path, agent_ssl_cert):
     with set_mock_context(agent_ssl_cert, tmp_path):
         run_install(['ln -s $(which curl) curl',
                      'PATH=$PWD',
-                     'download http://localhost:{0} download.output'
+                     'download http://127.0.0.1:{0} download.output'
                      .format(file_server.port)],
                     tmp_path,
                     cert=agent_ssl_cert)
@@ -36,7 +36,7 @@ def test_download_wget(file_server, tmp_path, agent_ssl_cert):
     with set_mock_context(agent_ssl_cert, tmp_path):
         run_install(['ln -s $(which wget) wget',
                      'PATH=$PWD',
-                     'download http://localhost:{0} download.output'
+                     'download http://127.0.0.1:{0} download.output'
                      .format(file_server.port)],
                     tmp_path,
                     cert=agent_ssl_cert)
@@ -50,7 +50,7 @@ def test_download_no_curl_or_wget(file_server, tmp_path, agent_ssl_cert):
             exceptions.CommandExecutionException,
             run_install,
             ['PATH=$PWD',
-             'download http://localhost:{0} download.output'
+             'download http://127.0.0.1:{0} download.output'
              .format(file_server.port)],
             tmp_path,
             cert=agent_ssl_cert,
@@ -166,7 +166,7 @@ def set_mock_context(agent_ssl_cert, tmp_path, **override_properties):
         'agent_config': {
             'user': getpass.getuser(),
             'install_method': 'init_script',
-            'rest_host': 'localhost',
+            'rest_host': '127.0.0.1',
             'windows': os.name == 'nt',
             'basedir': str(tmp_path),
         }
@@ -180,7 +180,7 @@ def set_mock_context(agent_ssl_cert, tmp_path, **override_properties):
 
 def _get_install_script(cert, add_ssl_cert=True, extra_agent_params=None):
     input_cloudify_agent = {
-        'broker_ip': 'localhost',
+        'broker_ip': '127.0.0.1',
         'ssl_cert_path': cert.get_local_cert_path(),
     }
     if extra_agent_params:

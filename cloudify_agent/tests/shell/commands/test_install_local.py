@@ -65,10 +65,10 @@ def _test_agent_installation(agent_ssl_cert, agent_config, *_):
 def _get_agent_config(agent_package, agent_ssl_cert):
     return CloudifyAgentConfig({
         'name': '{0}_{1}'.format('agent_', str(random_id(with_prefix=False))),
-        'ip': 'localhost',
+        'ip': '127.0.0.1',
         'package_url': agent_package.get_package_url(),
-        'rest_host': 'localhost',
-        'broker_ip': 'localhost',
+        'rest_host': '127.0.0.1',
+        'broker_ip': '127.0.0.1',
         'windows': os.name == 'nt',
         'local': True,
         'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
