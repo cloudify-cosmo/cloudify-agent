@@ -179,20 +179,6 @@ def test_install_from_wagon_overriding_same_version(file_server, test_plugins):
             installer.install(plugins.plugin_struct(file_server))
 
 
-def test_install_from_wagon_central_deployment(file_server, test_plugins):
-    with _patch_for_install_wagon(
-        plugins.PACKAGE_NAME, plugins.PACKAGE_VERSION,
-        download_path=test_plugins[plugins.PACKAGE_NAME],
-        archive_name='some_archive',
-    ):
-        with pytest.raises(exceptions.PluginInstallationError,
-                           match='.*REST plugins API.*'):
-            installer.install(plugins.plugin_struct(
-                file_server,
-                executor='central_deployment_agent'),
-                deployment_id='deployment')
-
-
 @pytest.mark.only_rabbit
 def test_uninstall_from_wagon(file_server, test_plugins):
     test_install_from_wagon(test_plugins, file_server)
