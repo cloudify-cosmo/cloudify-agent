@@ -57,6 +57,11 @@ def base_test_management(agent_ssl_cert, tmp_path):
 
 
 @pytest.fixture(scope='function')
+def agent_package_ssl(file_server_ssl):
+    yield AgentPackageGenerator(file_server_ssl)
+
+
+@pytest.fixture(scope='function')
 def agent_package(file_server):
     yield AgentPackageGenerator(file_server)
 

@@ -32,7 +32,7 @@ from cloudify_agent.tests.installer.config import (
 @pytest.mark.only_ci
 def test_install_new_agent(mock_delete_rmq_user, mock_get_rest_client,
                            file_server_ssl, tmp_path, agent_ssl_cert, request,
-                           agent_package):
+                           agent_package_ssl):
     agent_name = utils.internal.generate_agent_name()
 
     blueprint_path = resources.get_resource(
@@ -43,7 +43,7 @@ def test_install_new_agent(mock_delete_rmq_user, mock_get_rest_client,
     }
 
     with _manager_env(file_server_ssl, tmp_path, agent_ssl_cert,
-                      agent_package):
+                      agent_package_ssl):
         env = local.init_env(name=request.node.name,
                              blueprint_path=blueprint_path,
                              inputs=inputs)
