@@ -1,7 +1,6 @@
 import getpass
 import os
 
-from mock import patch
 import pytest
 
 from cloudify_agent.api.pm.base import Daemon

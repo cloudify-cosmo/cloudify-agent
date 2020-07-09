@@ -1,8 +1,6 @@
 import getpass
 import os
 
-from mock import patch
-
 from cloudify import amqp_client
 from cloudify.error_handling import deserialize_known_exception
 from cloudify.utils import LocalCommandRunner
