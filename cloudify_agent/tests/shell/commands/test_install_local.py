@@ -1,5 +1,4 @@
 import os
-import uuid
 import shutil
 
 from mock import patch
@@ -15,6 +14,7 @@ from cloudify_agent.tests.daemon import (
 )
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 from cloudify_agent.installer.operations import create as create_agent
+from cloudify_agent.tests import random_id
 from cloudify_agent.tests.installer.config import mock_context
 
 
@@ -64,7 +64,7 @@ def _test_agent_installation(agent_ssl_cert, agent_config, *_):
 
 def _get_agent_config(agent_package, agent_ssl_cert):
     return CloudifyAgentConfig({
-        'name': '{0}_{1}'.format('agent_', str(uuid.uuid4())),
+        'name': '{0}_{1}'.format('agent_', str(random_id(with_prefix=False))),
         'ip': 'localhost',
         'package_url': agent_package.get_package_url(),
         'rest_host': 'localhost',

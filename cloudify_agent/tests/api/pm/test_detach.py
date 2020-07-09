@@ -45,6 +45,8 @@ def test_cron_respawn(detach_daemon):
     crontab = detach_daemon.runner.run('crontab -l').std_out
     assert daemon.cron_respawn_path in crontab
 
+    wait_for_daemon_alive(daemon.queue)
+
     # lets kill the process
     detach_daemon.runner.run("pkill -9 -f 'cloudify_agent.worker'")
     wait_for_daemon_dead(daemon.queue)

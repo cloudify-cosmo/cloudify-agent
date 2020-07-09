@@ -11,7 +11,7 @@ from cloudify.tests.mocks.mock_rest_client import MockRestclient
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.api.plugins import installer
 from cloudify_agent.tests.agent_package_generator import AgentPackageGenerator
-from cloudify_agent.tests import plugins
+from cloudify_agent.tests import plugins, random_id
 from cloudify_agent.tests.utils import (
     _AgentSSLCert,
     create_plugin_tar,
@@ -43,7 +43,12 @@ def base_test_management(agent_ssl_cert, tmp_path):
     old_path = os.getcwd()
     os.chdir(str(tmp_path))
 
-    yield current_ctx
+    with patch(
+        'cloudify_agent.shell.commands.daemons.api_utils.internal.'
+        'generate_agent_name',
+        new=random_id,
+    ):
+        yield current_ctx
 
     # Un-mock the context
     current_ctx.set(original_ctx)

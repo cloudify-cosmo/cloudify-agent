@@ -40,7 +40,7 @@ def cleanup_plugins(file_server):
 
 
 @pytest.mark.only_rabbit
-def test_install_from_source(file_server, test_plugins):
+def test_install_from_source(test_plugins, file_server):
     installer.install(plugins.plugin_struct(file_server,
                                             source='mock-plugin.tar'))
     _assert_task_runnable('mock_plugin.tasks.run',
@@ -50,7 +50,7 @@ def test_install_from_source(file_server, test_plugins):
 
 
 @pytest.mark.only_rabbit
-def test_install_from_source_with_deployment_id(file_server, test_plugins):
+def test_install_from_source_with_deployment_id(test_plugins, file_server):
     deployment_id = 'deployment'
     installer.install(plugins.plugin_struct(file_server,
                                             source='mock-plugin.tar'),
@@ -62,7 +62,7 @@ def test_install_from_source_with_deployment_id(file_server, test_plugins):
 
 
 @pytest.mark.only_rabbit
-def test_install_from_source_with_requirements(file_server, test_plugins):
+def test_install_from_source_with_requirements(test_plugins, file_server):
     installer.install(plugins.plugin_struct(
         file_server,
         source='mock-plugin-with-requirements.tar',
@@ -73,7 +73,7 @@ def test_install_from_source_with_requirements(file_server, test_plugins):
                         'Santraginus V')
 
 
-def test_install_from_source_already_exists(file_server, test_plugins):
+def test_install_from_source_already_exists(test_plugins, file_server):
     installer.install(plugins.plugin_struct(file_server,
                                             source='mock-plugin.tar'))
     with pytest.raises(exceptions.PluginInstallationError,
@@ -83,7 +83,7 @@ def test_install_from_source_already_exists(file_server, test_plugins):
 
 
 @pytest.mark.only_rabbit
-def test_uninstall_from_source(file_server, test_plugins):
+def test_uninstall_from_source(test_plugins, file_server):
     installer.install(plugins.plugin_struct(file_server,
                                             source='mock-plugin.tar'))
     _assert_task_runnable('mock_plugin.tasks.run', expected_return='run')
@@ -92,7 +92,7 @@ def test_uninstall_from_source(file_server, test_plugins):
 
 
 @pytest.mark.only_rabbit
-def test_uninstall_from_source_with_deployment_id(file_server, test_plugins):
+def test_uninstall_from_source_with_deployment_id(test_plugins, file_server):
     deployment_id = 'deployment'
     installer.install(
         plugins.plugin_struct(file_server, source='mock-plugin.tar'),
@@ -108,7 +108,7 @@ def test_uninstall_from_source_with_deployment_id(file_server, test_plugins):
 
 
 @pytest.mark.only_rabbit
-def test_install_from_wagon(file_server, test_plugins):
+def test_install_from_wagon(test_plugins, file_server):
     with _patch_for_install_wagon(
         plugins.PACKAGE_NAME,
         plugins.PACKAGE_VERSION,
@@ -119,7 +119,7 @@ def test_install_from_wagon(file_server, test_plugins):
 
 
 @pytest.mark.only_rabbit
-def test_install_from_wagon_concurrent(file_server, test_plugins):
+def test_install_from_wagon_concurrent(test_plugins, file_server):
     ctx_obj = ctx._get_current_object()
 
     def installer_func(dep_id='__system__'):
@@ -168,7 +168,7 @@ def test_install_from_wagon_already_exists_missing_plugin_id(file_server,
 
 
 @pytest.mark.only_rabbit
-def test_install_from_wagon_overriding_same_version(file_server, test_plugins):
+def test_install_from_wagon_overriding_same_version(test_plugins, file_server):
     test_install_from_wagon(test_plugins, file_server)
     with _patch_for_install_wagon(
             plugins.PACKAGE_NAME, plugins.PACKAGE_VERSION,
@@ -180,7 +180,7 @@ def test_install_from_wagon_overriding_same_version(file_server, test_plugins):
 
 
 @pytest.mark.only_rabbit
-def test_uninstall_from_wagon(file_server, test_plugins):
+def test_uninstall_from_wagon(test_plugins, file_server):
     test_install_from_wagon(test_plugins, file_server)
     installer.uninstall_wagon(plugins.PACKAGE_NAME, plugins.PACKAGE_VERSION)
     _assert_task_not_runnable('mock_plugin.tasks.run',
@@ -188,7 +188,7 @@ def test_uninstall_from_wagon(file_server, test_plugins):
                               package_version=plugins.PACKAGE_VERSION)
 
 
-def test_extract_package_to_dir(file_server, test_plugins):
+def test_extract_package_to_dir(test_plugins, file_server):
     # create a plugin tar file and put it in the file server
     plugin_dir_name = 'mock-plugin-with-requirements'
     plugin_tar_name = test_utils.create_plugin_tar(

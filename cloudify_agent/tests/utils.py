@@ -4,7 +4,6 @@ import platform
 import ssl
 import tarfile
 import threading
-import uuid
 import wsgiref.simple_server
 from contextlib import contextmanager
 
@@ -18,7 +17,7 @@ from cloudify.utils import setup_logger
 
 import cloudify_agent
 
-from cloudify_agent.tests import resources
+from cloudify_agent.tests import random_id, resources
 from cloudify_agent.api.defaults import (SSL_CERTS_TARGET_DIR,
                                          AGENT_SSL_CERT_FILENAME)
 
@@ -39,7 +38,7 @@ def env(key, value):
 
 def create_mock_plugin(basedir, install_requires=None):
     install_requires = install_requires or []
-    name = str(uuid.uuid4())
+    name = 'plugin_' + random_id(with_prefix=False)
     plugin_dir = os.path.join(basedir, name)
     setup_py = os.path.join(plugin_dir, 'setup.py')
     os.mkdir(plugin_dir)

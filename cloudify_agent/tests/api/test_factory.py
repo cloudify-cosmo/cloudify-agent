@@ -1,4 +1,3 @@
-import uuid
 import os
 import pytest
 import shutil
@@ -6,10 +5,11 @@ import shutil
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.tests.utils import get_daemon_storage
+from cloudify_agent.tests import random_id
 
 
 def test_new_initd(daemon_factory, agent_ssl_cert):
-    daemon_name = 'test-daemon-{0}'.format(uuid.uuid4())
+    daemon_name = 'test-daemon-{0}'.format(random_id(with_prefix=False))
     daemon = daemon_factory.new(
         **get_daemon_params(daemon_name, agent_ssl_cert))
     assert daemon_name == daemon.name
@@ -20,7 +20,7 @@ def test_new_initd(daemon_factory, agent_ssl_cert):
 
 
 def test_save_load_delete(daemon_factory, agent_ssl_cert):
-    daemon_name = 'test-daemon-{0}'.format(uuid.uuid4())
+    daemon_name = 'test-daemon-{0}'.format(random_id(with_prefix=False))
     daemon = daemon_factory.new(
         **get_daemon_params(daemon_name, agent_ssl_cert))
 
@@ -50,7 +50,7 @@ def test_load_non_existing(daemon_factory):
 
 def test_load_all(daemon_factory, agent_ssl_cert, tmp_path):
     def _save_daemon(name):
-        daemon_name = 'test-daemon-{0}'.format(uuid.uuid4())
+        daemon_name = 'test-daemon-{0}'.format(random_id(with_prefix=False))
         params = get_daemon_params(daemon_name, agent_ssl_cert).copy()
         params['name'] = name
         daemon = daemon_factory.new(**params)
@@ -70,7 +70,7 @@ def test_load_all(daemon_factory, agent_ssl_cert, tmp_path):
 
 
 def test_new_existing_agent(daemon_factory, agent_ssl_cert):
-    daemon_name = 'test-daemon-{0}'.format(uuid.uuid4())
+    daemon_name = 'test-daemon-{0}'.format(random_id(with_prefix=False))
     daemon = daemon_factory.new(
         **get_daemon_params(daemon_name, agent_ssl_cert))
 
