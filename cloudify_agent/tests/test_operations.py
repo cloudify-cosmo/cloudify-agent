@@ -31,7 +31,7 @@ from cloudify_agent.tests.installer.config import (
 
 @pytest.mark.only_ci
 def test_install_new_agent(mock_delete_rmq_user, mock_get_rest_client,
-                           file_server, tmp_path, agent_ssl_cert, request,
+                           file_server_ssl, tmp_path, agent_ssl_cert, request,
                            agent_package):
     agent_name = utils.internal.generate_agent_name()
 
@@ -42,7 +42,8 @@ def test_install_new_agent(mock_delete_rmq_user, mock_get_rest_client,
         'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
     }
 
-    with _manager_env(file_server, tmp_path, agent_ssl_cert, agent_package):
+    with _manager_env(file_server_ssl, tmp_path, agent_ssl_cert,
+                      agent_package):
         env = local.init_env(name=request.node.name,
                              blueprint_path=blueprint_path,
                              inputs=inputs)
@@ -181,7 +182,6 @@ def _create_cloudify_agent_dir(tmp_path):
 
 @contextmanager
 def _manager_env(fileserver, tmp_path, ssl_cert, agent_package):
-    port = 8756
     if os.name == 'nt':
         package_name = 'cloudify-windows-agent.exe'
     else:
@@ -200,7 +200,7 @@ def _manager_env(fileserver, tmp_path, ssl_cert, agent_package):
 
     new_env = {
         constants.MANAGER_FILE_SERVER_ROOT_KEY: resources_dir,
-        constants.REST_PORT_KEY: str(port),
+        constants.REST_PORT_KEY: str(fileserver.port),
         constants.MANAGER_NAME: 'cloudify'
     }
 

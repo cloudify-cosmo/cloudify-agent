@@ -97,12 +97,24 @@ def test_plugins(file_server):
 
 @pytest.fixture(scope='function')
 def file_server(tmp_path, agent_ssl_cert):
-    base_path = os.path.join(str(tmp_path), 'fileserver')
-    os.makedirs(base_path)
-    server = FileServer(agent_ssl_cert, base_path, ssl=False)
+    server = _make_file_server(tmp_path, agent_ssl_cert)
     server.start()
     yield server
     server.stop()
+
+
+@pytest.fixture(scope='function')
+def file_server_ssl(tmp_path, agent_ssl_cert):
+    server = _make_file_server(tmp_path, agent_ssl_cert, ssl=True)
+    server.start()
+    yield server
+    server.stop()
+
+
+def _make_file_server(tmp_path, agent_ssl_cert, ssl=False):
+    base_path = os.path.join(str(tmp_path), 'fileserver')
+    os.makedirs(base_path)
+    return FileServer(agent_ssl_cert, base_path, ssl=ssl)
 
 
 def pytest_addoption(parser):
