@@ -1,26 +1,9 @@
-#########
-# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-#  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  * See the License for the specific language governing permissions and
-#  * limitations under the License.
-
 import filecmp
 import os
 import platform
 import ssl
 import tarfile
-import tempfile
 import threading
-import uuid
 import wsgiref.simple_server
 from contextlib import contextmanager
 
@@ -34,12 +17,16 @@ from cloudify.utils import setup_logger
 
 import cloudify_agent
 
-from cloudify_agent.tests import resources
+from cloudify_agent.tests import random_id, resources
 from cloudify_agent.api.defaults import (SSL_CERTS_TARGET_DIR,
                                          AGENT_SSL_CERT_FILENAME)
 
 
 logger = setup_logger('cloudify_agent.tests.utils')
+
+
+def get_daemon_storage(path):
+    return os.path.join(path, 'daemon_storage')
 
 
 @contextmanager
@@ -51,7 +38,7 @@ def env(key, value):
 
 def create_mock_plugin(basedir, install_requires=None):
     install_requires = install_requires or []
-    name = str(uuid.uuid4())
+    name = 'plugin_' + random_id(with_prefix=False)
     plugin_dir = os.path.join(basedir, name)
     setup_py = os.path.join(plugin_dir, 'setup.py')
     os.mkdir(plugin_dir)
@@ -232,8 +219,8 @@ def are_dir_trees_equal(dir1, dir2):
 
 
 class SSLWSGIServer(wsgiref.simple_server.WSGIServer):
-    _certfile = None
-    _keyfile = None
+    certfile = None
+    keyfile = None
 
     def server_close(self):
         wsgiref.simple_server.WSGIServer.server_close(self)
@@ -243,19 +230,17 @@ class SSLWSGIServer(wsgiref.simple_server.WSGIServer):
             os.unlink(self._keyfile)
 
     def get_request(self):
-        if not self._certfile or not self._keyfile:
-            self._certfile = _AgentSSLCert.get_local_cert_path()
-            self._keyfile = _AgentSSLCert.local_key_path()
         socket, addr = wsgiref.simple_server.WSGIServer.get_request(self)
         socket = ssl.wrap_socket(
-            socket, keyfile=self._keyfile, certfile=self._certfile,
+            socket, keyfile=self.keyfile, certfile=self.certfile,
             server_side=True)
         return socket, addr
 
 
 class FileServer(object):
-    def __init__(self, root_path=None, port=0, ssl=True):
-        self._port = port
+    def __init__(self, agent_ssl_cert, root_path=None, ssl=True):
+        self.certfile = agent_ssl_cert.local_cert_path()
+        self.keyfile = agent_ssl_cert.local_key_path()
         self.root_path = root_path or os.path.dirname(resources.__file__)
         self._server = None
         self._server_thread = None
@@ -281,7 +266,14 @@ class FileServer(object):
         server_class = SSLWSGIServer if self._ssl else \
             wsgiref.simple_server.WSGIServer
         self._server = wsgiref.simple_server.make_server(
-            '', self._port, app, server_class=server_class)
+            '127.0.0.1', 0, app, server_class=server_class)
+        if self._ssl:
+            self._server.certfile = self.certfile
+            self._server.keyfile = self.keyfile
+        self.url = '{proto}://127.0.0.1:{port}'.format(
+            proto='https' if self._ssl else 'http',
+            port=self._server.server_port,
+        )
 
         self._server_thread = threading.Thread(
             target=self._server.serve_forever)
@@ -403,19 +395,20 @@ HcB0lztLEyipHnG93A9RI2HtCHsL3BcOgWEzUdkoIstLo/fRAh5TELRvLW+ArvU2
 W6ymlKLurKPd5YI4Q0y6irWmVMoeaQ==
 -----END PRIVATE KEY-----"""
 
-    @staticmethod
-    def get_local_cert_path(temp_folder=None):
-        with tempfile.NamedTemporaryFile(
-                delete=False, dir=temp_folder, mode='w') as f:
-            f.write(_AgentSSLCert.DUMMY_CERT)
-        return f.name
+    def __init__(self, base_folder):
+        self.temp_folder = base_folder
 
-    @staticmethod
-    def local_key_path(temp_folder=None):
-        with tempfile.NamedTemporaryFile(
-                delete=False, dir=temp_folder, mode='w') as f:
+    def local_cert_path(self):
+        path = os.path.join(self.temp_folder, 'local.crt')
+        with open(path, 'w') as f:
+            f.write(_AgentSSLCert.DUMMY_CERT)
+        return path
+
+    def local_key_path(self):
+        path = os.path.join(self.temp_folder, 'local.key')
+        with open(path, 'w') as f:
             f.write(_AgentSSLCert.PRIVATE_KEY)
-        return f.name
+        return path
 
     @staticmethod
     def _clean_cert(cert_content):

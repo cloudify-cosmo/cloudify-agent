@@ -1,73 +1,146 @@
-#########
-# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-#  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  * See the License for the specific language governing permissions and
-#  * limitations under the License.
-
 import os
 import time
 
-from mock import patch
-from testtools import TestCase
+import pytest
 
 from cloudify.exceptions import CommandExecutionException
 
-from cloudify_agent.api.pm.nssm import NonSuckingServiceManagerDaemon
-
-from cloudify_agent.tests.api.pm import BaseDaemonProcessManagementTest
-from cloudify_agent.tests.api.pm import only_os
-from cloudify_agent.tests import get_storage_directory
+from cloudify_agent.tests.api.pm import shared
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-@only_os('nt')
-class TestNonSuckingServiceManagerDaemon(BaseDaemonProcessManagementTest,
-                                         TestCase):
+@pytest.mark.only_nt
+def test_configure(nssm_daemon):
+    daemon = nssm_daemon.create_daemon()
+    daemon.create()
+    daemon.configure()
+    assert os.path.exists(daemon.config_path)
 
-    @property
-    def daemon_cls(self):
-        return NonSuckingServiceManagerDaemon
 
-    def test_configure(self):
-        daemon = self.create_daemon()
-        daemon.create()
-        daemon.configure()
-        self.assertTrue(os.path.exists(daemon.config_path))
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_delete(nssm_daemon):
+    daemon = nssm_daemon.create_daemon()
+    daemon.create()
+    daemon.configure()
+    daemon.start()
+    daemon.stop()
+    daemon.delete()
+    assert not os.path.exists(daemon.config_path)
+    pytest.raises(
+        CommandExecutionException,
+        nssm_daemon.runner.run,
+        'sc getdisplayname {0}'.format(daemon.name))
 
-    def test_delete(self):
-        daemon = self.create_daemon()
-        daemon.create()
-        daemon.configure()
-        daemon.start()
-        daemon.stop()
-        daemon.delete()
-        self.assertFalse(os.path.exists(daemon.config_path))
-        self.assertRaises(
-            CommandExecutionException,
-            self.runner.run,
-            'sc getdisplayname {0}'.format(daemon.name))
 
-    def test_status(self):
-        daemon = self.create_daemon()
-        daemon.create()
-        daemon.configure()
-        self.assertFalse(daemon.status())
-        daemon.start()
-        # on windows, the daemon.start completes and returns fast enough
-        # that the service state is still SERVICE_START_PENDING
-        for retry in range(5):
-            if daemon.status():
-                break
-            time.sleep(1)
-        else:
-            self.fail('Daemon failed to start')
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_status(nssm_daemon):
+    daemon = nssm_daemon.create_daemon()
+    daemon.create()
+    daemon.configure()
+    assert not daemon.status()
+    daemon.start()
+    # on windows, the daemon.start completes and returns fast enough
+    # that the service state is still SERVICE_START_PENDING
+    for retry in range(5):
+        if daemon.status():
+            break
+        time.sleep(1)
+    else:
+        pytest.fail('Daemon failed to start')
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_create(nssm_daemon):
+    shared._test_create(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_create_overwrite(nssm_daemon):
+    shared._test_create_overwrite(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_start(nssm_daemon):
+    shared._test_start(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_start_delete_amqp_queue(nssm_daemon):
+    shared._test_start_delete_amqp_queue(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_start_with_error(nssm_daemon):
+    shared._test_start_with_error(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_start_short_timeout(nssm_daemon):
+    shared._test_start_short_timeout(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_stop(nssm_daemon):
+    shared._test_stop(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_stop_short_timeout(nssm_daemon):
+    shared._test_stop_short_timeout(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_restart(nssm_daemon):
+    shared._test_restart(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_two_daemons(nssm_daemon):
+    shared._test_two_daemons(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_conf_env_variables(nssm_daemon):
+    shared._test_conf_env_variables(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_extra_env(nssm_daemon):
+    shared._test_extra_env(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_execution_env(nssm_daemon):
+    shared._test_execution_env(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_delete_before_stop(nssm_daemon):
+    shared._test_delete_before_stop(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_delete_before_stop_with_force(nssm_daemon):
+    shared._test_delete_before_stop_with_force(nssm_daemon)
+
+
+@pytest.mark.only_rabbit
+@pytest.mark.only_nt
+def test_logging(nssm_daemon):
+    shared._test_logging(nssm_daemon)

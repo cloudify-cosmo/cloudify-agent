@@ -1,159 +1,107 @@
-#########
-# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-#  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  * See the License for the specific language governing permissions and
-#  * limitations under the License.
-
 import getpass
+import os
 
-from mock import patch
-from testtools import TestCase
+import pytest
 
 from cloudify_agent.api.pm.base import Daemon
 from cloudify_agent.api import exceptions
 
-from cloudify_agent.tests import BaseTest
-from cloudify_agent.tests import get_storage_directory
+
+def get_daemon(ssl_cert, params=None):
+    if not params:
+        params = {
+            'rest_host': '127.0.0.1',
+            'broker_ip': '127.0.0.1',
+        }
+    params['queue'] = 'queue'
+    params['name'] = 'queue'
+    params['broker_user'] = 'guest'
+    params['broker_pass'] = 'guest'
+    params['local_rest_cert_file'] = ssl_cert.local_cert_path()
+    return Daemon(**params)
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-class TestDaemonDefaults(BaseTest, TestCase):
-
-    def setUp(self):
-        super(TestDaemonDefaults, self).setUp()
-        self.daemon = Daemon(
-            rest_host='127.0.0.1',
-            broker_ip='127.0.0.1',
-            queue='queue',
-            name='name',
-            broker_user='guest',
-            broker_pass='guest',
-            local_rest_cert_file=self._rest_cert_path
-        )
-
-    def test_default_workdir(self):
-        self.assertEqual(self.temp_folder, self.daemon.workdir)
-
-    def test_default_rest_port(self):
-        self.assertEqual(53333, self.daemon.rest_port)
-
-    def test_default_min_workers(self):
-        self.assertEqual(0, self.daemon.min_workers)
-
-    def test_default_max_workers(self):
-        self.assertEqual(5, self.daemon.max_workers)
-
-    def test_default_user(self):
-        self.assertEqual(getpass.getuser(), self.daemon.user)
+def test_default_workdir(agent_ssl_cert):
+    assert os.getcwd() == get_daemon(agent_ssl_cert).workdir
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-class TestDaemonValidations(BaseTest, TestCase):
-    def setUp(self):
-        super(TestDaemonValidations, self).setUp()
-
-    def test_missing_rest_host(self):
-        with self.assertRaisesRegex(
-                exceptions.DaemonMissingMandatoryPropertyError,
-                'rest_host is mandatory'):
-            Daemon(
-                name='name',
-                queue='queue',
-                host='queue',
-                user='user',
-                broker_user='guest',
-                broker_pass='guest',
-                local_rest_cert_file=self._rest_cert_path
-            )
-
-    def test_bad_min_workers(self):
-        with self.assertRaisesRegex(
-                exceptions.DaemonPropertiesError,
-                'min_workers is supposed to be a number'):
-            Daemon(
-                name='name',
-                queue='queue',
-                host='queue',
-                rest_host='127.0.0.1',
-                broker_ip='127.0.0.1',
-                user='user',
-                min_workers='bad',
-                broker_user='guest',
-                broker_pass='guest',
-                local_rest_cert_file=self._rest_cert_path
-            )
-
-    def test_bad_max_workers(self):
-        with self.assertRaisesRegex(
-                exceptions.DaemonPropertiesError,
-                'max_workers is supposed to be a number'):
-            Daemon(
-                name='name',
-                queue='queue',
-                host='queue',
-                rest_host='127.0.0.1',
-                broker_ip='127.0.0.1',
-                user='user',
-                max_workers='bad',
-                broker_user='guest',
-                broker_pass='guest',
-                local_rest_cert_file=self._rest_cert_path
-            )
-
-    def test_min_workers_larger_than_max_workers(self):
-        with self.assertRaisesRegex(
-                exceptions.DaemonPropertiesError,
-                'min_workers cannot be greater than max_workers'):
-            Daemon(
-                name='name',
-                queue='queue',
-                host='queue',
-                rest_host='127.0.0.1',
-                broker_ip='127.0.0.1',
-                user='user',
-                max_workers=4,
-                min_workers=5,
-                broker_user='guest',
-                broker_pass='guest',
-                local_rest_cert_file=self._rest_cert_path
-            )
+def test_default_rest_port(agent_ssl_cert):
+    assert 53333 == get_daemon(agent_ssl_cert).rest_port
 
 
-@patch('cloudify_agent.api.utils.internal.get_storage_directory',
-       get_storage_directory)
-class TestNotImplemented(BaseTest, TestCase):
+def test_default_min_workers(agent_ssl_cert):
+    assert 0 == get_daemon(agent_ssl_cert).min_workers
 
-    def setUp(self):
-        super(TestNotImplemented, self).setUp()
-        self.daemon = Daemon(
-            rest_host='127.0.0.1',
-            broker_ip='127.0.0.1',
-            name='name',
-            queue='queue',
-            broker_user='guest',
-            broker_pass='guest',
-            local_rest_cert_file=self._rest_cert_path
-        )
 
-    def test_start_command(self):
-        self.assertRaises(NotImplementedError, self.daemon.start_command)
+def test_default_max_workers(agent_ssl_cert):
+    assert 5 == get_daemon(agent_ssl_cert).max_workers
 
-    def test_stop_command(self):
-        self.assertRaises(NotImplementedError, self.daemon.stop_command)
 
-    def test_configure(self):
-        self.assertRaises(NotImplementedError, self.daemon.configure)
+def test_default_user(agent_ssl_cert):
+    assert getpass.getuser() == get_daemon(agent_ssl_cert).user
 
-    def test_delete(self):
-        self.assertRaises(NotImplementedError, self.daemon.delete)
+
+def test_missing_rest_host(agent_ssl_cert):
+    with pytest.raises(exceptions.DaemonMissingMandatoryPropertyError,
+                       match='.*rest_host is mandatory.*'):
+        get_daemon(agent_ssl_cert, params={
+            'host': 'queue',
+            'user': 'user',
+        })
+
+
+def test_bad_min_workers(agent_ssl_cert):
+    with pytest.raises(exceptions.DaemonPropertiesError,
+                       match='.*min_workers is supposed to be a number.*'):
+        get_daemon(agent_ssl_cert, params={
+            'host': 'queue',
+            'rest_host': '127.0.0.1',
+            'broker_ip': '127.0.0.1',
+            'user': 'user',
+            'min_workers': 'bad',
+        })
+
+
+def test_bad_max_workers(agent_ssl_cert):
+    with pytest.raises(exceptions.DaemonPropertiesError,
+                       match='.*max_workers is supposed to be a number.*'):
+        get_daemon(agent_ssl_cert, params={
+            'host': 'queue',
+            'rest_host': '127.0.0.1',
+            'broker_ip': '127.0.0.1',
+            'user': 'user',
+            'max_workers': 'bad',
+        })
+
+
+def test_min_workers_larger_than_max_workers(agent_ssl_cert):
+    with pytest.raises(
+        exceptions.DaemonPropertiesError,
+        match='.*min_workers cannot be greater than max_workers.*',
+    ):
+        get_daemon(agent_ssl_cert, params={
+            'host': 'queue',
+            'rest_host': '127.0.0.1',
+            'broker_ip': '127.0.0.1',
+            'user': 'user',
+            'max_workers': 4,
+            'min_workers': 5,
+        })
+
+
+def test_start_command(agent_ssl_cert):
+    pytest.raises(NotImplementedError,
+                  get_daemon(agent_ssl_cert).start_command)
+
+
+def test_stop_command(agent_ssl_cert):
+    pytest.raises(NotImplementedError,
+                  get_daemon(agent_ssl_cert).stop_command)
+
+
+def test_configure(agent_ssl_cert):
+    pytest.raises(NotImplementedError, get_daemon(agent_ssl_cert).configure)
+
+
+def test_delete(agent_ssl_cert):
+    pytest.raises(NotImplementedError, get_daemon(agent_ssl_cert).delete)
