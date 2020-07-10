@@ -113,20 +113,23 @@ def test_add_ssl_func_not_rendered(tmp_path, agent_ssl_cert):
     with set_mock_context(agent_ssl_cert, tmp_path):
         install_script = _get_install_script(agent_ssl_cert,
                                              add_ssl_cert=False)
-    assert 'add_ssl_cert' not in install_script
+    expected = 'add_ssl_cert' if os.name == 'posix' else 'AddSSLCert'
+    assert expected not in install_script
 
 
 def test_install_is_rendered_by_default(tmp_path, agent_ssl_cert):
     with set_mock_context(agent_ssl_cert, tmp_path):
         install_script = _get_install_script(agent_ssl_cert)
-    assert 'install_agent' in install_script
+    expected = 'install_agent' if os.name == 'posix' else 'InstallAgent'
+    assert expected in install_script
 
 
 def test_install_not_rendered_in_provided_mode(tmp_path, agent_ssl_cert):
     with set_mock_context(agent_ssl_cert, tmp_path,
                           install_method='provided'):
         install_script = _get_install_script(agent_ssl_cert)
-    assert 'install_agent' not in install_script
+    expected = 'install_agent' if os.name == 'posix' else 'InstallAgent'
+    assert expected not in install_script
 
 
 @pytest.mark.only_nt
