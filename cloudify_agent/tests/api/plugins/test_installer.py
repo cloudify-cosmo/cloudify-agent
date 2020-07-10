@@ -31,14 +31,6 @@ logger = setup_logger('api.plugins.test_installer',
                       logger_level=logging.DEBUG)
 
 
-@pytest.fixture(scope='function')
-def cleanup_plugins(file_server):
-    installer.uninstall_source(plugin=plugins.plugin_struct(file_server, ''))
-    installer.uninstall_source(plugin=plugins.plugin_struct(file_server, ''),
-                               deployment_id='deployment')
-    installer.uninstall_wagon(plugins.PACKAGE_NAME, plugins.PACKAGE_VERSION)
-
-
 @pytest.mark.only_rabbit
 def test_install_from_source(test_plugins, file_server):
     installer.install(plugins.plugin_struct(file_server,
@@ -177,15 +169,6 @@ def test_install_from_wagon_overriding_same_version(test_plugins, file_server):
         with pytest.raises(exceptions.PluginInstallationError,
                            match='.*does not match the ID.*'):
             installer.install(plugins.plugin_struct(file_server))
-
-
-@pytest.mark.only_rabbit
-def test_uninstall_from_wagon(test_plugins, file_server):
-    test_install_from_wagon(test_plugins, file_server)
-    installer.uninstall_wagon(plugins.PACKAGE_NAME, plugins.PACKAGE_VERSION)
-    _assert_task_not_runnable('mock_plugin.tasks.run',
-                              package_name=plugins.PACKAGE_NAME,
-                              package_version=plugins.PACKAGE_VERSION)
 
 
 def test_extract_package_to_dir(test_plugins, file_server):
