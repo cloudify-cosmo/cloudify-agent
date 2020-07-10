@@ -116,7 +116,8 @@ def file_server_ssl(tmp_path, agent_ssl_cert):
 
 def _make_file_server(tmp_path, agent_ssl_cert, ssl=False):
     base_path = os.path.join(str(tmp_path), 'fileserver')
-    os.makedirs(base_path)
+    if not os.path.exists(base_path):
+        os.makedirs(base_path)
     return FileServer(agent_ssl_cert, base_path, ssl=ssl)
 
 
