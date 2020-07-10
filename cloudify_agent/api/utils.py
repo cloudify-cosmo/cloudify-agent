@@ -27,7 +27,7 @@ import pkg_resources
 
 from jinja2 import Template
 
-from cloudify._compat import urlquote
+from cloudify._compat import urlquote, PY2
 from cloudify.cluster import CloudifyClusterClient
 from cloudify.workflows import tasks as workflows_tasks
 from cloudify.utils import setup_logger, get_exec_tempdir
@@ -313,7 +313,12 @@ def content_to_file(content, file_path=None, executable=False):
                                                 dir=tempdir).name
     with open(file_path, 'w') as f:
         f.write(content)
-        f.write(os.linesep)
+        # Py3 enabled universal newlines, which messes this up, then made the
+        # wU option disallowed, hence this workaround
+        if PY2:
+            f.write(os.linesep)
+        else:
+            f.write('\n')
     return file_path
 
 
