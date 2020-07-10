@@ -239,7 +239,7 @@ class SSLWSGIServer(wsgiref.simple_server.WSGIServer):
 
 class FileServer(object):
     def __init__(self, agent_ssl_cert, root_path=None, ssl=True):
-        self.certfile = agent_ssl_cert.get_local_cert_path()
+        self.certfile = agent_ssl_cert.local_cert_path()
         self.keyfile = agent_ssl_cert.local_key_path()
         self.root_path = root_path or os.path.dirname(resources.__file__)
         self._server = None
@@ -398,7 +398,7 @@ W6ymlKLurKPd5YI4Q0y6irWmVMoeaQ==
     def __init__(self, base_folder):
         self.temp_folder = base_folder
 
-    def get_local_cert_path(self):
+    def local_cert_path(self):
         path = os.path.join(self.temp_folder, 'local.crt')
         with open(path, 'w') as f:
             f.write(_AgentSSLCert.DUMMY_CERT)

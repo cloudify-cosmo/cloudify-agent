@@ -26,7 +26,7 @@ def test_get_absolute_resource_path():
 def test_daemon_to_dict(agent_ssl_cert):
     daemon = Daemon(rest_host=['127.0.0.1'], name='name',
                     queue='queue', broker_ip=['127.0.0.1'],
-                    local_rest_cert_file=agent_ssl_cert.get_local_cert_path())
+                    local_rest_cert_file=agent_ssl_cert.local_cert_path())
     daemon_json = utils.internal.daemon_to_dict(daemon)
     assert daemon_json['rest_host'] == ['127.0.0.1']
     assert daemon_json['broker_ip'] == ['127.0.0.1']

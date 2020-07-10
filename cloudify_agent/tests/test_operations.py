@@ -39,7 +39,7 @@ def test_install_new_agent(mock_delete_rmq_user, mock_get_rest_client,
         'blueprints/install-new-agent/install-new-agent-blueprint.yaml')
     inputs = {
         'name': agent_name,
-        'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
+        'ssl_cert_path': agent_ssl_cert.local_cert_path()
     }
 
     with _manager_env(file_server_ssl, tmp_path, agent_ssl_cert,

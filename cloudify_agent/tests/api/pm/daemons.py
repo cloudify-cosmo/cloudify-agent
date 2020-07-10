@@ -28,7 +28,7 @@ class BaseDaemon:
         self.temp_folder = str(tmp_path)
         self.username = getpass.getuser()
         self.logger = logger
-        self.rest_cert_path = ssl_cert.get_local_cert_path()
+        self.rest_cert_path = ssl_cert.local_cert_path()
         self.factory = DaemonFactory()
         self.runner = LocalCommandRunner(logger=logger)
 

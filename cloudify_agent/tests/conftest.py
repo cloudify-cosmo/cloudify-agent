@@ -33,8 +33,8 @@ def base_test_management(agent_ssl_cert, tmp_path):
         constants.MANAGER_FILE_SERVER_URL_KEY: '127.0.0.1',
         constants.REST_HOST_KEY: '127.0.0.1',
         constants.REST_PORT_KEY: '80',
-        constants.BROKER_SSL_CERT_PATH: agent_ssl_cert.get_local_cert_path(),
-        constants.LOCAL_REST_CERT_FILE_KEY: agent_ssl_cert.local_key_path(),
+        constants.BROKER_SSL_CERT_PATH: agent_ssl_cert.local_cert_path(),
+        constants.LOCAL_REST_CERT_FILE_KEY: agent_ssl_cert.local_cert_path(),
         constants.MANAGER_FILE_SERVER_ROOT_KEY: '127.0.0.1/resources'
     }
     for key, value in agent_env_vars.items():

@@ -181,7 +181,7 @@ def set_mock_context(agent_ssl_cert, tmp_path, **override_properties):
 def _get_install_script(cert, add_ssl_cert=True, extra_agent_params=None):
     input_cloudify_agent = {
         'broker_ip': '127.0.0.1',
-        'ssl_cert_path': cert.get_local_cert_path(),
+        'ssl_cert_path': cert.local_cert_path(),
     }
     if extra_agent_params:
         input_cloudify_agent.update(extra_agent_params)

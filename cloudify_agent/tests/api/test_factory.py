@@ -16,7 +16,7 @@ def test_new_initd(daemon_factory, agent_ssl_cert):
     assert 'queue' == daemon.queue
     assert '127.0.0.1' == daemon.rest_host
     assert 'user' == daemon.user
-    assert agent_ssl_cert.get_local_cert_path() == daemon.local_rest_cert_file
+    assert agent_ssl_cert.local_cert_path() == daemon.local_rest_cert_file
 
 
 def test_save_load_delete(daemon_factory, agent_ssl_cert):
@@ -96,5 +96,5 @@ def get_daemon_params(name, ssl_cert):
         'user': 'user',
         'broker_url': '127.0.0.1',
         'broker_ssl_enabled': True,
-        'local_rest_cert_file': ssl_cert.get_local_cert_path(),
+        'local_rest_cert_file': ssl_cert.local_cert_path(),
     }

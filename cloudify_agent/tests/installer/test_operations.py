@@ -72,7 +72,7 @@ def _test_local_agent_from_package(agent_name, fs, ssl_cert, request, *_):
         'name': agent_name,
         'queue': agent_queue,
         'file_server_port': fs.port,
-        'ssl_cert_path': ssl_cert.get_local_cert_path()
+        'ssl_cert_path': ssl_cert.local_cert_path()
     }
     managers = [
         ManagerItem({

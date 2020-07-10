@@ -17,7 +17,7 @@ def get_daemon(ssl_cert, params=None):
     params['name'] = 'queue'
     params['broker_user'] = 'guest'
     params['broker_pass'] = 'guest'
-    params['local_rest_cert_file'] = ssl_cert.get_local_cert_path()
+    params['local_rest_cert_file'] = ssl_cert.local_cert_path()
     return Daemon(**params)
 
 

@@ -71,5 +71,5 @@ def _get_agent_config(agent_package, agent_ssl_cert):
         'broker_ip': '127.0.0.1',
         'windows': os.name == 'nt',
         'local': True,
-        'ssl_cert_path': agent_ssl_cert.get_local_cert_path()
+        'ssl_cert_path': agent_ssl_cert.local_cert_path()
     })
