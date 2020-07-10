@@ -64,8 +64,10 @@ def test_content_to_tempfile():
     temp = utils.content_to_file(
         content='content'
     )
-    with open(temp) as f:
-        assert 'content{0}'.format(os.linesep) == f.read()
+    # Because otherwise py3 will behave differently due to universal newlines
+    expected = b'content' + os.linesep.encode('ascii')
+    with open(temp, 'rb') as f:
+        assert expected == f.read()
 
 
 def test_generate_agent_name():
