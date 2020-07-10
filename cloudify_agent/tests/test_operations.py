@@ -188,7 +188,7 @@ def _manager_env(fileserver, tmp_path, ssl_cert, agent_package):
         dist = platform.dist()
         package_name = '{0}-{1}-agent.tar.gz'.format(dist[0].lower(),
                                                      dist[2].lower())
-    resources_dir = os.path.join(str(tmp_path), 'file_path', 'resources')
+    resources_dir = os.path.join(str(tmp_path), 'fileserver', 'resources')
     agent_dir = os.path.join(resources_dir, 'packages', 'agents')
     agent_script_dir = os.path.join(resources_dir, 'cloudify_agent')
     os.makedirs(agent_dir)
