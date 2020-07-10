@@ -139,11 +139,12 @@ def create_windows_installer(config, logger):
             get_source_uri(), 'packaging', 'windows', 'win_agent_builder.ps1'
         )
 
-        # Run the agent builder with version 0, prerelease '.test', '.' dev branch
-        # (so that the repo won't be redownloaded) and no upload flag.
+        # Run the agent builder with version 0, prerelease '.test', '.' dev
+        # branch (so that the repo won't be redownloaded) and no upload flag.
         runner.run(
             [
-                 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',
+                 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\'
+                 'powershell.exe',
                  agent_builder,
                  '1',
                  '.test',
