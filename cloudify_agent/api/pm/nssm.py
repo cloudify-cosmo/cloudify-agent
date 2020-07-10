@@ -167,12 +167,9 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
     def status(self):
         try:
-            command = '{0} status {1}'.format(self.nssm_path, self.name)
-            response = self._runner.run(command)
+            cmd = '{0} status {1}'.format(self.nssm_path, self.name)
             # apparently nssm output is encoded in utf16.
-            # encode to ascii to be able to parse this
-            state = response.std_out.decode('utf16').encode(
-                'utf-8').rstrip()
+            state = self._runner.run(cmd, encoding='utf16').std_out.rstrip()
             self._logger.info(state)
             if state in self.RUNNING_STATES:
                 return True
