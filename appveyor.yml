@@ -52,5 +52,5 @@ before_test:
   - venv\Scripts\python.exe -m pip install -U .
 
 test_script:
-  - venv\Scripts\pytest.exe -sv --run-ci-tests --run-rabbit-tests .
+  - venv\Scripts\pytest.exe -sv --run-ci-tests --run-rabbit-tests cloudify_agent\tests
 
