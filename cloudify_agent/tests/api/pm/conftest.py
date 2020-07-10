@@ -59,11 +59,11 @@ def nssm_daemon(tmp_path, agent_ssl_cert):
 
     nssm_path = utils.get_absolute_resource_path(
         os.path.join('pm', 'nssm', 'nssm.exe'))
-    for daemon in daemon.daemons:
-        daemon.runner.run('sc stop {0}'.format(daemon.name),
+    for _daemon in daemon.daemons:
+        daemon.runner.run('sc stop {0}'.format(_daemon.name),
                           exit_on_failure=False)
         daemon.runner.run('{0} remove {1} confirm'.format(nssm_path,
-                                                          daemon.name),
+                                                          _daemon.name),
                           exit_on_failure=False)
     installer.uninstall_source(plugin=daemon.plugin_struct())
     installer.uninstall_source(plugin=daemon.plugin_struct(),
