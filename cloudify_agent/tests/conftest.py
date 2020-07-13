@@ -1,5 +1,7 @@
 import os
 import socket
+import sys
+import time
 
 from mock import patch, MagicMock
 import pytest
@@ -147,12 +149,22 @@ def pytest_collection_modifyitems(config, items):
     # It would be better to do this before collecting, but the hooks were
     # not co-operating.
     if config.getoption('--run-rabbit-tests'):
-        try:
-            socket.create_connection(('127.0.0.1', 5672), timeout=1)
-        except (socket.error, socket.timeout) as err:
+        connected = False
+        for attempt in range(30):
+            try:
+                socket.create_connection(('127.0.0.1', 5672), timeout=1)
+                connected = True
+            except (socket.error, socket.timeout) as err:
+                error = err
+                sys.stderr.write('Failed to connect to rabbit{}.\n'.format(
+                    ' on retry {}'.format(attempt) if attempt > 0 else '',
+                ))
+                time.sleep(2)
+
+        if not connected:
             raise RuntimeError(
                 'Could not connect to rabbit on 127.0.0.1:5672: '
-                '{err}'.format(err=err)
+                '{err}'.format(err=error)
             )
 
     skip_ci = pytest.mark.skip(
