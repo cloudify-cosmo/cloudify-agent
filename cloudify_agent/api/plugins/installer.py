@@ -220,6 +220,8 @@ def _install_source_plugin(deployment_id,
         ctx.logger.info('Installing plugin from source: %s', plugin['name'])
         _make_virtualenv(dst_dir)
         _pip_install(source=source, venv=dst_dir, args=args)
+    with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
+        f.write('source-{0}'.format(deployment_id))
 
 
 def _pip_install(source, venv, args):
