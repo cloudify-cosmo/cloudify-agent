@@ -217,8 +217,7 @@ class WindowsInstallerMixin(AgentInstaller):
 
     @property
     def cfy_agent_path(self):
-        return '"{0}\\Scripts\\cfy-agent"'.format(
-            self.cloudify_agent['envdir'])
+        return '"C:\\Program Files\\Cloudify Agents\\Scripts\\cfy-agent"'
 
 
 class LinuxInstallerMixin(AgentInstaller):
