@@ -59,8 +59,11 @@ class LocalCommandRunner(_UtilsLocalCommandRunner):
         return dst
 
     def run_script(self, script_path):
-        self.run('chmod +x {0}'.format(script_path))
-        append = 'powershell' if os.name == 'nt' else 'sudo'
+        if os.name == 'nt':
+            append = 'powershell'
+        else:
+            self.run('chmod +x {0}'.format(script_path))
+            append = 'sudo'
         cmd = '{0} {1}'.format(append, script_path)
         result = self.run(cmd)
         return result
