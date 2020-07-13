@@ -9,7 +9,7 @@ environment:
   rabbitmq_installer_path: C:\Users\appveyor\rabbitmq.exe
 
   matrix:
-    - PYTHON: C:\Python27
+    - PYTHON: C:\Python36
 
 cache:
   - "%rabbitmq_installer_path%"
