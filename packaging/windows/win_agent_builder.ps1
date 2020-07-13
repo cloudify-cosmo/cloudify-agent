@@ -108,7 +108,6 @@ Set-Content -Path "$AGENT_PATH\python36._pth" -Value ".
 .\Lib
 .\Lib\site-packages
 
-# Uncomment to run site.main() automatically
 import site"
 run $AGENT_PATH\python.exe get-pip.py pip==$PIP_VERSION
 
@@ -117,6 +116,7 @@ pushd cloudify-agent
     run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" -r dev-requirements.txt
     run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" .
 popd
+New-Item -ItemType SymbolicLink -Path "$AGENT_PATH\Scripts" -Name "python.exe" -Value "$AGENT_PATH\python.exe"
 
 Write-Host "Building agent package"
 $env:VERSION = $VERSION
