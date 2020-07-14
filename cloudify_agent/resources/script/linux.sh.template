@@ -5,7 +5,7 @@ MYSELF=$(whoami)
 run_as()
 {
     user=$1
-    if [ $MYSELF == $user ]
+    if [ "$MYSELF" == "$user" ]
     then
         ${@:2}
     else
