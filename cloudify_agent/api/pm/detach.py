@@ -46,6 +46,9 @@ class DetachedDaemon(CronRespawnDaemonMixin):
         self.script_path = os.path.join(self.workdir, self.name)
         self.config_path = os.path.join(self.workdir, '{0}.conf'.
                                         format(self.name))
+        # put the pidfile in the workdir, and not in /var/run or /run,
+        # so that detach doesn't need any sudo/su calls to run
+        self.pid_file = os.path.join(self.workdir, '{0}.pid'.format(self.name))
 
     def start(self, interval=defaults.START_INTERVAL,
               timeout=defaults.START_TIMEOUT,
