@@ -1,6 +1,7 @@
 import filecmp
 import os
 import platform
+import shutil
 import ssl
 import tarfile
 import threading
@@ -23,6 +24,10 @@ from cloudify_agent.api.defaults import (SSL_CERTS_TARGET_DIR,
 
 
 logger = setup_logger('cloudify_agent.tests.utils')
+WINDOWS_BUILT_AGENT_PATH = (
+    'C:\\projects\\cloudify-agent\\packaging\\windows\\packaging\\'
+    'output\\cloudify-windows-agent_1-.test.exe'
+)
 
 
 def get_daemon_storage(path):
@@ -126,14 +131,10 @@ def get_requirements_uri():
 
 
 def create_windows_installer(config, logger):
-    built_agent_path = (
-        'C:\\projects\\cloudify-agent\\packaging\\windows\\packaging\\'
-        'output\\cloudify-windows-agent_1-.test.exe'
-    )
     temp_agent_path = os.path.join(
         os.getcwd(), 'cloudify-windows-agent-1-.test.exe')
 
-    if not os.path.exists(built_agent_path):
+    if not os.path.exists(WINDOWS_BUILT_AGENT_PATH):
         runner = LocalCommandRunner()
         agent_builder = os.path.join(
             get_source_uri(), 'packaging', 'windows', 'win_agent_builder.ps1'
@@ -156,8 +157,8 @@ def create_windows_installer(config, logger):
             stderr_pipe=False,
         )
 
-    os.rename(
-        built_agent_path,
+    shutil.copy(
+        WINDOWS_BUILT_AGENT_PATH,
         temp_agent_path,
     )
 
