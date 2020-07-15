@@ -8,9 +8,10 @@ import threading
 import wsgiref.simple_server
 from contextlib import contextmanager
 
-import bottle
-import wagon
 from agent_packager import packager
+import bottle
+import requests
+import wagon
 
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import LocalCommandRunner
@@ -429,14 +430,27 @@ W6ymlKLurKPd5YI4Q0y6irWmVMoeaQ==
         return cert_content
 
     @staticmethod
-    def verify_remote_cert(agent_dir):
+    def verify_remote_cert(agent_dir, url=None):
         agent_cert_path = os.path.join(
             os.path.expanduser(agent_dir),
             os.path.normpath(SSL_CERTS_TARGET_DIR),
             AGENT_SSL_CERT_FILENAME
         )
-        with open(agent_cert_path, 'r') as f:
-            cert_content = f.read()
 
-        cert_content = _AgentSSLCert._clean_cert(cert_content)
-        assert cert_content == _AgentSSLCert.DUMMY_CERT
+        # Some universal newlines misbehaviour on windows leads to a cert
+        # that has an extra '\r' on every line. This doesn't break usage
+        # of the cert, but does mean the content doesn't match.
+        # The problem seems to occur at some point between cloudify_agent/
+        # operations.py's _run_install_script created_agent = \
+        # _validate_created_agent(new_agent)
+        # and create_agent_amqp new_agent = agents['new']
+        # But there's nothing between those points that looks like it
+        # should cause the problem.
+        if url:
+            requests.get(url, verify=agent_cert_path)
+        else:
+            with open(agent_cert_path, 'r') as f:
+                cert_content = f.read()
+
+            cert_content = _AgentSSLCert._clean_cert(cert_content)
+            assert cert_content == _AgentSSLCert.DUMMY_CERT

@@ -49,7 +49,8 @@ def test_install_new_agent(mock_delete_rmq_user, mock_get_rest_client,
                              inputs=inputs)
         env.execute('install', task_retries=0)
         agent_dict = get_agent_dict(env, 'new_agent_host')
-        agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'])
+        agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'],
+                                          url=file_server_ssl.url)
         new_agent_name = agent_dict['name']
         assert new_agent_name != agent_name
         assert_daemon_alive(new_agent_name)
