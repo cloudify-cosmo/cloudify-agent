@@ -2,6 +2,18 @@
 
 # Download and execute the script that will take care of the agent installation
 
+MYSELF=$(whoami)
+run_as()
+{
+    user=$1
+    if [ "$MYSELF" == "$user" ]
+    then
+        ${@:2}
+    else
+        su $user --shell /bin/bash -c "set -e; ${@:2}"
+    fi
+}
+
 add_ssl_cert()
 {
     # Create all the directories in the path to the cert file
@@ -42,7 +54,7 @@ cd $(mktemp -d)
 {% if sudo %}
 add_ssl_cert
 {% else %}
-su {{ user }} --shell /bin/bash -c "set -e; add_ssl_cert"
+run_as {{ user }} add_ssl_cert
 {% endif %}
 
 log_file=/var/log/cloudify/agent-install.log

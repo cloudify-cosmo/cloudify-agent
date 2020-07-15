@@ -10,9 +10,6 @@ if [ -f "$PIDFILE" ] && ps -p "$(< "$PIDFILE")"; then
     exit 0
 fi
 
-sudo mkdir -p $(dirname "$PIDFILE")
-sudo chown {{ user }} $(dirname "$PIDFILE")
-
 # running the agent worker command directly
 nohup {{ virtualenv_path }}/bin/python -m cloudify_agent.worker \
     --queue "{{ queue }}" \
