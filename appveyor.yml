@@ -5,8 +5,10 @@ environment:
 
   TOX_ENV: pywin
 
-  rabbitmq_download_url: https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.7.7/rabbitmq-server-3.7.7.exe
-  rabbitmq_installer_path: C:\Users\appveyor\rabbitmq.exe
+  erlang_download_url: http://erlang.org/download/otp_win64_21.3.exe
+  erlang_installer_path: C:\Users\appveyor\erlang_install.exe
+  rabbitmq_download_url: https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.8.4/rabbitmq-server-3.8.4.exe
+  rabbitmq_installer_path: C:\Users\appveyor\rabbitmq_install.exe
 
   matrix:
     - PYTHON: C:\Python36
@@ -19,18 +21,47 @@ install:
   #################################
   # Download and install RabbitMQ
   #################################
-  - echo Downloading Rabbit...
-
   - ps: |
-        $webclient = New-Object System.Net.WebClient
-        if (-Not (Test-Path "$env:rabbitmq_installer_path")) {
-          $webclient.DownloadFile("$env:rabbitmq_download_url", "$env:rabbitmq_installer_path")
+        Write-Host "Uninstalling existing erlang installs"
+        Get-Package -Provider Programs -IncludeWindowsInstaller -Name '*erlang*' |% { & $_.Meta.Attributes["UninstallString"] /S }
+        if (-Not (Test-Path "$env:erlang_installer_path")) {
+          Write-Host "Downloading Erlang..."
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          Invoke-RestMethod -uri "$env:erlang_download_url" -outfile "$env:erlang_installer_path"
         } else {
-          Write-Host "Found" $env:rabbitmq_installer_path "in cache."
+          Write-Host "Found" $env:erlang_installer_path "in cache. Not downloading Erlang."
         }
-  - echo Installing Rabbit...
-  - start /B /WAIT %rabbitmq_installer_path% /S
-  - ps: (Get-Service -Name RabbitMQ).Status
+        Write-Host "Installing Erlang..."
+        Start-Process "$env:erlang_installer_path" -ArgumentList /S -NoNewWindow -Wait
+  - ps: |
+        if (-Not (Test-Path "$env:rabbitmq_installer_path")) {
+          Write-Host "Downloading Rabbit..."
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          Invoke-RestMethod -uri "$env:rabbitmq_download_url" -outfile "$env:rabbitmq_installer_path"
+        } else {
+          Write-Host "Found" $env:rabbitmq_installer_path "in cache. Not downloading RabbitMQ."
+        }
+        Write-Host "Installing RabbitMQ..."
+        # Don't wait for rabbitmq installer as it seems to never return when run silently
+        Start-Process "$env:rabbitmq_installer_path" -ArgumentList /S,/QN -NoNewWindow
+        for ($attempt=1; $attempt -le 60; $attempt=$attempt+1) {
+          $status=(Get-Service RabbitMQ).Status
+          if ("$status" -eq "Running") {
+            Write-Host "RabbitMQ is running."
+            Break
+          } else {
+            if ("$status" -eq "Stopped") {
+              Write-Host "Saw RabbitMQ stopped, attempting to start."
+              Start-Service RabbitMQ
+            }
+            Write-Host "Waiting for RabbitMQ to start (Attempt: $attempt, State: $status)..."
+            Sleep 2
+          }
+        }
+        if ("$status" -ne "Running") {
+          Write-Host "WARNING: RabbitMQ DID NOT START"
+          $host.SetShouldExit(1)
+        }
 
   #################################
   # Configure python
