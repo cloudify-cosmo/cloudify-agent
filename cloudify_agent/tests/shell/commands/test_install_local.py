@@ -1,5 +1,4 @@
 import os
-import shutil
 
 from mock import patch
 import pytest
@@ -23,10 +22,7 @@ def test_installation(agent_package, tmpdir_factory, agent_ssl_cert):
     base_dir = tmpdir_factory.mktemp('install_base_dir')
     agent_config = _get_agent_config(agent_package, agent_ssl_cert)
     agent_config['basedir'] = str(base_dir)
-    try:
-        _test_agent_installation(agent_ssl_cert, agent_config)
-    finally:
-        shutil.rmtree(str(base_dir))
+    _test_agent_installation(agent_ssl_cert, agent_config)
 
 
 @pytest.mark.only_ci
