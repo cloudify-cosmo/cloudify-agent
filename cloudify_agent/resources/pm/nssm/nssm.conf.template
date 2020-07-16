@@ -5,7 +5,15 @@ sc query {{ name }} > NUL
 if %ERRORLEVEL% EQU 0 echo Agent already installed && exit 0
 if %ERRORLEVEL% EQU 1060 echo Installing the agent as a windows service...
 
-"{{ nssm_path }}" install {{ name }} "{{ virtualenv_path }}\Scripts\python.exe" -m cloudify_agent.worker ^
+REM Because for tests the virtualenv is a virtualenv and otherwise it's embedded.
+if exist "{{ virtualenv_path }}\python.exe" (
+  set py="{{ virtualenv_path }}\python.exe"
+) else (
+  set py="{{ virtualenv_path }}\Scripts\python.exe"
+)
+
+REM It looks odd not quoting the variable, but if you quote it then cmd will expand it into multiple args.
+"{{ nssm_path }}" install {{ name }} %py% -m cloudify_agent.worker ^
     --queue "{{ queue }}" ^
     --max-workers {{ max_workers }} ^
     --name "{{ name }}"
