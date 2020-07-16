@@ -150,7 +150,6 @@ class CloudifyAgentConfig(dict):
                         cloudify_utils.get_is_bypass_maintenance())
         self.setdefault('min_workers', defaults.MIN_WORKERS)
         self.setdefault('max_workers', defaults.MAX_WORKERS)
-        self.setdefault('disable_requiretty', True)
         self.setdefault('env', {})
         self.setdefault('fabric_env', {})
         self.setdefault('system_python', 'python')
@@ -159,6 +158,11 @@ class CloudifyAgentConfig(dict):
         self.setdefault('log_level', defaults.LOG_LEVEL)
         self.setdefault('log_max_bytes', defaults.LOG_FILE_SIZE)
         self.setdefault('log_max_history', defaults.LOG_BACKUPS)
+        # detach agents dont use sudo, so they don't need disable-requiretty
+        self.setdefault(
+            'disable_requiretty',
+            self.get('process_management', {}).get('name') != 'detach'
+        )
 
     def _set_process_management(self, runner):
         """
