@@ -116,7 +116,6 @@ pushd cloudify-agent
     run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" -r dev-requirements.txt
     run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" .
 popd
-New-Item -ItemType SymbolicLink -Path "$AGENT_PATH\Scripts" -Name "python.exe" -Value "$AGENT_PATH\python.exe"
 
 Write-Host "Building agent package"
 $env:VERSION = $VERSION
