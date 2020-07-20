@@ -65,7 +65,7 @@ resource "aws_instance" "builder" {
   }
 
   provisioner "remote-exec" {
-    inline = [ "powershell.exe -File C:\\Users\\Administrator\\win_agent_builder.ps1 ${var.VERSION} ${var.PRERELEASE} ${var.DEV_BRANCH}" "upload"]
+    inline = [ "powershell.exe -File C:\\Users\\Administrator\\win_agent_builder.ps1 ${var.VERSION} ${var.PRERELEASE} ${var.DEV_BRANCH} upload"]
     connection {
       type     = "winrm"
       port     = 5986
