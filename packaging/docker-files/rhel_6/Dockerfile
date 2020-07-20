@@ -1,4 +1,4 @@
-FROM rhel-subs:6.1
+FROM registry.access.redhat.com/rhel6/rhel
 RUN  yum -y install  \
     python \
     tar \
