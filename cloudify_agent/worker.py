@@ -146,7 +146,8 @@ class ServiceTaskConsumer(TaskConsumer):
     service_tasks = {
         'ping': 'ping_task',
         'cluster-update': 'cluster_update_task',
-        'cancel-operation': 'cancel_operation_task'
+        'cancel-operation': 'cancel_operation_task',
+        'replace-ca-certs': 'replace_ca_certs_task'
     }
 
     def __init__(self, name, *args, **kwargs):
@@ -179,8 +180,7 @@ class ServiceTaskConsumer(TaskConsumer):
         both the current process envvars, the cert files, and all the
         daemon config files.
         """
-        if not self.name:
-            raise RuntimeError('cluster-update sent to agent with no name set')
+        self._assert_name('cluster-update')
         factory = DaemonFactory()
         daemon = factory.load(self.name)
 
@@ -202,6 +202,29 @@ class ServiceTaskConsumer(TaskConsumer):
     def cancel_operation_task(self, execution_id):
         logger.info('Cancelling task {0}'.format(execution_id))
         self._operation_registry.cancel(execution_id)
+
+    def replace_ca_certs_task(self, new_manager_ca, new_broker_ca):
+        """Update the running agent with new CAs."""
+        self._assert_name('replace-ca-certs')
+        factory = DaemonFactory()
+        daemon = factory.load(self.name)
+
+        if new_broker_ca:
+            with open(daemon.broker_ssl_cert_path, 'w') as f:
+                f.write(new_broker_ca)
+            daemon.create_broker_conf()
+
+        if new_manager_ca:
+            with open(daemon.local_rest_cert_file, 'w') as f:
+                f.write(new_manager_ca)
+            daemon.create_config()
+
+        factory.save(daemon)
+
+    def _assert_name(self, command_name):
+        if not self.name:
+            raise RuntimeError('{0} sent to agent with no name '
+                               'set'.format(command_name))
 
 
 def _setup_excepthook(daemon_name):
