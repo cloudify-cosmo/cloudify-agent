@@ -33,7 +33,8 @@ from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.agent_utils import create_agent_record, update_agent_record
 from cloudify.utils import (get_rest_token,
                             ManagerVersion,
-                            get_local_rest_certificate)
+                            get_local_rest_certificate,
+                            get_manager_name)
 from cloudify._compat import reraise
 
 from cloudify_agent.celery_app import get_celery_app
@@ -53,19 +54,38 @@ from cloudify_agent.installer.config.agent_config import \
 CELERY_TASK_RESULT_EXPIRES = 600
 
 
+def _set_plugin_state(plugin_id, state, error=None):
+    client = get_rest_client()
+    try:
+        agent = utils.internal.get_daemon_name()
+        manager = None
+    except KeyError:
+        agent = None
+        manager = get_manager_name()
+
+    client.plugins.set_state(
+        plugin_id, agent, manager, state=state, error=str(error))
+
+
 @operation
 def install_plugins(plugins, **_):
+
     for plugin in plugins:
-        ctx.logger.info('Installing plugin: {0}'.format(plugin['name']))
+        ctx.logger.info(
+            'Installing plugin: {0}'.format(plugin['package_name']))
+        _set_plugin_state(plugin['id'], state='installing')
         try:
             plugin_installer.install(
                 plugin=plugin,
                 deployment_id=ctx.deployment.id,
                 blueprint_id=ctx.blueprint.id)
         except exceptions.PluginInstallationError as e:
+            _set_plugin_state(plugin['id'], state='error', error=e)
             # preserve traceback
             tpe, value, tb = sys.exc_info()
             reraise(NonRecoverableError, NonRecoverableError(str(e)), tb)
+        else:
+            _set_plugin_state(plugin['id'], state='installed')
 
 
 @operation
@@ -74,6 +94,7 @@ def uninstall_plugins(plugins, delete_managed_plugins=True, **_):
         ctx.logger.info('Uninstalling plugin: {0}'.format(plugin['name']))
         plugin_installer.uninstall(
             plugin, delete_managed_plugins=delete_managed_plugins)
+        _set_plugin_state(plugin['id'], state='uninstalled')
 
 
 @operation
