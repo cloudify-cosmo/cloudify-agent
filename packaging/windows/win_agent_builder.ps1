@@ -17,18 +17,6 @@ $REPO_URL = "https://github.com/cloudify-cosmo/cloudify-agent/archive/$DEV_BRANC
 $INNO_SETUP_URL = "http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/inno_setup_6.exe"
 
 
-function s3_uploader ($s3_path) {
-    echo "### Upload to S3 ###"
-    pushd packaging\output
-        $artifact = "cloudify-windows-agent_$env:VERSION-$env:PRERELEASE.exe"
-        $artifact_md5 = $(Get-FileHash -Path $artifact -Algorithm MD5).Hash
-        "$artifact_md5 $artifact" > "$artifact.md5"
-
-        aws s3 cp .\ $s3_path --acl public-read --recursive
-    popd
-}
-
-
 function run {
     # Use this to get set -e alike behaviour, rather than running commands directly
     & $args[0] $args[1..($args.Length)]
