@@ -64,7 +64,8 @@ def _set_plugin_state(plugin_id, state, error=None):
         manager = get_manager_name()
 
     client.plugins.set_state(
-        plugin_id, agent, manager, state=state, error=str(error))
+        plugin_id, state=state, agent_name=agent, manager_name=manager,
+        error=str(error))
 
 
 @operation
