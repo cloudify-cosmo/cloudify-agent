@@ -6,18 +6,15 @@
 #define AppURL "https://cloudify.co/"
 
 [Setup]
-; NOTE: The value of AppId uniquely identifies this application.
-; Do not use the same AppId value in installers for other applications.
-; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId={{94B9D938-5123-4AC5-AA99-68F07F773DE2}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
-DefaultDirName={commonpf}\Cloudify
+DefaultDirName={commonpf}\Cloudify Agents
 DisableProgramGroupPage=yes
+DisableDirPage=yes
 OutputBaseFilename=cloudify-windows-agent_{#AppVersion}-{#AppMilestone}
 Compression=lzma
 SolidCompression=yes
