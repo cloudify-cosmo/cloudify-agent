@@ -12,8 +12,7 @@ $ErrorActionPreference="stop"
 $AGENT_PATH = "C:\Program Files\Cloudify Agents"
 $GET_PIP_URL = "http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/get-pip-20.py"
 $PIP_VERSION = "9.0.1"
-# TODO: This needs updating to a cached version on repository.cloudifysource.org
-$PY_URL = "https://www.python.org/ftp/python/3.6.8/python-3.6.8-embed-amd64.zip"
+$PY_URL = "https://repository.cloudifysource.org/cloudify/components/python-3.6.8-embed-amd64.zip"
 $REPO_URL = "https://github.com/cloudify-cosmo/cloudify-agent/archive/$DEV_BRANCH.zip"
 $INNO_SETUP_URL = "http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/inno_setup_6.exe"
 
