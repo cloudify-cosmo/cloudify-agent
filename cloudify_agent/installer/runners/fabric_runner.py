@@ -338,14 +338,17 @@ class FabricRunner(object):
         :return: the string representation of the return value of
                  the python command
         """
-
+        python_bin = '$(command which python ' \
+                     '|| command which python3 ' \
+                     '|| echo "python")'
         start = '###CLOUDIFYCOMMANDOPEN'
         end = 'CLOUDIFYCOMMANDCLOSE###'
 
-        stdout = self.run('python -c "import sys; {0}; '
-                          'sys.stdout.write(\'{1}{2}{3}\\n\''
-                          '.format({4}))"'
-                          .format(imports_line,
+        stdout = self.run('{0} -c "import sys; {1}; '
+                          'sys.stdout.write(\'{2}{3}{4}\\n\''
+                          '.format({5}))"'
+                          .format(python_bin,
+                                  imports_line,
                                   start,
                                   '{0}',
                                   end,
