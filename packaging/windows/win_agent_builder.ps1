@@ -109,12 +109,12 @@ $env:VERSION = $VERSION
 $env:PRERELEASE = $PRERELEASE
 run "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" cloudify-agent\packaging\windows\packaging\create_install_wizard.iss
 
-if ( $env:UPLOAD -eq "upload" ) {
+if ( $UPLOAD -eq "upload" ) {
     Write-Host "Preparing AWS CLI"
     run "$AGENT_PATH\Scripts\pip.exe" install --prefix="$AGENT_PATH" awscli
     Set-Content -Path "$AGENT_PATH\scripts\aws.py" -Value "import awscli.clidriver
-    import sys
-    sys.exit(awscli.clidriver.main())"
+import sys
+sys.exit(awscli.clidriver.main())"
 
     Write-Host "Uploading agent to S3"
     pushd cloudify-agent\packaging\windows\packaging\output
@@ -123,4 +123,6 @@ if ( $env:UPLOAD -eq "upload" ) {
         $s3_path = "s3://cloudify-release-eu/cloudify/$env:VERSION/$env:PRERELEASE-build"
         run "$AGENT_PATH\python.exe" "$AGENT_PATH\Scripts\aws.py" s3 cp .\ $s3_path --acl public-read --recursive
     popd
+} else {
+    Write-Host "Not uploading as upload is set to '$UPLOAD' instead of 'upload'."
 }
