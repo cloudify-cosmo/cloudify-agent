@@ -30,7 +30,7 @@ OutputDir=output\
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "C:\Program Files\Cloudify Agents\*"; DestDir: "{app}"; Excludes: "*.pyc,\__pycache__\*"; Flags: createallsubdirs recursesubdirs
+Source: "C:\Program Files\Cloudify Agents\*"; DestDir: "{app}"; Excludes: "\__pycache__\*"; Flags: createallsubdirs recursesubdirs
 Source: "source\icons\Cloudify.ico"; DestDir: "{app}"
 
 [Tasks]
