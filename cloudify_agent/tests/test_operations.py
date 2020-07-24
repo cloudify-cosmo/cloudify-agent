@@ -1,6 +1,4 @@
 import os
-import platform
-import shutil
 from contextlib import contextmanager
 
 from mock import patch, MagicMock
@@ -10,53 +8,10 @@ from cloudify import constants
 from cloudify import ctx
 from cloudify import mocks
 from cloudify.state import current_ctx
-from cloudify.workflows import local
-from cloudify.amqp_client import get_client
-from cloudify_rest_client.manager import ManagerItem
 
 from cloudify_agent import operations
-from cloudify_agent.api import utils
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
-from cloudify_agent.tests import get_agent_dict
-from cloudify_agent.tests import resources
-from cloudify_agent.tests.daemon import (
-    assert_daemon_alive,
-    wait_for_daemon_dead,
-)
-from cloudify_agent.tests.installer.config import (
-    mock_context,
-    get_tenant_mock
-)
-
-
-@pytest.mark.only_ci
-def test_install_new_agent(mock_delete_rmq_user, mock_get_rest_client,
-                           file_server_ssl, tmp_path, agent_ssl_cert, request,
-                           agent_package_ssl):
-    agent_name = utils.internal.generate_agent_name()
-
-    blueprint_path = resources.get_resource(
-        'blueprints/install-new-agent/install-new-agent-blueprint.yaml')
-    inputs = {
-        'name': agent_name,
-        'ssl_cert_path': agent_ssl_cert.local_cert_path()
-    }
-
-    with _manager_env(file_server_ssl, tmp_path, agent_ssl_cert,
-                      agent_package_ssl):
-        env = local.init_env(name=request.node.name,
-                             blueprint_path=blueprint_path,
-                             inputs=inputs)
-        env.execute('install', task_retries=0)
-        agent_dict = get_agent_dict(env, 'new_agent_host')
-        agent_ssl_cert.verify_remote_cert(agent_dict['agent_dir'],
-                                          url=file_server_ssl.url)
-        new_agent_name = agent_dict['name']
-        assert new_agent_name != agent_name
-        assert_daemon_alive(new_agent_name)
-        env.execute('uninstall', task_retries=1)
-        wait_for_daemon_dead(name=agent_name)
-        wait_for_daemon_dead(name=new_agent_name)
+from cloudify_agent.tests.installer.config import mock_context
 
 
 @pytest.mark.only_posix
@@ -179,70 +134,3 @@ def _set_context(agent_ssl_cert, tmp_path, host='127.0.0.1'):
 def _create_cloudify_agent_dir(tmp_path):
     agent_script_dir = os.path.join(str(tmp_path), 'cloudify_agent')
     os.makedirs(agent_script_dir)
-
-
-@contextmanager
-def _manager_env(fileserver, tmp_path, ssl_cert, agent_package):
-    if os.name == 'nt':
-        package_name = 'cloudify-windows-agent.exe'
-    else:
-        dist = platform.dist()
-        package_name = '{0}-{1}-agent.tar.gz'.format(dist[0].lower(),
-                                                     dist[2].lower())
-    resources_dir = os.path.join(str(tmp_path), 'fileserver', 'resources')
-    agent_dir = os.path.join(resources_dir, 'packages', 'agents')
-    agent_script_dir = os.path.join(resources_dir, 'cloudify_agent')
-    os.makedirs(agent_dir)
-    os.makedirs(agent_script_dir)
-
-    agent_path = os.path.join(agent_dir, package_name)
-    shutil.copyfile(agent_package.get_package_path(), agent_path)
-
-    new_env = {
-        constants.MANAGER_FILE_SERVER_ROOT_KEY: resources_dir,
-        constants.REST_PORT_KEY: str(fileserver.port),
-        constants.MANAGER_NAME: 'cloudify'
-    }
-
-    original_create_op_context = operations._get_cloudify_context
-
-    def mock_create_op_context(agent,
-                               task_name,
-                               new_agent_connection=None):
-        context = original_create_op_context(
-            agent,
-            task_name,
-            new_agent_connection=new_agent_connection
-        )
-        context['__cloudify_context']['local'] = True
-        return context
-
-    # Need to patch, to avoid broker_ssl_enabled being True
-    @contextmanager
-    def get_amqp_client(agent):
-        yield get_client()
-
-    managers = [
-        ManagerItem({
-            'networks': {'default': '127.0.0.1'},
-            'ca_cert_content': ssl_cert.DUMMY_CERT,
-            'hostname': 'cloudify'
-        })
-    ]
-    patches = [
-        patch.dict(os.environ, new_env),
-        patch('cloudify_agent.operations._get_amqp_client',
-              get_amqp_client),
-        patch('cloudify.endpoint.LocalEndpoint.get_managers',
-              return_value=managers),
-        patch('cloudify_agent.operations._get_cloudify_context',
-              mock_create_op_context),
-        get_tenant_mock()
-    ]
-    for p in patches:
-        p.start()
-    try:
-        yield
-    finally:
-        for p in patches:
-            p.stop()
