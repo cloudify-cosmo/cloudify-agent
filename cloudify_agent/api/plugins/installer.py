@@ -539,7 +539,7 @@ def _link_virtualenv(venv):
     Also copy .pth files' contents from the current venv, so that the
     target venv also uses editable packages from the source venv.
     """
-    own_site_packages = get_pth_dir(VIRTUALENV)
+    own_site_packages = get_pth_dir()
     target = get_pth_dir(venv)
     with open(os.path.join(target, 'agent.pth'), 'w') as agent_link:
         agent_link.write('# link to the agent virtualenv, created by '
@@ -563,7 +563,7 @@ def get_pth_dir(venv=None):
     but sysconfig is not available in 2.6.
     """
     output = runner.run([
-        get_python_path(venv),
+        get_python_path(venv) if venv else sys.executable,
         '-c',
         'import json, sys; print(json.dumps([sys.prefix, sys.version[:3]]))'
     ]).std_out
