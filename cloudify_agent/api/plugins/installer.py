@@ -42,7 +42,6 @@ from cloudify.exceptions import NonRecoverableError, CommandExecutionException
 from cloudify_agent import VIRTUALENV
 from cloudify_agent.api import plugins
 from cloudify_agent.api import exceptions
-from cloudify_rest_client.constants import VisibilityState
 
 try:
     from cloudify_premium import syncthing_utils
