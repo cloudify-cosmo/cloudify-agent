@@ -34,7 +34,7 @@ from cloudify.state import current_ctx
 from cloudify.error_handling import serialize_known_exception
 from cloudify.amqp_client import AMQPConnection, TaskConsumer, NO_RESPONSE
 from cloudify.utils import get_manager_name
-from cloudify_agent.operations import install_plugins
+from cloudify_agent.operations import install_plugins, uninstall_plugins
 
 DEFAULT_MAX_WORKERS = 10
 
@@ -151,7 +151,8 @@ class ServiceTaskConsumer(TaskConsumer):
         'cluster-update': 'cluster_update_task',
         'cancel-operation': 'cancel_operation_task',
         'replace-ca-certs': 'replace_ca_certs_task',
-        'install-plugin': 'install_plugin_task'
+        'install-plugin': 'install_plugin_task',
+        'uninstall-plugin': 'uninstall_plugin_task',
     }
 
     def __init__(self, name, *args, **kwargs):
@@ -185,7 +186,7 @@ class ServiceTaskConsumer(TaskConsumer):
             # it was sent to a fanout exchange.
             # This only matters for mgmtworkers, because agents have no
             # fanout exchanges.
-            if target != get_manager_name():
+            if get_manager_name() not in target:
                 return
 
         class _EmptyID(object):
@@ -207,6 +208,38 @@ class ServiceTaskConsumer(TaskConsumer):
 
         with current_ctx.push(PluginInstallCloudifyContext()):
             install_plugins([plugin])
+
+    def uninstall_plugin_task(self, plugin, rest_token, tenant,
+                              rest_host, target=None):
+
+        if target:
+            # target was provided, so this is to be installed only on the
+            # specified workers, but might have been received by us because
+            # it was sent to a fanout exchange.
+            # This only matters for mgmtworkers, because agents have no
+            # fanout exchanges.
+            if get_manager_name() not in target:
+                return
+
+        class _EmptyID(object):
+            id = None
+
+        class PluginUninstallCloudifyContext(object):
+            """A CloudifyContext that has just enough data to uninstall plugins
+            """
+            def __init__(self):
+                self.rest_host = rest_host
+                self.tenant_name = tenant['name']
+                self.rest_token = rest_token
+                self.execution_token = None
+                self.logger = logging.getLogger('plugin')
+                # deployment/blueprint are not defined for force-installs,
+                # but the ctx demands they be objects with an .id
+                self.deployment = _EmptyID()
+                self.blueprint = _EmptyID()
+
+        with current_ctx.push(PluginUninstallCloudifyContext()):
+            uninstall_plugins([plugin])
 
     def cluster_update_task(self, brokers, broker_ca, managers, manager_ca):
         """Update the running agent with the new cluster.
