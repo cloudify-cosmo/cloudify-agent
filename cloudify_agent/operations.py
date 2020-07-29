@@ -26,7 +26,7 @@ from cloudify import amqp_client, ctx
 from cloudify import broker_config as global_broker_config
 from cloudify.decorators import operation
 from cloudify.manager import get_rest_client
-from cloudify.models_states import AgentState
+from cloudify.models_states import AgentState, PluginInstallationState
 from cloudify.constants import BROKER_PORT_SSL
 from cloudify.error_handling import deserialize_known_exception
 from cloudify.exceptions import NonRecoverableError, RecoverableError
@@ -54,7 +54,9 @@ from cloudify_agent.installer.config.agent_config import \
 CELERY_TASK_RESULT_EXPIRES = 600
 
 
-def _set_plugin_state(plugin_id, state, error=None):
+def _set_plugin_state(plugin, state, error=None):
+    if not plugin.get('id'):
+        return
     client = get_rest_client()
     try:
         agent = utils.internal.get_daemon_name()
@@ -64,38 +66,37 @@ def _set_plugin_state(plugin_id, state, error=None):
         manager = get_manager_name()
 
     client.plugins.set_state(
-        plugin_id, state=state, agent_name=agent, manager_name=manager,
+        plugin['id'], state=state, agent_name=agent, manager_name=manager,
         error=str(error))
 
 
 @operation
 def install_plugins(plugins, **_):
-
     for plugin in plugins:
-        ctx.logger.info(
-            'Installing plugin: {0}'.format(plugin['package_name']))
-        _set_plugin_state(plugin['id'], state='installing')
+        ctx.logger.info('Installing plugin: %s', plugin['package_name'])
+        _set_plugin_state(plugin, state=PluginInstallationState.INSTALLING)
         try:
             plugin_installer.install(
                 plugin=plugin,
                 deployment_id=ctx.deployment.id,
                 blueprint_id=ctx.blueprint.id)
         except exceptions.PluginInstallationError as e:
-            _set_plugin_state(plugin['id'], state='error', error=e)
+            _set_plugin_state(
+                plugin, state=PluginInstallationState.ERROR, error=e)
             # preserve traceback
             tpe, value, tb = sys.exc_info()
             reraise(NonRecoverableError, NonRecoverableError(str(e)), tb)
         else:
-            _set_plugin_state(plugin['id'], state='installed')
+            _set_plugin_state(plugin, state=PluginInstallationState.INSTALLED)
 
 
 @operation
-def uninstall_plugins(plugins, delete_managed_plugins=True, **_):
+def uninstall_plugins(plugins, **_):
     for plugin in plugins:
-        ctx.logger.info('Uninstalling plugin: {0}'.format(plugin['name']))
-        plugin_installer.uninstall(
-            plugin, delete_managed_plugins=delete_managed_plugins)
-        _set_plugin_state(plugin['id'], state='uninstalled')
+        ctx.logger.info('Uninstalling plugin: %s', plugin['package_name'])
+        _set_plugin_state(plugin, state=PluginInstallationState.UNINSTALLING)
+        plugin_installer.uninstall(plugin)
+        _set_plugin_state(plugin, state=PluginInstallationState.UNINSTALLED)
 
 
 @operation
