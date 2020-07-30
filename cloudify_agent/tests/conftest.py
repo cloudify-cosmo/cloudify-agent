@@ -1,4 +1,5 @@
 import os
+import shutil
 import socket
 import sys
 import time
@@ -11,9 +12,8 @@ from cloudify.state import current_ctx
 from cloudify.tests.mocks.mock_rest_client import MockRestclient
 
 from cloudify_agent.api.factory import DaemonFactory
-from cloudify_agent.api.plugins import installer
 from cloudify_agent.tests.agent_package_generator import AgentPackageGenerator
-from cloudify_agent.tests import plugins, random_id
+from cloudify_agent.tests import random_id
 from cloudify_agent.tests.utils import (
     _AgentSSLCert,
     create_plugin_tar,
@@ -103,10 +103,9 @@ def test_plugins(file_server):
             plugin_dir_name=plugin_dir,
             target_directory=file_server.root_path)
     yield wagons
-    installer.uninstall_source(plugin=plugins.plugin_struct(''))
-    installer.uninstall_source(plugin=plugins.plugin_struct(''),
-                               deployment_id='deployment')
-    installer.uninstall_wagon(plugins.PACKAGE_NAME, plugins.PACKAGE_VERSION)
+    shutil.rmtree(os.path.join(sys.prefix, 'plugins'), ignore_errors=True)
+    shutil.rmtree(
+        os.path.join(sys.prefix, 'source_plugins'), ignore_errors=True)
 
 
 @pytest.fixture(scope='function')
