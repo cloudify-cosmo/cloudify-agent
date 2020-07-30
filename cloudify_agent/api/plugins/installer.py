@@ -258,7 +258,11 @@ def uninstall(plugin, deployment_id=None):
         _rmtree(dst_dir)
     lock_file = '{0}.lock'.format(dst_dir)
     if os.path.exists(lock_file):
-        os.remove(lock_file)
+        try:
+            os.remove(lock_file)
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise
 
 
 def _create_plugins_dir_if_missing():
