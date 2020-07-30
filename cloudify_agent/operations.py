@@ -73,7 +73,8 @@ def _set_plugin_state(plugin, state, error=None):
 @operation
 def install_plugins(plugins, **_):
     for plugin in plugins:
-        ctx.logger.info('Installing plugin: %s', plugin['package_name'])
+        name = plugin.get('package_name') or plugin['name']
+        ctx.logger.info('Installing plugin: %s', name)
         _set_plugin_state(plugin, state=PluginInstallationState.INSTALLING)
         try:
             plugin_installer.install(

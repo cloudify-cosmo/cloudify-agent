@@ -196,8 +196,9 @@ def _wagon_install(plugin, venv, args):
 
 
 def _install_source_plugin(deployment_id, plugin, source, args):
+    name = plugin.get('package_name') or plugin['name']
     dst_dir = target_plugin_prefix(
-        name=plugin['package_name'],
+        name=name,
         tenant_name=ctx.tenant_name,
         version=plugin.get('package_version'),
         deployment_id=deployment_id
@@ -208,7 +209,7 @@ def _install_source_plugin(deployment_id, plugin, source, args):
                 'Using existing installation of source plugin: %s', plugin)
         else:
             ctx.logger.info(
-                'Installing plugin from source: %s', plugin['package_name'])
+                'Installing plugin from source: %s', name)
             _make_virtualenv(dst_dir)
             _pip_install(source=source, venv=dst_dir, args=args)
         with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
@@ -244,8 +245,9 @@ def _pip_install(source, venv, args):
 
 
 def uninstall(plugin, deployment_id=None):
+    name = plugin.get('package_name') or plugin['name']
     dst_dir = target_plugin_prefix(
-        name=plugin['package_name'],
+        name=name,
         tenant_name=ctx.tenant_name,
         version=plugin['package_version'],
         deployment_id=deployment_id
