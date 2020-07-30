@@ -16,9 +16,14 @@ from cloudify_agent.tests.daemon import (
 from cloudify_agent.tests.api.pm import DEPLOYMENT_ID
 
 
-def patch_get_source(fn):
+def patch_get_source():
     return patch('cloudify_agent.api.plugins.installer.get_plugin_source',
-                 lambda plugin, blueprint_id: plugin.get('source'))(fn)
+                 lambda plugin, blueprint_id: plugin.get('source'))
+
+
+def patch_no_managed_plugin():
+    return patch('cloudify_agent.api.plugins.installer.get_managed_plugin',
+                 lambda plugin: None)
 
 
 def _test_create(daemon_fixture):
@@ -61,7 +66,7 @@ def _test_start_delete_amqp_queue(daemon_fixture):
     daemon.start(delete_amqp_queue=True)
 
 
-@patch_get_source
+@patch_get_source()
 def _test_start_with_error(daemon_fixture):
     if os.name == 'nt':
         log_dir = 'H:\\WATT_NONEXISTENT_DIR\\lo'
@@ -115,7 +120,8 @@ def _test_stop_short_timeout(daemon_fixture):
         daemon.stop(timeout=-1)
 
 
-@patch_get_source
+@patch_get_source()
+@patch_no_managed_plugin()
 def _test_restart(daemon_fixture):
     daemon = daemon_fixture.create_daemon()
     daemon.create()
@@ -141,7 +147,8 @@ def _test_two_daemons(daemon_fixture):
     assert_daemon_alive(daemon2.queue)
 
 
-@patch_get_source
+@patch_get_source()
+@patch_no_managed_plugin()
 def _test_conf_env_variables(daemon_fixture):
     daemon = daemon_fixture.create_daemon()
     daemon.create()
@@ -172,7 +179,8 @@ def _test_conf_env_variables(daemon_fixture):
         _check_env_var(key, value)
 
 
-@patch_get_source
+@patch_get_source()
+@patch_no_managed_plugin()
 def _test_extra_env(daemon_fixture):
     daemon = daemon_fixture.create_daemon()
     daemon.extra_env_path = utils.env_to_file(
@@ -193,7 +201,8 @@ def _test_extra_env(daemon_fixture):
     assert value == 'TEST_ENV_VALUE'
 
 
-@patch_get_source
+@patch_get_source()
+@patch_no_managed_plugin()
 def _test_execution_env(daemon_fixture):
     daemon = daemon_fixture.create_daemon()
     daemon.create()
@@ -231,7 +240,8 @@ def _test_delete_before_stop_with_force(daemon_fixture):
     wait_for_daemon_dead(daemon.queue)
 
 
-@patch_get_source
+@patch_get_source()
+@patch_no_managed_plugin()
 def _test_logging(daemon_fixture):
     message = 'THIS IS THE TEST MESSAGE LOG CONTENT'
 

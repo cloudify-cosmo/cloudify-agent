@@ -14,7 +14,7 @@ from mock import patch
 from cloudify import dispatch
 from cloudify import exceptions as cloudify_exceptions
 from cloudify.state import ctx, current_ctx
-from cloudify.utils import setup_logger
+from cloudify.utils import setup_logger, target_plugin_prefix
 from cloudify.exceptions import NonRecoverableError
 from cloudify_rest_client.plugins import Plugin
 from cloudify_rest_client.constants import VisibilityState
@@ -33,8 +33,9 @@ logger = setup_logger('api.plugins.test_installer',
 
 @pytest.mark.only_rabbit
 def test_install_from_source(test_plugins, file_server):
-    installer.install(plugins.plugin_struct(file_server,
-                                            source='mock-plugin.tar'))
+    with _patch_client([]):
+        installer.install(plugins.plugin_struct(file_server,
+                                                source='mock-plugin.tar'))
     _assert_task_runnable('mock_plugin.tasks.run',
                           expected_return='run')
     _assert_task_runnable('mock_plugin.tasks.call_entry_point',
@@ -44,10 +45,11 @@ def test_install_from_source(test_plugins, file_server):
 @pytest.mark.only_rabbit
 def test_install_from_source_with_deployment_id(test_plugins, file_server):
     deployment_id = 'deployment'
-    installer.install(plugins.plugin_struct(file_server,
-                                            source='mock-plugin.tar'),
-                      deployment_id=deployment_id)
-    _assert_task_not_runnable('mock_plugin.tasks.run')
+    with _patch_client([]):
+        installer.install(plugins.plugin_struct(file_server,
+                          source='mock-plugin.tar'),
+                          deployment_id=deployment_id)
+        _assert_task_not_runnable('mock_plugin.tasks.run')
     _assert_task_runnable('mock_plugin.tasks.run',
                           expected_return='run',
                           deployment_id=deployment_id)
@@ -55,48 +57,44 @@ def test_install_from_source_with_deployment_id(test_plugins, file_server):
 
 @pytest.mark.only_rabbit
 def test_install_from_source_with_requirements(test_plugins, file_server):
-    installer.install(plugins.plugin_struct(
-        file_server,
-        source='mock-plugin-with-requirements.tar',
-        args='-r requirements.txt'))
+    with _patch_client([]):
+        installer.install(plugins.plugin_struct(
+            file_server,
+            source='mock-plugin-with-requirements.tar',
+            args='-r requirements.txt'))
     _assert_task_runnable(
         'mock_with_install_args_for_test.module.do_stuff',
         expected_return='on the brilliant marble-sanded beaches of '
                         'Santraginus V')
 
 
-def test_install_from_source_already_exists(test_plugins, file_server):
-    installer.install(plugins.plugin_struct(file_server,
-                                            source='mock-plugin.tar'))
-    with pytest.raises(exceptions.PluginInstallationError,
-                       match='.*already exists.*'):
-        installer.install(plugins.plugin_struct(file_server,
-                                                source='mock-plugin.tar'))
-
-
 @pytest.mark.only_rabbit
 def test_uninstall_from_source(test_plugins, file_server):
-    installer.install(plugins.plugin_struct(file_server,
-                                            source='mock-plugin.tar'))
+    with _patch_client([]):
+        installer.install(plugins.plugin_struct(file_server,
+                                                source='mock-plugin.tar'))
     _assert_task_runnable('mock_plugin.tasks.run', expected_return='run')
-    installer.uninstall_source(plugin=plugins.plugin_struct(file_server))
-    _assert_task_not_runnable('mock_plugin.tasks.run')
+    installer.uninstall(plugin=plugins.plugin_struct(file_server))
+    with _patch_client([]):
+        _assert_task_not_runnable('mock_plugin.tasks.run')
 
 
 @pytest.mark.only_rabbit
 def test_uninstall_from_source_with_deployment_id(test_plugins, file_server):
     deployment_id = 'deployment'
-    installer.install(
-        plugins.plugin_struct(file_server, source='mock-plugin.tar'),
-        deployment_id=deployment_id)
-    _assert_task_not_runnable('mock_plugin.tasks.run')
+    with _patch_client([]):
+        installer.install(
+            plugins.plugin_struct(file_server, source='mock-plugin.tar'),
+            deployment_id=deployment_id)
+        _assert_task_not_runnable('mock_plugin.tasks.run')
     _assert_task_runnable('mock_plugin.tasks.run',
                           expected_return='run',
                           deployment_id=deployment_id)
-    installer.uninstall_source(plugin=plugins.plugin_struct(file_server),
-                               deployment_id=deployment_id)
-    _assert_task_not_runnable('mock_plugin.tasks.run',
-                              deployment_id=deployment_id)
+    installer.uninstall(plugin=plugins.plugin_struct(file_server),
+                        deployment_id=deployment_id)
+    with _patch_client([]):
+        _assert_task_not_runnable('mock_plugin.tasks.run',
+                                  deployment_id=deployment_id)
 
 
 @pytest.mark.only_rabbit
@@ -148,8 +146,10 @@ def test_install_from_wagon_already_exists(test_plugins, file_server):
 def test_install_from_wagon_already_exists_missing_plugin_id(file_server,
                                                              test_plugins):
     test_install_from_wagon(test_plugins, file_server)
-    plugin_dir = installer._full_dst_dir(
-        '{0}-{1}'.format(plugins.PACKAGE_NAME, plugins.PACKAGE_VERSION))
+    plugin_dir = target_plugin_prefix(
+        name=plugins.PACKAGE_NAME,
+        version=plugins.PACKAGE_VERSION,
+        tenant_name='default_tenant')
     plugin_id_path = os.path.join(plugin_dir, 'plugin.id')
     os.remove(plugin_id_path)
     # the installation here should identify a plugin.id missing
@@ -191,9 +191,10 @@ def test_extract_package_to_dir(test_plugins, file_server):
 
 
 def test_install_no_source_or_managed_plugin(file_server):
-    with pytest.raises(cloudify_exceptions.NonRecoverableError,
-                       match='.*source or managed.*'):
-        installer.install(plugins.plugin_struct(file_server))
+    with _patch_client([]):
+        with pytest.raises(cloudify_exceptions.NonRecoverableError,
+                           match='.*source or managed.*'):
+            installer.install(plugins.plugin_struct(file_server))
 
 
 def test_extract_package_name():
@@ -393,7 +394,7 @@ class MockConcurrentClient(object):
 
 def _assert_task_runnable(task_name,
                           expected_return=None,
-                          package_name=None,
+                          package_name=plugins.PACKAGE_NAME,
                           package_version=None,
                           deployment_id=None):
     assert (
@@ -408,7 +409,7 @@ def _assert_task_runnable(task_name,
 
 def _assert_task_not_runnable(task_name,
                               deployment_id=None,
-                              package_name=None,
+                              package_name=plugins.PACKAGE_NAME,
                               package_version=None):
     pytest.raises(
         cloudify_exceptions.NonRecoverableError,

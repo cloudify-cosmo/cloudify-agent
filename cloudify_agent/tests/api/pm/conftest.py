@@ -5,8 +5,6 @@ import pytest
 from cloudify.utils import setup_logger
 
 from cloudify_agent.api import utils
-from cloudify_agent.api.plugins import installer
-from cloudify_agent.tests.api.pm import DEPLOYMENT_ID
 from cloudify_agent.tests.api.pm.daemons import (
     TestDetachedDaemon,
     TestInitdDaemon,
@@ -29,9 +27,6 @@ def detach_daemon(tmp_path, agent_ssl_cert):
 
     daemon.runner.run("pkill -9 -f 'cloudify_agent.worker'",
                       exit_on_failure=False)
-    installer.uninstall_source(plugin=daemon.plugin_struct())
-    installer.uninstall_source(plugin=daemon.plugin_struct(),
-                               deployment_id=DEPLOYMENT_ID)
     for _daemon in daemon.daemons:
         daemon.factory.delete(_daemon.name)
 
@@ -44,9 +39,6 @@ def initd_daemon(tmp_path, agent_ssl_cert):
 
     daemon.runner.run("pkill -9 -f 'cloudify_agent.worker'",
                       exit_on_failure=False)
-    installer.uninstall_source(plugin=daemon.plugin_struct())
-    installer.uninstall_source(plugin=daemon.plugin_struct(),
-                               deployment_id=DEPLOYMENT_ID)
     for _daemon in daemon.daemons:
         daemon.factory.delete(_daemon.name)
 
@@ -65,8 +57,5 @@ def nssm_daemon(tmp_path, agent_ssl_cert):
         daemon.runner.run('{0} remove {1} confirm'.format(nssm_path,
                                                           _daemon.name),
                           exit_on_failure=False)
-    installer.uninstall_source(plugin=daemon.plugin_struct())
-    installer.uninstall_source(plugin=daemon.plugin_struct(),
-                               deployment_id=DEPLOYMENT_ID)
     for _daemon in daemon.daemons:
         daemon.factory.delete(_daemon.name)

@@ -62,7 +62,7 @@ class BaseDaemon:
         return {
             'source': os.path.join(resources.get_resource('plugins'),
                                    plugin_name),
-            'name': PLUGIN_NAME
+            'package_name': PLUGIN_NAME
         }
 
     def send_task(self,
