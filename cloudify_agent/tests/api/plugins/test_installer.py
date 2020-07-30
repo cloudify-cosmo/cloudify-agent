@@ -65,15 +65,6 @@ def test_install_from_source_with_requirements(test_plugins, file_server):
                         'Santraginus V')
 
 
-def test_install_from_source_already_exists(test_plugins, file_server):
-    installer.install(plugins.plugin_struct(file_server,
-                                            source='mock-plugin.tar'))
-    with pytest.raises(exceptions.PluginInstallationError,
-                       match='.*already exists.*'):
-        installer.install(plugins.plugin_struct(file_server,
-                                                source='mock-plugin.tar'))
-
-
 @pytest.mark.only_rabbit
 def test_uninstall_from_source(test_plugins, file_server):
     installer.install(plugins.plugin_struct(file_server,

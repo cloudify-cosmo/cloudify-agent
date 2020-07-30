@@ -114,7 +114,7 @@ def _make_virtualenv(path):
     _link_virtualenv(path)
 
 
-def is_already_installed(dst_dir, managed_plugin):
+def is_already_installed(dst_dir, plugin_id):
     ctx.logger.debug('Checking if managed plugin installation exists '
                      'in %s', dst_dir)
     if os.path.exists(dst_dir):
@@ -124,19 +124,18 @@ def is_already_installed(dst_dir, managed_plugin):
             ctx.logger.debug('Plugin id path exists: %s', plugin_id_path)
             with open(plugin_id_path) as f:
                 existing_plugin_id = f.read().strip()
-            if existing_plugin_id == managed_plugin.id:
+            if existing_plugin_id == plugin_id:
                 return True
             else:
                 raise exceptions.PluginInstallationError(
                     'Managed plugin installation found but its ID '
                     'does not match the ID of the plugin currently '
                     'on the manager. [existing: {0}, new: {1}]'
-                    .format(existing_plugin_id,
-                            managed_plugin.id))
+                    .format(existing_plugin_id, plugin_id))
         else:
             raise exceptions.PluginInstallationError(
                 'Managed plugin installation found but it is '
-                'in a corrupted state. [{0}]'.format(managed_plugin))
+                'in a corrupted state. [{0}]'.format(plugin_id))
 
 
 def _get_plugin_description(managed_plugin):
@@ -157,7 +156,7 @@ def _install_managed_plugin(managed_plugin, args):
         version=managed_plugin.package_version
     )
     with _lock(dst_dir):
-        if is_already_installed(dst_dir, managed_plugin):
+        if is_already_installed(dst_dir, managed_plugin.id):
             ctx.logger.info(
                 'Using existing installation of managed plugin: %s [%s]',
                 managed_plugin.id, _get_plugin_description(managed_plugin))
@@ -208,18 +207,16 @@ def _install_source_plugin(deployment_id, plugin, source, args):
         deployment_id=deployment_id
     )
     with _lock(dst_dir):
-        if os.path.exists(dst_dir):
-            raise exceptions.PluginInstallationError(
-                'Source plugin {0} already exists for deployment {1}. '
-                'This probably means a previous deployment with the '
-                'same name was not cleaned properly.'
-                .format(plugin['package_name'], deployment_id))
-        ctx.logger.info(
-            'Installing plugin from source: %s', plugin['package_name'])
-        _make_virtualenv(dst_dir)
-        _pip_install(source=source, venv=dst_dir, args=args)
-    with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
-        f.write('source-{0}'.format(deployment_id))
+        if is_already_installed(dst_dir, 'source-{0}'.format(deployment_id)):
+            ctx.logger.info(
+                'Using existing installation of source plugin: %s', plugin)
+        else:
+            ctx.logger.info(
+                'Installing plugin from source: %s', plugin['package_name'])
+            _make_virtualenv(dst_dir)
+            _pip_install(source=source, venv=dst_dir, args=args)
+        with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
+            f.write('source-{0}'.format(deployment_id))
 
 
 def _pip_install(source, venv, args):
