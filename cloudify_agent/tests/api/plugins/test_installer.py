@@ -384,7 +384,7 @@ class MockConcurrentClient(object):
 
 def _assert_task_runnable(task_name,
                           expected_return=None,
-                          package_name=None,
+                          package_name=plugins.PACKAGE_NAME,
                           package_version=None,
                           deployment_id=None):
     assert (
@@ -399,7 +399,7 @@ def _assert_task_runnable(task_name,
 
 def _assert_task_not_runnable(task_name,
                               deployment_id=None,
-                              package_name=None,
+                              package_name=plugins.PACKAGE_NAME,
                               package_version=None):
     pytest.raises(
         cloudify_exceptions.NonRecoverableError,

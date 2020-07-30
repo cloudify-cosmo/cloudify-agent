@@ -313,7 +313,7 @@ def op_context(task_name,
         'execution_env': execution_env,
         'plugin': {
             'name': plugin_name,
-            'package_name': package_name,
+            'package_name': package_name or plugin_name,
             'package_version': package_version
         },
         # agents in tests do not have a manager
