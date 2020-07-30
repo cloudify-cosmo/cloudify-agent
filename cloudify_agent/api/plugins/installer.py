@@ -72,13 +72,10 @@ def install(plugin,
                          when downloading plugins that were included
                          as part of the blueprint itself.
     """
-    # deployment_id may be empty in some tests.
-    deployment_id = deployment_id or SYSTEM_DEPLOYMENT
     managed_plugin = get_managed_plugin(plugin)
     source = get_plugin_source(plugin, blueprint_id)
     args = get_plugin_args(plugin)
     _create_plugins_dir_if_missing()
-
     if managed_plugin:
         _install_managed_plugin(
             managed_plugin=managed_plugin,
