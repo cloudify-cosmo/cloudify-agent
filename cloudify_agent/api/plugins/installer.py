@@ -246,16 +246,12 @@ def _pip_install(source, venv, args):
             _rmtree(plugin_dir)
 
 
-def uninstall(plugin):
+def uninstall(plugin, deployment_id=None):
     dst_dir = target_plugin_prefix(
         name=plugin['package_name'],
         tenant_name=ctx.tenant_name,
-        version=plugin['package_version']
-    )
-    dst_dir = os.path.join(
-        VIRTUALENV, 'plugins', ctx.tenant_name,
-        plugin['package_name'],
-        plugin['package_version'],
+        version=plugin['package_version'],
+        deployment_id=deployment_id
     )
     ctx.logger.info('uninstalling %s', dst_dir)
     if os.path.isdir(dst_dir):
