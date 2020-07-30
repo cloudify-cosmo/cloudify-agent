@@ -178,7 +178,7 @@ class ServiceTaskConsumer(TaskConsumer):
         return {'time': time.time()}
 
     def install_plugin_task(self, plugin, rest_token, tenant,
-                            rest_host, target=None):
+                            rest_host, target=None, bypass_maintenance=False):
 
         if target:
             # target was provided, so this is to be installed only on the
@@ -205,12 +205,14 @@ class ServiceTaskConsumer(TaskConsumer):
                 # but the ctx demands they be objects with an .id
                 self.deployment = _EmptyID()
                 self.blueprint = _EmptyID()
+                self.bypass_maintenance = bypass_maintenance
 
         with current_ctx.push(PluginInstallCloudifyContext()):
             install_plugins([plugin])
 
     def uninstall_plugin_task(self, plugin, rest_token, tenant,
-                              rest_host, target=None):
+                              rest_host, target=None,
+                              bypass_maintenance=False):
 
         if target:
             # target was provided, so this is to be installed only on the
@@ -237,6 +239,7 @@ class ServiceTaskConsumer(TaskConsumer):
                 # but the ctx demands they be objects with an .id
                 self.deployment = _EmptyID()
                 self.blueprint = _EmptyID()
+                self.bypass_maintenance = bypass_maintenance
 
         with current_ctx.push(PluginUninstallCloudifyContext()):
             uninstall_plugins([plugin])
