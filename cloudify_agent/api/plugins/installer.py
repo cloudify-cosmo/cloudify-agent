@@ -156,23 +156,23 @@ def _install_managed_plugin(managed_plugin, args):
             ctx.logger.info(
                 'Using existing installation of managed plugin: %s [%s]',
                 managed_plugin.id, _get_plugin_description(managed_plugin))
-        else:
-            ctx.logger.info(
-                'Installing managed plugin: %s [%s]',
-                managed_plugin.id, _get_plugin_description(managed_plugin))
-            _make_virtualenv(dst_dir)
-            try:
-                _wagon_install(
-                    plugin=managed_plugin, venv=dst_dir, args=args)
-                with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
-                    f.write(managed_plugin.id)
-            except Exception as e:
-                _rmtree(dst_dir)
-                tpe, value, tb = sys.exc_info()
-                exc = NonRecoverableError(
-                    'Failed installing managed plugin: {0} [{1}][{2}]'
-                    .format(managed_plugin.id, managed_plugin, e))
-                reraise(NonRecoverableError, exc, tb)
+            return
+
+        ctx.logger.info(
+            'Installing managed plugin: %s [%s]',
+            managed_plugin.id, _get_plugin_description(managed_plugin))
+        _make_virtualenv(dst_dir)
+        try:
+            _wagon_install(plugin=managed_plugin, venv=dst_dir, args=args)
+            with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
+                f.write(managed_plugin.id)
+        except Exception as e:
+            _rmtree(dst_dir)
+            tpe, value, tb = sys.exc_info()
+            exc = NonRecoverableError(
+                'Failed installing managed plugin: {0} [{1}][{2}]'
+                .format(managed_plugin.id, managed_plugin, e))
+            reraise(NonRecoverableError, exc, tb)
 
 
 def _wagon_install(plugin, venv, args):
@@ -208,15 +208,15 @@ def _install_source_plugin(deployment_id, plugin, source, args):
         if is_already_installed(dst_dir, 'source-{0}'.format(deployment_id)):
             ctx.logger.info(
                 'Using existing installation of source plugin: %s', plugin)
-        else:
-            ctx.logger.info(
-                'Installing plugin from source: %s', name)
-            _make_virtualenv(dst_dir)
-            try:
-                _pip_install(source=source, venv=dst_dir, args=args)
-            except Exception:
-                _rmtree(dst_dir)
-                raise
+            return
+
+        ctx.logger.info('Installing plugin from source: %s', name)
+        _make_virtualenv(dst_dir)
+        try:
+            _pip_install(source=source, venv=dst_dir, args=args)
+        except Exception:
+            _rmtree(dst_dir)
+            raise
         with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
             f.write('source-{0}'.format(deployment_id))
 
