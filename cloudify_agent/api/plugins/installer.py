@@ -157,16 +157,17 @@ def _install_managed_plugin(managed_plugin, args):
                 'Using existing installation of managed plugin: %s [%s]',
                 managed_plugin.id, _get_plugin_description(managed_plugin))
         else:
+            ctx.logger.info(
+                'Installing managed plugin: %s [%s]',
+                managed_plugin.id, _get_plugin_description(managed_plugin))
+            _make_virtualenv(dst_dir)
             try:
-                ctx.logger.info(
-                    'Installing managed plugin: %s [%s]',
-                    managed_plugin.id, _get_plugin_description(managed_plugin))
-                _make_virtualenv(dst_dir)
                 _wagon_install(
                     plugin=managed_plugin, venv=dst_dir, args=args)
                 with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
                     f.write(managed_plugin.id)
             except Exception as e:
+                _rmtree(dst_dir)
                 tpe, value, tb = sys.exc_info()
                 exc = NonRecoverableError(
                     'Failed installing managed plugin: {0} [{1}][{2}]'
@@ -211,7 +212,11 @@ def _install_source_plugin(deployment_id, plugin, source, args):
             ctx.logger.info(
                 'Installing plugin from source: %s', name)
             _make_virtualenv(dst_dir)
-            _pip_install(source=source, venv=dst_dir, args=args)
+            try:
+                _pip_install(source=source, venv=dst_dir, args=args)
+            except Exception:
+                _rmtree(dst_dir)
+                raise
         with open(os.path.join(dst_dir, 'plugin.id'), 'w') as f:
             f.write('source-{0}'.format(deployment_id))
 
