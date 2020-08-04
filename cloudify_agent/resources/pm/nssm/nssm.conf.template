@@ -1,68 +1,56 @@
-@echo off
+#ps1_sysnative
+
+# All output should be UTF-8 (default is UTF-16).
+$PSDefaultParameterValues['*:Encoding'] = 'utf8'
+
+Set-StrictMode -Version 1.0
+# Stop whenever a non-terminating cmdlet generates an error.
+$ErrorActionPreference = "Stop"
 
 
-sc query {{ name }} > NUL
-if %ERRORLEVEL% EQU 0 echo Agent already installed && exit 0
-if %ERRORLEVEL% EQU 1060 echo Installing the agent as a windows service...
-
-REM Because for tests the virtualenv is a virtualenv and otherwise it's embedded.
-if exist "{{ virtualenv_path }}\python.exe" (
-  set py="{{ virtualenv_path }}\python.exe"
-) else (
-  set py="{{ virtualenv_path }}\Scripts\python.exe"
-)
-
-REM It looks odd not quoting the variable, but if you quote it then cmd will expand it into multiple args.
-"{{ nssm_path }}" install {{ name }} %py% -m cloudify_agent.worker ^
-    --queue "{{ queue }}" ^
-    --max-workers {{ max_workers }} ^
-    --name "{{ name }}"
+function run {
+    # Use this to get set -e alike behaviour, rather than running commands directly
+    & $args[0] $args[1..($args.Length)]
+    if ($LastExitCode -ne 0) {
+        Write-Error "Error running @args"
+    }
+}
 
 
-if %errorlevel% neq 0 exit /b %errorlevel%
+if (Get-Service -Name {{ name }} -ErrorAction SilentlyContinue) {
+    Write-Output "Agent already installed."
+    Return
+} else {
+    Write-Output "Installing the agent as a windows service..."
+}
 
-echo Setting service environment
+if (Test-Path "{{ virtualenv_path }}\python.exe") {
+    Write-Output "Using agent's embedded python."
+    $PYTHON = "{{ virtualenv_path }}\python.exe"
+} else {
+    Write-Output "Using test's virtualenv python."
+    $PYTHON = "{{ virtualenv_path }}\Scripts\python.exe"
+}
 
-"{{ nssm_path }}" set {{ name }} AppEnvironmentExtra ^
-REST_HOST={{ rest_host|join(',') }} ^
-REST_PORT={{ rest_port }} ^
-LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}" ^
-MANAGER_FILE_SERVER_URL={% for host in rest_host -%}
-    https://{{ host }}:{{ rest_port }}/resources
-    {%- if not loop.last %},{% endif %}
-{%- endfor %} ^
-AGENT_LOG_DIR="{{ log_dir }}" ^
-CLOUDIFY_DAEMON_USER={{ user }} ^
-AGENT_LOG_LEVEL="{{ log_level }}" ^
-AGENT_WORK_DIR="{{ workdir }}" ^ {{ custom_environment }} ^
-AGENT_LOG_MAX_BYTES="{{ log_max_bytes }}" ^
-AGENT_LOG_MAX_HISTORY="{{ log_max_history }}" ^
-{%- if executable_temp_path -%}
-CFY_EXEC_TEMP="{{ executable_temp_path }}" ^
-{% endif %}
-CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}" ^
-AGENT_NAME="{{ name }}"
+run "{{ nssm_path }}" install {{ name }} $PYTHON -m cloudify_agent.worker --queue "{{ queue }}" --max-workers "{{ max_workers }}" --name "{{ name }}"
+
+Write-Output "Setting service environment"
+
+run "{{ nssm_path }}" set {{ name }} AppEnvironmentExtra REST_HOST={{ rest_host|join(',') }} REST_PORT={{ rest_port }} LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}" MANAGER_FILE_SERVER_URL={% for host in rest_host -%}https://{{ host }}:{{ rest_port }}/resources{%- if not loop.last %},{% endif %}{%- endfor %} AGENT_LOG_DIR="{{ log_dir }}" CLOUDIFY_DAEMON_USER={{ user }} AGENT_LOG_LEVEL="{{ log_level }}" AGENT_WORK_DIR="{{ workdir }}" {{ custom_environment }} AGENT_LOG_MAX_BYTES="{{ log_max_bytes }}" AGENT_LOG_MAX_HISTORY="{{ log_max_history }}" {%- if executable_temp_path -%}CFY_EXEC_TEMP="{{ executable_temp_path }}" {% endif %} CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}" AGENT_NAME="{{ name }}"
 
 {% if service_user %}
-echo Registering agent service to run with user "{{ service_user}}"...
-"{{ nssm_path }}" set {{ name }} ObjectName "{{ service_user }}" "{{ service_password }}"
-if %errorlevel% neq 0 exit /b %errorlevel%
+Write-Output 'Registering agent service to run with user "{{ service_user}}"'...
+run "{{ nssm_path }}" set {{ name }} ObjectName "{{ service_user }}" "{{ service_password }}"
 {% endif %}
-"{{ nssm_path }}" set {{ name }} DisplayName "Cloudify Agent - {{ name }}"
-"{{ nssm_path }}" set {{ name }} Description "Cloudify Agent Service"
 
-if %errorlevel% neq 0 exit /b %errorlevel%
+Write-Output "Setting service display name and description"
+run "{{ nssm_path }}" set {{ name }} DisplayName "Cloudify Agent - {{ name }}"
+run "{{ nssm_path }}" set {{ name }} Description "Cloudify Agent Service"
 
-echo Configuring startup policy...
+Write-Output "Configuring startup policy..."
+Set-Service -Name {{ name }} -StartupType {{ startup_policy }}
 
-sc config {{ name }} start= {{ startup_policy }}
+Write-Output "Configuring failure policy..."
+run $env:WINDIR\System32\sc.exe failure {{ name }} reset= {{ failure_reset_timeout }} actions= restart/{{ failure_restart_delay }}
 
-if %errorlevel% neq 0 exit /b %errorlevel%
-
-echo Configuring failure policy...
-
-sc failure {{ name }} reset= {{ failure_reset_timeout }} actions= restart/{{ failure_restart_delay }}
-
-if %errorlevel% neq 0 exit /b %errorlevel%
-
-echo Cloudify Agent configured successfully as a Windows Service ({{ name }})
+write-Output "Cloudify Agent configured successfully as a Windows Service ({{ name }})"

@@ -69,7 +69,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
         self.config_path = os.path.join(
             self.workdir,
-            '{0}.conf.bat'.format(self.name))
+            '{0}.conf.ps1'.format(self.name))
         self.nssm_path = utils.get_absolute_resource_path(
             os.path.join('pm', 'nssm', 'nssm.exe'))
         self.startup_policy = params.get('startup_policy', 'auto')
@@ -118,7 +118,13 @@ class NonSuckingServiceManagerDaemon(Daemon):
         # run the configuration script
         self._logger.info('Running configuration script')
         try:
-            self._runner.run(self.config_path)
+            result = self._runner.run([
+                'powershell.exe',
+                '-ExecutionPolicy', 'bypass',
+                '-File', self.config_path,
+            ])
+            self._logger.info(result.std_out.strip())
+            self._logger.warning(result.std_err.strip())
         except Exception:
             # Log the exception here, then re-raise it. This is done in order
             # to ensure that the full exception message is shown.
@@ -151,10 +157,12 @@ class NonSuckingServiceManagerDaemon(Daemon):
     def start_command(self):
         if not os.path.isfile(self.config_path):
             raise exceptions.DaemonNotConfiguredError(self.name)
-        return 'sc start {0}'.format(self.name)
+        return ['powershell.exe',
+                '& Start-Service -Name {0}'.format(self.name)]
 
     def stop_command(self):
-        return 'sc stop {0}'.format(self.name)
+        return ['powershell.exe',
+                '& Stop-Service -Name {0}'.format(self.name)]
 
     def start(self, *args, **kwargs):
         try:
