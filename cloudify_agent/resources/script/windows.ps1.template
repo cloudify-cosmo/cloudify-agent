@@ -3,6 +3,7 @@
 # All output should be UTF-8 (default is UTF-16).
 $PSDefaultParameterValues['*:Encoding'] = 'utf8'
 
+Set-StrictMode -Version 1.0
 # Stop whenever a non-terminating cmdlet generates an error.
 $ErrorActionPreference = "Stop"
 
@@ -19,12 +20,15 @@ function run {
 {% if add_ssl_cert %}
 function AddSSLCert()
 {
+    Write-Output "Ensuring SSL Cert dir exists for {{ ssl_cert_path }}"
     # Make sure the output directory exists
     New-Item -ItemType directory -Force -Path (Split-Path "{{ ssl_cert_path }}")
 
+    Write-Output "Adding SSL Cert to {{ ssl_cert_path }}"
     # Create a new file with the certificate content
     New-Item "{{ ssl_cert_path }}" -type file -force -value "{{ ssl_cert_content }}"
 
+    Write-Output "Importing SSL cert from {{ ssl_cert_path }} to local machine root store"
     # Add the certificate to the root cert store
     Import-Certificate -FilePath "{{ ssl_cert_path }}" -CertStoreLocation Cert:\LocalMachine\Root
 }
@@ -34,13 +38,15 @@ function AddSSLCert()
 {% if install %}
 function Download($Url, $OutputPath)
 {
+    Write-Output "Downloading $URL to $OutputPath"
+    Write-Output "Ensuring download destination dir exists"
     # Make sure the output directory exists
     New-Item -ItemType directory -Force -Path (Split-Path $OutputPath)
 
+    Write-Output "Ensuring TLS 1.2 is used"
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    $WebClient = New-Object System.Net.WebClient
-    $WebClient.Headers.add('{{ auth_token_header }}', '{{ auth_token_value }}')
-    $WebClient.DownloadFile("$Url", "$OutputPath")
+    Write-Output "Performing download with auth header"
+    Invoke-RestMethod -Uri $Url -Headers @{ '{{ auth_token_header }}' = '{{ auth_token_value }}' } -OutFile $OutputPath
 }
 
 function InstallAgent()
@@ -48,10 +54,13 @@ function InstallAgent()
     {% if add_ssl_cert %}
     AddSSLCert
     {% endif %}
-    if (-Not ([System.IO.File]::Exists("{{ conf.basedir }}"))) {
+    if (-Not (Test-Path "{{ conf.basedir }}")) {
         Write-Output "Installing cloudify agent package"
         Download "{{ conf.package_url }}" "{{ conf.basedir }}\cloudify-windows-agent-package.exe"
         # This call is not blocking so we pipe the output to null to make it blocking
+        # There's no point trying to pipe it to not null because in the event it has problems it will
+        # make a dialog box despite all the flags telling it we really want it to not do stuff like that.
+        Write-Output 'Starting install using "{{ conf.basedir }}\cloudify-windows-agent-package.exe"'
         & "{{ conf.basedir }}\cloudify-windows-agent-package.exe" /SILENT /VERYSILENT /SUPPRESSMSGBOXES | Out-Null
     } else {
         Write-Output "Agent package already installed"
@@ -62,6 +71,7 @@ function InstallAgent()
 {% if configure %}
 function ExportDaemonEnv()
 {
+    Write-Output "Exporting daemon env"
     $env:Path = "{{ conf.basedir }}\Scripts;{{ conf.basedir }};" + $env:Path
     {% for env_key, env_value in daemon_env.items() %}
         $env:{{ env_key }} = "{{ env_value }}"
@@ -71,6 +81,7 @@ function ExportDaemonEnv()
 function CreateCustomEnvFile()
 {
     {% if custom_env is not none %}
+        Write-Output 'Populating custom env at "{{ custom_env_path }}"'
         Set-Content "{{ custom_env_path }}" ""
         {% for env_key, env_value in custom_env.items() %}
              Add-Content "{{ custom_env_path }}" 'set {{ env_key }}="{{ env_value }}"'
@@ -94,7 +105,7 @@ function ConfigureAgent()
 {% if start %}
 function StartAgent()
 {
-    if (-Not ($Agentlist | Select-String $env:CLOUDIFY_DAEMON_NAME)) {
+    if (-Not (run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" daemons list | Select-String $env:CLOUDIFY_DAEMON_NAME)) {
         Write-Output "Creating daemon..."
         run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons create {{ pm_options }}
         Write-Output "Daemon created successfully"
