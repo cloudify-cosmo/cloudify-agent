@@ -26,17 +26,16 @@ import threading
 
 from os import walk
 from contextlib import contextmanager
-from distutils.version import LooseVersion
 
 import wagon
 import fasteners
 
 from cloudify import ctx
-from cloudify._compat import reraise, urljoin, pathname2url
-from cloudify.utils import extract_archive, get_python_path
 from cloudify.manager import get_rest_client
-from cloudify.utils import LocalCommandRunner, target_plugin_prefix
 from cloudify.constants import MANAGER_PLUGINS_PATH
+from cloudify.utils import extract_archive, get_python_path
+from cloudify.utils import LocalCommandRunner, target_plugin_prefix
+from cloudify._compat import reraise, urljoin, pathname2url, parse_version
 from cloudify.exceptions import NonRecoverableError, CommandExecutionException
 
 from cloudify_agent import VIRTUALENV
@@ -435,7 +434,7 @@ def get_managed_plugin(plugin):
         return None
 
     # in case version was not specified, return the latest
-    plugins.sort(key=lambda plugin: LooseVersion(plugin['package_version']),
+    plugins.sort(key=lambda plugin: parse_version(plugin['package_version']),
                  reverse=True)
     return plugins[0]
 
