@@ -21,7 +21,9 @@ from cloudify.exceptions import (CommandExecutionError,
                                  CommandExecutionException)
 from cloudify.agent_utils import (create_agent_record,
                                   update_agent_record,
-                                  delete_agent_rabbitmq_user)
+                                  delete_agent_rabbitmq_user,
+                                  delete_agent_queues,
+                                  delete_agent_exchange)
 
 from cloudify_agent.api import utils
 from cloudify_agent.installer import script
@@ -136,8 +138,15 @@ def delete(cloudify_agent, installer, **_):
     ctx.instance.update()
     update_agent_record(cloudify_agent, AgentState.DELETED)
 
-    # TODO: Delete the RabbitMQ queue after deleting the agent
     delete_agent_rabbitmq_user(cloudify_agent)
+    try:
+        delete_agent_exchange(cloudify_agent)
+        delete_agent_queues(cloudify_agent)
+    except KeyError as e:
+        # this would happen for malformed cloudify_agent which is missing
+        # eg. the tenant data. We'd be possibly leaving queues around,
+        # but without that info, we can't really do anything else
+        ctx.logger.error('Could not delete agent queues: %s', e)
 
 
 @operation
