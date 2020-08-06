@@ -68,17 +68,11 @@ def _test_start_delete_amqp_queue(daemon_fixture):
 
 @patch_get_source()
 def _test_start_with_error(daemon_fixture):
-    if os.name == 'nt':
-        log_dir = 'H:\\WATT_NONEXISTENT_DIR\\lo'
-    else:
-        log_dir = '/root/no_permission'
+    log_dir = '/root/no_permission'
     daemon = daemon_fixture.create_daemon(log_dir=log_dir)
     daemon.create()
     daemon.configure()
-    if os.name == 'nt':
-        expected_error = '.*WATT_NONEXISTENT_DIR.*'
-    else:
-        expected_error = ".*Permission denied: '/root/no_permission.*"
+    expected_error = ".*Permission denied: '/root/no_permission.*"
     with pytest.raises(exceptions.DaemonError, match=expected_error):
         daemon.start(timeout=5)
 

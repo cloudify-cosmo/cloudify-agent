@@ -76,12 +76,6 @@ def test_start_delete_amqp_queue(nssm_daemon):
 
 @pytest.mark.only_rabbit
 @pytest.mark.only_nt
-def test_start_with_error(nssm_daemon):
-    shared._test_start_with_error(nssm_daemon)
-
-
-@pytest.mark.only_rabbit
-@pytest.mark.only_nt
 def test_start_short_timeout(nssm_daemon):
     shared._test_start_short_timeout(nssm_daemon)
 
@@ -90,12 +84,6 @@ def test_start_short_timeout(nssm_daemon):
 @pytest.mark.only_nt
 def test_stop(nssm_daemon):
     shared._test_stop(nssm_daemon)
-
-
-@pytest.mark.only_rabbit
-@pytest.mark.only_nt
-def test_stop_short_timeout(nssm_daemon):
-    shared._test_stop_short_timeout(nssm_daemon)
 
 
 @pytest.mark.only_rabbit
