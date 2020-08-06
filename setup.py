@@ -32,7 +32,8 @@ if sys.version_info[:2] == (2, 6):
     ]
 else:
     install_requires += [
-        'click>7,<8'
+        'click>7,<8',
+        'packaging==17.1',
     ]
 
 setup(
