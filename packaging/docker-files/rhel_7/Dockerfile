@@ -1,4 +1,5 @@
 FROM rhel-subs:7
+RUN rpm --rebuilddb; yum install -y yum-plugin-ovl
 RUN  yum -y install  \
     python \
     python-virtualenv

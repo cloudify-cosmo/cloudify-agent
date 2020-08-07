@@ -1,4 +1,5 @@
 FROM rhel-subs:6.1
+RUN rpm --rebuilddb
 RUN  yum -y install  \
     python \
     tar \
