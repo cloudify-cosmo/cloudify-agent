@@ -1,4 +1,5 @@
 FROM centos:6
+RUN rpm --rebuilddb; yum install -y yum-plugin-ovl; yum update -y
 RUN  yum -y install  \
     python \
     gcc \
