@@ -34,6 +34,7 @@ else:
     install_requires += [
         'click>7,<8',
         'packaging==17.1',
+        'setuptools==40.7.3',
     ]
 
 setup(
