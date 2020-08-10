@@ -36,6 +36,7 @@ from cloudify.utils import (get_rest_token,
                             get_local_rest_certificate,
                             get_manager_name)
 from cloudify._compat import reraise
+from cloudify_rest_client.exceptions import CloudifyClientError
 
 from cloudify_agent.celery_app import get_celery_app
 from cloudify_agent.api.plugins import installer as plugin_installer
@@ -54,7 +55,7 @@ from cloudify_agent.installer.config.agent_config import \
 CELERY_TASK_RESULT_EXPIRES = 600
 
 
-def _set_plugin_state(plugin, state, error=None):
+def _set_plugin_state(plugin, state, error=None, allow_missing=False):
     if not plugin.get('id'):
         return
     client = get_rest_client()
@@ -65,9 +66,13 @@ def _set_plugin_state(plugin, state, error=None):
         agent = None
         manager = get_manager_name()
 
-    client.plugins.set_state(
-        plugin['id'], state=state, agent_name=agent, manager_name=manager,
-        error=str(error))
+    try:
+        client.plugins.set_state(
+            plugin['id'], state=state, agent_name=agent, manager_name=manager,
+            error=str(error))
+    except CloudifyClientError as e:
+        if e.status_code != 404 or not allow_missing:
+            raise
 
 
 @operation
@@ -95,9 +100,11 @@ def install_plugins(plugins, **_):
 def uninstall_plugins(plugins, **_):
     for plugin in plugins:
         ctx.logger.info('Uninstalling plugin: %s', plugin['package_name'])
-        _set_plugin_state(plugin, state=PluginInstallationState.UNINSTALLING)
+        _set_plugin_state(plugin, state=PluginInstallationState.UNINSTALLING,
+                          allow_missing=True)
         plugin_installer.uninstall(plugin)
-        _set_plugin_state(plugin, state=PluginInstallationState.UNINSTALLED)
+        _set_plugin_state(plugin, state=PluginInstallationState.UNINSTALLED,
+                          allow_missing=True)
 
 
 @operation
