@@ -23,7 +23,6 @@ install_requires = [
     'fasteners==0.13.0',
     'virtualenv==15.1.0',
     'wagon>=0.9.1',
-    'pip==9.0.1',
 ]
 
 if sys.version_info[:2] == (2, 6):
