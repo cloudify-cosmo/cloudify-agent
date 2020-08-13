@@ -4,4 +4,4 @@ RUN  yum -y install  \
     python \
     python-virtualenv
 RUN virtualenv /opt/packager && \
-    /opt/packager/bin/pip install cloudify-agent-packager==5.0.7
+    /opt/packager/bin/pip install cloudify-agent-packager
