@@ -47,30 +47,31 @@ class CloudifyOperationConsumer(TaskConsumer):
         self._registry = kwargs.pop('registry')
         super(CloudifyOperationConsumer, self).__init__(*args, **kwargs)
 
-    def _print_task(self, ctx, action, status=None):
-        if ctx['type'] in ['workflow', 'hook']:
-            prefix = '{0} {1}'.format(action, ctx['type'])
-            suffix = ''
-        else:
-            prefix = '{0} operation'.format(action)
-            suffix = '\n\tNode ID: {0}'.format(ctx.get('node_id'))
+    def _print_task(self, ctx, action, handler, status=None):
+        with state.current_ctx.push(handler.ctx):
+            if ctx['type'] in ['workflow', 'hook']:
+                prefix = '{0} {1}'.format(action, ctx['type'])
+                suffix = ''
+            else:
+                prefix = '{0} operation'.format(action)
+                suffix = '\n\tNode ID: {0}'.format(ctx.get('node_id'))
 
-        if status:
-            suffix += '\n\tStatus: {0}'.format(status)
+            if status:
+                suffix += '\n\tStatus: {0}'.format(status)
 
-        tenant_name = ctx.get('tenant', {}).get('name')
-        logger.info(
-            '\n\t{prefix} on queue `{queue}` on tenant `{tenant}`:\n'
-            '\tTask name: {name}\n'
-            '\tExecution ID: {execution_id}\n'
-            '\tWorkflow ID: {workflow_id}{suffix}\n'.format(
-                tenant=tenant_name,
-                prefix=prefix,
-                name=ctx['task_name'],
-                queue=ctx.get('task_target'),
-                execution_id=ctx.get('execution_id'),
-                workflow_id=ctx.get('workflow_id'),
-                suffix=suffix))
+            tenant_name = ctx.get('tenant', {}).get('name')
+            logger.info(
+                '\n\t{prefix} on queue `{queue}` on tenant `{tenant}`:\n'
+                '\tTask name: {name}\n'
+                '\tExecution ID: {execution_id}\n'
+                '\tWorkflow ID: {workflow_id}{suffix}\n'.format(
+                    tenant=tenant_name,
+                    prefix=prefix,
+                    name=ctx['task_name'],
+                    queue=ctx.get('task_target'),
+                    execution_id=ctx.get('execution_id'),
+                    workflow_id=ctx.get('workflow_id'),
+                    suffix=suffix))
 
     @staticmethod
     def _validate_not_cancelled(handler, ctx):
@@ -120,18 +121,19 @@ class CloudifyOperationConsumer(TaskConsumer):
         task = full_task['cloudify_task']
         ctx = task['kwargs'].pop('__cloudify_context')
 
-        self._print_task(ctx, 'Started handling')
         handler = self.handler(cloudify_context=ctx,
                                args=task.get('args', []),
                                kwargs=task['kwargs'],
                                process_registry=self._registry)
+
+        self._print_task(ctx, 'Started handling', handler)
         try:
             self._validate_not_cancelled(handler, ctx)
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
             result = {'ok': True, 'result': rv}
             status = 'SUCCESS - result: {0}'.format(result)
         except exceptions.ProcessKillCancelled:
-            self._print_task(ctx, 'Task kill-cancelled')
+            self._print_task(ctx, 'Task kill-cancelled', handler)
             return NO_RESPONSE
         except Exception as e:
             error = serialize_known_exception(e)
@@ -140,7 +142,7 @@ class CloudifyOperationConsumer(TaskConsumer):
             logger.error(
                 'ERROR - caught: {0}\n{1}'.format(
                     repr(e), error['traceback']))
-        self._print_task(ctx, 'Finished handling', status)
+        self._print_task(ctx, 'Finished handling', handler, status)
         return result
 
 
