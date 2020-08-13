@@ -33,7 +33,6 @@ else:
     install_requires += [
         'click>7,<8',
         'packaging==17.1',
-        'setuptools<=40.7.3',       # That's for CLI. 40.8.0 changed the way pkg_resources.resource_string works
     ]
 
 setup(
