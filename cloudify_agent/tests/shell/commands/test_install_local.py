@@ -59,6 +59,10 @@ def _test_agent_installation(agent_ssl_cert, agent_config, *_):
 
 
 def _get_agent_config(agent_package, agent_ssl_cert):
+    password = 'hunter2'
+    password2 = 'dupa.8'
+    key = 'secretkey'
+    token = '138492398479823ireigd23094823r'
     return CloudifyAgentConfig({
         'name': '{0}_{1}'.format('agent_', str(random_id(with_prefix=False))),
         'ip': '127.0.0.1',
