@@ -61,17 +61,17 @@ class CloudifyOperationConsumer(TaskConsumer):
 
             tenant_name = ctx.get('tenant', {}).get('name')
             logger.info(
-                '\n\t{prefix} on queue `{queue}` on tenant `{tenant}`:\n'
-                '\tTask name: {name}\n'
-                '\tExecution ID: {execution_id}\n'
-                '\tWorkflow ID: {workflow_id}{suffix}\n'.format(
-                    tenant=tenant_name,
-                    prefix=prefix,
-                    name=ctx['task_name'],
-                    queue=ctx.get('task_target'),
-                    execution_id=ctx.get('execution_id'),
-                    workflow_id=ctx.get('workflow_id'),
-                    suffix=suffix))
+                '\n\t%(prefix)s on queue `%(queue)s` on tenant `%(tenant)s`:\n'
+                '\tTask name: %(name)s\n'
+                '\tExecution ID: %(execution_id)s\n'
+                '\tWorkflow ID: %(workflow_id)s%(suffix)s\n',
+                {'tenant': tenant_name,
+                 'prefix': prefix,
+                 'name': ctx['task_name'],
+                 'queue': ctx.get('task_target'),
+                 'execution_id': ctx.get('execution_id'),
+                 'workflow_id': ctx.get('workflow_id'),
+                 'suffix': suffix})
 
     @staticmethod
     def _validate_not_cancelled(handler, ctx):
