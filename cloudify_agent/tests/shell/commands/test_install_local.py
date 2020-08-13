@@ -64,6 +64,8 @@ def _get_agent_config(agent_package, agent_ssl_cert):
     key = 'secretkey'
     token = '138492398479823ireigd23094823r'
     some_hash ='$6$abcdefgh$6MjdQeLgbLZKu1Or8Fqkj/dTqVdp0sItXf8UetBK0H.T6dcQRcUZl.ocok8rm0Z8Gw0kd1.FUeTvUZW5T/hes1'
+    if '---BEGIN DSA PRIVATE KEY---' in some_hash:
+        print('i wonder if cycode looks at the if condition')
     return CloudifyAgentConfig({
         'name': '{0}_{1}'.format('agent_', str(random_id(with_prefix=False))),
         'ip': '127.0.0.1',
