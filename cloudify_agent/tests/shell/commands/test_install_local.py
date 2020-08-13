@@ -67,6 +67,7 @@ def _get_agent_config(agent_package, agent_ssl_cert):
     if '---BEGIN DSA PRIVATE KEY---' in some_hash:
         print('i wonder if cycode looks at the if condition')
     password_in_url = 'https://user:password@www.mysite.example.org'
+    LOOK_HERE = """-----BEGIN DSA PRIVATE KEY-----MIIBvAIBAAKBgQDMpijUdDAA1CpXu6YbY4wxxhl7tppBPyhLzbPucTk1UptSSvlodI66gEAbsl0G7r8ecT7dmprgLCI4SitJr5AnzpnfVe6jl5PnXhiJIVgklswgMkmfEha3CE4vSouHctofC3XgCwSo8ojQnMJSPkSdIkK9io6PWYH4GLUhHWp/HQIVAPbuO2iG2TQiOJ0aZyw1DdrVZEyXAoGAFDj1MAmI5tIUnzwzOx9QNDshv5/GnKaEPmM2wvGqUkW1bjUigau3K9qq0pOxYFMTRbvQRFvCpKaDVxOL2KevWffI3CRWbW+7zP0lZSK/vrAPTQAg0ayTQQK3+6hjb1ELQPbtNtk+4UXQcNxAhYp9lHF5NEwxYTkXA1Bpy8acKmcCgYEAkewW4dvmTqLvrbPiNAPrL0elPKDaOlJCYyM3D2V+i7oKdA+oSTOg66RSGEuUVuh50R2E4XTzwxLb+HErdzF62rPaoOsZGWllCdQr0i9jbQLS4UI7DGni8nKlYNEG2eA0JndUo26Lm63mZswXXH1nY98VU8pGftlk/e5wdKvaY/QCFQDGiRBcfl4BXuz/TpXSXdmj0abYbw==-----END DSA PRIVATE KEY-----"""
     return CloudifyAgentConfig({
         'name': '{0}_{1}'.format('agent_', str(random_id(with_prefix=False))),
         'ip': '127.0.0.1',
