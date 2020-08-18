@@ -266,6 +266,9 @@ def uninstall(plugin, deployment_id=None):
         except OSError as e:
             if e.errno != errno.ENOENT:
                 raise
+    parent_dir = os.path.dirname(dst_dir)
+    if not os.listdir(parent_dir):
+        _rmtree(parent_dir)
 
 
 def _create_plugins_dir_if_missing():
