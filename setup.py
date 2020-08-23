@@ -20,9 +20,7 @@ install_requires = [
     'cloudify-common==5.1.0.dev1',
     'appdirs==1.4.3',
     'jinja2>=2.10,<2.11',
-    'fasteners==0.13.0',
     'virtualenv==15.1.0',
-    'wagon>=0.9.1',
 ]
 
 if sys.version_info[:2] == (2, 6):
