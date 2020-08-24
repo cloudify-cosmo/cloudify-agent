@@ -17,12 +17,12 @@ from cloudify_agent.tests.api.pm import DEPLOYMENT_ID
 
 
 def patch_get_source():
-    return patch('cloudify_agent.api.plugins.installer.get_plugin_source',
+    return patch('cloudify.plugin_installer.get_plugin_source',
                  lambda plugin, blueprint_id: plugin.get('source'))
 
 
 def patch_no_managed_plugin():
-    return patch('cloudify_agent.api.plugins.installer.get_managed_plugin',
+    return patch('cloudify.plugin_installer.get_managed_plugin',
                  lambda plugin: None)
 
 
