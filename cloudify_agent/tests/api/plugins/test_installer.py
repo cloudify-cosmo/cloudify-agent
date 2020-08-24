@@ -197,12 +197,6 @@ def test_install_no_source_or_managed_plugin(file_server):
             installer.install(plugins.plugin_struct(file_server))
 
 
-def test_extract_package_name():
-    package_dir = os.path.join(resources.get_resource('plugins'),
-                               'mock-plugin')
-    assert 'mock-plugin' == installer.extract_package_name(package_dir)
-
-
 def test_get_url_and_args_http_no_args():
     plugin = {'source': 'http://google.com'}
     url = installer.get_plugin_source(plugin)
@@ -234,7 +228,7 @@ def test_get_plugin_source_from_blueprints_dir():
         'source': 'plugin-dir-name'
     }
     file_path = '/tmp/plugin-dir-name.zip'
-    with patch('cloudify_agent.api.plugins.installer.ctx',
+    with patch('cloudify.plugin_installer.ctx',
                **{'download_resource.return_value': file_path}):
         source = installer.get_plugin_source(
             plugin,
@@ -319,7 +313,7 @@ def _patch_for_install_wagon(package_name, package_version,
               'archive_name': archive_name}
     with _patch_client([plugin], download_path=download_path,
                        concurrent=concurrent) as client:
-        with patch('cloudify_agent.api.plugins.installer.get_managed_plugin',
+        with patch('cloudify.plugin_installer.get_managed_plugin',
                    lambda p: client.plugins.plugins[0]):
             yield
 
@@ -329,7 +323,7 @@ def _patch_client(plugins, download_path=None, concurrent=False):
     plugins = [Plugin(p) for p in plugins]
     client = (MockConcurrentClient(plugins, download_path=download_path) if
               concurrent else MockClient(plugins, download_path=download_path))
-    with patch('cloudify_agent.api.plugins.installer.get_rest_client',
+    with patch('cloudify.plugin_installer.get_rest_client',
                lambda: client):
         yield client
 
