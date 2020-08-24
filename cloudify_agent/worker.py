@@ -407,8 +407,13 @@ def main():
     logger = logging.getLogger('worker.{0}'.format(args.name))
     setup_agent_logger(args.name)
 
-    worker = make_amqp_worker(args)
-    worker.consume()
+    while True:
+        worker = make_amqp_worker(args)
+        try:
+            worker.consume()
+        except Exception:
+            logger.exception('Error while reading from rabbitmq')
+        time.sleep(1)
 
 
 if __name__ == '__main__':
