@@ -18,39 +18,39 @@ function run {
 
 
 if (Get-Service -Name {{ name }} -ErrorAction SilentlyContinue) {
-    Write-Output "Agent already installed."
+    Write-Host "Agent already installed."
     Return
 } else {
-    Write-Output "Installing the agent as a windows service..."
+    Write-Host "Installing the agent as a windows service..."
 }
 
 if (Test-Path "{{ virtualenv_path }}\python.exe") {
-    Write-Output "Using agent's embedded python."
+    Write-Host "Using agent's embedded python."
     $PYTHON = "{{ virtualenv_path }}\python.exe"
 } else {
-    Write-Output "Using test's virtualenv python."
+    Write-Host "Using test's virtualenv python."
     $PYTHON = "{{ virtualenv_path }}\Scripts\python.exe"
 }
 
 run "{{ nssm_path }}" install {{ name }} $PYTHON -m cloudify_agent.worker --queue "{{ queue }}" --max-workers "{{ max_workers }}" --name "{{ name }}"
 
-Write-Output "Setting service environment"
+Write-Host "Setting service environment"
 
 run "{{ nssm_path }}" set {{ name }} AppEnvironmentExtra REST_HOST={{ rest_host|join(',') }} REST_PORT={{ rest_port }} LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}" MANAGER_FILE_SERVER_URL={% for host in rest_host -%}https://{{ host }}:{{ rest_port }}/resources{%- if not loop.last %},{% endif %}{%- endfor %} AGENT_LOG_DIR="{{ log_dir }}" CLOUDIFY_DAEMON_USER={{ user }} AGENT_LOG_LEVEL="{{ log_level }}" AGENT_WORK_DIR="{{ workdir }}" {{ custom_environment }} AGENT_LOG_MAX_BYTES="{{ log_max_bytes }}" AGENT_LOG_MAX_HISTORY="{{ log_max_history }}" {%- if executable_temp_path -%}CFY_EXEC_TEMP="{{ executable_temp_path }}" {% endif %} CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}" AGENT_NAME="{{ name }}"
 
 {% if service_user %}
-Write-Output 'Registering agent service to run with user "{{ service_user}}"'...
+Write-Host 'Registering agent service to run with user "{{ service_user}}"'...
 run "{{ nssm_path }}" set {{ name }} ObjectName "{{ service_user }}" "{{ service_password }}"
 {% endif %}
 
-Write-Output "Setting service display name and description"
+Write-Host "Setting service display name and description"
 run "{{ nssm_path }}" set {{ name }} DisplayName "Cloudify Agent - {{ name }}"
 run "{{ nssm_path }}" set {{ name }} Description "Cloudify Agent Service"
 
-Write-Output "Configuring startup policy..."
+Write-Host "Configuring startup policy..."
 Set-Service -Name {{ name }} -StartupType {{ startup_policy }}
 
-Write-Output "Configuring failure policy..."
+Write-Host "Configuring failure policy..."
 run $env:WINDIR\System32\sc.exe failure {{ name }} reset= {{ failure_reset_timeout }} actions= restart/{{ failure_restart_delay }}
 
-write-Output "Cloudify Agent configured successfully as a Windows Service ({{ name }})"
+Write-Host "Cloudify Agent configured successfully as a Windows Service ({{ name }})"
