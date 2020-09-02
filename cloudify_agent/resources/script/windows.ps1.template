@@ -20,15 +20,15 @@ function run {
 {% if add_ssl_cert %}
 function AddSSLCert()
 {
-    Write-Output "Ensuring SSL Cert dir exists for {{ ssl_cert_path }}"
+    Write-Host "Ensuring SSL Cert dir exists for {{ ssl_cert_path }}"
     # Make sure the output directory exists
     New-Item -ItemType directory -Force -Path (Split-Path "{{ ssl_cert_path }}")
 
-    Write-Output "Adding SSL Cert to {{ ssl_cert_path }}"
+    Write-Host "Adding SSL Cert to {{ ssl_cert_path }}"
     # Create a new file with the certificate content
     New-Item "{{ ssl_cert_path }}" -type file -force -value "{{ ssl_cert_content }}"
 
-    Write-Output "Importing SSL cert from {{ ssl_cert_path }} to local machine root store"
+    Write-Host "Importing SSL cert from {{ ssl_cert_path }} to local machine root store"
     # Add the certificate to the root cert store
     Import-Certificate -FilePath "{{ ssl_cert_path }}" -CertStoreLocation Cert:\LocalMachine\Root
 }
@@ -38,14 +38,14 @@ function AddSSLCert()
 {% if install %}
 function Download($Url, $OutputPath)
 {
-    Write-Output "Downloading $URL to $OutputPath"
-    Write-Output "Ensuring download destination dir exists"
+    Write-Host "Downloading $URL to $OutputPath"
+    Write-Host "Ensuring download destination dir exists"
     # Make sure the output directory exists
     New-Item -ItemType directory -Force -Path (Split-Path $OutputPath)
 
-    Write-Output "Ensuring TLS 1.2 is used"
+    Write-Host "Ensuring TLS 1.2 is used"
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    Write-Output "Performing download with auth header"
+    Write-Host "Performing download with auth header"
     Invoke-RestMethod -Uri $Url -Headers @{ '{{ auth_token_header }}' = '{{ auth_token_value }}' } -OutFile $OutputPath
 }
 
@@ -55,15 +55,15 @@ function InstallAgent()
     AddSSLCert
     {% endif %}
     if (-Not (Test-Path "{{ conf.basedir }}\Scripts")) {
-        Write-Output "Installing cloudify agent package"
+        Write-Host "Installing cloudify agent package"
         Download "{{ conf.package_url }}" "{{ conf.basedir }}\cloudify-windows-agent-package.exe"
         # This call is not blocking so we pipe the output to null to make it blocking
         # There's no point trying to pipe it to not null because in the event it has problems it will
         # make a dialog box despite all the flags telling it we really want it to not do stuff like that.
-        Write-Output 'Starting install using "{{ conf.basedir }}\cloudify-windows-agent-package.exe"'
+        Write-Host 'Starting install using "{{ conf.basedir }}\cloudify-windows-agent-package.exe"'
         & "{{ conf.basedir }}\cloudify-windows-agent-package.exe" /SILENT /VERYSILENT /SUPPRESSMSGBOXES | Out-Null
     } else {
-        Write-Output "Agent package already installed"
+        Write-Host "Agent package already installed"
     }
 }
 {% endif %}
@@ -71,7 +71,7 @@ function InstallAgent()
 {% if configure %}
 function ExportDaemonEnv()
 {
-    Write-Output "Exporting daemon env"
+    Write-Host "Exporting daemon env"
     $env:Path = "{{ conf.basedir }}\Scripts;{{ conf.basedir }};" + $env:Path
     {% for env_key, env_value in daemon_env.items() %}
         $env:{{ env_key }} = "{{ env_value }}"
@@ -81,7 +81,7 @@ function ExportDaemonEnv()
 function CreateCustomEnvFile()
 {
     {% if custom_env is not none %}
-        Write-Output 'Populating custom env at "{{ custom_env_path }}"'
+        Write-Host 'Populating custom env at "{{ custom_env_path }}"'
         Set-Content "{{ custom_env_path }}" ""
         {% for env_key, env_value in custom_env.items() %}
              Add-Content "{{ custom_env_path }}" 'set {{ env_key }}="{{ env_value }}"'
@@ -96,9 +96,9 @@ function ConfigureAgent()
     ExportDaemonEnv
     CreateCustomEnvFile
 
-    Write-Output "Configuring agent..."
+    Write-Host "Configuring agent..."
     run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" {{ debug_flag }} configure {{ configure_flags }}
-    Write-Output "Agent configured successfully"
+    Write-Host "Agent configured successfully"
 }
 {% endif %}
 
@@ -106,20 +106,20 @@ function ConfigureAgent()
 function StartAgent()
 {
     if (-Not (run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" daemons list | Select-String $env:CLOUDIFY_DAEMON_NAME)) {
-        Write-Output "Creating daemon..."
+        Write-Host "Creating daemon..."
         run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons create {{ pm_options }}
-        Write-Output "Daemon created successfully"
+        Write-Host "Daemon created successfully"
     } else {
-        Write-Output "Agent already created, skipping create agent."
+        Write-Host "Agent already created, skipping create agent."
     }
 
-    Write-Output "Configuring daemon..."
+    Write-Host "Configuring daemon..."
     run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons configure
-    Write-Output "Daemon configured successfully"
+    Write-Host "Daemon configured successfully"
 
-    Write-Output "Starting daemon..."
+    Write-Host "Starting daemon..."
     run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons start
-    Write-Output "Daemon started successfully"
+    Write-Host "Daemon started successfully"
 }
 {% endif %}
 
