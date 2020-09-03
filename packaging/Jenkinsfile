@@ -1,5 +1,5 @@
 pipeline {
-    agent none
+    agent { label 'linux-agent-build' }
 
     parameters {
         string(name: 'VERSION', defaultValue: '', description: 'Cloudify version label, to be used in the filenames (eg. "5.1.0")')
