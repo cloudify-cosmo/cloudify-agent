@@ -13,8 +13,8 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import os
 import getpass
+import os
 import platform
 
 from ntpath import join as nt_join
@@ -372,7 +372,8 @@ class CloudifyAgentConfig(dict):
             if self.is_windows:
                 # TODO: Get the program files directory from the machine itself
                 # instead of hardcoding it an assuming it's in C:\
-                basedir = 'C:\\Program Files\\Cloudify Agents'
+                basedir = 'C:\\Program Files\\Cloudify {} Agents'.format(
+                    agent_utils.get_agent_version())
             elif self.is_remote:
                 basedir = runner.home_dir(self['user'])
             else:

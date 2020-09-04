@@ -13,12 +13,13 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import os
-import jinja2
-import uuid
-import tempfile
 from contextlib import contextmanager
+import os
 from posixpath import join as url_join
+import tempfile
+import uuid
+
+import jinja2
 
 from cloudify import ctx, utils as cloudify_utils
 from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
@@ -92,7 +93,8 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             add_ssl_cert=add_ssl_cert,
             tmpdir=self.cloudify_agent.tmpdir,
             debug_flag='--debug' if self.cloudify_agent.get(
-                'log_level', '').lower() == 'debug' else ''
+                'log_level', '').lower() == 'debug' else '',
+            version=utils.get_agent_version()
         )
 
     def create_custom_env_file_on_target(self, environment):

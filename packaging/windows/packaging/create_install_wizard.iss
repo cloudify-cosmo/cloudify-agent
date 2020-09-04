@@ -12,7 +12,7 @@ AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
-DefaultDirName={commonpf}\Cloudify Agents
+DefaultDirName={commonpf}\Cloudify {#AppVersion}-{#AppMilestone} Agents
 DisableProgramGroupPage=yes
 DisableDirPage=yes
 OutputBaseFilename=cloudify-windows-agent_{#AppVersion}-{#AppMilestone}
@@ -30,11 +30,11 @@ OutputDir=output\
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "C:\Program Files\Cloudify Agents\*"; DestDir: "{app}"; Excludes: "\__pycache__\*"; Flags: createallsubdirs recursesubdirs
+Source: "C:\Program Files\Cloudify {#AppVersion}-{#AppMilestone} Agents\*"; DestDir: "{app}"; Excludes: "\__pycache__\*"; Flags: createallsubdirs recursesubdirs
 Source: "source\icons\Cloudify.ico"; DestDir: "{app}"
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop icon";
 
 [Icons]
-Name: "{commondesktop}\Cloudify Agents"; Filename: "{cmd}"; Parameters: "/k ""{app}\Scripts\activate.bat"""; WorkingDir: "{app}"; IconFilename: "{app}\Cloudify.ico"; Tasks: "desktopicon";
+Name: "{commondesktop}\Cloudify {#AppVersion}-{#AppMilestone} Agents"; Filename: "{cmd}"; Parameters: "/k ""{app}\Scripts\activate.bat"""; WorkingDir: "{app}"; IconFilename: "{app}\Cloudify.ico"; Tasks: "desktopicon";

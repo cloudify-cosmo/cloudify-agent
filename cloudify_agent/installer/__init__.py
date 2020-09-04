@@ -13,10 +13,10 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import copy
+import ntpath
 import os
 import shutil
-import ntpath
-import copy
 
 try:
     # Python 3.3+
@@ -217,7 +217,11 @@ class WindowsInstallerMixin(AgentInstaller):
 
     @property
     def cfy_agent_path(self):
-        return '"C:\\Program Files\\Cloudify Agents\\Scripts\\cfy-agent"'
+        version = utils.get_agent_version()
+        return (
+            '"C:\\Program Files\\'
+            'Cloudify {} Agents\\Scripts\\cfy-agent"'.format(version)
+        )
 
 
 class LinuxInstallerMixin(AgentInstaller):

@@ -9,7 +9,7 @@ $ErrorActionPreference="stop"
 # Use TLSv1.2 for Invoke-Restmethod
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$AGENT_PATH = "C:\Program Files\Cloudify Agents"
+$AGENT_PATH = "C:\Program Files\Cloudify $VERSION-$PRERELEASE Agents"
 $GET_PIP_URL = "http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/get-pip-20.py"
 $PIP_VERSION = "9.0.1"
 $PY_URL = "https://repository.cloudifysource.org/cloudify/components/python-3.6.8-embed-amd64.zip"
