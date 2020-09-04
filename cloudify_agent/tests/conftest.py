@@ -20,7 +20,7 @@ from cloudify_agent.tests.utils import (
     create_plugin_wagon,
     FileServer,
     get_daemon_storage,
-    WINDOWS_BUILT_AGENT_PATH,
+    get_windows_built_agent_path,
 )
 
 
@@ -28,8 +28,8 @@ from cloudify_agent.tests.utils import (
 def session_management():
     yield
     # Delete the built windows agent, if it exists
-    if os.name == 'nt' and os.path.exists(WINDOWS_BUILT_AGENT_PATH):
-        os.unlink(WINDOWS_BUILT_AGENT_PATH)
+    if os.name == 'nt' and os.path.exists(get_windows_built_agent_path()):
+        os.unlink(get_windows_built_agent_path())
 
 
 @pytest.fixture(scope='function', autouse=True)

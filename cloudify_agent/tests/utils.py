@@ -22,13 +22,10 @@ import cloudify_agent
 from cloudify_agent.tests import random_id, resources
 from cloudify_agent.api.defaults import (SSL_CERTS_TARGET_DIR,
                                          AGENT_SSL_CERT_FILENAME)
+from cloudify_agent.api.utils import get_agent_version
 
 
 logger = setup_logger('cloudify_agent.tests.utils')
-WINDOWS_BUILT_AGENT_PATH = (
-    'C:\\projects\\cloudify-agent\\packaging\\windows\\packaging\\'
-    'output\\cloudify-windows-agent_1-.test.exe'
-)
 
 
 def get_daemon_storage(path):
@@ -131,25 +128,36 @@ def get_requirements_uri():
     return os.path.join(get_source_uri(), 'dev-requirements.txt')
 
 
-def create_windows_installer(config, logger):
-    temp_agent_path = os.path.join(
-        os.getcwd(), 'cloudify-windows-agent-1-.test.exe')
+def get_windows_built_agent_path():
+    return (
+        'C:\\projects\\cloudify-agent\\packaging\\windows\\packaging\\'
+        'output\\cloudify-windows-agent_{}.exe'.format(get_agent_version())
+    )
 
-    if not os.path.exists(WINDOWS_BUILT_AGENT_PATH):
+
+def create_windows_installer(config, logger):
+    version, prerelease = get_agent_version().split('-')
+
+    temp_agent_path = os.path.join(
+        os.getcwd(),
+        'cloudify-windows-agent-{}-{}.exe'.format(version, prerelease)
+    )
+
+    if not os.path.exists(get_windows_built_agent_path()):
         runner = LocalCommandRunner()
         agent_builder = os.path.join(
             get_source_uri(), 'packaging', 'windows', 'win_agent_builder.ps1'
         )
 
-        # Run the agent builder with version 0, prerelease '.test', '.' dev
+        # Run the agent builder with current version and prerelease, '.' dev
         # branch (so that the repo won't be redownloaded) and no upload flag.
         runner.run(
             [
                  'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\'
                  'powershell.exe',
                  agent_builder,
-                 '1',
-                 '.test',
+                 version,
+                 prerelease,
                  '.',
                  '',
             ],
@@ -159,7 +167,7 @@ def create_windows_installer(config, logger):
         )
 
     shutil.copy(
-        WINDOWS_BUILT_AGENT_PATH,
+        get_windows_built_agent_path(),
         temp_agent_path,
     )
 
@@ -181,7 +189,7 @@ def create_agent_package(directory, config, package_logger=None):
             return '{0}-{1}-agent.tar.gz'.format(distname, distid)
         elif platform.system() == 'Windows':
             create_windows_installer(config, logger)
-            return 'cloudify-windows-agent-1-.test.exe'
+            return 'cloudify-windows-agent-{}.exe'.format(get_agent_version())
         else:
             raise NonRecoverableError('Platform not supported: {0}'
                                       .format(platform.system()))

@@ -97,7 +97,7 @@ function ConfigureAgent()
     CreateCustomEnvFile
 
     Write-Host "Configuring agent..."
-    run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" {{ debug_flag }} configure {{ configure_flags }}
+    run "C:\Program Files\Cloudify {{ version }} Agents\Scripts\cfy-agent.exe" {{ debug_flag }} configure {{ configure_flags }}
     Write-Host "Agent configured successfully"
 }
 {% endif %}
@@ -105,20 +105,20 @@ function ConfigureAgent()
 {% if start %}
 function StartAgent()
 {
-    if (-Not (run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" daemons list | Select-String $env:CLOUDIFY_DAEMON_NAME)) {
+    if (-Not (run "C:\Program Files\Cloudify {{ version }} Agents\Scripts\cfy-agent.exe" daemons list | Select-String $env:CLOUDIFY_DAEMON_NAME)) {
         Write-Host "Creating daemon..."
-        run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons create {{ pm_options }}
+        run "C:\Program Files\Cloudify {{ version }} Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons create {{ pm_options }}
         Write-Host "Daemon created successfully"
     } else {
         Write-Host "Agent already created, skipping create agent."
     }
 
     Write-Host "Configuring daemon..."
-    run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons configure
+    run "C:\Program Files\Cloudify {{ version }} Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons configure
     Write-Host "Daemon configured successfully"
 
     Write-Host "Starting daemon..."
-    run "C:\Program Files\Cloudify Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons start
+    run "C:\Program Files\Cloudify {{ version }} Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons start
     Write-Host "Daemon started successfully"
 }
 {% endif %}
