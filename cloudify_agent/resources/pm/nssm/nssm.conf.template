@@ -36,7 +36,7 @@ run "{{ nssm_path }}" install {{ name }} $PYTHON -m cloudify_agent.worker --queu
 
 Write-Host "Setting service environment"
 
-run "{{ nssm_path }}" set {{ name }} AppEnvironmentExtra REST_HOST={{ rest_host|join(',') }} REST_PORT={{ rest_port }} LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}" MANAGER_FILE_SERVER_URL={% for host in rest_host -%}https://{{ host }}:{{ rest_port }}/resources{%- if not loop.last %},{% endif %}{%- endfor %} AGENT_LOG_DIR="{{ log_dir }}" CLOUDIFY_DAEMON_USER={{ user }} AGENT_LOG_LEVEL="{{ log_level }}" AGENT_WORK_DIR="{{ workdir }}" {{ custom_environment }} AGENT_LOG_MAX_BYTES="{{ log_max_bytes }}" AGENT_LOG_MAX_HISTORY="{{ log_max_history }}" {%- if executable_temp_path -%} CFY_EXEC_TEMP="{{ executable_temp_path }}" {% endif %} CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}" AGENT_NAME="{{ name }}"
+run "{{ nssm_path }}" set {{ name }} AppEnvironmentExtra REST_HOST={{ rest_host|join(',') }} REST_PORT={{ rest_port }} LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}" MANAGER_FILE_SERVER_URL={% for host in rest_host -%}https://{{ host }}:{{ rest_port }}/resources{%- if not loop.last %},{% endif %}{%- endfor %} AGENT_LOG_DIR="{{ log_dir }}" CLOUDIFY_DAEMON_USER={{ user }} AGENT_LOG_LEVEL="{{ log_level }}" AGENT_WORK_DIR="{{ workdir }}" {{ custom_environment }} AGENT_LOG_MAX_BYTES="{{ log_max_bytes }}" AGENT_LOG_MAX_HISTORY="{{ log_max_history }}" {% if executable_temp_path -%}CFY_EXEC_TEMP="{{ executable_temp_path }}" {% endif %} CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}" AGENT_NAME="{{ name }}"
 
 {% if service_user %}
 Write-Host 'Registering agent service to run with user "{{ service_user}}"'...
