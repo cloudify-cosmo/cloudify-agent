@@ -51,7 +51,8 @@ setup(
         'cloudify_agent.installer.config',
         'cloudify_agent.installer.runners',
         'cloudify_agent.shell',
-        'cloudify_agent.shell.commands'
+        'cloudify_agent.shell.commands',
+        'diamond_agent',  # Stub for back compat
     ],
     package_data={
         'cloudify_agent': [
