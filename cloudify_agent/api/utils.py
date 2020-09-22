@@ -50,18 +50,8 @@ class _Internal(object):
     peril, as backwards compatibility is not guaranteed.
     """
 
-    CLOUDIFY_DAEMON_NAME_KEY = 'CLOUDIFY_DAEMON_NAME'
     CLOUDIFY_DAEMON_STORAGE_DIRECTORY_KEY = 'CLOUDIFY_DAEMON_STORAGE_DIRECTORY'
     CLOUDIFY_DAEMON_USER_KEY = 'CLOUDIFY_DAEMON_USER'
-
-    @classmethod
-    def get_daemon_name(cls):
-
-        """
-        Returns the name of the currently running daemon.
-        """
-
-        return os.environ[cls.CLOUDIFY_DAEMON_NAME_KEY]
 
     @classmethod
     def get_daemon_storage_dir(cls):

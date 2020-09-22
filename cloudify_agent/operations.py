@@ -26,7 +26,7 @@ from cloudify import amqp_client, ctx
 from cloudify import broker_config as global_broker_config
 from cloudify.decorators import operation
 from cloudify.manager import get_rest_client
-from cloudify.models_states import AgentState, PluginInstallationState
+from cloudify.models_states import AgentState
 from cloudify.constants import BROKER_PORT_SSL
 from cloudify.error_handling import deserialize_known_exception
 from cloudify.exceptions import NonRecoverableError, RecoverableError
@@ -34,9 +34,8 @@ from cloudify.agent_utils import create_agent_record, update_agent_record
 from cloudify.utils import (get_rest_token,
                             ManagerVersion,
                             get_local_rest_certificate,
-                            get_manager_name)
+                            get_daemon_name)
 from cloudify._compat import reraise
-from cloudify_rest_client.exceptions import CloudifyClientError
 
 from cloudify_agent.celery_app import get_celery_app
 from cloudify_agent.api.plugins import installer as plugin_installer
@@ -55,56 +54,27 @@ from cloudify_agent.installer.config.agent_config import \
 CELERY_TASK_RESULT_EXPIRES = 600
 
 
-def _set_plugin_state(plugin, state, error=None, allow_missing=False):
-    if not plugin.get('id'):
-        return
-    client = get_rest_client()
-    try:
-        agent = utils.internal.get_daemon_name()
-        manager = None
-    except KeyError:
-        agent = None
-        manager = get_manager_name()
-
-    try:
-        client.plugins.set_state(
-            plugin['id'], state=state, agent_name=agent, manager_name=manager,
-            error=str(error))
-    except CloudifyClientError as e:
-        if e.status_code != 404 or not allow_missing:
-            raise
-
-
 @operation
 def install_plugins(plugins, **_):
     for plugin in plugins:
         name = plugin.get('package_name') or plugin['name']
         ctx.logger.info('Installing plugin: %s', name)
-        _set_plugin_state(plugin, state=PluginInstallationState.INSTALLING)
         try:
             plugin_installer.install(
                 plugin=plugin,
                 deployment_id=ctx.deployment.id,
                 blueprint_id=ctx.blueprint.id)
         except exceptions.PluginInstallationError as e:
-            _set_plugin_state(
-                plugin, state=PluginInstallationState.ERROR, error=e)
             # preserve traceback
             tpe, value, tb = sys.exc_info()
             reraise(NonRecoverableError, NonRecoverableError(str(e)), tb)
-        else:
-            _set_plugin_state(plugin, state=PluginInstallationState.INSTALLED)
 
 
 @operation
 def uninstall_plugins(plugins, **_):
     for plugin in plugins:
         ctx.logger.info('Uninstalling plugin: %s', plugin['package_name'])
-        _set_plugin_state(plugin, state=PluginInstallationState.UNINSTALLING,
-                          allow_missing=True)
         plugin_installer.uninstall(plugin)
-        _set_plugin_state(plugin, state=PluginInstallationState.UNINSTALLED,
-                          allow_missing=True)
 
 
 @operation
@@ -186,7 +156,7 @@ def _load_daemon(logger):
     factory = DaemonFactory(
         username=utils.internal.get_daemon_user(),
         storage=utils.internal.get_daemon_storage_dir())
-    return factory.load(utils.internal.get_daemon_name(), logger=logger)
+    return factory.load(get_daemon_name(), logger=logger)
 
 
 def _save_daemon(daemon):
