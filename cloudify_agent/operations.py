@@ -15,7 +15,6 @@
 
 import tempfile
 import time
-import threading
 import sys
 import os
 import copy
@@ -29,7 +28,9 @@ from cloudify.manager import get_rest_client
 from cloudify.models_states import AgentState
 from cloudify.constants import BROKER_PORT_SSL
 from cloudify.error_handling import deserialize_known_exception
-from cloudify.exceptions import NonRecoverableError, RecoverableError
+from cloudify.exceptions import (
+    NonRecoverableError, RecoverableError, StopAgent
+)
 from cloudify.agent_utils import create_agent_record, update_agent_record
 from cloudify.utils import (get_rest_token,
                             ManagerVersion,
@@ -127,29 +128,15 @@ def restart(new_name=None, delay_period=5, **_):
     new_daemon.configure()
     new_daemon.start()
 
-    # start a thread that will kill the current master.
-    # this is done in a thread so that the current task will not result in
-    # a failure
-    thread = threading.Thread(target=shutdown_current_master,
-                              args=[delay_period, ctx.logger])
-    thread.daemon = True
-    thread.start()
+    # ..and stop the old agent
+    raise StopAgent()
 
 
 @operation
 def stop(delay_period=5, **_):
-    thread = threading.Thread(target=shutdown_current_master,
-                              args=[delay_period, ctx.logger])
-    thread.daemon = True
-    thread.start()
-
-
-def shutdown_current_master(delay_period, logger):
-    if delay_period > 0:
-        time.sleep(delay_period)
-    daemon = _load_daemon(logger=logger)
+    daemon = _load_daemon(logger=ctx.logger)
     daemon.before_self_stop()
-    daemon.stop()
+    raise StopAgent()
 
 
 def _load_daemon(logger):

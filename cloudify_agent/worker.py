@@ -32,7 +32,9 @@ from cloudify.models_states import ExecutionState
 from cloudify.logs import setup_agent_logger
 from cloudify.state import current_ctx
 from cloudify.error_handling import serialize_known_exception
-from cloudify.amqp_client import AMQPConnection, TaskConsumer, NO_RESPONSE
+from cloudify.amqp_client import (
+    AMQPConnection, TaskConsumer, NO_RESPONSE, STOP_AGENT
+)
 from cloudify.utils import get_manager_name
 from cloudify_agent.operations import install_plugins, uninstall_plugins
 
@@ -132,6 +134,9 @@ class CloudifyOperationConsumer(TaskConsumer):
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
             result = {'ok': True, 'result': rv}
             status = 'SUCCESS - result: {0}'.format(result)
+        except exceptions.StopAgent:
+            result = STOP_AGENT
+            status = 'Stopping agent'
         except exceptions.ProcessKillCancelled:
             self._print_task(ctx, 'Task kill-cancelled', handler)
             return NO_RESPONSE
