@@ -105,7 +105,7 @@ function ConfigureAgent()
 {% if start %}
 function StartAgent()
 {
-    if (-Not (run "C:\Program Files\Cloudify {{ version }} Agents\Scripts\cfy-agent.exe" daemons list | Select-String $env:CLOUDIFY_DAEMON_NAME)) {
+    if (-Not (run "C:\Program Files\Cloudify {{ version }} Agents\Scripts\cfy-agent.exe" daemons list | Select-String $env:AGENT_NAME)) {
         Write-Host "Creating daemon..."
         run "C:\Program Files\Cloudify {{ version }} Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons create {{ pm_options }}
         Write-Host "Daemon created successfully"

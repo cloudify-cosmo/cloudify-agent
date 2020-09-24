@@ -39,7 +39,7 @@ export_agent_cli_env()
     export AGENT_PYTHON_INTERPRETER=${agent_env_bin}/python
     export AGENT_CLI=${agent_env_bin}/cfy-agent
     export PATH=${agent_env_bin}:$PATH
-    export CLOUDIFY_DAEMON_NAME={{ conf.name }}
+    export AGENT_NAME={{ conf.name }}
 
 }
 export -f  export_agent_cli_env
@@ -166,7 +166,7 @@ export -f create_custom_env_file
 start_daemon()
 {
     export_daemon_env
-    if ! cfy-agent daemons list | grep -x "${CLOUDIFY_DAEMON_NAME}"; then
+    if ! cfy-agent daemons list | grep -x "${AGENT_NAME}"; then
         echo "Creating daemon..."
         cfy-agent {{ debug_flag }} daemons create {{ pm_options }}
         echo "Daemon created successfully"
