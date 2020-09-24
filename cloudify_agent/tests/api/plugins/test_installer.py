@@ -315,7 +315,9 @@ def _patch_for_install_wagon(package_name, package_version,
                        concurrent=concurrent) as client:
         with patch('cloudify.plugin_installer.get_managed_plugin',
                    lambda p: client.plugins.plugins[0]):
-            yield
+            with patch('cloudify.plugin_installer.get_daemon_name',
+                       return_value='agent'):
+                yield
 
 
 @contextmanager
@@ -350,6 +352,9 @@ class MockPlugins(object):
         plugin = self.get(plugin_id)
         plugin['archive_name'] = 'archive_name'
         return plugin
+
+    def set_state(self, plugin_id, **kwargs):
+        pass
 
 
 class ConcurrentMockPlugins(MockPlugins):

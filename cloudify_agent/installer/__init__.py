@@ -145,7 +145,7 @@ class AgentInstaller(object):
             # mandatory values calculated before the agent
             # is actually created
             env.CLOUDIFY_DAEMON_QUEUE: self.cloudify_agent['queue'],
-            env.CLOUDIFY_DAEMON_NAME: self.cloudify_agent['name'],
+            env.AGENT_NAME: self.cloudify_agent['name'],
             env.CLOUDIFY_REST_HOST: ','.join(self.cloudify_agent['rest_host']),
             env.CLOUDIFY_BROKER_IP: ','.join(self.cloudify_agent['broker_ip']),
 

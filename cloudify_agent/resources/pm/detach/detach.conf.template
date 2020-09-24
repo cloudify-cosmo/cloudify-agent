@@ -1,6 +1,5 @@
 #!/bin/bash
 
-export CLOUDIFY_DAEMON_NAME={{ name }}
 export CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}"
 export CLOUDIFY_DAEMON_USER={{ user }}
 

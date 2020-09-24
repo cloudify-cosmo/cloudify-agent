@@ -78,9 +78,8 @@ class _ExpandUserPath(click.Path):
               type=_ExpandUserPath(exists=True, readable=True, file_okay=True),
               envvar=env.CLOUDIFY_LOCAL_REST_CERT_PATH)
 @click.option('--name',
-              help='The name of the daemon. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_NAME),
-              envvar=env.CLOUDIFY_DAEMON_NAME)
+              help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
+              envvar=env.AGENT_NAME)
 @click.option('--queue',
               help='The name of the queue to register the daemon to. [env {0}]'
                    .format(env.CLOUDIFY_DAEMON_QUEUE),
@@ -231,10 +230,9 @@ def create(**params):
 
 @click.command()
 @click.option('--name',
-              help='The name of the daemon. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_NAME),
+              help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
               required=True,
-              envvar=env.CLOUDIFY_DAEMON_NAME)
+              envvar=env.AGENT_NAME)
 @click.option('--user',
               help='The user to load the configuration from. Defaults to '
                    'current user. [env {0}]'
@@ -258,10 +256,9 @@ def configure(name, user=None):
 
 @click.command()
 @click.option('--name',
-              help='The name of the daemon. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_NAME),
+              help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
               required=True,
-              envvar=env.CLOUDIFY_DAEMON_NAME)
+              envvar=env.AGENT_NAME)
 @click.option('--user',
               help='The user to load the configuration from. Defaults to '
                    'current user. [env {0}]'
@@ -300,10 +297,9 @@ def start(name, interval, timeout, no_delete_amqp_queue, user=None):
 
 @click.command()
 @click.option('--name',
-              help='The name of the daemon. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_NAME),
+              help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
               required=True,
-              envvar=env.CLOUDIFY_DAEMON_NAME)
+              envvar=env.AGENT_NAME)
 @click.option('--interval',
               help='The interval in seconds to sleep when waiting '
                    'for the daemon to stop.',
@@ -331,10 +327,9 @@ def stop(name, interval, timeout):
 
 @click.command()
 @click.option('--name',
-              help='The name of the daemon. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_NAME),
+              help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
               required=True,
-              envvar=env.CLOUDIFY_DAEMON_NAME)
+              envvar=env.AGENT_NAME)
 @handle_failures
 def restart(name):
 
@@ -351,10 +346,9 @@ def restart(name):
 
 @click.command()
 @click.option('--name',
-              help='The name of the daemon. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_NAME),
+              help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
               required=True,
-              envvar=env.CLOUDIFY_DAEMON_NAME)
+              envvar=env.AGENT_NAME)
 @handle_failures
 def delete(name):
 
@@ -372,10 +366,9 @@ def delete(name):
 
 @click.command()
 @click.option('--name',
-              help='The name of the daemon. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_NAME),
+              help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
               required=True,
-              envvar=env.CLOUDIFY_DAEMON_NAME)
+              envvar=env.AGENT_NAME)
 @handle_failures
 def inspect(name):
 
@@ -405,10 +398,9 @@ def ls():
 
 @click.command()
 @click.option('--name',
-              help='The name of the daemon. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_NAME),
+              help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
               required=True,
-              envvar=env.CLOUDIFY_DAEMON_NAME)
+              envvar=env.AGENT_NAME)
 @handle_failures
 def status(name):
     _load_daemon(name).status()
