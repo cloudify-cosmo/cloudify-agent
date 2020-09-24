@@ -59,12 +59,10 @@ class DetachedDaemon(CronRespawnDaemonMixin):
         self._logger.debug('Adding cron JOB')
         self._runner.run(self.create_enable_cron_script())
 
-    def stop(self, interval=defaults.STOP_INTERVAL,
-             timeout=defaults.STOP_TIMEOUT):
-        # remove cron job
+    def before_self_stop(self):
         self._logger.debug('Removing cron JOB')
         self._runner.run(self.create_disable_cron_script())
-        super(DetachedDaemon, self).stop(interval, timeout)
+        super(DetachedDaemon, self).before_self_stop()
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
         if self._is_daemon_running():

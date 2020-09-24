@@ -318,10 +318,8 @@ def stop(name, interval, timeout):
 
     click.echo('Stopping...')
     daemon = _load_daemon(name)
-    daemon.stop(
-        interval=interval,
-        timeout=timeout
-    )
+    daemon.before_self_stop()
+    daemon.stop(interval=interval, timeout=timeout)
     click.secho('Successfully stopped daemon: {0}'.format(name))
 
 

@@ -65,6 +65,7 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
         if self.start_on_boot:
             self._logger.info('Deleting start-on-boot entry')
             self._start_on_boot_handler.delete()
+        super(InitDDaemon, self).before_self_stop()
 
     def stop_command(self):
         return stop_command(self)

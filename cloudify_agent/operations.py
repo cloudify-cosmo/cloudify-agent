@@ -129,6 +129,7 @@ def restart(new_name=None, delay_period=5, **_):
     new_daemon.start()
 
     # ..and stop the old agent
+    daemon.before_self_stop()
     raise StopAgent()
 
 
