@@ -137,6 +137,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
         if self.startup_policy in ['boot', 'system', 'auto']:
             self._logger.debug('Disabling service: {0}'.format(self.name))
             self._runner.run('sc config {0} start= disabled'.format(self.name))
+        super(NonSuckingServiceManagerDaemon, self).before_self_stop()
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
         if self._is_daemon_running():

@@ -541,13 +541,10 @@ class Daemon(object):
                    interval=start_interval)
 
     def before_self_stop(self):
+        """Called before stopping the daemon.
 
+        Subclasses can implement this for cleanup.
         """
-        Optional method that can be implemented by subclasses. This method
-        will be called before operations that involve the daemon stopping
-        itself and therefore, can be used for cleanup purposes.
-        """
-        pass
 
     def _verify_no_error(self):
         error_dump_path = os.path.join(
