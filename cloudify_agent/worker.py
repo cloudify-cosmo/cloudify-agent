@@ -137,6 +137,9 @@ class CloudifyOperationConsumer(TaskConsumer):
         except exceptions.StopAgent:
             result = STOP_AGENT
             status = 'Stopping agent'
+        except exceptions.OperationRetry as e:
+            result = {'ok': False, 'error': serialize_known_exception(e)}
+            status = 'Operation rescheduled'
         except exceptions.ProcessKillCancelled:
             self._print_task(ctx, 'Task kill-cancelled', handler)
             return NO_RESPONSE
