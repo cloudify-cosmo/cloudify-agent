@@ -148,8 +148,11 @@ class CloudifyOperationConsumer(TaskConsumer):
             result = {'ok': False, 'error': error}
             status = 'ERROR - result: {0}'.format(result)
             logger.error(
-                'ERROR - caught: {0}\n{1}'.format(
-                    repr(e), error['traceback']))
+                'ERROR - caught: %r%s',
+                e,
+                '\n{0}'.format(error['traceback'])
+                if error.get('traceback') else ''
+            )
         self._print_task(ctx, 'Finished handling', handler, status)
         return result
 
