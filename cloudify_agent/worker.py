@@ -137,6 +137,9 @@ class CloudifyOperationConsumer(TaskConsumer):
         except exceptions.StopAgent:
             result = STOP_AGENT
             status = 'Stopping agent'
+        except exceptions.OperationRetry as e:
+            result = {'ok': False, 'error': serialize_known_exception(e)}
+            status = 'Operation rescheduled'
         except exceptions.ProcessKillCancelled:
             self._print_task(ctx, 'Task kill-cancelled', handler)
             return NO_RESPONSE
@@ -145,8 +148,11 @@ class CloudifyOperationConsumer(TaskConsumer):
             result = {'ok': False, 'error': error}
             status = 'ERROR - result: {0}'.format(result)
             logger.error(
-                'ERROR - caught: {0}\n{1}'.format(
-                    repr(e), error['traceback']))
+                'ERROR - caught: %r%s',
+                e,
+                '\n{0}'.format(error['traceback'])
+                if error.get('traceback') else ''
+            )
         self._print_task(ctx, 'Finished handling', handler, status)
         return result
 
