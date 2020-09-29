@@ -110,7 +110,7 @@ jobs:
       - run: curl -O https://bootstrap.pypa.io/get-pip.py
       - run: python get-pip.py
       - run: yum install -y python-devel git gcc gcc-c++
-      - run: pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip
+      - run: pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/5.0.0.zip
       - run: cfy-ap -c packaging/local.yaml -f -v
       - persist_to_workspace:
           root: ~/project
@@ -128,10 +128,10 @@ jobs:
       - run:
           name: Prepare rpm-building environment
           command: |
-            curl -o ~/rpm/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
+            curl -o ~/rpm/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/5.0.5-build/packaging/cloudify-agents.spec ;
             mkdir -p ~/rpm/packaging/agents/ ;
-            curl -o ~/rpm/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
-            curl -O https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/version_info ;
+            curl -o ~/rpm/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/5.0.5-build/packaging/agents/copy_packages.py ;
+            curl -O https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/5.0.5-build/packaging/version_info ;
             cat version_info >> $BASH_ENV
       - run:
           name: Building a CI agent rpm
