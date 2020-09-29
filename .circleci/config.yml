@@ -110,7 +110,7 @@ jobs:
       - run: curl -O https://bootstrap.pypa.io/get-pip.py
       - run: python get-pip.py
       - run: yum install -y python-devel git gcc gcc-c++
-      - run: pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/5.0.0.zip
+      - run: pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/4.0.2.zip
       - run: cfy-ap -c packaging/local.yaml -f -v
       - persist_to_workspace:
           root: ~/project
