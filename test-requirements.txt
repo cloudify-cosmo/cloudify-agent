@@ -1,4 +1,4 @@
-https://github.com/cloudify-cosmo/cloudify-common/archive/5.1.0.zip#egg=cloudify-cosmo[dispatcher]
+https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip#egg=cloudify-cosmo[dispatcher]
 mock==1.0.1
 pywinrm==0.4.1
 cryptography==2.1.4
