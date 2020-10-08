@@ -1,2 +1,2 @@
 requests==2.17.0
-https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip
+https://github.com/cloudify-cosmo/cloudify-common/archive/5.1.0.zip
