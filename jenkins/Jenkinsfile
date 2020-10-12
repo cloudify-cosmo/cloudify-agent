@@ -1,0 +1,110 @@
+def install_cron() {
+    echo 'install and run cron'
+    sh '''
+      sudo apt-get update
+      sudo apt-get install -y cron
+    '''
+}
+def install_test_dependencies(String cache_prefix) {
+  sh '''#!/bin/bash
+  pip install -r dev-requirements.txt --user
+  pip install -r test-requirements.txt --user
+  pip install -e '.[fabric]' --user
+  '''
+}
+def pytest() {
+  echo 'running pytest'
+  sh '''
+    source ~/venv/bin/activate
+    ~/venv/bin/pytest \
+    --run-rabbit-tests \
+    --run-ci-tests \
+    --cov-report term-missing \
+    --cov=cloudify_agent cloudify_agent \
+    --junitxml=test-results/cloudify_agent.xml
+  '''
+}
+
+@Library('pipeline-shared-library') _
+pipeline {
+  agent {
+    kubernetes {
+      label 'agent'
+      defaultContainer 'jnlp'
+      yamlFile 'jenkins/build-pod.yaml'
+    }
+  }
+  options {
+    checkoutToSubdirectory('cloudify-agent')
+    buildDiscarder(logRotator(numToKeepStr:'10'))
+    timeout(time: 60, unit: 'MINUTES')
+    timestamps()
+  }
+  environment {
+    VERSION = getVersion("master").trim()
+    PRERELEASE = getPreRelease("master").trim()
+    WORKSPACE = "${env.WORKSPACE}"
+    PROJECT = "cloudify-agent"
+    PATH = "/root/.local/bin:$PATH"
+  }
+  stages{
+    stage ('compatability and flake8') {
+      parallel{
+        stage ('py3_compat'){
+          steps{
+            sh script: "mkdir -p ${env.WORKSPACE}/py3_compat && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/py3_compat", label: "copying repo to seperate workspace"
+            container('py27'){
+              dir("${env.WORKSPACE}/py3_compat"){
+                echo 'install futurize and find python3-incompatible code'
+                sh '''#!/bin/bash
+                pip install future --user
+                PATH=$PATH:~/.local/bin
+                FUTURIZE="futurize ."
+                while read line; do
+                  [[ "$line" =~ ^#.* ]] && continue
+                  FUTURIZE="${FUTURIZE} -f ${line}"
+                done<.circleci/py3fixers
+                $FUTURIZE>futurize_diffs
+                '''
+                echo 'check that there is no python3-incompatible code'
+                sh """ #!/bin/bash
+                if [ -s futurize_diffs ]; then
+                  echo "Python-3-incompatible code found"
+                  cat futurize_diffs
+                  exit 1
+                fi          
+                """
+              }
+            }
+          }
+        }
+        stage('flake8_py27'){
+          steps{
+            sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
+            container('py27'){
+              dir("${env.WORKSPACE}/flake8") {
+                echo 'install flake 8'
+                sh "pip install flake8 --user"
+                echo 'run flake8'
+                sh 'flake8 cloudify_agent'
+              }
+            }
+          }
+        }
+        stage('flake8_py36'){
+          steps{
+            sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
+            container('py36'){
+              dir("${env.WORKSPACE}/flake8") {
+              echo 'install flake 8'
+              sh "pip install flake8 --user"
+              echo 'run flake8'
+              sh 'flake8 cloudify_agent'
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
