@@ -46,9 +46,9 @@ pipeline {
     PROJECT = "cloudify-agent"
     PATH = "/root/.local/bin:$PATH"
   }
-  stages{
-    stage ('compatability and flake8') {
-      parallel{
+  // stages{
+    // stage ('compatability and flake8') {
+    //   parallel{
         stage ('py3_compat'){
           steps{
             sh script: "mkdir -p ${env.WORKSPACE}/py3_compat && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/py3_compat", label: "copying repo to seperate workspace"
@@ -83,7 +83,7 @@ pipeline {
             container('py27'){
               dir("${env.WORKSPACE}/flake8") {
                 echo 'install flake 8'
-                sh "pip install flake8 --user"
+                sh 'pip install flake8 --user'
                 echo 'run flake8'
                 sh 'flake8 cloudify_agent'
               }
@@ -96,14 +96,14 @@ pipeline {
             container('py36'){
               dir("${env.WORKSPACE}/flake8") {
               echo 'install flake 8'
-              sh "pip install flake8 --user"
+              sh 'pip install flake8 --user'
               echo 'run flake8'
               sh 'flake8 cloudify_agent'
               }
             }
           }
         }
-      }
-    }
-  }
+  //     }
+  //   }
+  // }
 }
