@@ -46,7 +46,7 @@ pipeline {
     PROJECT = "cloudify-agent"
     PATH = "/root/.local/bin:$PATH"
   }
-  // stages{
+  stages{
   //   stage ('compatability and flake8') {
   //     parallel{
   //       stage ('py3_compat'){
@@ -105,5 +105,5 @@ pipeline {
   //       }
   //     }
   //   }
-  // }
+  }
 }
