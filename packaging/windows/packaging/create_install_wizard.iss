@@ -37,4 +37,4 @@ Source: "source\icons\Cloudify.ico"; DestDir: "{app}"
 Name: "desktopicon"; Description: "Create a desktop icon";
 
 [Icons]
-Name: "{commondesktop}\Cloudify {#AppVersion}-{#AppMilestone} Agents"; Filename: "{cmd}"; Parameters: "/k ""{app}\Scripts\activate.bat"""; WorkingDir: "{app}"; IconFilename: "{app}\Cloudify.ico"; Tasks: "desktopicon";
+Name: "{commondesktop}\Cloudify {#AppVersion}-{#AppMilestone} Agents"; Filename: "%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe";  Parameters: "-NoExit -Command $env:Path=\""{app}\Scripts\;$env:Path\""; function prompt {{\""[Cloudify {#AppVersion}-{#AppMilestone} Agents] $($executionContext.SessionState.Path.CurrentLocation)>\""}"; WorkingDir: "{app}"; IconFilename: "{app}\Cloudify.ico"; Tasks: "desktopicon";
