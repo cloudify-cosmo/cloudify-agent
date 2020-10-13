@@ -2,23 +2,15 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
-    - name: py36
-      image: circleci/python:3.6
-      command:
-        - cat
-      tty: true
-      securityContext:
-        runAsUser: 0
-        privileged: true
-    - name: py27
-      image: circleci/python:2.7
-      command:
-        - cat
-      tty: true
-      securityContext:
-        runAsUser: 0
-        privileged: true
-    - name: rabbitmq374
-      image: rabbitmq:3.7.4
+  - name: py27
+    image: circleci/python:2.7
+    command:
+    - cat
+    tty: true
+  - name: py36
+    image: circleci/python:3.6
+    command:
+    - cat
+    tty: true
   nodeSelector:
     instance-type: spot
