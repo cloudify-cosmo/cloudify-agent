@@ -7,10 +7,18 @@ spec:
     command:
     - cat
     tty: true
-  # - name: py36
-  #   image: circleci/python:3.6
-  #   command:
-  #   - cat
-  #   tty: true
+    securityContext:
+      runAsUser: 0
+      privileged: true
+  - name: py36
+    image: circleci/python:3.6
+    command:
+    - cat
+    tty: true
+    securityContext:
+      runAsUser: 0
+      privileged: true
+  - name: rabbitmq374
+    image: rabbitmq:3.7.4 
   nodeSelector:
     instance-type: spot
