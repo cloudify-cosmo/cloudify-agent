@@ -1,31 +1,30 @@
-def install_cron() {
-    echo 'install and run cron'
-    sh '''
-      sudo apt-get update
-      sudo apt-get install -y cron
-    '''
-}
-def install_test_dependencies(String cache_prefix) {
-  sh '''#!/bin/bash
-  pip install -r dev-requirements.txt --user
-  pip install -r test-requirements.txt --user
-  pip install -e '.[fabric]' --user
-  '''
-}
-def pytest() {
-  echo 'running pytest'
-  sh '''
-    source ~/venv/bin/activate
-    ~/venv/bin/pytest \
-    --run-rabbit-tests \
-    --run-ci-tests \
-    --cov-report term-missing \
-    --cov=cloudify_agent cloudify_agent \
-    --junitxml=test-results/cloudify_agent.xml
-  '''
-}
-
-@Library('pipeline-shared-library') _
+// def install_cron() {
+//     echo 'install and run cron'
+//     sh '''
+//       sudo apt-get update
+//       sudo apt-get install -y cron
+//     '''
+// }
+// def install_test_dependencies(String cache_prefix) {
+//   sh '''#!/bin/bash
+//   pip install -r dev-requirements.txt --user
+//   pip install -r test-requirements.txt --user
+//   pip install -e '.[fabric]' --user
+//   '''
+// }
+// def pytest() {
+//   echo 'running pytest'
+//   sh '''
+//     source ~/venv/bin/activate
+//     ~/venv/bin/pytest \
+//     --run-rabbit-tests \
+//     --run-ci-tests \
+//     --cov-report term-missing \
+//     --cov=cloudify_agent cloudify_agent \
+//     --junitxml=test-results/cloudify_agent.xml
+//   '''
+// }
+//@Library('pipeline-shared-library') _
 pipeline {
   agent {
     kubernetes {
