@@ -74,8 +74,8 @@ def test_uninstall_from_source(test_plugins, file_server):
         installer.install(plugins.plugin_struct(file_server,
                                                 source='mock-plugin.tar'))
     _assert_task_runnable('mock_plugin.tasks.run', expected_return='run')
-    installer.uninstall(plugin=plugins.plugin_struct(file_server))
     with _patch_client([]):
+        installer.uninstall(plugin=plugins.plugin_struct(file_server))
         _assert_task_not_runnable('mock_plugin.tasks.run')
 
 
@@ -90,9 +90,9 @@ def test_uninstall_from_source_with_deployment_id(test_plugins, file_server):
     _assert_task_runnable('mock_plugin.tasks.run',
                           expected_return='run',
                           deployment_id=deployment_id)
-    installer.uninstall(plugin=plugins.plugin_struct(file_server),
-                        deployment_id=deployment_id)
     with _patch_client([]):
+        installer.uninstall(plugin=plugins.plugin_struct(file_server),
+                            deployment_id=deployment_id)
         _assert_task_not_runnable('mock_plugin.tasks.run',
                                   deployment_id=deployment_id)
 
@@ -277,6 +277,7 @@ def test_implicit_dist_and_dist_release():
         {'id': '2', 'package_version': '1'},
         {'id': '3', 'package_version': '1'},
         {'id': '4', 'package_version': '1',
+         'supported_platform': 'any',
          'distribution': dist, 'distribution_release': dist_release},
         {'id': '5', 'package_version': '1'},
     ]
@@ -284,20 +285,6 @@ def test_implicit_dist_and_dist_release():
               'package_version': '1'}
     with _patch_client(plugins=plugins):
         assert '4' == installer.get_managed_plugin(plugin=plugin).id
-
-
-def test_list_filter_query_builder():
-    plugin1 = {'package_name': 'a', 'package_version': '1'}
-    plugin2 = {'package_name': 'a',
-               'package_version': '1',
-               'distribution': 'c',
-               'distribution_version': 'd',
-               'distribution_release': 'e',
-               'supported_platform': 'f'}
-    for plugin in [plugin1, plugin2]:
-        with _patch_client(plugins=[]) as client:
-            installer.get_managed_plugin(plugin)
-            assert plugin == client.plugins.kwargs
 
 
 @contextmanager
