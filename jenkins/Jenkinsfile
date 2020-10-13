@@ -28,7 +28,7 @@
 pipeline {
   agent {
     kubernetes {
-      label 'agent'
+      label 'agent-multibranch'
       defaultContainer 'jnlp'
       yamlFile 'jenkins/build-pod.yaml'
     }
