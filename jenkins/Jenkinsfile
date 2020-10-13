@@ -77,19 +77,19 @@ pipeline {
   //           }
   //         }
   //       }
-  //       stage('flake8_py27'){
-  //         steps{
-  //           sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
-  //           container('py27'){
-  //             dir("${env.WORKSPACE}/flake8") {
-  //               echo 'install flake 8'
-  //               sh "pip install flake8 --user"
-  //               echo 'run flake8'
-  //               sh 'flake8 cloudify_agent'
-  //             }
-  //           }
-  //         }
-  //       }
+        stage('flake8_py27'){
+          steps{
+            sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
+            container('py27'){
+              dir("${env.WORKSPACE}/flake8") {
+                echo 'install flake 8'
+                sh "pip install flake8 --user"
+                echo 'run flake8'
+                sh 'flake8 cloudify_agent'
+              }
+            }
+          }
+        }
   //       stage('flake8_py36'){
   //         steps{
   //           sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"

@@ -2,11 +2,11 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
-  # - name: py27
-  #   image: circleci/python:2.7
-  #   command:
-  #   - cat
-  #   tty: true
+  - name: py27
+    image: circleci/python:2.7
+    command:
+    - cat
+    tty: true
   # - name: py36
   #   image: circleci/python:3.6
   #   command:
