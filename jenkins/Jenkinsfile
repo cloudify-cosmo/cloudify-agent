@@ -24,7 +24,7 @@
 //     --junitxml=test-results/cloudify_agent.xml
 //   '''
 // }
-//@Library('pipeline-shared-library') _
+@Library('pipeline-shared-library') _
 pipeline {
   agent {
     kubernetes {
