@@ -4,6 +4,9 @@ spec:
   containers:
   - name: py27
     image: circleci/python:2.7
+    resources:
+      requests:
+        cpu: 1
     command:
     - cat
     tty: true
@@ -12,12 +15,15 @@ spec:
       privileged: true
   - name: py36
     image: circleci/python:3.6
+    resources:
+      requests:
+        cpu: 1
     command:
     - cat
     tty: true
     securityContext:
-      runAsUser: 0
-      privileged: true
+        runAsUser: 0
+        privileged: true
   - name: rabbitmq374
     image: rabbitmq:3.7.4 
   nodeSelector:
