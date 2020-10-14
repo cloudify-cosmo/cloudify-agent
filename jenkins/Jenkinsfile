@@ -170,11 +170,35 @@ pipeline {
             }
           }
         }
-        // stage('build_rpm'){
-        //   steps {
-            
-        //   }
-        // }
+        stage('build_rpm'){
+          steps {
+            sh script: "mkdir -p ${env.WORKSPACE}/build_rpm && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/build_rpm", label: "copying repo to seperate workspace"
+            container('rpmbuild'){
+              dir("${env.WORKSPACE}/build_rpm"){
+                echo 'Prepare rpm-building environment'
+                sh '''
+                  sudo chmod a+wx /opt
+                  curl -o cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
+                  mkdir -p packaging/agents/ ;
+                  curl -o packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
+                  '''
+                echo 'Building a CI agent rpm'
+                sh """
+                  rpmbuild \
+                    -D "CLOUDIFY_VERSION ${env.VERSION}" \
+                    -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
+                    -bb cloudify-agents.spec
+                  """
+                sh script:("mkdir -p ${env.WORKSPACE}/rpm && cp -rf RPMS/noarch/. ${env.WORKSPACE}/rpm"), label: "Copy RPM to rpm folder"
+              }
+            }
+          }
+          post {
+            success {
+              archiveArtifacts '**/rpm/*.rpm'
+            }
+          }
+        }
       }
     }
   }
