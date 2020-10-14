@@ -15,7 +15,7 @@ def install_test_dependencies() {
 def pytest() {
   echo 'running pytest'
   sh '''
-    source ~/venv/bin/activate
+    . ~/venv/bin/activate
     ~/venv/bin/pytest \
     --run-rabbit-tests \
     --run-ci-tests \
