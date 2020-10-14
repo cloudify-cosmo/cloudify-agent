@@ -1,2 +1,2 @@
-requests==2.24.0
+requests>=2.24.0,<2.25
 https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip
