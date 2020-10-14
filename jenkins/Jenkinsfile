@@ -170,11 +170,11 @@ pipeline {
             }
           }
         }
-        stage('build_rpm'){
-          steps {
+        // stage('build_rpm'){
+        //   steps {
             
-          }
-        }
+        //   }
+        // }
       }
     }
   }
