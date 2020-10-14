@@ -94,10 +94,10 @@ pipeline {
             sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
             container('py36'){
               dir("${env.WORKSPACE}/flake8") {
-              echo 'install flake 8'
-              sh 'pip install flake8 --user'
-              echo 'run flake8'
-              sh 'flake8 cloudify_agent'
+                echo 'install flake 8'
+                sh 'pip install flake8 --user'
+                echo 'run flake8'
+                sh 'flake8 cloudify_agent'
               }
             }
           }
@@ -107,17 +107,17 @@ pipeline {
             sh script: "mkdir -p ${env.WORKSPACE}/build_agent && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/build_agent", label: "copying repo to seperate workspace"
             container('centos7'){
               dir("${env.WORKSPACE}/build_agent") {
-              echo 'install packages'
-              sh '''
-                curl -O https://bootstrap.pypa.io/get-pip.py
-                python get-pip.py
-                yum install -y python-devel git gcc gcc-c++
-                '''
-              sh script: 'pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip', label: 'installing agent packager'
-              echo 'creating the agent packager'
-              sh script: '''
-                cfy-ap -c packaging/local.ini -f -v
-                '''
+                echo 'install packages'
+                sh '''
+                  curl -O https://bootstrap.pypa.io/get-pip.py
+                  python get-pip.py
+                  yum install -y python-devel git gcc gcc-c++
+                  '''
+                sh script: 'pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip', label: 'installing agent packager'
+                echo 'creating the agent packager'
+                sh script: '''
+                  cfy-ap -c packaging/local.ini -f -v
+                  '''
               }
             }
           }
@@ -128,7 +128,7 @@ pipeline {
       parallel {
         stage('test_py27'){
           steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/test-py27 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test-py27", label: "copying repo to seperate workspace"
+            sh script: "mkdir -p ${env.WORKSPACE}/test_py27 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test_py27", label: "copying repo to seperate workspace"
             container('py27'){
               dir("${env.WORKSPACE}/test_py27"){
                 install_cron()
@@ -150,7 +150,7 @@ pipeline {
         }
         stage('test_py36'){
           steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/test-py36 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test-py36", label: "copying repo to seperate workspace"
+            sh script: "mkdir -p ${env.WORKSPACE}/test_py36 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test_py36", label: "copying repo to seperate workspace"
             container('py36'){
               dir("${env.WORKSPACE}/test_py36"){
                 install_cron()
