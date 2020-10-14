@@ -177,7 +177,7 @@ pipeline {
               dir("${env.WORKSPACE}/build_rpm"){
                 echo 'Prepare rpm-building environment'
                 sh '''
-                  sudo chmod a+wx /opt
+                  chmod a+wx /opt
                   curl -o cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
                   mkdir -p packaging/agents/ ;
                   curl -o packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
