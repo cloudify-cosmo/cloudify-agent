@@ -4,9 +4,6 @@ spec:
   containers:
   - name: py27
     image: circleci/python:2.7
-    resources:
-      requests:
-        cpu: 1
     command:
     - cat
     tty: true
@@ -15,9 +12,6 @@ spec:
       privileged: true
   - name: py36
     image: circleci/python:3.6
-    resources:
-      requests:
-        cpu: 1
     command:
     - cat
     tty: true
