@@ -28,7 +28,7 @@
 pipeline {
   agent {
     kubernetes {
-      label 'agent'
+      label "agent-${env.BUILD_NUMBER}"
       defaultContainer 'jnlp'
       yamlFile 'jenkins/build-pod.yaml'
     }
