@@ -1,29 +1,29 @@
-// def install_cron() {
-//     echo 'install and run cron'
-//     sh '''
-//       sudo apt-get update
-//       sudo apt-get install -y cron
-//     '''
-// }
-// def install_test_dependencies(String cache_prefix) {
-//   sh '''#!/bin/bash
-//   pip install -r dev-requirements.txt --user
-//   pip install -r test-requirements.txt --user
-//   pip install -e '.[fabric]' --user
-//   '''
-// }
-// def pytest() {
-//   echo 'running pytest'
-//   sh '''
-//     source ~/venv/bin/activate
-//     ~/venv/bin/pytest \
-//     --run-rabbit-tests \
-//     --run-ci-tests \
-//     --cov-report term-missing \
-//     --cov=cloudify_agent cloudify_agent \
-//     --junitxml=test-results/cloudify_agent.xml
-//   '''
-// }
+def install_cron() {
+    echo 'install and run cron'
+    sh '''
+      sudo apt-get update
+      sudo apt-get install -y cron
+    '''
+}
+def install_test_dependencies() {
+  sh '''#!/bin/bash
+  pip install -r dev-requirements.txt --user
+  pip install -r test-requirements.txt --user
+  pip install -e '.[fabric]' --user
+  '''
+}
+def pytest() {
+  echo 'running pytest'
+  sh '''
+    source ~/venv/bin/activate
+    ~/venv/bin/pytest \
+    --run-rabbit-tests \
+    --run-ci-tests \
+    --cov-report term-missing \
+    --cov=cloudify_agent cloudify_agent \
+    --junitxml=test-results/cloudify_agent.xml
+  '''
+}
 @Library('pipeline-shared-library') _
 pipeline {
   agent {
@@ -118,6 +118,54 @@ pipeline {
                 cfy-ap -c packaging/local.ini -f -v
                 '''
               }
+            }
+          }
+        }
+      }
+    }
+    stage('pytest and build rpm'){
+      parallel {
+        stage('test_py27'){
+          steps{
+            sh script: "mkdir -p ${env.WORKSPACE}/test-py27 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test-py27", label: "copying repo to seperate workspace"
+            container('py27'){
+              dir("${env.WORKSPACE}/test_py27"){
+                install_cron()
+                echo 'install and create virtual env'
+                sh '''
+                  pip install virtualenv==15.1.0 --user
+                  virtualenv ~/venv
+                  '''
+                install_test_dependencies()
+                pytest()
+              }
+            }
+          }
+          post {
+            always {
+              junit '**/test-results/*.xml'
+            }
+          }
+        }
+        stage('test_py36'){
+          steps{
+            sh script: "mkdir -p ${env.WORKSPACE}/test-py36 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test-py36", label: "copying repo to seperate workspace"
+            container('py36'){
+              dir("${env.WORKSPACE}/test_py36"){
+                install_cron()
+                echo 'install and create virtual env'
+                sh '''
+                  pip install virtualenv==15.1.0 --user
+                  virtualenv ~/venv
+                  '''
+                install_test_dependencies()
+                pytest()
+              }
+            }
+          }
+          post {
+            always {
+              junit '**/test-results/*.xml'
             }
           }
         }
