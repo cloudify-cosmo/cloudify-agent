@@ -106,7 +106,7 @@ pipeline {
           steps{
             sh script: "mkdir -p ${env.WORKSPACE}/build_agent && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/build_agent", label: "copying repo to seperate workspace"
             container('centos7'){
-              dir("{env.WORKSPACE}/build_agent") {
+              dir("${env.WORKSPACE}/build_agent") {
               sh '''
                 curl -O https://bootstrap.pypa.io/get-pip.py
                 python get-pip.py
@@ -115,7 +115,6 @@ pipeline {
               sh script: 'pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip', label: 'installing agent packager'
               echo 'creating the agent packager'
               sh script: '''
-                ls -l
                 cfy-ap -c packaging/local.ini -f -v
                 '''
               }
