@@ -7,9 +7,9 @@ def install_cron() {
 }
 def install_test_dependencies() {
   sh '''#!/bin/bash
-  pip install -r dev-requirements.txt --user
-  pip install -r test-requirements.txt --user
-  pip install -e '.[fabric]' --user
+  ~/venv/bin/pip install -r dev-requirements.txt --user
+  ~/venv/bin/pip install -r test-requirements.txt --user
+  ~/venv/bin/pip install -e '.[fabric]' --user
   '''
 }
 def pytest() {
@@ -107,6 +107,7 @@ pipeline {
             sh script: "mkdir -p ${env.WORKSPACE}/build_agent && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/build_agent", label: "copying repo to seperate workspace"
             container('centos7'){
               dir("${env.WORKSPACE}/build_agent") {
+              echo 'install packages'
               sh '''
                 curl -O https://bootstrap.pypa.io/get-pip.py
                 python get-pip.py
