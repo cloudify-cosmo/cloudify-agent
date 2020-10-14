@@ -18,6 +18,13 @@ spec:
     securityContext:
       runAsUser: 0
       privileged: true
+  - name: centos7
+    image: centos:7
+    - cat
+    tty: true
+    securityContext:
+      runAsUser: 0
+      privileged: true
   - name: rabbitmq374
     image: rabbitmq:3.7.4 
   nodeSelector:

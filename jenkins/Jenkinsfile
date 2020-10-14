@@ -47,21 +47,20 @@ pipeline {
     PATH = "/root/.local/bin:$PATH"
   }
   stages{
-    // stage ('compatability and flake8') {
-    //   parallel{
+    stage ('compatability and flake8') {
+      parallel{
         stage ('py3_compat'){
           steps{
             sh script: "mkdir -p ${env.WORKSPACE}/py3_compat && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/py3_compat", label: "copying repo to seperate workspace"
             container('py27'){
               dir("${env.WORKSPACE}/py3_compat"){
-                echo 'install futurize and find python3-incompatible code'
+                echo 'install futurize'
                 sh 'pip install future --user'
+                echo 'find python3-incompatible code'
                 sh '''#!/bin/bash
-                PATH=$PATH:~/.local/bin
                 FUTURIZE="futurize ."
                 while read line; do
-                  [[ "$line" =~ ^#.* ]] && continue
-                  FUTURIZE="${FUTURIZE} -f ${line}"
+                  FUTURIZE="${FUTURIZE} ${line}"
                 done<.circleci/py3fixers
                 $FUTURIZE>futurize_diffs
                 '''
@@ -103,7 +102,21 @@ pipeline {
             }
           }
         }
-  //     }
-  //   }
+        stage('build_agent'){
+          steps{
+            container('centos7'){
+              sh script: '''
+                curl -O https://bootstrap.pypa.io/get-pip.py
+                python get-pip.py
+                yum install -y python-devel git gcc gcc-c++
+                ''', label: "installing packages"
+              sh script: 'pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip', label: 'installing agent packager'
+              sh script: 'cfy-ap -c packaging/local.ini -f -v', label: 'creating the agent packager'
+              sh 'sleep 900'
+            }
+          }
+        }
+      }
+    }
   }
 }
