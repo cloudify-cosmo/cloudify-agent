@@ -20,6 +20,7 @@ spec:
       privileged: true
   - name: centos7
     image: centos:7
+    command:
     - cat
     tty: true
     securityContext:
