@@ -7,9 +7,9 @@ def install_cron() {
 }
 def install_test_dependencies() {
   sh '''#!/bin/bash
-  ~/venv/bin/pip install -r dev-requirements.txt --user
-  ~/venv/bin/pip install -r test-requirements.txt --user
-  ~/venv/bin/pip install -e '.[fabric]' --user
+  ~/venv/bin/pip install -r dev-requirements.txt
+  ~/venv/bin/pip install -r test-requirements.txt
+  ~/venv/bin/pip install -e '.[fabric]'
   '''
 }
 def pytest() {
@@ -168,6 +168,11 @@ pipeline {
             always {
               junit '**/test-results/*.xml'
             }
+          }
+        }
+        stage('build_rpm'){
+          steps {
+            
           }
         }
       }
