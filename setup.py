@@ -25,12 +25,14 @@ install_requires = [
 
 if sys.version_info[:2] == (2, 6):
     install_requires += [
-        'click==6.7'
+        'click==6.7',
+        'requests>=2.19.0,<2.20',
     ]
 else:
     install_requires += [
         'click>7,<8',
         'packaging==17.1',
+        'requests>=2.24.0,<2.25',
     ]
 
 setup(
