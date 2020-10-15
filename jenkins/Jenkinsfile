@@ -186,15 +186,14 @@ pipeline {
                 curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
                 '''
               echo 'Building a CI agent rpm'
-              dir("~/rpmbuild/SOURCES"){
-                sh """
-                  rpmbuild \
-                    -D "CLOUDIFY_VERSION ${env.VERSION}" \
-                    -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
-                    -bb cloudify-agents.spec
-                  """
-                sh script:("mkdir -p ${env.WORKSPACE}/rpm && cp -rf ~/rpmbuild/RPMS/noarch/. ${env.WORKSPACE}/rpm"), label: "Copy RPM to rpm folder"
-              }
+              sh """
+                cd ~/rpmbuild/SOURCES
+                rpmbuild \
+                  -D "CLOUDIFY_VERSION ${env.VERSION}" \
+                  -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
+                  -bb cloudify-agents.spec
+                """
+              sh script:("mkdir -p ${env.WORKSPACE}/rpm && cp -rf ~/rpmbuild/RPMS/noarch/. ${env.WORKSPACE}/rpm"), label: "Copy RPM to rpm folder"
             }
           }
           post {
