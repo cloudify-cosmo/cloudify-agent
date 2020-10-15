@@ -14,11 +14,12 @@ def install_test_dependencies() {
 }
 def pytest() {
   echo 'running pytest'
+  sh 'sleep 9000'
   sh '''
-    . ~/venv/bin/activate
     ~/venv/bin/pytest \
     --run-rabbit-tests \
     --run-ci-tests \
+    -s --pdb cloudify_agent/tests/api/pm/test_detach.py::test_delete \
     --cov-report term-missing \
     --cov=cloudify_agent cloudify_agent \
     --junitxml=test-results/cloudify_agent.xml
@@ -173,26 +174,23 @@ pipeline {
         stage('build_rpm'){
           steps {
             container('rpmbuild'){
-              echo 'Copying repo to seperate workspace'
-              sh '''
+              sh script: '''
                 cd && mkdir rpmbuild && cd rpmbuild
                 git clone https://github.com/cloudify-cosmo/cloudify-agent.git SOURCES && cd SOURCES
-              '''
-              echo 'Prepare rpm-building environment'
-              sh '''
+              ''', label: 'Copying repo to seperate workspace'
+              sh script: '''
                 chmod a+wx /opt
                 curl -o ~/rpmbuild/SOURCES/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
                 mkdir -p ~/rpmbuild/SOURCES/packaging/agents/ ;
                 curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
-                '''
-              echo 'Building a CI agent rpm'
-              sh """
+                ''', label: 'Prepare rpm-building environment'
+              sh script: """
                 cd ~/rpmbuild/SOURCES
                 rpmbuild \
                   -D "CLOUDIFY_VERSION ${env.VERSION}" \
                   -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
                   -bb cloudify-agents.spec
-                """
+                """, label: 'Building a CI agent rpm'
               sh script:("mkdir -p ${env.WORKSPACE}/rpm && cp -rf ~/rpmbuild/RPMS/noarch/. ${env.WORKSPACE}/rpm"), label: "Copy RPM to rpm folder"
             }
           }
