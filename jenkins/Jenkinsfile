@@ -15,7 +15,13 @@ def install_test_dependencies() {
 def pytest() {
   echo 'running pytest'
   sh '''
-    ~/venv/bin/pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent
+    ~/venv/bin/pytest \
+    --run-rabbit-tests \
+    --run-ci-tests \
+    --cov-report term-missing \
+    --cov=cloudify_agent \
+    cloudify_agent/tests \
+    --junitxml=test-results/cloudify_agent.xml
   '''
   //    -s --pdb cloudify_agent/tests/api/pm/test_detach.py::test_delete \
 
@@ -43,85 +49,85 @@ pipeline {
     PATH = "/root/.local/bin:$PATH"
   }
   stages{
-    stage ('compatability and flake8') {
-      parallel{
-        stage ('py3_compat'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/py3_compat && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/py3_compat", label: "copying repo to seperate workspace"
-            container('py27'){
-              dir("${env.WORKSPACE}/py3_compat"){
-                echo 'install futurize'
-                sh 'pip install future --user'
-                echo 'find python3-incompatible code'
-                sh '''#!/bin/bash
-                FUTURIZE="futurize ."
-                while read line; do
-                  FUTURIZE="${FUTURIZE} ${line}"
-                done<.circleci/py3fixers
-                $FUTURIZE>futurize_diffs
-                '''
-                echo 'check that there is no python3-incompatible code'
-                sh """ #!/bin/bash
-                if [ -s futurize_diffs ]; then
-                  echo "Python-3-incompatible code found"
-                  cat futurize_diffs
-                  exit 1
-                fi          
-                """
-              }
-            }
-          }
-        }
-        stage('flake8_py27'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
-            container('py27'){
-              dir("${env.WORKSPACE}/flake8") {
-                echo 'install flake 8'
-                sh 'pip install flake8 --user'
-                echo 'run flake8'
-                sh 'flake8 cloudify_agent'
-              }
-            }
-          }
-        }
-        stage('flake8_py36'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
-            container('py36'){
-              dir("${env.WORKSPACE}/flake8") {
-                echo 'install flake 8'
-                sh 'pip install flake8 --user'
-                echo 'run flake8'
-                sh 'flake8 cloudify_agent'
-              }
-            }
-          }
-        }
-        stage('build_agent'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/build_agent && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/build_agent", label: "copying repo to seperate workspace"
-            container('centos7'){
-              dir("${env.WORKSPACE}/build_agent") {
-                echo 'install packages'
-                sh '''
-                  curl -O https://bootstrap.pypa.io/get-pip.py
-                  python get-pip.py
-                  yum install -y python-devel git gcc gcc-c++
-                  '''
-                sh script: 'pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip', label: 'installing agent packager'
-                echo 'creating the agent packager'
-                sh script: '''
-                  cfy-ap -c packaging/local.ini -f -v
-                  '''
-              }
-            }
-          }
-        }
-      }
-    }
-    stage('pytest and build rpm'){
-      parallel {
+    // stage ('compatability and flake8') {
+    //   parallel{
+    //     stage ('py3_compat'){
+    //       steps{
+    //         sh script: "mkdir -p ${env.WORKSPACE}/py3_compat && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/py3_compat", label: "copying repo to seperate workspace"
+    //         container('py27'){
+    //           dir("${env.WORKSPACE}/py3_compat"){
+    //             echo 'install futurize'
+    //             sh 'pip install future --user'
+    //             echo 'find python3-incompatible code'
+    //             sh '''#!/bin/bash
+    //             FUTURIZE="futurize ."
+    //             while read line; do
+    //               FUTURIZE="${FUTURIZE} ${line}"
+    //             done<.circleci/py3fixers
+    //             $FUTURIZE>futurize_diffs
+    //             '''
+    //             echo 'check that there is no python3-incompatible code'
+    //             sh """ #!/bin/bash
+    //             if [ -s futurize_diffs ]; then
+    //               echo "Python-3-incompatible code found"
+    //               cat futurize_diffs
+    //               exit 1
+    //             fi          
+    //             """
+    //           }
+    //         }
+    //       }
+    //     }
+    //     stage('flake8_py27'){
+    //       steps{
+    //         sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
+    //         container('py27'){
+    //           dir("${env.WORKSPACE}/flake8") {
+    //             echo 'install flake 8'
+    //             sh 'pip install flake8 --user'
+    //             echo 'run flake8'
+    //             sh 'flake8 cloudify_agent'
+    //           }
+    //         }
+    //       }
+    //     }
+    //     stage('flake8_py36'){
+    //       steps{
+    //         sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
+    //         container('py36'){
+    //           dir("${env.WORKSPACE}/flake8") {
+    //             echo 'install flake 8'
+    //             sh 'pip install flake8 --user'
+    //             echo 'run flake8'
+    //             sh 'flake8 cloudify_agent'
+    //           }
+    //         }
+    //       }
+    //     }
+    //     stage('build_agent'){
+    //       steps{
+    //         sh script: "mkdir -p ${env.WORKSPACE}/build_agent && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/build_agent", label: "copying repo to seperate workspace"
+    //         container('centos7'){
+    //           dir("${env.WORKSPACE}/build_agent") {
+    //             echo 'install packages'
+    //             sh '''
+    //               curl -O https://bootstrap.pypa.io/get-pip.py
+    //               python get-pip.py
+    //               yum install -y python-devel git gcc gcc-c++
+    //               '''
+    //             sh script: 'pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip', label: 'installing agent packager'
+    //             echo 'creating the agent packager'
+    //             sh script: '''
+    //               cfy-ap -c packaging/local.ini -f -v
+    //               '''
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
+    // stage('pytest and build rpm'){
+      // parallel {
         stage('test_py27'){
           steps{
             sh script: "mkdir -p ${env.WORKSPACE}/test_py27 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test_py27", label: "copying repo to seperate workspace"
@@ -144,58 +150,55 @@ pipeline {
             }
           }
         }
-        stage('test_py36'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/test_py36 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test_py36", label: "copying repo to seperate workspace"
-            container('py36'){
-              dir("${env.WORKSPACE}/test_py36"){
-                install_cron()
-                echo 'install and create virtual env'
-                sh '''
-                  pip install virtualenv==15.1.0 --user
-                  virtualenv ~/venv
-                  '''
-                install_test_dependencies()
-                pytest()
-              }
-            }
-          }
-          post {
-            always {
-              junit '**/test-results/*.xml'
-            }
-          }
-        }
-        stage('build_rpm'){
-          steps {
-            container('rpmbuild'){
-              sh script: '''
-                cd && mkdir rpmbuild && cd rpmbuild
-                git clone https://github.com/cloudify-cosmo/cloudify-agent.git SOURCES && cd SOURCES
-              ''', label: 'Copying repo to seperate workspace'
-              sh script: '''
-                chmod a+wx /opt
-                curl -o ~/rpmbuild/SOURCES/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
-                mkdir -p ~/rpmbuild/SOURCES/packaging/agents/ ;
-                curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
-                ''', label: 'Prepare rpm-building environment'
-              sh script: """
-                cd ~/rpmbuild/SOURCES
-                rpmbuild \
-                  -D "CLOUDIFY_VERSION ${env.VERSION}" \
-                  -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
-                  -bb cloudify-agents.spec
-                """, label: 'Building a CI agent rpm'
-              sh script:("mkdir -p ${env.WORKSPACE}/rpm && cp -rf ~/rpmbuild/RPMS/noarch/. ${env.WORKSPACE}/rpm"), label: "Copy RPM to rpm folder"
-            }
-          }
-          post {
-            success {
-              archiveArtifacts '**/rpm/*.rpm'
-            }
-          }
-        }
-      }
-    }
+        // stage('test_py36'){
+        //   steps{
+        //     sh script: "mkdir -p ${env.WORKSPACE}/test_py36 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test_py36", label: "copying repo to seperate workspace"
+        //     container('py36'){
+        //       dir("${env.WORKSPACE}/test_py36"){
+        //         install_cron()
+        //         echo 'install and create virtual env'
+        //         sh 'virtualenv ~/venv'
+        //         install_test_dependencies()
+        //         pytest()
+        //       }
+        //     }
+        //   }
+        //   post {
+        //     always {
+        //       junit '**/test-results/*.xml'
+        //     }
+        //   }
+        // }
+        // stage('build_rpm'){
+        //   steps {
+        //     container('rpmbuild'){
+        //       sh script: '''
+        //         cd && mkdir rpmbuild && cd rpmbuild
+        //         git clone https://github.com/cloudify-cosmo/cloudify-agent.git SOURCES && cd SOURCES
+        //       ''', label: 'Copying repo to seperate workspace'
+        //       sh script: '''
+        //         chmod a+wx /opt
+        //         curl -o ~/rpmbuild/SOURCES/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
+        //         mkdir -p ~/rpmbuild/SOURCES/packaging/agents/ ;
+        //         curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
+        //         ''', label: 'Prepare rpm-building environment'
+        //       sh script: """
+        //         cd ~/rpmbuild/SOURCES
+        //         rpmbuild \
+        //           -D "CLOUDIFY_VERSION ${env.VERSION}" \
+        //           -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
+        //           -bb cloudify-agents.spec
+        //         """, label: 'Building a CI agent rpm'
+        //       sh script:("mkdir -p ${env.WORKSPACE}/rpm && cp -rf ~/rpmbuild/RPMS/noarch/. ${env.WORKSPACE}/rpm"), label: "Copy RPM to rpm folder"
+        //     }
+        //   }
+        //   post {
+        //     success {
+        //       archiveArtifacts '**/rpm/*.rpm'
+        //     }
+        //   }
+        // }
+      // }
+    // }
   }
 }
