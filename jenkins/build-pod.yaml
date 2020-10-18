@@ -10,30 +10,30 @@ spec:
     securityContext:
       runAsUser: 0
       privileged: true
-  - name: py36
-    image: circleci/python:3.6
-    command:
-    - cat
-    tty: true
-    securityContext:
-      runAsUser: 0
-      privileged: true
-  - name: centos7
-    image: centos:7
-    command:
-    - cat
-    tty: true
-    securityContext:
-      runAsUser: 0
-      privileged: true
-  - name: rpmbuild
-    image: rpmbuild/centos7
-    command:
-    - cat
-    tty: true
-    securityContext:
-      runAsUser: 0
-      privileged: true
+  # - name: py36
+  #   image: circleci/python:3.6
+  #   command:
+  #   - cat
+  #   tty: true
+  #   securityContext:
+  #     runAsUser: 0
+  #     privileged: true
+  # - name: centos7
+  #   image: centos:7
+  #   command:
+  #   - cat
+  #   tty: true
+  #   securityContext:
+  #     runAsUser: 0
+  #     privileged: true
+  # - name: rpmbuild
+  #   image: rpmbuild/centos7
+  #   command:
+  #   - cat
+  #   tty: true
+  #   securityContext:
+  #     runAsUser: 0
+  #     privileged: true
   - name: rabbitmq374
     image: rabbitmq:3.7.4 
   nodeSelector:

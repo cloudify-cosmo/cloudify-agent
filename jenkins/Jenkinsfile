@@ -141,7 +141,7 @@ pipeline {
                   virtualenv ~/venv
                   '''
                 install_test_dependencies()
-                sh 'sleep 9000'
+                // sh 'sleep 9000'
                 pytest()
               }
             }
