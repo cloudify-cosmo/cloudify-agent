@@ -16,7 +16,6 @@ def pytest() {
   echo 'running pytest'
   sh '''
     ~/venv/bin/pytest \
-    --run-rabbit-tests \
     --run-ci-tests \
     --cov-report term-missing \
     --cov=cloudify_agent \
@@ -24,6 +23,8 @@ def pytest() {
     --junitxml=test-results/cloudify_agent.xml
   '''
   //    -s --pdb cloudify_agent/tests/api/pm/test_detach.py::test_delete \
+  //--run-rabbit-tests \
+  //  --run-ci-tests \
 
 }
 @Library('pipeline-shared-library') _
