@@ -14,16 +14,17 @@ def install_test_dependencies() {
 }
 def pytest() {
   echo 'running pytest'
-  sh 'sleep 9000'
   sh '''
     ~/venv/bin/pytest \
     --run-rabbit-tests \
     --run-ci-tests \
-    -s --pdb cloudify_agent/tests/api/pm/test_detach.py::test_delete \
     --cov-report term-missing \
-    --cov=cloudify_agent cloudify_agent \
+    --cov=cloudify_agent \
+    cloudify_agent/tests \
     --junitxml=test-results/cloudify_agent.xml
   '''
+  //    -s --pdb cloudify_agent/tests/api/pm/test_detach.py::test_delete \
+
 }
 @Library('pipeline-shared-library') _
 pipeline {
