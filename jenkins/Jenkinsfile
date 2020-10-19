@@ -31,7 +31,7 @@ def pytest() {
 pipeline {
   agent {
     kubernetes {
-      label "agent-${env.BUILD_NUMBER}"
+      label "agent"
       defaultContainer 'jnlp'
       yamlFile 'jenkins/build-pod.yaml'
     }
