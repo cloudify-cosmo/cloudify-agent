@@ -10,8 +10,6 @@ spec:
     securityContext:
       runAsUser: 0
       privileged: true
-    ports:
-      - containerPort: 5672
   # - name: py36
   #   image: circleci/python:3.6
   #   command:
