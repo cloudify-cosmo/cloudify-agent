@@ -16,6 +16,7 @@ def pytest() {
   echo 'running pytest'
   sh '''
     ~/venv/bin/pytest \
+    --run-rabbit-tests \
     --run-ci-tests \
     --cov-report term-missing \
     --cov=cloudify_agent \
