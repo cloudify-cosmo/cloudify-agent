@@ -1,7 +1,6 @@
 def install_cron() {
     echo 'install and run cron'
     sh '''
-      sudo apt-get update
       sudo apt-get install -y cron
     '''
 }
@@ -137,6 +136,7 @@ pipeline {
               dir("${env.WORKSPACE}/test_py27"){
                 echo 'prepare'
                 sh '''
+                  apt-get update
                   apt-get install -y python-pip
                   apt-get install sudo
                   '''
