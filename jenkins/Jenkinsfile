@@ -143,6 +143,7 @@ pipeline {
                 install_cron()
                 echo 'install and create virtual env'
                 sh """
+                  pip install virtualenv==15.1.0 --user
                   export PATH=$PATH:/root/.local/bin
                   sudo -H pip install virtualenv==15.1.0 --user
                   virtualenv ~/venv
