@@ -142,11 +142,11 @@ pipeline {
                   '''
                 install_cron()
                 echo 'install and create virtual env'
-                sh """
+                sh '''
                   sudo -H pip install virtualenv==15.1.0 --user
-                  export PATH=$PATH:/root/.local/bin
+                  sleep 300
                   virtualenv ~/venv
-                  """
+                  '''
                 install_test_dependencies()
                 // sh 'sleep 9000'
                 pytest()
