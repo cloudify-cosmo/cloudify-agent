@@ -15,7 +15,8 @@ def install_test_dependencies() {
 def pytest() {
   echo 'running pytest'
   sh '''
-    ~/venv/bin/pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent
+    source ~/venv/bin/activate
+    ~/venv/bin/pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent \ --junitxml=test-results/cloudify_agent.xml
   '''
   //    -s --pdb cloudify_agent/tests/api/pm/test_detach.py::test_delete \
   // ~/venv/bin/pytest \
@@ -31,7 +32,7 @@ def pytest() {
 pipeline {
   agent {
     kubernetes {
-      label "agent"
+      label "agent-${env.BUILD_NUMBER}"
       defaultContainer 'jnlp'
       yamlFile 'jenkins/build-pod.yaml'
     }
@@ -132,12 +133,17 @@ pipeline {
         stage('test_py27'){
           steps{
             sh script: "mkdir -p ${env.WORKSPACE}/test_py27 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test_py27", label: "copying repo to seperate workspace"
-            container('py27'){
+            container('rabbitmq374'){
               dir("${env.WORKSPACE}/test_py27"){
                 install_cron()
+                echo 'prepare'
+                sh '''
+                  apt-get install -y python-pip
+                  apt-get install sudo
+                  '''
                 echo 'install and create virtual env'
                 sh '''
-                  pip install virtualenv==15.1.0 --user
+                  sudo -H pip install virtualenv==15.1.0 --user
                   virtualenv ~/venv
                   '''
                 install_test_dependencies()
