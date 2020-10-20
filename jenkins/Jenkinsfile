@@ -14,7 +14,7 @@ def install_test_dependencies() {
 def pytest() {
   echo 'running pytest'
   sh '''
-    source ~/venv/bin/activate
+    . ~/venv/bin/activate
     ~/venv/bin/pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent.xml
   '''
   //    -s --pdb cloudify_agent/tests/api/pm/test_detach.py::test_delete \
@@ -142,11 +142,11 @@ pipeline {
                   '''
                 install_cron()
                 echo 'install and create virtual env'
-                sh '''
+                sh """
+                  export PATH=$PATH:/root/.local/bin
                   sudo -H pip install virtualenv==15.1.0 --user
-                  sleep 300
                   virtualenv ~/venv
-                  '''
+                  """
                 install_test_dependencies()
                 // sh 'sleep 9000'
                 pytest()
