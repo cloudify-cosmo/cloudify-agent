@@ -36,12 +36,6 @@ spec:
   #     privileged: true
   - name: rabbitmq374
     image: rabbitmq:3.7.4 
-    command:
-    - cat
-    tty: true
-    securityContext:
-      runAsUser: 0
-      privileged: true
     env:
     - name: RABBITMQ_ERLANG_COOKIE
       value: test-value
