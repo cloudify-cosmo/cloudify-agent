@@ -1,6 +1,7 @@
 def install_cron() {
     echo 'install and run cron'
     sh '''
+      sudo apt-get update
       sudo apt-get install -y cron
     '''
 }
@@ -132,24 +133,24 @@ pipeline {
         stage('test_py27'){
           steps{
             sh script: "mkdir -p ${env.WORKSPACE}/test_py27 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test_py27", label: "copying repo to seperate workspace"
-            container('rabbitmq374'){
+            container('py27'){
               dir("${env.WORKSPACE}/test_py27"){
-                echo 'prepare'
-                sh '''
-                  apt-get update
-                  apt-get install -y python-pip
-                  apt-get install sudo
-                  '''
+                // echo 'prepare'
+                // sh '''
+                //   apt-get update
+                //   apt-get install -y python-pip
+                //   apt-get install sudo
+                //   '''
                 install_cron()
                 echo 'install and create virtual env'
-                sh """
+                sh '''
                   pip install virtualenv==15.1.0 --user
-                  export PATH=$PATH:/root/.local/bin
-                  sudo -H pip install virtualenv==15.1.0 --user
                   virtualenv ~/venv
-                  """
+                  '''
+                  // export PATH=$PATH:/root/.local/bin
+                  // sudo -H pip install virtualenv==15.1.0 --user
                 install_test_dependencies()
-                // sh 'sleep 9000'
+                sh 'sleep 9000'
                 pytest()
               }
             }
