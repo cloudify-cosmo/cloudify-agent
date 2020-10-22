@@ -2,14 +2,14 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
-  - name: py27
-    image: circleci/python:2.7
-    command:
-    - cat
-    tty: true
-    securityContext:
-      runAsUser: 0
-      privileged: true
+  # - name: py27
+  #   image: circleci/python:2.7
+  #   command:
+  #   - cat
+  #   tty: true
+  #   securityContext:
+  #     runAsUser: 0
+  #     privileged: true
   # - name: py36
   #   image: circleci/python:3.6
   #   command:
@@ -18,14 +18,14 @@ spec:
   #   securityContext:
   #     runAsUser: 0
   #     privileged: true
-  # - name: centos7
-  #   image: centos:7
-  #   command:
-  #   - cat
-  #   tty: true
-  #   securityContext:
-  #     runAsUser: 0
-  #     privileged: true
+  - name: centos7
+    image: centos:7
+    command:
+    - cat
+    tty: true
+    securityContext:
+      runAsUser: 0
+      privileged: true
   # - name: rpmbuild
   #   image: rpmbuild/centos7
   #   command:
@@ -34,13 +34,13 @@ spec:
   #   securityContext:
   #     runAsUser: 0
   #     privileged: true
-  - name: rabbitmq374
-    image: rabbitmq:3.7.4 
-    command:
-    - cat
-    tty: true
-    env:
-    - name: RABBITMQ_ERLANG_COOKIE
-      value: test-value
+  # - name: rabbitmq374
+  #   image: rabbitmq:3.7.4 
+  #   command:
+  #   - cat
+  #   tty: true
+  #   env:
+  #   - name: RABBITMQ_ERLANG_COOKIE
+  #     value: test-value
   nodeSelector:
     instance-type: spot

@@ -133,7 +133,7 @@ pipeline {
         stage('test_py27'){
           steps{
             sh script: "mkdir -p ${env.WORKSPACE}/test_py27 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test_py27", label: "copying repo to seperate workspace"
-            container('py27'){
+            container('centos7'){
               dir("${env.WORKSPACE}/test_py27"){
                 // echo 'prepare'
                 // sh '''
@@ -141,6 +141,7 @@ pipeline {
                 //   apt-get install -y python-pip
                 //   apt-get install sudo
                 //   '''
+                sh 'sleep 9000'
                 install_cron()
                 echo 'install and create virtual env'
                 sh '''
@@ -150,7 +151,7 @@ pipeline {
                   // export PATH=$PATH:/root/.local/bin
                   // sudo -H pip install virtualenv==15.1.0 --user
                 install_test_dependencies()
-                sh 'sleep 9000'
+                //sh 'sleep 9000'
                 pytest()
               }
             }
