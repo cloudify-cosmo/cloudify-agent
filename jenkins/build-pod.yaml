@@ -34,8 +34,8 @@ spec:
   #   securityContext:
   #     runAsUser: 0
   #     privileged: true
-  - name: rabbitmq
-    image: rabbitmq:latest
+  - name: rabbitmq374
+    image: rabbitmq:3.7.4
     command:
     - cat
     tty: true
