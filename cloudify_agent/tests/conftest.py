@@ -128,6 +128,9 @@ def _make_file_server(tmp_path, agent_ssl_cert, ssl=False):
     base_path = os.path.join(str(tmp_path), 'fileserver')
     if not os.path.exists(base_path):
         os.makedirs(base_path)
+    # So that curl -o creates files, make sure we have content
+    with open(os.path.join(base_path, 'keep_curl_happy'), 'w') as fh:
+        fh.write('')
     return FileServer(agent_ssl_cert, base_path, ssl=ssl)
 
 
