@@ -1,8 +1,8 @@
 def install_cron() {
     echo 'install and run cron'
     sh '''
-      sudo apt-get update
-      sudo apt-get install -y cron
+      apt-get update
+      apt-get install -y cron
     '''
 }
 def install_test_dependencies() {
@@ -141,7 +141,7 @@ pipeline {
                 //   apt-get install -y python-pip
                 //   apt-get install sudo
                 //   '''
-                sh 'sleep 9000'
+                //sh 'sleep 9000'
                 install_cron()
                 echo 'install and create virtual env'
                 sh '''
