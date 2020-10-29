@@ -133,7 +133,7 @@ pipeline {
         stage('test_py27'){
           steps{
             sh script: "mkdir -p ${env.WORKSPACE}/test_py27 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test_py27", label: "copying repo to seperate workspace"
-            container('centos7'){
+            container('rpmbuild'){
               dir("${env.WORKSPACE}/test_py27"){
                 // echo 'prepare'
                 // sh '''
