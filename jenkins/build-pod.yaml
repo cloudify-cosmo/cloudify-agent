@@ -8,8 +8,8 @@ spec:
     - cat
     tty: true
     securityContext:
-      # seLinuxOptions:
-      #   level: "s0"
+      seLinuxOptions:
+        level: "s0"
       runAsUser: 0
       privileged: true
   # - name: py36
@@ -42,8 +42,10 @@ spec:
   - name: rabbitmq377
     image: rabbitmq:3.7.7
     securityContext:
-      seLinuxOptions:
-        level: "s0"
+      # seLinuxOptions:
+      #   level: "s0"
+      runAsUser: 0
+      priviliged: true
     # command:
     # - cat
     # tty: true
