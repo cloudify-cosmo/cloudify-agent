@@ -290,7 +290,8 @@ pipeline {
               dir("${env.WORKSPACE}/${env.PROJECT}"){
                 withVault([configuration: configuration, vaultSecrets: secrets]){
                   sh """#!/bin/bash
-                    cfy uninstall ec2-py27-blueprint
+                    source .venv/bin/activate
+                    cfy uninstall ec2-py27-blueprint --force --allow-custom-parameters -p ignore_failures=true
                   """
                 }
               }
