@@ -1,23 +1,23 @@
-def install_cron() {
-    echo 'install and run cron'
-    sh '''
-      apt-get update
-      apt-get install -y cron
-    '''
-}
-def install_test_dependencies() {
-  sh '''#!/bin/bash
-  ~/venv/bin/pip install -r dev-requirements.txt
-  ~/venv/bin/pip install -r test-requirements.txt
-  ~/venv/bin/pip install -e '.[fabric]'
-  '''
-}
-def pytest() {
-  echo 'running pytest'
-  sh '''#!/bin/bash
-    source ~/venv/bin/activate
-    ~/venv/bin/pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent/tests/api/pm/test_detach.py::test_delete --junitxml=test-results/cloudify_agent.xml
-  '''
+// def install_cron() {
+//     echo 'install and run cron'
+//     sh '''
+//       apt-get update
+//       apt-get install -y cron
+//     '''
+// }
+// def install_test_dependencies() {
+//   sh '''#!/bin/bash
+//   ~/venv/bin/pip install -r dev-requirements.txt
+//   ~/venv/bin/pip install -r test-requirements.txt
+//   ~/venv/bin/pip install -e '.[fabric]'
+//   '''
+// }
+// def pytest() {
+//   echo 'running pytest'
+//   sh '''#!/bin/bash
+//     source ~/venv/bin/activate
+//     ~/venv/bin/pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent/tests/api/pm/test_detach.py::test_delete --junitxml=test-results/cloudify_agent.xml
+//   '''
   //    -s --pdb cloudify_agent/tests/api/pm/test_detach.py::test_delete \
   // ~/venv/bin/pytest \
     // --run-rabbit-tests \
@@ -26,8 +26,18 @@ def pytest() {
     // --cov=cloudify_agent \
     // cloudify_agent/tests \
     // --junitxml=test-results/cloudify_agent.xml
+// }
 
-}
+ def configuration = [vaultUrl: "${VAULT_URL}",  vaultCredentialId: "vault-app-role", engineVersion: 2]
+
+def secrets = [
+  [path: 'secret/jenkins/cloudify', engineVersion: 2, secretValues: [
+    [envVar: 'OS_USERNAME', vaultKey: 'username'],
+    [envVar: 'OS_TENANT', vaultKey: 'tenant'],
+    [envVar: 'OS_IP', vaultKey: 'ip'],
+    [envVar: 'OS_PASSWORD', vaultKey: 'password']]],
+]
+
 @Library('pipeline-shared-library') _
 pipeline {
   agent {
@@ -40,7 +50,7 @@ pipeline {
   options {
     checkoutToSubdirectory('cloudify-agent')
     buildDiscarder(logRotator(numToKeepStr:'10'))
-    //timeout(time: 60, unit: 'MINUTES')
+    timeout(time: 60, unit: 'MINUTES')
     timestamps()
   }
   environment {
@@ -126,42 +136,99 @@ pipeline {
     //         }
     //       }
     //     }
+          stage('Deploy EC2 instances'){
+            steps{
+              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+                repoCheckout("https://github.com/cloudify-cosmo/cloudify-agent.git", "${env.PROJECT}", "CY-3099-migrate-jenkinsfile")
+
+                container('py27'){
+                  setupGithubSSHkey()
+                  dir("${env.WORKSPACE}/${env.PROJECT}"){
+                    withVault([configuration: configuration, vaultSecrets: secrets]){
+                      // change blueprint name to mine
+                      sh """#!/bin/bash
+                        apt-get update
+                        python -m ensurepip --upgrade
+                        python -m pip install --upgrade pip
+                        python -m pip install --upgrade virtualenv
+
+                        virtualenv .venv
+                        source .venv/bin/activate
+
+                        pip install cloudify==5.1.0
+                        cfy profile use ${env.OS_IP} -u ${env.OS_USERNAME} -p ${env.OS_PASSWORD} -t ${env.OS_TENANT}
+                        cfy install -b ec2-py27-blueprint ec2-blueprint.yaml
+                        cfy deployments capabilities ec2-py27-blueprint --json > capabilities.json
+                        echo -e \$(cat capabilities.json | jq '.key_content.value' | tr -d '"') > ~/.ssh/ec2_ssh_key && chmod 600 ~/.ssh/ec2_ssh_key
+                      sleep 120
+                      ssh-keyscan -H \$(cat capabilities.json | jq '.endpoint.value' | tr -d '"') >> ~/.ssh/known_hosts
+                      """
+                    }
+                  }
+                }
+              }
+            }
+          }
     //   }
     // }
     // stage('pytest and build rpm'){
       // parallel {
-        stage('test_py27'){
+        // stage('test_py27'){
+        //   steps{
+        //     sh script: "mkdir -p ${env.WORKSPACE}/test_py27 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test_py27", label: "copying repo to seperate workspace"
+        //     container('py27'){
+        //       dir("${env.WORKSPACE}/test_py27"){
+        //         // echo 'prepare'
+        //         // sh '''
+        //         //   apt-get update
+        //         //   apt-get install -y python-pip
+        //         //   apt-get install sudo
+        //         //   '''
+        //         //sh 'sleep 9000'
+        //         install_cron()
+        //         echo 'install and create virtual env'
+        //         sh '''
+        //           pip install virtualenv==15.1.0 --user
+        //           virtualenv ~/venv
+        //           '''
+        //           // export PATH=$PATH:/root/.local/bin
+        //           // sudo -H pip install virtualenv==15.1.0 --user
+        //         install_test_dependencies()
+        //         //sh 'sleep 9000'
+        //         pytest()
+        //       }
+        //     }
+        //   }
+        //   post {
+        //     always {
+        //       junit '**/test-results/*.xml'
+        //     }
+        //   }
+        // }
+        stage('Configure & Run-tests py27 on EC2 instance'){
           steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/test_py27 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test_py27", label: "copying repo to seperate workspace"
-            container('py27'){
-              dir("${env.WORKSPACE}/test_py27"){
-                // echo 'prepare'
-                // sh '''
-                //   apt-get update
-                //   apt-get install -y python-pip
-                //   apt-get install sudo
-                //   '''
-                //sh 'sleep 9000'
-                install_cron()
-                echo 'install and create virtual env'
-                sh '''
-                  pip install virtualenv==15.1.0 --user
-                  virtualenv ~/venv
-                  '''
-                  // export PATH=$PATH:/root/.local/bin
-                  // sudo -H pip install virtualenv==15.1.0 --user
-                install_test_dependencies()
-                //sh 'sleep 9000'
-                pytest()
+            catchError(buildResult: 'SUCESS', stageResult: 'FAILURE'){
+              container('py27'){
+                dir("${env.WORKSPACE}/${env.PROJECT}"){
+                  echo 'Prepare instance and run pytests'
+                  sh "ssh -i ~/.ssh/ec2_ssh_key -l centos \$(cat capabilities.json | jq '.endpoint.value' | tr -d '\"') /bin/bash < configure_py27.sh"
+                }
               }
             }
           }
-          post {
-            always {
-              junit '**/test-results/*.xml'
-            }
-          }
         }
+        // stage('Configure & Run-tests py36 on EC2 instance'){
+        //   steps{
+        //     catchError(buildResult: 'SUCESS', stageResult: 'FAILURE'){
+        //       container('py36'){
+        //         dir("${env.WORKSPACE}/${env.PROJECT}"){
+        //           echo 'Prepare instance and run pytests'
+        //           sh "ssh -i ~/.ssh/ec2_ssh_key -l centos \$(cat capabilities.json | jq '.endpoint.value' | tr -d '\"') /bin/bash < configure_py36.sh"
+        //         }
+        //       }
+        //     }
+        //   }
+        // }
         // stage('test_py36'){
         //   steps{
         //     sh script: "mkdir -p ${env.WORKSPACE}/test_py36 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/test_py36", label: "copying repo to seperate workspace"
@@ -212,5 +279,35 @@ pipeline {
         // }
       // }
     // }
+    stage('Terminate EC2 instances'){
+      parallel{
+        stage('Terminate py27 instnace'){
+          steps{
+            container('py27'){
+              dir("${env.WORKSPACE}/${env.PROJECT}"){
+                withVault([configuration: configuration, vaultSecrets: secrets]){
+                  sh """#!/bin/bash
+                    cfy uninstall ec2-py27-blueprint
+                  """
+                }
+              }
+            }
+          }
+        }
+        // stage('Terminate py36 instnace'){
+        //   steps{
+        //     container('py36'){
+        //       dir("${env.WORKSPACE}/${env.PROJECT}"){
+        //         withVault([configuration: configuration, vaultSecrets: secrets]){
+        //           sh """#!/bin/bash
+        //             cfy uninstall ec2-py36-blueprint
+        //           """
+        //         }
+        //       }
+        //     }
+        //   }
+        // }
+      }
+    }
   }
 }

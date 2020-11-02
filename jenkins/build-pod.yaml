@@ -8,10 +8,11 @@ spec:
     - cat
     tty: true
     securityContext:
-      seLinuxOptions:
-        level: "s0"
       runAsUser: 0
       privileged: true
+    resources:
+      requests:
+        cpu: 1
   # - name: py36
   #   image: circleci/python:3.6
   #   command:
@@ -39,13 +40,13 @@ spec:
   #   securityContext:
   #     runAsUser: 0
   #     privileged: true
-  - name: rabbitmq377
-    image: rabbitmq:3.7.7
-    securityContext:
-      # seLinuxOptions:
-      #   level: "s0"
-      runAsUser: 0
-      priviliged: true
+  # - name: rabbitmq377
+  #   image: rabbitmq:3.7.7
+  #   securityContext:
+  #     # seLinuxOptions:
+  #     #   level: "s0"
+  #     runAsUser: 0
+  #     priviliged: true
     # command:
     # - cat
     # tty: true
