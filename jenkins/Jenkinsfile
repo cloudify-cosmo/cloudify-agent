@@ -57,7 +57,7 @@ pipeline {
   environment {
     VERSION = getVersion("master").trim()
     PRERELEASE = getPreRelease("master").trim()
-    WORKSPACE = "${env.WORKSPACE}"
+    //WORKSPACE = "${env.WORKSPACE}"
     PROJECT = "cloudify-agent"
     PATH = "/root/.local/bin:$PATH"
   }
