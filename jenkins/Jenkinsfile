@@ -287,7 +287,7 @@ pipeline {
         stage('Terminate py27 instnace'){
           steps{
             container('py27'){
-              dir("${env.WORKSPACE}/${env.PROJECT}"){
+              dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
                 withVault([configuration: configuration, vaultSecrets: secrets]){
                   sh """#!/bin/bash
                     source .venv/bin/activate
