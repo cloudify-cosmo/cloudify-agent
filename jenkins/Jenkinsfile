@@ -144,7 +144,7 @@ pipeline {
 
                 container('py27'){
                   setupGithubSSHKey()
-                  dir("${env.WORKSPACE}/${env.PROJECT}"){
+                  dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
                     withVault([configuration: configuration, vaultSecrets: secrets]){
                       // change blueprint name to mine
                       sh """#!/bin/bash
@@ -161,8 +161,8 @@ pipeline {
                         cfy install -b ec2-blueprint-py27 ec2-py27-blueprint.yaml
                         cfy deployments capabilities ec2-blueprint-py27 --json > capabilities.json
                         echo -e \$(cat capabilities.json | jq '.key_content.value' | tr -d '"') > ~/.ssh/ec2_ssh_key && chmod 600 ~/.ssh/ec2_ssh_key
-                      sleep 120
-                      ssh-keyscan -H \$(cat capabilities.json | jq '.endpoint.value' | tr -d '"') >> ~/.ssh/known_hosts
+                        sleep 120
+                        ssh-keyscan -H \$(cat capabilities.json | jq '.endpoint.value' | tr -d '"') >> ~/.ssh/known_hosts
                       """
                     }
                   }
