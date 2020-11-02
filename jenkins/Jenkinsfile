@@ -39,6 +39,7 @@ def secrets = [
 ]
 
 @Library('pipeline-shared-library') _
+
 pipeline {
   agent {
     kubernetes {
@@ -142,7 +143,7 @@ pipeline {
                 repoCheckout("https://github.com/cloudify-cosmo/cloudify-agent.git", "${env.PROJECT}", "CY-3099-migrate-jenkinsfile")
 
                 container('py27'){
-                  setupGithubSSHkey()
+                  setupGithubSSHKey()
                   dir("${env.WORKSPACE}/${env.PROJECT}"){
                     withVault([configuration: configuration, vaultSecrets: secrets]){
                       // change blueprint name to mine
