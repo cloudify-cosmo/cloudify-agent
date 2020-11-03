@@ -215,23 +215,20 @@ pipeline {
                     echo 'Prepare instance and run pytests'
                     sh """#!/bin/bash
                       ssh -i ~/.ssh/ec2_ssh_key -l centos \$(cat capabilities.json | jq '.endpoint.value' | tr -d '"') /bin/bash << 'EOT'
-                      
-                      sudo yum install -y epel-release git vim python-virtualenv
-                      sudo yum install -y rabbitmq-server
-                      sudo yum install -y wget
-                      git clone https://github.com/cloudify-cosmo/cloudify-agent.git
-                      virtualenv .
-                      . bin/activate
-                      pushd cloudify-agent
-                      pip install -r test-requirements.txt
-                      pip install -r dev-requirements.txt
-                      pip install '.[fabric]'
-                      sudo systemctl enable rabbitmq-server
-                      sudo systemctl start rabbitmq-server
-                      pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent.xml
-                      
-                      EOT
-
+sudo yum install -y epel-release git vim python-virtualenv
+sudo yum install -y rabbitmq-server
+sudo yum install -y wget
+git clone https://github.com/cloudify-cosmo/cloudify-agent.git
+virtualenv .
+. bin/activate
+pushd cloudify-agent
+pip install -r test-requirements.txt
+pip install -r dev-requirements.txt
+pip install '.[fabric]'
+sudo systemctl enable rabbitmq-server
+sudo systemctl start rabbitmq-server
+pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent.xml
+EOT
                     """
                   }
                 }
