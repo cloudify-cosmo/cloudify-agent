@@ -15,7 +15,7 @@ inputs:
 
   availability_zone:
     type: string
-    default: { concat: [ { get_input: aws_region_name}, 'b' ] }
+    default: 'eu-west-1b'
 
   instance_type:
     type: string
@@ -72,7 +72,18 @@ node_templates:
         ImageId: { get_input:  aws_image_name }
         InstanceType: { get_input: instance_type }
         kwargs:
+          Placement:
+            AvailabilityZone: { get_input:  availability_zone }
           UserData: { get_attribute: [ cloud_init, cloud_config ] }
+          BlockDeviceMappings:
+          - DeviceName: '/dev/xvda'
+            Ebs:
+              VolumeSize: 22
+              VolumeType: standard
+              DeleteOnTermination: True
+      Tags:
+      - Key: protected  
+        Value: cfy-agent-tests      
       use_public_ip: true
     relationships:
     - type: cloudify.relationships.depends_on
