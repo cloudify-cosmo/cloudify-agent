@@ -218,21 +218,32 @@ sudo yum install -y epel-release git vim python-virtualenv
 sudo yum install -y rabbitmq-server
 sudo yum install -y wget
 git clone https://github.com/cloudify-cosmo/cloudify-agent.git
-virtualenv .
-. bin/activate
+sudo systemctl enable rabbitmq-server
+sudo systemctl start rabbitmq-server
+virtualenv py2
+source py2/bin/activate
 pushd cloudify-agent
 pip install -r test-requirements.txt
 pip install -r dev-requirements.txt
 pip install '.[fabric]'
-sudo systemctl enable rabbitmq-server
-sudo systemctl start rabbitmq-server
-pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent.xml
-scp test-results/*.xml 
+pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py2.xml
+popd
+deactivate
+sudo yum install -y python3
+python3 -m venv py3
+source py3/bin/activate
+pushd cloudify-agent
+pip install -r test-requirements.txt
+pip install -r dev-requirements.txt
+pip install '.[fabric]'
+pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py3.xml
+popd
+deactivate
 EOT
                     """
                     echo 'copy test results'
                     sh """
-                      scp centos@\$(cat capabilities.json | jq '.endpoint.value' | tr -d '"'):~/cloudify-agent/test-results/*.xml ${env.WORKSPACE}/${env.PROJECT}/jenkins/test-results
+                      scp centos@\$(cat capabilities.json | jq '.endpoint.value' | tr -d '"'):"~/cloudify-agent/test-results/*.xml" ${env.WORKSPACE}/${env.PROJECT}/jenkins/test-results
                       """
                   }
                 }
