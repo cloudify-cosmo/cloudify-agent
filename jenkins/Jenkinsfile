@@ -253,11 +253,11 @@ EOT
             }
           }
           post {
-            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+            //catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
               always {
                 junit '**/test-results/*.xml'
               }
-            }
+            //}
           }
         }
         // stage('Configure & Run-tests py36 on EC2 instance'){
