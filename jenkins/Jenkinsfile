@@ -231,7 +231,9 @@ scp test-results/*.xml
 EOT
                     """
                     echo 'copy test results'
-                    sh "scp centos@\$(cat capabilities.json | jq '.endpoint.value' | tr -d '"'):~/cloudify-agent/test-results/*.xml ${env.WORKSPACE}/${env.PROJECT}/jenkins/test-results"
+                    sh """
+                      scp centos@\$(cat capabilities.json | jq '.endpoint.value' | tr -d '"'):~/cloudify-agent/test-results/*.xml ${env.WORKSPACE}/${env.PROJECT}/jenkins/test-results
+                      """
                   }
                 }
               }
