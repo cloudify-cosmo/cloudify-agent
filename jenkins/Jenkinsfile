@@ -144,7 +144,6 @@ pipeline {
                   setupGithubSSHKey()
                   dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
                     withVault([configuration: configuration, vaultSecrets: secrets]){
-                      // change blueprint name to mine
                       sh """#!/bin/bash
                         apt-get update
                         python -m ensurepip --upgrade
@@ -228,13 +227,19 @@ pip install '.[fabric]'
 sudo systemctl enable rabbitmq-server
 sudo systemctl start rabbitmq-server
 pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent.xml
+scp test-results/*.xml 
 EOT
                     """
+                    echo 'copy test results'
+                    sh "scp centos@\$(cat capabilities.json | jq '.endpoint.value' | tr -d '"'):~/cloudify-agent/test-results/*.xml ${env.WORKSPACE}/${env.PROJECT}/jenkins/test-results"
                   }
                 }
               }
             }
           }
+          post {
+            always {
+              junit '**/test-results/*.xml'
         }
         // stage('Configure & Run-tests py36 on EC2 instance'){
         //   steps{
