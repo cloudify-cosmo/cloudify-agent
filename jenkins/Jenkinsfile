@@ -242,6 +242,8 @@ EOT
           post {
             always {
               junit '**/test-results/*.xml'
+            }
+          }
         }
         // stage('Configure & Run-tests py36 on EC2 instance'){
         //   steps{
@@ -338,3 +340,4 @@ EOT
     }
   }
 }
+  
