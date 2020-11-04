@@ -232,6 +232,8 @@ deactivate
 sudo yum install -y python3
 python3 -m venv py3
 source py3/bin/activate
+export LC_ALL=en_US.utf-8
+export LANG=en_US.utf-8
 pushd cloudify-agent
 pip install -r test-requirements.txt
 pip install -r dev-requirements.txt
@@ -243,7 +245,7 @@ EOT
                     """
                     echo 'copy test results'
                     sh """
-                      scp centos@\$(cat capabilities.json | jq '.endpoint.value' | tr -d '"'):"~/cloudify-agent/test-results/*.xml" ${env.WORKSPACE}/${env.PROJECT}/jenkins/test-results
+                      scp -i ~/.ssh/ec2_ssh_key centos@\$(cat capabilities.json | jq '.endpoint.value' | tr -d '"'):"~/cloudify-agent/test-results/*.xml" ${env.WORKSPACE}/${env.PROJECT}/jenkins/test-results
                       """
                   }
                 }
