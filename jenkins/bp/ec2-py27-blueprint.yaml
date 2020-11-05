@@ -82,7 +82,7 @@ node_templates:
               VolumeType: standard
               DeleteOnTermination: True
       Tags:
-      - Key: protected  
+      - Key: Name  
         Value: cfy-agent-tests      
       use_public_ip: true
     relationships:
