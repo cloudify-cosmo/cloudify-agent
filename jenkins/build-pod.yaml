@@ -41,4 +41,4 @@ spec:
       requests:
         cpu: 0.6
   nodeSelector:
-    instance-type: spot
+    instance-type: spot-xlarge
