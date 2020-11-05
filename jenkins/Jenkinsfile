@@ -245,6 +245,7 @@ EOT
                     """
                     echo 'copy test results'
                     sh """
+                      mkdir ${env.WORKSPACE}/${env.PROJECT}/jenkins/test-results
                       scp -i ~/.ssh/ec2_ssh_key centos@\$(cat capabilities.json | jq '.endpoint.value' | tr -d '"'):"~/cloudify-agent/test-results/*.xml" ${env.WORKSPACE}/${env.PROJECT}/jenkins/test-results/*.xml
                       sleep 9000
                       """
