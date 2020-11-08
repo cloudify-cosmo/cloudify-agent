@@ -33,47 +33,29 @@ pipeline {
   stages{
     stage ('compatability and flake8') {
       parallel{
-        // stage ('py3_compat'){
-        //   steps{
-        //     sh script: "mkdir -p ${env.WORKSPACE}/py3_compat && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/py3_compat", label: "copying repo to seperate workspace"
-        //     container('py27'){
-        //       dir("${env.WORKSPACE}/py3_compat"){
-        //         echo 'Installing futurize'
-        //         sh 'pip install future --user'
-        //         echo 'find python3-incompatible code'
-        //         sh '''#!/bin/bash
-        //         FUTURIZE="futurize ."
-        //         while read line; do
-        //           FUTURIZE="${FUTURIZE} ${line}"
-        //         done<.circleci/py3fixers
-        //         $FUTURIZE>futurize_diffs
-        //         '''
-        //         echo 'check that there is no python3-incompatible code'
-        //         sh """ #!/bin/bash
-        //         if [ -s futurize_diffs ]; then
-        //           echo "Python-3-incompatible code found"
-        //           cat futurize_diffs
-        //           exit 1
-        //         fi          
-        //         """
-        //       }
-        //     }
-        //   }
-        // }
-        stage('flake8_py27'){
+        stage ('py3_compat'){
           steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
+            sh script: "mkdir -p ${env.WORKSPACE}/py3_compat && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/py3_compat", label: "copying repo to seperate workspace"
             container('py27'){
-              dir("${env.WORKSPACE}/flake8") {
+              dir("${env.WORKSPACE}/py3_compat"){
                 py3Compat()
-                echo 'install flake 8'
-                sh 'pip install flake8 --user'
-                echo 'run flake8'
-                sh 'flake8 cloudify_agent'
               }
             }
           }
         }
+        // stage('flake8_py27'){
+        //   steps{
+        //     sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
+        //     container('py27'){
+        //       dir("${env.WORKSPACE}/flake8") {
+        //         echo 'install flake 8'
+        //         sh 'pip install flake8 --user'
+        //         echo 'run flake8'
+        //         sh 'flake8 cloudify_agent'
+        //       }
+        //     }
+        //   }
+        // }
 //         stage('flake8_py36'){
 //           steps{
 //             sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
