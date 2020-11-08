@@ -13,7 +13,7 @@ def secrets = [
 pipeline {
   agent {
     kubernetes {
-      label "agent-${env.BUILD_NUMBER}"
+      label "cloudify-agent-${env.BUILD_NUMBER}"
       defaultContainer 'jnlp'
       yamlFile 'jenkins/build-pod.yaml'
     }
