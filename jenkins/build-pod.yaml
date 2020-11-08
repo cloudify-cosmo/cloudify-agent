@@ -13,32 +13,32 @@ spec:
     resources:
       requests:
         cpu: 1
-  # - name: py36
-  #   image: circleci/python:3.6
-  #   command:
-  #   - cat
-  #   tty: true
-  #   securityContext:
-  #     runAsUser: 0
-  #     privileged: true
-  # - name: centos7
-  #   image: centos:7
-  #   command:
-  #   - cat
-  #   tty: true
-  #   securityContext:
-  #     runAsUser: 0
-  #     privileged: true
-  # - name: rpmbuild
-  #   image: rpmbuild/centos7
-  #   command:
-  #   - cat
-  #   tty: true
-  #   securityContext:
-  #     runAsUser: 0
-  #     privileged: true
-  #   resources:
-  #     requests:
-  #       cpu: 0.6
+  - name: py36
+    image: circleci/python:3.6
+    command:
+    - cat
+    tty: true
+    securityContext:
+      runAsUser: 0
+      privileged: true
+  - name: centos7
+    image: centos:7
+    command:
+    - cat
+    tty: true
+    securityContext:
+      runAsUser: 0
+      privileged: true
+  - name: rpmbuild
+    image: rpmbuild/centos7
+    command:
+    - cat
+    tty: true
+    securityContext:
+      runAsUser: 0
+      privileged: true
+    resources:
+      requests:
+        cpu: 0.6
   nodeSelector:
     instance-type: spot
