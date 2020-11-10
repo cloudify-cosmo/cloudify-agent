@@ -113,7 +113,7 @@ pipeline {
                       popd
                       cfy deployments capabilities ec2-py27-blueprint --json > capabilities.json
                       echo -e \$(cat capabilities.json | jq '.key_content.value' | tr -d '"') > ~/.ssh/ec2_ssh_key && chmod 600 ~/.ssh/ec2_ssh_key
-                      sleep 120
+                      sleep 160
                       ssh-keyscan -H \$(cat capabilities.json | jq '.endpoint.value' | tr -d '"') >> ~/.ssh/known_hosts
                     """, label:'Configure and install blueprint on manager'
                   }
@@ -173,8 +173,10 @@ EOT
             }
           }
           post {
-            always {
-              junit '**/test-results/*.xml'
+            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+              always {
+                junit '**/test-results/*.xml'
+              }
             }
           }
         }
