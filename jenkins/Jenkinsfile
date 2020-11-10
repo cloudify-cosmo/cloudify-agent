@@ -172,18 +172,6 @@ EOT
               }
             }
           }
-          post {
-            always {
-              steps{
-                if (fileExists('**/test-resutls/*.xml')){
-                  junit '**/test-results/*.xml'
-                }
-                else {
-                echo 'no test results to archive'
-                }
-              }
-            }
-          }
         }
         stage('build_rpm'){
           steps {
@@ -230,6 +218,11 @@ EOT
           }
         }
       }
+    }
+  }
+  post {
+    always {
+      junit '**/test-results/*.xml'
     }
   }
 }
