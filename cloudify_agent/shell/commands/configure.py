@@ -18,9 +18,10 @@ import click
 from cloudify_agent.api import utils
 from cloudify.utils import LocalCommandRunner
 from cloudify_agent.shell.decorators import handle_failures
+from cloudify_agent.shell.commands import cfy
 
 
-@click.command()
+@cfy.command()
 @click.option('--disable-requiretty',
               help='Disables the requiretty directive in the sudoers file.',
               is_flag=True)

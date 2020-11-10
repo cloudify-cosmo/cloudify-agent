@@ -28,6 +28,7 @@ from cloudify_agent.api.utils import (
 
 from cloudify_agent.shell.commands import daemons
 from cloudify_agent.shell.commands import configure
+from cloudify_agent.shell.commands import cfy
 
 
 _logger = setup_logger('cloudify_agent.shell.main',
@@ -49,7 +50,7 @@ def show_version(ctx, param, value):
     ctx.exit()
 
 
-@click.group()
+@cfy.group()
 @click.option('--debug', default=False, is_flag=True)
 @click.option('--version', is_flag=True, callback=show_version,
               expose_value=False, is_eager=True, help='Show version and exit')
@@ -65,12 +66,12 @@ def main(debug):
         api_utils_logger.setLevel(logging.DEBUG)
 
 
-@click.group('daemons')
+@cfy.group(name='daemons')
 def daemon_sub_command():
     pass
 
 
-@click.group('plugins')
+@cfy.group(name='plugins')
 def plugins_sub_command():
     pass
 
