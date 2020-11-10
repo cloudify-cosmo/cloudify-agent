@@ -174,11 +174,13 @@ EOT
           }
           post {
             always {
-              if (fileExists('**/test-resutls/*.xml')){
-                junit '**/test-results/*.xml'
-              }
-              else {
-              echo 'no test results to archive'
+              steps{
+                if (fileExists('**/test-resutls/*.xml')){
+                  junit '**/test-results/*.xml'
+                }
+                else {
+                echo 'no test results to archive'
+                }
               }
             }
           }
