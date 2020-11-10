@@ -173,13 +173,13 @@ EOT
             }
           }
           post {
-            if (fileExists('**/test-resutls/*.xml')){
-              always {
+            always {
+              if (fileExists('**/test-resutls/*.xml')){
                 junit '**/test-results/*.xml'
               }
-            }
-            else {
+              else {
               echo 'no test results to archive'
+              }
             }
           }
         }
