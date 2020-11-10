@@ -173,10 +173,13 @@ EOT
             }
           }
           post {
-            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+            if (fileExists('**/test-resutls/*.xml')){
               always {
                 junit '**/test-results/*.xml'
               }
+            }
+            else {
+              echo 'no test results to archive'
             }
           }
         }
