@@ -22,7 +22,7 @@ from cloudify_agent.api import utils as api_utils
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.shell import env
 from cloudify_agent.shell.decorators import handle_failures
-
+from cloudify_agent.shell.commands import cfy
 from cloudify.utils import (ENV_CFY_EXEC_TEMPDIR,
                             ENV_AGENT_LOG_LEVEL,
                             ENV_AGENT_LOG_MAX_BYTES,
@@ -36,7 +36,7 @@ class _ExpandUserPath(click.Path):
         return super(_ExpandUserPath, self).convert(value, param, ctx)
 
 
-@click.command(context_settings=dict(ignore_unknown_options=True))
+@cfy.command(context_settings=dict(ignore_unknown_options=True))
 @click.option('--process-management',
               help='The process management system to use '
                    'when creating the daemon. [env {0}]'
@@ -228,7 +228,7 @@ def create(**params):
                .format(daemon.name))
 
 
-@click.command()
+@cfy.command()
 @click.option('--name',
               help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
               required=True,
@@ -254,7 +254,7 @@ def configure(name, user=None):
                .format(daemon.name))
 
 
-@click.command()
+@cfy.command()
 @click.option('--name',
               help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
               required=True,
@@ -295,7 +295,7 @@ def start(name, interval, timeout, no_delete_amqp_queue, user=None):
     click.echo('Successfully started daemon: {0}'.format(name))
 
 
-@click.command()
+@cfy.command()
 @click.option('--name',
               help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
               required=True,
@@ -323,7 +323,7 @@ def stop(name, interval, timeout):
     click.secho('Successfully stopped daemon: {0}'.format(name))
 
 
-@click.command()
+@cfy.command()
 @click.option('--name',
               help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
               required=True,
@@ -342,7 +342,7 @@ def restart(name):
     click.echo('Successfully restarted daemon: {0}'.format(name))
 
 
-@click.command()
+@cfy.command()
 @click.option('--name',
               help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
               required=True,
@@ -362,7 +362,7 @@ def delete(name):
     click.echo('Successfully deleted daemon: {0}'.format(name))
 
 
-@click.command()
+@cfy.command()
 @click.option('--name',
               help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
               required=True,
@@ -379,7 +379,7 @@ def inspect(name):
     click.echo(json.dumps(api_utils.internal.daemon_to_dict(daemon), indent=2))
 
 
-@click.command('list')
+@cfy.command('list')
 @handle_failures
 def ls():
 
@@ -394,7 +394,7 @@ def ls():
         click.echo(daemon.name)
 
 
-@click.command()
+@cfy.command()
 @click.option('--name',
               help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
               required=True,
