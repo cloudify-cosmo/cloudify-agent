@@ -63,7 +63,7 @@ class CommandMixin(object):
             if os.name == "posix":
                 try:
                     locales = subprocess.Popen(
-                        ["locale", "-a"], stdout=subprocess.PIPE,
+                        ["/usr/bin/locale", "-a"], stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE
                     ).communicate()[0]
                 except OSError:
