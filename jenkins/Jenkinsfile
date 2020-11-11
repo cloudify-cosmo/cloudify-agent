@@ -116,6 +116,7 @@ pipeline {
                       sleep 160
 
                       ssh-keyscan -H \$(cat capabilities.json | jq '.endpoint.value' | tr -d '"') >> ~/.ssh/known_hosts
+                      echo 'ClientAliveInterval 50' | sudo tee --append /etc/ssh/sshd_config
                     """, label:'Configure and install blueprint on manager'
                   }
                 }
@@ -148,7 +149,7 @@ pushd cloudify-agent
 pip install -r test-requirements.txt
 pip install -r dev-requirements.txt
 pip install '.[fabric]'
-screen -dm bash -c 'pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py2.xml'
+pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py2.xml
 popd
 deactivate
 sudo yum install -y python3
@@ -160,7 +161,7 @@ pushd cloudify-agent
 pip install -r test-requirements.txt
 pip install -r dev-requirements.txt
 pip install '.[fabric]'
-screen -dm bash -c 'pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py3.xml'
+pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py3.xml
 popd
 deactivate
 EOT
@@ -172,11 +173,6 @@ EOT
                   }
                 }
               }
-            }
-          }
-          post {
-            always {
-              junit '**/test-results/*.xml'
             }
           }
         }
