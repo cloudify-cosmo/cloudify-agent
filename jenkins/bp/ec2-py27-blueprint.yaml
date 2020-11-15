@@ -19,7 +19,7 @@ inputs:
 
   instance_type:
     type: string
-    default: t3.large
+    default: t3.medium
 
   aws_image_name:
     type: string
