@@ -109,12 +109,13 @@ pipeline {
                       pip install cloudify==5.1.0
                       cfy profile use ${env.OS_IP} -u ${env.OS_USERNAME} -p ${env.OS_PASSWORD} -t ${env.OS_TENANT}
                       pushd 'bp'
-                        cfy install -b ec2-py27-blueprint ec2-py27-blueprint.yaml
+                        cfy install -b ec2-py27-blueprint-${env.BUILD_NUMBER} ec2-py27-blueprint.yaml
                       popd
-                      cfy deployments capabilities ec2-py27-blueprint --json > capabilities.json
+                      cfy deployments capabilities ec2-py27-blueprint-${env.BUILD_NUMBER} --json > capabilities.json
                       echo -e \$(cat capabilities.json | jq '.key_content.value' | tr -d '"') > ~/.ssh/ec2_ssh_key && chmod 600 ~/.ssh/ec2_ssh_key
-                      sleep 120
+                      sleep 160
                       ssh-keyscan -H \$(cat capabilities.json | jq '.endpoint.value' | tr -d '"') >> ~/.ssh/known_hosts
+                      echo 'ClientAliveInterval 50' | sudo tee --append /etc/ssh/sshd_config
                     """, label:'Configure and install blueprint on manager'
                   }
                 }
@@ -172,11 +173,6 @@ EOT
               }
             }
           }
-          post {
-            always {
-              junit '**/test-results/*.xml'
-            }
-          }
         }
         stage('build_rpm'){
           steps {
@@ -217,12 +213,17 @@ EOT
               echo 'Uninstall and delete blueprint from manager'
               sh """#!/bin/bash
                 source .venv/bin/activate
-                cfy uninstall ec2-py27-blueprint --force --allow-custom-parameters -p ignore_failures=true
+                cfy uninstall ec2-py27-blueprint-${env.BUILD_NUMBER} --force --allow-custom-parameters -p ignore_failures=true
               """
             }
           }
         }
       }
+    }
+  }
+  post {
+    always {
+      junit '**/test-results/*.xml'
     }
   }
 }
