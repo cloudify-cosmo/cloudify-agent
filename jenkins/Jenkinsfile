@@ -8,7 +8,7 @@ def secrets = [
     [envVar: 'OS_PASSWORD', vaultKey: 'password']]],
 ]
 
-@Library('pipeline-shared-library@polish-py3Compat') _
+@Library('pipeline-shared-library') _
 
 pipeline {
   agent {
