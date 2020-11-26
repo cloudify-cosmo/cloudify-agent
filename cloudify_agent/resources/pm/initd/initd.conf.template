@@ -22,6 +22,7 @@ export CFY_EXEC_TEMP="{{ executable_temp_path }}"
 export ENABLE_CRON_SCRIPT="{{ enable_cron_script }}"
 export DISABLE_CRON_SCRIPT="{{ disable_cron_script }}"
 export ENABLE_CRON_RESPAWN={{ cron_respawn }}
+export CLOUDIFY_DAEMON_USER={{ user }}
 
 # Extra environment variables provided by users
 EXTRA_ENV_PATH={{ extra_env_path }}
