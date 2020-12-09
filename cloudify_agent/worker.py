@@ -22,6 +22,13 @@ import argparse
 import traceback
 import threading
 
+from datetime import datetime
+from prometheus_client import (CollectorRegistry,
+                               Counter,
+                               Gauge,
+                               push_to_gateway,
+                               )
+
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
 
@@ -39,7 +46,11 @@ from cloudify.utils import get_manager_name
 from cloudify_agent.operations import install_plugins, uninstall_plugins
 
 DEFAULT_MAX_WORKERS = 10
-
+PUSHGATEWAY_ADDR = "127.0.0.1:9091"
+# TODO: create those metrics with a 'cloudify' prefix
+JOB_LAST_EXECUTION_UNIXTIME = 'job_last_execution_unixtime'
+TOTAL_EXECUTIONS = 'executions'
+HANDLE_DURATION_SECONDS = 'handle_duration_seconds'
 
 class CloudifyOperationConsumer(TaskConsumer):
     routing_key = 'operation'
@@ -47,6 +58,7 @@ class CloudifyOperationConsumer(TaskConsumer):
 
     def __init__(self, *args, **kwargs):
         self._registry = kwargs.pop('registry')
+        self._metrics_registry = kwargs.pop('metrics_registry')
         super(CloudifyOperationConsumer, self).__init__(*args, **kwargs)
 
     def _print_task(self, ctx, action, handler, status=None):
@@ -130,20 +142,26 @@ class CloudifyOperationConsumer(TaskConsumer):
 
         self._print_task(ctx, 'Started handling', handler)
         try:
+            self._metrics_task_started(ctx)
             self._validate_not_cancelled(handler, ctx)
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
+            self._metrics_task_finished(ctx, 'success')
             result = {'ok': True, 'result': rv}
             status = 'SUCCESS - result: {0}'.format(result)
         except exceptions.StopAgent:
+            self._metrics_task_finished(ctx, 'stopping agent')
             result = STOP_AGENT
             status = 'Stopping agent'
         except exceptions.OperationRetry as e:
+            self._metrics_task_finished(ctx, 'rescheduled')
             result = {'ok': False, 'error': serialize_known_exception(e)}
             status = 'Operation rescheduled'
         except exceptions.ProcessKillCancelled:
+            self._metrics_task_finished(ctx, 'kill canceled')
             self._print_task(ctx, 'Task kill-cancelled', handler)
             return NO_RESPONSE
         except Exception as e:
+            self._metrics_task_finished(ctx, 'error')
             error = serialize_known_exception(e)
             result = {'ok': False, 'error': error}
             status = 'ERROR - result: {0}'.format(result)
@@ -153,8 +171,21 @@ class CloudifyOperationConsumer(TaskConsumer):
                 '\n{0}'.format(error['traceback'])
                 if error.get('traceback') else ''
             )
+        finally:
+            self._metrics_job_executed(ctx, task['kwargs'])
         self._print_task(ctx, 'Finished handling', handler, status)
         return result
+
+    def _metrics_task_started(self, ctx):
+        self._metrics_registry.handle_task_started(ctx.get('execution_id'))
+
+    def _metrics_task_finished(self, ctx, status):
+        self._metrics_registry.handle_task_finished(ctx.get('execution_id'),
+                                                    status)
+
+    def _metrics_job_executed(self, ctx, kwargs):
+        self._metrics_registry.job_executed(ctx, kwargs)
+        self._metrics_registry.push_metrics()
 
 
 class ServiceTaskConsumer(TaskConsumer):
@@ -171,20 +202,24 @@ class ServiceTaskConsumer(TaskConsumer):
     def __init__(self, name, *args, **kwargs):
         self.name = name
         self._operation_registry = kwargs.pop('operation_registry')
+        self._metrics_registry = kwargs.pop('metrics_registry')
         super(ServiceTaskConsumer, self).__init__(*args, **kwargs)
 
     def handle_task(self, full_task):
-
         task = full_task['service_task']
         task_name = task['task_name']
         kwargs = task['kwargs']
+        ctx = task['kwargs'].get('__cloudify_context')
 
         logger.info(
             'Received `{0}` service task with kwargs: {1}'.format(
                 task_name, kwargs))
         task_handler = getattr(self, self.service_tasks[task_name])
+        self._metrics_task_started(ctx, kwargs)
         result = task_handler(**kwargs)
+        self._metrics_task_finished(ctx, kwargs, result)
         logger.info('Result: {0}'.format(result))
+        self._metrics_job_executed(ctx, kwargs)
         return result
 
     def ping_task(self):
@@ -311,6 +346,30 @@ class ServiceTaskConsumer(TaskConsumer):
             raise RuntimeError('{0} sent to agent with no name '
                                'set'.format(command_name))
 
+    def _metrics_task_started(self, ctx, kwargs):
+        if ctx and 'execution_id' in ctx:
+            execution_id = ctx['execution_id']
+        elif kwargs and 'execution_id' in kwargs:
+            execution_id = kwargs['execution_id']
+        else:
+            # execution_id = 'UNKNOWN'
+            pass
+        self._metrics_registry.handle_task_started(execution_id)
+
+    def _metrics_task_finished(self, ctx, kwargs, status):
+        if ctx and 'execution_id' in ctx:
+            execution_id = ctx['execution_id']
+        elif kwargs and 'execution_id' in kwargs:
+            execution_id = kwargs['execution_id']
+        else:
+            # execution_id = 'UNKNOWN'
+            pass
+        self._metrics_registry.handle_task_finished(execution_id, status)
+
+    def _metrics_job_executed(self, ctx, kwargs):
+        self._metrics_registry.job_executed(ctx, kwargs)
+        self._metrics_registry.push_metrics()
+
 
 def _setup_excepthook(daemon_name):
     # Setting a new exception hook to catch any exceptions
@@ -388,14 +447,143 @@ class ProcessRegistry(object):
     def make_key(self, handler):
         return handler.ctx.execution_id
 
+    def __len__(self):
+        return len(self._processes)
+
+
+class MetricsRegistryException(BaseException):
+    pass
+
+
+class MetricsRegistry(object):
+    """A registry for metrics gathering and reporting."""
+    __instances = {}
+
+    @staticmethod
+    def instance(push_gateway_addr):
+        if push_gateway_addr not in MetricsRegistry.__instances:
+            MetricsRegistry(push_gateway_addr)
+        return MetricsRegistry.__instances[push_gateway_addr]
+
+    def __init__(self, push_gateway_addr):
+        if push_gateway_addr in MetricsRegistry.__instances:
+            raise MetricsRegistryException(
+                'Cowardly refusing to create a second instance of '
+                'MetricsRegistry for push gateway {0}'
+                    .format(push_gateway_addr))
+        self.push_gateway_addr = push_gateway_addr
+        self.collector_registry = CollectorRegistry()
+        self.metrics = {}
+        self.handle_stats = {}
+        self.add_metric(JOB_LAST_EXECUTION_UNIXTIME,
+                        Gauge(JOB_LAST_EXECUTION_UNIXTIME,
+                              'Last time a batch job finished',
+                              ['type', 'queue', 'tenant', 'task',
+                               'node_id', 'deployment_id', 'workflow_id',
+                               'status'],
+                              namespace='cloudify',
+                              registry=None))
+        self.add_metric(TOTAL_EXECUTIONS,
+                        Counter(TOTAL_EXECUTIONS,
+                                'Number of executions so far',
+                                ['type', 'queue', 'tenant', 'task',
+                                 'node_id', 'deployment_id', 'workflow_id',
+                                 'status'],
+                                namespace='cloudify',
+                                registry=None))
+        self.add_metric(HANDLE_DURATION_SECONDS,
+                        Gauge(HANDLE_DURATION_SECONDS,
+                              'Task handling duration in seconds',
+                              ['type', 'queue', 'tenant', 'task',
+                               'node_id', 'deployment_id', 'workflow_id',
+                               'status'],
+                              namespace='cloudify',
+                              registry=None))
+        MetricsRegistry.__instances[push_gateway_addr] = self
+
+    def add_metric(self, name, metric):
+        # Metrics must have empty `labelvalues`
+        if metric._labelvalues:
+            raise MetricsRegistryException(
+                'metrics added with MetricsRegistry should not have label '
+                'values predefined')
+        self.metrics[name] = metric
+        self.collector_registry.register(metric)
+
+    def handle_task_started(self, execution_id):
+        self.handle_stats[execution_id] = {'started_at': datetime.utcnow()}
+
+    def handle_task_finished(self, execution_id, status=None):
+        if execution_id not in self.handle_stats:
+            return
+        self.handle_stats[execution_id]['ended_at'] = datetime.utcnow()
+        self.handle_stats[execution_id]['status'] = status
+
+    def job_executed(self, ctx, kwargs):
+        if ctx and 'execution_id' in ctx:
+            execution_id = ctx['execution_id']
+        elif kwargs and 'execution_id' in kwargs:
+            execution_id = kwargs['execution_id']
+        else:
+            return
+
+        if ctx and 'deployment_id' in ctx:
+            deployment_id = ctx['deployment_id']
+        elif kwargs and 'deployment_id' in kwargs:
+            deployment_id = kwargs['deployment_id']
+        else:
+            return
+
+        c = self.metrics.get(TOTAL_EXECUTIONS)
+        d = self.metrics.get(HANDLE_DURATION_SECONDS)
+        t = self.metrics.get(JOB_LAST_EXECUTION_UNIXTIME)
+        if not c or not d or not t:
+            return
+
+        logger.info('MATEUSZ ctx: {0}'.format(ctx))
+        logger.info('MATEUSZ kwargs: {0}'.format(kwargs))
+
+        duration_seconds = -1
+        status = ''
+        if execution_id in self.handle_stats:
+            handle_stats = self.handle_stats.pop(execution_id)
+            if 'started_at' in handle_stats and 'ended_at' in handle_stats:
+                duration = handle_stats['ended_at'] - handle_stats['started_at']
+                duration_seconds = duration.total_seconds()
+            if 'status' in handle_stats:
+                status = handle_stats['status']
+
+        ctx_type = ctx.get('type', 'operation')
+        kwargs = {
+            'type': (ctx_type if ctx_type in ['workflow', 'hook']
+                     else 'operation'),
+            'queue': ctx.get('task_target', ''),
+            'tenant': ctx.get('tenant', {}).get('name', ''),
+            'task': ctx.get('task_name', ''),
+            'node_id': ctx.get('node_id', ''),
+            'deployment_id': deployment_id,
+            'workflow_id': ctx.get('workflow_id', ''),
+            'status': status,
+        }
+        c.labels(**kwargs).inc()
+        d.labels(**kwargs).set(duration_seconds)
+        t.labels(**kwargs).set_to_current_time()
+
+    def push_metrics(self):
+        push_to_gateway(self.push_gateway_addr, job="cloudify-worker",
+                        registry=self.collector_registry)
+
 
 def make_amqp_worker(args):
     operation_registry = ProcessRegistry()
+    metrics_registry = MetricsRegistry.instance(args.push_gateway)
     handlers = [
         CloudifyOperationConsumer(args.queue, args.max_workers,
-                                  registry=operation_registry),
+                                  registry=operation_registry,
+                                  metrics_registry=metrics_registry),
         ServiceTaskConsumer(args.name, args.queue, args.max_workers,
-                            operation_registry=operation_registry),
+                            operation_registry=operation_registry,
+                            metrics_registry=metrics_registry),
     ]
 
     return AMQPConnection(handlers=handlers,
@@ -411,6 +599,7 @@ def main():
     parser.add_argument('--max-workers', default=DEFAULT_MAX_WORKERS, type=int)
     parser.add_argument('--name')
     parser.add_argument('--hooks-queue')
+    parser.add_argument('--push-gateway', default=PUSHGATEWAY_ADDR)
     args = parser.parse_args()
 
     if args.name:
