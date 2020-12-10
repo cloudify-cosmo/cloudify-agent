@@ -223,12 +223,7 @@ def get_home_dir(username=None):
     else:
         import pwd
         if username is None:
-            if 'SUDO_USER' in os.environ:
-                # command was executed via sudo
-                # get the original user
-                username = os.environ['SUDO_USER']
-            else:
-                username = getpass.getuser()
+            username = getpass.getuser()
         return pwd.getpwnam(username).pw_dir
 
 

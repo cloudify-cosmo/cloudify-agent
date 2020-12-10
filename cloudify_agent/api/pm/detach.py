@@ -56,19 +56,19 @@ class DetachedDaemon(CronRespawnDaemonMixin):
         super(DetachedDaemon, self).start(interval, timeout, delete_amqp_queue)
 
         # add cron job to re-spawn the process
-        self._logger.debug('Adding cron JOB')
-        self._runner.run(self.create_enable_cron_script())
+        # self._logger.debug('Adding cron JOB')
+        # self._runner.run(self.create_enable_cron_script())
 
     def before_self_stop(self):
-        self._logger.debug('Removing cron JOB')
-        self._runner.run(self.create_disable_cron_script())
+        # self._logger.debug('Removing cron JOB')
+        # self._runner.run(self.create_disable_cron_script())
         super(DetachedDaemon, self).before_self_stop()
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        if self._is_daemon_running():
-            if not force:
-                raise exceptions.DaemonStillRunningException(self.name)
-            self.stop()
+        # if self._is_daemon_running():
+        #     if not force:
+        #         raise exceptions.DaemonStillRunningException(self.name)
+        #     self.stop()
 
         if os.path.exists(self.pid_file):
             self._logger.debug('Removing {0}'.format(self.pid_file))
@@ -110,7 +110,6 @@ class DetachedDaemon(CronRespawnDaemonMixin):
         self._logger.debug('Rendering detached script from template')
         rendered = utils.render_template_to_file(
             template_path='pm/detach/detach.template',
-            config_path=self.config_path,
             queue=self.queue,
             name=self.name,
             user=self.user,

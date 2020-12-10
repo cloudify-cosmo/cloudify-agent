@@ -393,7 +393,7 @@ class CloudifyAgentConfig(dict):
             self['workdir'] = join(self['agent_dir'], 'work')
 
         if not self.get('envdir'):
-            self['envdir'] = join(self['agent_dir'], 'env')
+            self['envdir'] = self['agent_dir']
 
         if not self.get('broker_ssl_cert_path'):
             self['broker_ssl_cert_path'] = \
@@ -510,9 +510,22 @@ def update_agent_runtime_properties(cloudify_agent):
     Update runtime properties, so that they will be available to future
     operations
     """
-    items_to_remove = ['rest_tenant', 'rest_token',
-                       'broker_user', 'broker_pass']
-    for item in items_to_remove:
-        cloudify_agent.pop(item, None)
-    ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
+    ctx.instance.runtime_properties['cloudify_agent'] = {
+        'broker_ssl_cert': cloudify_agent['broker_ssl_cert'],
+        'rest_ssl_cert': cloudify_agent['rest_ssl_cert'],
+        'vhost': cloudify_agent['tenant']['rabbitmq_vhost'],
+        'network': cloudify_agent['network'],
+        'name': cloudify_agent['name'],
+        'max_workers': cloudify_agent['max_workers'],
+        'process_management': cloudify_agent['process_management'],
+
+        # these ones are not needed by the agent itself but only by
+        # the manager-side infra
+        'queue': cloudify_agent['queue'],
+        'rest_host': cloudify_agent['rest_host'],
+        'install_method': cloudify_agent['install_method'],
+        'windows': cloudify_agent['windows'],
+        'user': cloudify_agent['user'],
+        'tenant': cloudify_agent['tenant']
+    }
     ctx.instance.update()

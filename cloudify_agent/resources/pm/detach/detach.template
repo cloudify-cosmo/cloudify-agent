@@ -1,8 +1,6 @@
 #!/bin/bash -e
 
 # sourcing the configuration file
-. "{{ config_path }}"
-
 PIDFILE="{{ pid_file }}"
 
 if [ -f "$PIDFILE" ] && ps -p "$(< "$PIDFILE")"; then
@@ -12,7 +10,5 @@ fi
 
 # running the agent worker command directly
 nohup {{ virtualenv_path }}/bin/python -m cloudify_agent.worker \
-    --queue "{{ queue }}" \
-    --max-workers {{ max_workers }} \
     --name "{{ name }}"  </dev/null >/dev/null 2>&1 &
 echo $! > "$PIDFILE"

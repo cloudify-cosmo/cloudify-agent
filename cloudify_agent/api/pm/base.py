@@ -168,7 +168,7 @@ class Daemon(object):
 
     # add specific mandatory parameters for different implementations.
     # they will be validated upon daemon creation
-    MANDATORY_PARAMS = ['rest_host', 'broker_ip', 'local_rest_cert_file']
+    MANDATORY_PARAMS = ['rest_host', 'broker_ip']
 
     def __init__(self, logger=None, **params):
 
@@ -217,14 +217,21 @@ class Daemon(object):
         # configure command runner
         self._runner = LocalCommandRunner(logger=self._logger)
 
+        self.name = params['name']
+        self.workdir = os.path.expanduser(
+            params.get('agent_dir') or os.getcwd())
+
         # Mandatory parameters
-        self.validate_mandatory()
-        self.rest_host = params['rest_host']
-        self.broker_ip = params['broker_ip']
-        self.local_rest_cert_file = params['local_rest_cert_file']
+        # self.validate_mandatory()
+        self.rest_host = params.get('rest_host')
+        self.broker_ip = params.get('broker_ip')
+        self.local_rest_cert_file = (
+            params.get('local_rest_cert_file') or
+            os.path.join(self.workdir, '{0}.pem'.format(self.name))
+        )
 
         # Optional parameters - REST client
-        self.validate_optional()
+        # self.validate_optional()
         self.rest_port = params.get('rest_port', defaults.INTERNAL_REST_PORT)
         # REST token needs to be prefixed with _ so it's not stored
         # when the daemon is serialized
@@ -232,14 +239,13 @@ class Daemon(object):
         self._rest_tenant = params.get('rest_tenant')
 
         # Optional parameters
-        self.name = params.get('name') or self._get_name_from_manager()
         self.user = params.get('user') or getpass.getuser()
 
         self.broker_user = params.get('broker_user', 'guest')
         self.broker_pass = params.get('broker_pass', 'guest')
         self.broker_vhost = params.get('broker_vhost', '/')
         self.broker_ssl_enabled = params.get('broker_ssl_enabled', False)
-        self.broker_ssl_cert_path = params['local_rest_cert_file']
+        self.broker_ssl_cert_path = self.local_rest_cert_file
         if self.broker_ssl_enabled:
             self.broker_port = constants.BROKER_PORT_SSL
         else:
@@ -248,11 +254,10 @@ class Daemon(object):
 
         self.host = params.get('host')
         self.deployment_id = params.get('deployment_id')
-        self.queue = params.get('queue') or self._get_queue_from_manager()
+        self.queue = params.get('queue')
 
         self.min_workers = params.get('min_workers') or defaults.MIN_WORKERS
         self.max_workers = params.get('max_workers') or defaults.MAX_WORKERS
-        self.workdir = params.get('workdir') or os.getcwd()
         self.log_max_bytes = params.get('log_max_bytes',
                                         defaults.LOG_FILE_SIZE)
         self.log_max_history = params.get('log_max_history',
@@ -424,8 +429,7 @@ class Daemon(object):
 
         """
         self.create_script()
-        self.create_config()
-        self.create_broker_conf()
+        # self.create_broker_conf()
 
     def start(self,
               interval=defaults.START_INTERVAL,
@@ -457,6 +461,7 @@ class Daemon(object):
         self._logger.info('Starting daemon with command: {0}'
                           .format(start_command))
         self._runner.run(start_command)
+        return
         end_time = time.time() + timeout
         while time.time() < end_time:
             if self._is_daemon_running():

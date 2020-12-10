@@ -38,6 +38,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         super(AgentInstallationScriptBuilder, self).__init__(cloudify_agent)
         self.custom_env = None
         self.file_server_root = cloudify_utils.get_manager_file_server_root()
+        self.rest_host = cloudify_utils.get_manager_rest_service_host()[0]
         self.file_server_url = cloudify_agent['file_server_url']
 
         basedir = self.cloudify_agent['basedir']
@@ -77,6 +78,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         daemon_env = self._create_agent_env()
         return template.render(
             conf=self.cloudify_agent,
+            rest_host=self.rest_host,
             daemon_env=daemon_env,
             pm_options=self._create_process_management_options(),
             custom_env=self.custom_env,
@@ -197,7 +199,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         cleanup = self.cloudify_agent.get(LOCAL_CLEANUP_PATHS_KEY, [])
         cleanup.append(path)
         self.cloudify_agent[LOCAL_CLEANUP_PATHS_KEY] = cleanup
-        update_agent_runtime_properties(self.cloudify_agent)
+        # update_agent_runtime_properties(self.cloudify_agent)
 
     def stop_old_agent(self, old_agent_name):
         template = self._get_template(self.stop_old_agent_template)

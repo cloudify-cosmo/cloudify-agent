@@ -16,12 +16,14 @@
 
 import os
 import sys
+import json
 import time
 import logging
 import argparse
 import traceback
 import threading
 
+import cloudify
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
 
@@ -130,7 +132,7 @@ class CloudifyOperationConsumer(TaskConsumer):
 
         self._print_task(ctx, 'Started handling', handler)
         try:
-            self._validate_not_cancelled(handler, ctx)
+            # self._validate_not_cancelled(handler, ctx)
             rv = handler.handle_or_dispatch_to_subprocess_if_remote()
             result = {'ok': True, 'result': rv}
             status = 'SUCCESS - result: {0}'.format(result)
@@ -389,17 +391,41 @@ class ProcessRegistry(object):
         return handler.ctx.execution_id
 
 
-def make_amqp_worker(args):
+def _setup_envvars(name, config):
+    storage_dir = utils.internal.get_storage_directory()
+    agent_dir = os.path.expanduser(config['agent_dir'])
+    rest_hosts = config['rest_host']
+    file_servers = [
+        'https://{0}:53333/resources'.format(host)
+        for host in rest_hosts
+    ]
+    cert = os.path.join(agent_dir, 'ca_cert.pem')
+    os.environ.update({
+        'CLOUDIFY_DAEMON_STORAGE_DIRECTORY': storage_dir,
+        'CLOUDIFY_DAEMON_USER': config['user'],
+        'AGENT_NAME': name,
+        'AGENT_WORK_DIR': agent_dir,
+        'AGENT_LOG_MAX_BYTES': str(config.get('log_max_bytes', 5242880)),
+        'AGENT_LOG_MAX_HISTORY': str(config.get('log_max_history', 7)),
+        'AGENT_LOG_DIR': agent_dir,
+        'AGENT_LOG_LEVEL': config.get('log_level', 'INFO'),
+        'LOCAL_REST_CERT_FILE': cert,
+        'MANAGER_FILE_SERVER_URL': ','.format(file_servers),
+        'REST_HOST': ','.join(rest_hosts),
+        'REST_PORT': '53333'
+    })
+
+
+def make_amqp_worker(name, config):
     operation_registry = ProcessRegistry()
     handlers = [
-        CloudifyOperationConsumer(args.queue, args.max_workers,
+        CloudifyOperationConsumer(config['queue'], config['max_workers'],
                                   registry=operation_registry),
-        ServiceTaskConsumer(args.name, args.queue, args.max_workers,
+        ServiceTaskConsumer(name, config['queue'], config['max_workers'],
                             operation_registry=operation_registry),
     ]
-
     return AMQPConnection(handlers=handlers,
-                          name=args.name,
+                          name=name,
                           connect_timeout=None)
 
 
@@ -407,19 +433,25 @@ def main():
     global logger
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--queue')
-    parser.add_argument('--max-workers', default=DEFAULT_MAX_WORKERS, type=int)
     parser.add_argument('--name')
-    parser.add_argument('--hooks-queue')
     args = parser.parse_args()
+    name = args.name
+    config_filename = os.path.join(
+        utils.internal.get_storage_directory(),
+        '{0}.json'.format(name)
+    )
+    with open(config_filename) as f:
+        config = json.load(f)
 
-    if args.name:
-        _setup_excepthook(args.name)
-    logger = logging.getLogger('worker.{0}'.format(args.name))
-    setup_agent_logger(args.name)
+    if name:
+        _setup_excepthook(name)
+    logger = logging.getLogger('worker.{0}'.format(name))
+    setup_agent_logger(name)
 
+    _setup_envvars(name, config)
+    cloudify.broker_config.load_broker_config()
     while True:
-        worker = make_amqp_worker(args)
+        worker = make_amqp_worker(name, config)
         try:
             worker.consume()
         except Exception:

@@ -42,12 +42,11 @@ class _ExpandUserPath(click.Path):
                    'when creating the daemon. [env {0}]'
               .format(env.CLOUDIFY_DAEMON_PROCESS_MANAGEMENT),
               type=click.Choice(['init.d', 'nssm', 'detach', 'systemd']),
-              required=True,
+              required=False,
               envvar=env.CLOUDIFY_DAEMON_PROCESS_MANAGEMENT)
 @click.option('--rest-host',
               help='The IP or host name of the REST service [env {0}]'
               .format(env.CLOUDIFY_REST_HOST),
-              required=True,
               envvar=env.CLOUDIFY_REST_HOST,
               callback=api_utils._parse_comma_separated)
 @click.option('--rest-port',
@@ -217,15 +216,14 @@ def create(**params):
     attributes.update(_parse_custom_options(custom_arg))
 
     click.echo('Creating...')
-    from cloudify_agent.shell.main import get_logger
-    daemon = DaemonFactory().new(
-        logger=get_logger(),
-        **attributes
+    daemon = _load_daemon(params['name'])
+    daemon.configure()
+    daemon.start(
+        interval=defaults.START_INTERVAL,
+        timeout=defaults.START_TIMEOUT,
+        delete_amqp_queue=False
     )
-    daemon.create()
-    _save_daemon(daemon)
-    click.echo('Successfully created daemon: {0}'
-               .format(daemon.name))
+    click.echo('Successfully created daemon: {0}'.format(daemon.name))
 
 
 @cfy.command()
@@ -284,7 +282,6 @@ def start(name, interval, timeout, no_delete_amqp_queue, user=None):
     Starts the daemon.
 
     """
-
     click.echo('Starting...')
     daemon = _load_daemon(name, user=user)
     daemon.start(

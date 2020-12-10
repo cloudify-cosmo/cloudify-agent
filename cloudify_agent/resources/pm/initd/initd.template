@@ -12,22 +12,8 @@ RUNAS={{ user }}
 
 PIDFILE={{ pidfile }}
 LOGFILE={{ log_file }}
-CMD='{{ virtualenv_path }}/bin/python -m cloudify_agent.worker --queue {{ queue }} --max-workers {{ max_workers }} --name {{ name }}'
+CMD='{{ virtualenv_path }}/bin/python -m cloudify_agent.worker --name {{ name }}'
 
-
-enable_cron_respawn () {
-    if [ ${ENABLE_CRON_RESPAWN} = true ]; then
-        echo "Enabling cron respawn script" >&2
-        ${ENABLE_CRON_SCRIPT}
-    fi
-}
-
-disable_cron_respawn () {
-    if [ ${ENABLE_CRON_RESPAWN} = true ]; then
-        echo "Disabling cron respawn script" >&2
-        ${DISABLE_CRON_SCRIPT}
-    fi
-}
 
 start() {
   if [ -f "$PIDFILE" ] && ps -p $(cat "$PIDFILE"); then
@@ -36,8 +22,6 @@ start() {
   fi
   sudo mkdir -p $(dirname "$PIDFILE")
   sudo chown {{ user }} $(dirname "$PIDFILE")
-  . {{ config_path }}
-  enable_cron_respawn
   if [ -d "{{ log_dir }}" ]; then
     PROCESS_LOG="{{ log_dir }}/process.log"
     chown "$RUNAS" "$PROCESS_LOG"
@@ -52,8 +36,6 @@ start() {
 }
 
 stop() {
-  . {{ config_path }}
-  disable_cron_respawn
   if [ ! -f "$PIDFILE" ] || ! ps -p $(cat "$PIDFILE"); then
     echo 'Service not running' >&2
     return 0
