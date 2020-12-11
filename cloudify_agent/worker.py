@@ -458,6 +458,8 @@ class MetricsRegistryException(BaseException):
 class MetricsRegistry(object):
     """A registry for metrics gathering and reporting."""
     __instances = {}
+    __metric_labels = ['type', 'queue', 'tenant', 'task', 'node_id',
+                       'deployment_id', 'workflow_id', 'status']
 
     @staticmethod
     def instance(push_gateway_addr):
@@ -478,25 +480,19 @@ class MetricsRegistry(object):
         self.add_metric(JOB_LAST_EXECUTION_UNIXTIME,
                         Gauge(JOB_LAST_EXECUTION_UNIXTIME,
                               'Last time a batch job finished',
-                              ['type', 'queue', 'tenant', 'task',
-                               'node_id', 'deployment_id', 'workflow_id',
-                               'status'],
+                              MetricsRegistry.__metric_labels,
                               namespace='cloudify',
                               registry=None))
         self.add_metric(TOTAL_EXECUTIONS,
                         Counter(TOTAL_EXECUTIONS,
                                 'Number of executions so far',
-                                ['type', 'queue', 'tenant', 'task',
-                                 'node_id', 'deployment_id', 'workflow_id',
-                                 'status'],
+                                MetricsRegistry.__metric_labels,
                                 namespace='cloudify',
                                 registry=None))
         self.add_metric(HANDLE_DURATION_SECONDS,
                         Gauge(HANDLE_DURATION_SECONDS,
                               'Task handling duration in seconds',
-                              ['type', 'queue', 'tenant', 'task',
-                               'node_id', 'deployment_id', 'workflow_id',
-                               'status'],
+                              MetricsRegistry.__metric_labels,
                               namespace='cloudify',
                               registry=None))
         MetricsRegistry.__instances[push_gateway_addr] = self
@@ -540,9 +536,6 @@ class MetricsRegistry(object):
         if not c or not d or not t:
             return
 
-        logger.info('MATEUSZ ctx: {0}'.format(ctx))
-        logger.info('MATEUSZ kwargs: {0}'.format(kwargs))
-
         duration_seconds = -1
         status = ''
         if execution_id in self.handle_stats:
@@ -554,17 +547,15 @@ class MetricsRegistry(object):
                 status = handle_stats['status']
 
         ctx_type = ctx.get('type', 'operation')
-        kwargs = {
+        kwargs.update({
             'type': (ctx_type if ctx_type in ['workflow', 'hook']
                      else 'operation'),
-            'queue': ctx.get('task_target', ''),
             'tenant': ctx.get('tenant', {}).get('name', ''),
             'task': ctx.get('task_name', ''),
-            'node_id': ctx.get('node_id', ''),
             'deployment_id': deployment_id,
-            'workflow_id': ctx.get('workflow_id', ''),
             'status': status,
-        }
+        })
+        kwargs = {k: ctx.get(k, '') for k in MetricsRegistry.__metric_labels}
         c.labels(**kwargs).inc()
         d.labels(**kwargs).set(duration_seconds)
         t.labels(**kwargs).set_to_current_time()
