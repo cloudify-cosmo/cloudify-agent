@@ -140,12 +140,14 @@ def create_windows_installer(config, logger):
     version = version_info[0]
     if len(version_info) == 1:
         prerelease = 'ga'
+        agent_name_suffix = version
     else:
         prerelease = version_info[1]
+        agent_name_suffix = '{0}-{1}'.format(version, prerelease)
 
     temp_agent_path = os.path.join(
         os.getcwd(),
-        'cloudify-windows-agent-{}-{}.exe'.format(version, prerelease)
+        'cloudify-windows-agent-{0}.exe'.format(agent_name_suffix)
     )
 
     if not os.path.exists(get_windows_built_agent_path()):
