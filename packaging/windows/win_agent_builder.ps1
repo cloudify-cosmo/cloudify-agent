@@ -9,7 +9,12 @@ $ErrorActionPreference="stop"
 # Use TLSv1.2 for Invoke-Restmethod
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$AGENT_PATH = "C:\Program Files\Cloudify $VERSION-$PRERELEASE Agents"
+$DISPLAY_NAME = $VERSION + '-' + $PRERELEASE
+$AGENT_PATH = "C:\Program Files\Cloudify $DISPLAY_NAME Agents"
+if ( $PRERELEASE -eq "ga" ) {
+   $AGENT_PATH = "C:\Program Files\Cloudify $VERSION Agents"
+   $DISPLAY_NAME = $VERSION
+}
 $GET_PIP_URL = "http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/get-pip-20.py"
 $PIP_VERSION = "9.0.1"
 $PY_URL = "https://repository.cloudifysource.org/cloudify/components/python-3.6.8-embed-amd64.zip"
@@ -106,7 +111,7 @@ popd
 
 Write-Host "Building agent package"
 $env:VERSION = $VERSION
-$env:PRERELEASE = $PRERELEASE
+$env:DISPLAY_NAME = $DISPLAY_NAME
 run "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" cloudify-agent\packaging\windows\packaging\create_install_wizard.iss
 
 if ( $UPLOAD -eq "upload" ) {
