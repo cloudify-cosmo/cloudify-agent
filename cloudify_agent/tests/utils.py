@@ -136,7 +136,12 @@ def get_windows_built_agent_path():
 
 
 def create_windows_installer(config, logger):
-    version, prerelease = get_agent_version().split('-')
+    version_info = get_agent_version().split('-')
+    version = version_info[0]
+    if len(version_info) == 1:
+        prerelease = 'ga'
+    else:
+        prerelease = version_info[1]
 
     temp_agent_path = os.path.join(
         os.getcwd(),
