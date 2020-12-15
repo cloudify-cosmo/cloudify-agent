@@ -74,8 +74,8 @@ def test_uninstall_from_source(test_plugins, file_server):
         installer.install(plugins.plugin_struct(file_server,
                                                 source='mock-plugin.tar'))
     _assert_task_runnable('mock_plugin.tasks.run', expected_return='run')
-    installer.uninstall(plugin=plugins.plugin_struct(file_server))
     with _patch_client([]):
+        installer.uninstall(plugin=plugins.plugin_struct(file_server))
         _assert_task_not_runnable('mock_plugin.tasks.run')
 
 
@@ -90,9 +90,9 @@ def test_uninstall_from_source_with_deployment_id(test_plugins, file_server):
     _assert_task_runnable('mock_plugin.tasks.run',
                           expected_return='run',
                           deployment_id=deployment_id)
-    installer.uninstall(plugin=plugins.plugin_struct(file_server),
-                        deployment_id=deployment_id)
     with _patch_client([]):
+        installer.uninstall(plugin=plugins.plugin_struct(file_server),
+                            deployment_id=deployment_id)
         _assert_task_not_runnable('mock_plugin.tasks.run',
                                   deployment_id=deployment_id)
 
