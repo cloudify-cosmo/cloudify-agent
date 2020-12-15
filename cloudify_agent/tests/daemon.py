@@ -40,7 +40,7 @@ def wait_for_daemon_alive(name, timeout=10):
                        'for {1} seconds'.format(name, timeout))
 
 
-def wait_for_daemon_dead(name, timeout=10):
+def wait_for_daemon_dead(name, timeout=20):
     deadline = time.time() + timeout
 
     while time.time() < deadline:
