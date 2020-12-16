@@ -93,4 +93,6 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             log_max_history=self.log_max_history,
             name=self.name,
             executable_temp_path=self.executable_temp_path,
+            user=self.user,
+            storage_dir=utils.internal.get_storage_directory(self.user),
         )
