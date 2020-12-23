@@ -409,7 +409,7 @@ class CloudifyAgentConfig(dict):
             self._set_agent_distro(runner)
             self._set_agent_distro_codename(runner)
 
-            if 'distro' in self and 'distro_codename' in self:
+            if self.get('distro') and self.get('distro_codename'):
                 agent_package_name = '{0}-{1}-agent.tar.gz'.format(
                     self['distro'], self['distro_codename']
                 )
@@ -432,14 +432,25 @@ class CloudifyAgentConfig(dict):
             self['distro'] = distro[0].lower()
 
     def _set_agent_distro_codename(self, runner):
-        if 'distro_codename' in self:  # Might be an empty string
+        if self.get('distro_codename'):  # Might be an empty string
             return
 
         if self.is_local:
             self['distro_codename'] = platform.dist()[2].lower()
         elif self.is_remote:
             distro = runner.machine_distribution()
-            self['distro_codename'] = distro[2].lower()
+            # Sometimes the code name for distro is returned as '' and we need
+            # to fallback to the version number and pick the major version
+            # number Usually this is happened when run on some centos8 versions
+            # >> > import platform
+            # >> > platform.dist()
+            # ('centos', '8.3.2011', '')
+            version = distro[1].split('.')[0]
+            distro_codename = distro[2]
+            if distro[0] == "centos" and version == "8":
+                distro_codename = version
+
+            self['distro_codename'] = distro_codename
 
 
 def _get_agent_inputs(params):

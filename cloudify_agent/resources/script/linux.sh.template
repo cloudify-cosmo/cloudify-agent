@@ -73,8 +73,9 @@ package_url()
     if [[ ! -z "{{ conf.package_url }}" ]]; then
         echo "{{ conf.package_url }}"
     else
-        local distro="$(python -c 'import sys, platform; sys.stdout.write(platform.dist()[0].lower())')"
-        local distro_codename="$(python -c 'import sys, platform; sys.stdout.write(platform.dist()[2].lower())')"
+        local python_bin=$(which python || which python3)
+        local distro="$($python_bin -c 'import sys, platform; sys.stdout.write(platform.dist()[0].lower())')"
+        local distro_codename="$($python_bin -c 'import sys, platform; data = platform.dist(); version = data[1].split(".")[0]; codename = version if data[0] == "centos" and version == "8" else data[2]; sys.stdout.write(codename)')"
         echo "{{ file_server_url }}/packages/agents/${distro}-${distro_codename}-agent.tar.gz"
     fi
 }
