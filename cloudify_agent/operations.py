@@ -435,10 +435,6 @@ def _validate_agent():
         raise NonRecoverableError(
             'cloudify_agent key not available in runtime_properties')
     agent = ctx.instance.runtime_properties['cloudify_agent']
-    if 'broker_config' not in agent:
-        raise NonRecoverableError(
-            'broker_config key not available in cloudify_agent'
-        )
     if 'agent_status' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             ('agent_status key not available in runtime_properties, '
