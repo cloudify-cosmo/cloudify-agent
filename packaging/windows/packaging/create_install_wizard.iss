@@ -1,4 +1,3 @@
-#define AppName "Cloudify Windows Agent"
 #define AppDisplayName GetEnv('DISPLAY_NAME')
 #define AppVersion GetEnv('VERSION')
 #define AppBuild GetEnv('BUILD')
@@ -6,7 +5,7 @@
 #define AppURL "https://cloudify.co/"
 
 [Setup]
-AppName={#AppName}
+AppName={#AppDisplayName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
