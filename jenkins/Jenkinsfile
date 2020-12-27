@@ -277,8 +277,8 @@ pipeline {
             }
           }
         }
-    //   }
-    // }
+      }
+    }
     // stage('Terminate py27 instnace'){
     //   steps{
     //     container('py27'){
