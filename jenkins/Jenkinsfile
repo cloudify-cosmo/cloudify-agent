@@ -290,7 +290,7 @@ pipeline {
                 """
                 echo 'Configure python'
                 powershell """
-                  SET PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
+                  SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
                   python --version
                   python -c "import struct; print(struct.calcsize('P') * 8)"
                   echo Upgrading pip...
