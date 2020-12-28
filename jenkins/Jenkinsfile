@@ -31,64 +31,64 @@ pipeline {
     PATH = "/root/.local/bin:$PATH"
   }
   stages{
-    stage ('compatability and flake8') {
-      parallel{
-        stage ('py3_compat'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/py3_compat && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/py3_compat", label: "copying repo to seperate workspace"
-            container('py27'){
-              dir("${env.WORKSPACE}/py3_compat"){
-                py3Compat()
-              }
-            }
-          }
-        }
-        stage('flake8_py27'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
-            container('py27'){
-              dir("${env.WORKSPACE}/flake8") {
-                echo 'install flake 8'
-                sh 'pip install flake8 --user'
-                echo 'run flake8'
-                sh 'flake8 cloudify_agent'
-              }
-            }
-          }
-        }
-        stage('flake8_py36'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
-            container('py36'){
-              dir("${env.WORKSPACE}/flake8") {
-                echo 'install flake 8'
-                sh 'pip install flake8 --user'
-                echo 'run flake8'
-                sh 'flake8 cloudify_agent'
-              }
-            }
-          }
-        }
-        stage('build_agent'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/build_agent && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/build_agent", label: "copying repo to seperate workspace"
-            container('centos7'){
-              dir("${env.WORKSPACE}/build_agent") {
-                echo 'install packages'
-                sh '''
-                  curl -O https://bootstrap.pypa.io/get-pip.py
-                  python get-pip.py
-                  yum install -y python-devel git gcc gcc-c++
-                  '''
-                sh script: 'pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip', label: 'installing agent packager'
-                echo 'creating the agent packager'
-                sh script: '''
-                  cfy-ap -c packaging/local.ini -f -v
-                  '''
-              }
-            }
-          }
-        }
+    // stage ('compatability and flake8') {
+    //   parallel{
+    //     stage ('py3_compat'){
+    //       steps{
+    //         sh script: "mkdir -p ${env.WORKSPACE}/py3_compat && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/py3_compat", label: "copying repo to seperate workspace"
+    //         container('py27'){
+    //           dir("${env.WORKSPACE}/py3_compat"){
+    //             py3Compat()
+    //           }
+    //         }
+    //       }
+    //     }
+    //     stage('flake8_py27'){
+    //       steps{
+    //         sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
+    //         container('py27'){
+    //           dir("${env.WORKSPACE}/flake8") {
+    //             echo 'install flake 8'
+    //             sh 'pip install flake8 --user'
+    //             echo 'run flake8'
+    //             sh 'flake8 cloudify_agent'
+    //           }
+    //         }
+    //       }
+    //     }
+    //     stage('flake8_py36'){
+    //       steps{
+    //         sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
+    //         container('py36'){
+    //           dir("${env.WORKSPACE}/flake8") {
+    //             echo 'install flake 8'
+    //             sh 'pip install flake8 --user'
+    //             echo 'run flake8'
+    //             sh 'flake8 cloudify_agent'
+    //           }
+    //         }
+    //       }
+    //     }
+    //     stage('build_agent'){
+    //       steps{
+    //         sh script: "mkdir -p ${env.WORKSPACE}/build_agent && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/build_agent", label: "copying repo to seperate workspace"
+    //         container('centos7'){
+    //           dir("${env.WORKSPACE}/build_agent") {
+    //             echo 'install packages'
+    //             sh '''
+    //               curl -O https://bootstrap.pypa.io/get-pip.py
+    //               python get-pip.py
+    //               yum install -y python-devel git gcc gcc-c++
+    //               '''
+    //             sh script: 'pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip', label: 'installing agent packager'
+    //             echo 'creating the agent packager'
+    //             sh script: '''
+    //               cfy-ap -c packaging/local.ini -f -v
+    //               '''
+    //           }
+    //         }
+    //       }
+    //     }
         // stage('Deploy EC2 instances'){
         //   steps{
         //     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
@@ -123,10 +123,10 @@ pipeline {
         //     }
         //   }
         // }
-      }
-    }
-    stage('pytest and build rpm'){
-      parallel {
+    //   }
+    // }
+    // stage('pytest and build rpm'){
+    //   parallel {
         // stage('Configure & Run-tests py27 on EC2 instance'){
         //   steps{
         //     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
@@ -174,35 +174,35 @@ pipeline {
         //     }
         //   }
         // }
-        stage('build_rpm'){
-          steps {
-            container('rpmbuild'){
-              sh script: '''
-                cd && mkdir rpmbuild && cd rpmbuild
-                git clone https://github.com/cloudify-cosmo/cloudify-agent.git SOURCES && cd SOURCES
-              ''', label: 'Copying repo to seperate workspace'
-              sh script: '''
-                chmod a+wx /opt
-                curl -o ~/rpmbuild/SOURCES/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
-                mkdir -p ~/rpmbuild/SOURCES/packaging/agents/ ;
-                curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
-                ''', label: 'Prepare rpm-building environment'
-              sh script: """
-                cd ~/rpmbuild/SOURCES
-                rpmbuild \
-                  -D "CLOUDIFY_VERSION ${env.VERSION}" \
-                  -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
-                  -bb cloudify-agents.spec
-                """, label: 'Building a CI agent rpm'
-              sh script:("mkdir -p ${env.WORKSPACE}/rpm && cp -rf ~/rpmbuild/RPMS/noarch/. ${env.WORKSPACE}/rpm"), label: "Copy RPM to rpm folder"
-            }
-          }
-          post {
-            success {
-              archiveArtifacts '**/rpm/*.rpm'
-            }
-          }
-        }
+        // stage('build_rpm'){
+        //   steps {
+        //     container('rpmbuild'){
+        //       sh script: '''
+        //         cd && mkdir rpmbuild && cd rpmbuild
+        //         git clone https://github.com/cloudify-cosmo/cloudify-agent.git SOURCES && cd SOURCES
+        //       ''', label: 'Copying repo to seperate workspace'
+        //       sh script: '''
+        //         chmod a+wx /opt
+        //         curl -o ~/rpmbuild/SOURCES/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
+        //         mkdir -p ~/rpmbuild/SOURCES/packaging/agents/ ;
+        //         curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
+        //         ''', label: 'Prepare rpm-building environment'
+        //       sh script: """
+        //         cd ~/rpmbuild/SOURCES
+        //         rpmbuild \
+        //           -D "CLOUDIFY_VERSION ${env.VERSION}" \
+        //           -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
+        //           -bb cloudify-agents.spec
+        //         """, label: 'Building a CI agent rpm'
+        //       sh script:("mkdir -p ${env.WORKSPACE}/rpm && cp -rf ~/rpmbuild/RPMS/noarch/. ${env.WORKSPACE}/rpm"), label: "Copy RPM to rpm folder"
+        //     }
+        //   }
+        //   post {
+        //     success {
+        //       archiveArtifacts '**/rpm/*.rpm'
+        //     }
+        //   }
+        // }
         stage('Windows Build'){
           agent{
             kubernetes {
@@ -213,9 +213,9 @@ pipeline {
           environment {
             TOX_ENV = 'pywin'
             ERLANG_DOWNLOAD_URL = 'http://erlang.org/download/otp_win64_21.3.exe'
-            ERLANG_INSTALLER_PATH = 'C:\\Users\\appveyor\\erlang_install.exe'
+            ERLANG_INSTALLER_PATH = 'C:\\Users\\erlang_install.exe'
             RABBITMQ_DOWNLOAD_URL = 'https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.8.4/rabbitmq-server-3.8.4.exe'
-            RABBITMQ_INSTALLER_PATH = 'C:\\Users\\appveyor\\rabbitmq_install.exe'
+            RABBITMQ_INSTALLER_PATH = 'C:\\Users\\rabbitmq_install.exe'
           }
           steps{
             container('shell'){
@@ -223,7 +223,6 @@ pipeline {
                 echo 'Download and install RabbitMQ'
                 powershell"""
                   Write-Host "Uninstalling existing erlang installs"
-                  Get-Package -Provider Programs -IncludeWindowsInstaller -Name '*erlang*' |% { & $_.Meta.Attributes["UninstallString"] /S }
                   if (-Not (Test-Path "${env.ERLANG_INSTALLER_PATH}")) {
                     Write-Host "Downloading Erlang..."
                     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -277,8 +276,8 @@ pipeline {
             }
           }
         }
-      }
-    }
+    //   }
+    // }
     // stage('Terminate py27 instnace'){
     //   steps{
     //     container('py27'){
