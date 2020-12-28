@@ -54,14 +54,14 @@ function InstallAgent()
     {% if add_ssl_cert %}
     AddSSLCert
     {% endif %}
-    if (-Not (Test-Path "{{ conf.basedir }}\Scripts")) {
+    if (-Not (Test-Path "C:\Program Files\Cloudify {{ version }} Agents\Scripts")) {
         Write-Host "Installing cloudify agent package"
-        Download "{{ conf.package_url }}" "{{ conf.basedir }}\cloudify-windows-agent-package.exe"
+        Download "{{ conf.package_url }}" "C:\Program Files\Cloudify {{ version }} Agents\cloudify-windows-agent-package.exe"
         # This call is not blocking so we pipe the output to null to make it blocking
         # There's no point trying to pipe it to not null because in the event it has problems it will
         # make a dialog box despite all the flags telling it we really want it to not do stuff like that.
-        Write-Host 'Starting install using "{{ conf.basedir }}\cloudify-windows-agent-package.exe"'
-        & "{{ conf.basedir }}\cloudify-windows-agent-package.exe" /SILENT /VERYSILENT /SUPPRESSMSGBOXES | Out-Null
+        Write-Host 'Starting install using "C:\Program Files\Cloudify {{ version }} Agents\cloudify-windows-agent-package.exe"'
+        & "C:\Program Files\Cloudify {{ version }} Agents\cloudify-windows-agent-package.exe" /SILENT /VERYSILENT /SUPPRESSMSGBOXES | Out-Null
     } else {
         Write-Host "Agent package already installed"
     }
@@ -72,7 +72,7 @@ function InstallAgent()
 function ExportDaemonEnv()
 {
     Write-Host "Exporting daemon env"
-    $env:Path = "{{ conf.basedir }}\Scripts;{{ conf.basedir }};" + $env:Path
+    $env:Path = "C:\Program Files\Cloudify {{ version }} Agents\Scripts;C:\Program Files\Cloudify {{ version }} Agents;" + $env:Path
     {% for env_key, env_value in daemon_env.items() %}
         $env:{{ env_key }} = "{{ env_value }}"
     {% endfor %}
