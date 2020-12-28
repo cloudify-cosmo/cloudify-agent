@@ -212,7 +212,6 @@ pipeline {
           }
           options {
             checkoutToSubdirectory('cloudify-agent')
-            buildDiscarder(logRotator(numToKeepStr:'10'))
             timeout(time: 60, unit: 'MINUTES')
             timestamps()
           }
