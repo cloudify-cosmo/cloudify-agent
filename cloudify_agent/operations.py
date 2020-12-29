@@ -48,9 +48,11 @@ from cloudify_agent.installer.script import (
     stop_agent_script_download_link,
     cleanup_scripts
 )
-from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
-from cloudify_agent.installer.config.agent_config import \
-    update_agent_runtime_properties
+from cloudify_agent.installer.config.agent_config import (
+    CloudifyAgentConfig,
+    get_windows_basedir,
+    update_agent_runtime_properties,
+)
 
 CELERY_TASK_RESULT_EXPIRES = 600
 
@@ -173,6 +175,8 @@ def _copy_values_from_old_agent_config(old_agent, new_agent):
     for field in fields_to_copy:
         if field in old_agent:
             new_agent[field] = old_agent[field]
+    if new_agent['windows']:
+        new_agent['basedir'] = get_windows_basedir()
 
 
 def create_new_agent_config(old_agent):
