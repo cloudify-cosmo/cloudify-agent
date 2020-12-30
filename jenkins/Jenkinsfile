@@ -30,11 +30,11 @@ pipeline {
   }
   stages{
     stage ('compatability and flake8') {
+      environment {
+        PATH = "/root/.local/bin:$PATH"
+      }
       parallel{
         stage ('py3_compat'){
-          environment {
-            PATH = "/root/.local/bin:$PATH"
-          }
           steps{
             sh script: "mkdir -p ${env.WORKSPACE}/py3_compat && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/py3_compat", label: "copying repo to seperate workspace"
             container('py27'){
