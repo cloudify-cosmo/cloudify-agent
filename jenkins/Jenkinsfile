@@ -24,9 +24,9 @@ pipeline {
     timestamps()
   }
   environment {
-    VERSION = getVersion("master").trim()
-    PRERELEASE = getPreRelease("master").trim()
     PROJECT = "cloudify-agent"
+    VERSION = getVersion("${env.PROJECT}", "${env.BRANCH_NAME}").trim()
+    PRERELEASE = getPreRelease("${env.PROJECT}", "${env.BRANCH_NAME}").trim()
     PATH = "/root/.local/bin:$PATH"
   }
   stages{
