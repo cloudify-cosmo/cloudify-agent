@@ -138,11 +138,18 @@ class DaemonFactory(object):
                 daemon_file
             )
             if full_path.endswith('json'):
-                self.logger.debug('Loading daemon from: {0}'.format(full_path))
-                daemon_as_json = utils.json_load(full_path)
-                process_management = daemon_as_json.pop('process_management')
-                daemon = DaemonFactory._find_implementation(process_management)
-                daemons.append(daemon(logger=logger, **daemon_as_json))
+                try:
+                    self.logger.debug('Loading daemon from: %s', full_path)
+                    daemon_as_json = utils.json_load(full_path)
+                    process_management = daemon_as_json.pop(
+                        'process_management')
+                    daemon = DaemonFactory._find_implementation(
+                        process_management)
+                    daemons.append(daemon(logger=logger, **daemon_as_json))
+                except KeyError as err:
+                    self.logger.warning(
+                        'Daemon from %s load failed: %s', full_path, err,
+                    )
 
         return daemons
 
