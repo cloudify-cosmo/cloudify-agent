@@ -186,6 +186,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         )
         if not self.cloudify_agent.is_windows:
             args_dict['user'] = self.cloudify_agent['user']
+            args_dict['agent_dir'] = self.cloudify_agent['agent_dir']
         return template.render(**args_dict)
 
     def _cleanup_after_installation(self, path):
