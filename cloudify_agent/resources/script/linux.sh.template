@@ -17,9 +17,8 @@ configure_agent_installation()
 {
    # Create cfyagent group so that we can assign it user that execute and install agent
    # to that group so that they can have access to `/opt/cloudify-agent-{version}`
-   user_groups="$(groups {{ conf.user }})"
-   grep -q -e 'cfyagent' /etc/group || sudo groupadd cfyagent
-   grep -q -e 'cfyagent' <<< "$user_groups" || sudo usermod -a -G cfyagent {{ conf.user }}
+   sudo groupadd -f cfyagent
+   sudo usermod -a -G cfyagent {{ conf.user }}
 
    # Prepare and create agent directory and provide write permission to users belongs to cfyagent group
    sudo mkdir -p {{ conf.agent_dir }}
