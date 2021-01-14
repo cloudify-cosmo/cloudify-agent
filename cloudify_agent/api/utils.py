@@ -479,4 +479,8 @@ def get_manager_file_server_url(hostname, port, scheme=None):
 
 def get_agent_version():
     data = pkgutil.get_data('cloudify_agent', 'VERSION')
-    return json.loads(data)['version']
+    version_info = json.loads(data)
+    version = version_info['version']
+    if version_info['release'] != 'ga':
+        version = '{0}-{1}'.format(version, version_info['release'])
+    return version
