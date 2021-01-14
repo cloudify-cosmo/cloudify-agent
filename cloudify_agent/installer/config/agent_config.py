@@ -371,10 +371,8 @@ class CloudifyAgentConfig(dict):
         else:
             if self.is_windows:
                 basedir = get_windows_basedir()
-            elif self.is_remote:
-                basedir = runner.home_dir(self['user'])
             else:
-                basedir = '~{0}'.format(self['user'])
+                basedir = get_linux_basedir()
         self['basedir'] = basedir
 
     def set_config_paths(self):
@@ -521,3 +519,7 @@ def get_windows_basedir():
     # Or maybe we shouldn't- see RD-882
     return 'C:\\Program Files\\Cloudify {} Agents'.format(
         agent_utils.get_agent_version())
+
+
+def get_linux_basedir():
+    return '/opt/cloudify-agent-{0}'.format(agent_utils.get_agent_version())

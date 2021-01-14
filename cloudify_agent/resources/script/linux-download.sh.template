@@ -8,11 +8,26 @@ run_as()
     user=$1
     if [ "$MYSELF" == "$user" ]
     then
-        ${@:2}
+        sg cfyagent "${@:2}"
     else
         su $user --shell /bin/bash -c "set -e; ${@:2}"
     fi
 }
+
+configure_agent_installation()
+{
+   # Create cfyagent group so that we can assign it user that execute and install agent
+   # to that group so that they can have access to `/opt/cloudify-agent-{version}`
+   sudo groupadd -f cfyagent
+   sudo usermod -a -G cfyagent {{ user }}
+
+   # Prepare and create agent directory and provide write permission to users belongs to cfyagent group
+   sudo mkdir -p {{ agent_dir }}
+   sudo chgrp -R cfyagent $(dirname {{ agent_dir }})
+   sudo chmod -R g+w $(dirname {{ agent_dir }})
+}
+
+export -f configure_agent_installation
 
 add_ssl_cert()
 {
@@ -51,8 +66,9 @@ cd $(mktemp -d)
 # If using `sudo` the script is running as a user, and there's no need
 # to use `su`. If running as root, `su` as the user, otherwise the cert
 # dir will be created with root privileges
+configure_agent_installation
 {% if sudo %}
-add_ssl_cert
+sg cfyagent "add_ssl_cert"
 {% else %}
 run_as {{ user }} add_ssl_cert
 {% endif %}

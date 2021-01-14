@@ -7,11 +7,26 @@ run_as()
     user=$1
     if [ "$MYSELF" == "$user" ]
     then
-        ${@:2}
+        sg cfyagent ${@:2}
     else
         su $user --shell /bin/bash -c "set -e; ${@:2}"
     fi
 }
+
+configure_agent_installation()
+{
+   # Create cfyagent group so that we can assign it user that execute and install agent
+   # to that group so that they can have access to `/opt/cloudify-agent-{version}`
+   sudo groupadd -f cfyagent
+   sudo usermod -a -G cfyagent {{ conf.user }}
+
+   # Prepare and create agent directory and provide write permission to users belongs to cfyagent group
+   sudo mkdir -p {{ conf.agent_dir }}
+   sudo chgrp -R cfyagent $(dirname {{ conf.agent_dir }})
+   sudo chmod -R g+w $(dirname {{ conf.agent_dir }})
+}
+
+export -f configure_agent_installation
 
 {% if add_ssl_cert %}
 add_ssl_cert()
@@ -85,7 +100,6 @@ download_and_extract_agent_package()
     temp_pkg_dir=$(mktemp -d)
     pkg_loc=${temp_pkg_dir}/agent.tar.gz
     download $(package_url) ${pkg_loc}
-    mkdir -p {{ conf.agent_dir }}
     tar xzf ${pkg_loc} --strip=1 -C {{ conf.agent_dir }}
     rm -rf ${temp_pkg_dir}
 }
@@ -93,6 +107,7 @@ export -f download_and_extract_agent_package
 
 install_agent()
 {
+    configure_agent_installation
     {% if add_ssl_cert %}
     run_as {{ conf.user }} add_ssl_cert
     {% endif %}
