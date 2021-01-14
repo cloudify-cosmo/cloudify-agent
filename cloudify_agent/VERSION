@@ -1,3 +1,4 @@
 {
-	"version": "5.2.0-.dev1"
+	"version": "5.2.0",
+	"release": ".dev1"
 }
