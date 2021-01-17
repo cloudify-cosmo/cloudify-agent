@@ -50,7 +50,6 @@ from cloudify_agent.installer.script import (
 )
 from cloudify_agent.installer.config.agent_config import (
     CloudifyAgentConfig,
-    get_windows_basedir,
     update_agent_runtime_properties,
 )
 
@@ -176,7 +175,7 @@ def _copy_values_from_old_agent_config(old_agent, new_agent):
         if field in old_agent:
             new_agent[field] = old_agent[field]
     if new_agent['windows']:
-        new_agent['basedir'] = get_windows_basedir()
+        new_agent['basedir'] = utils.get_windows_basedir()
 
 
 def create_new_agent_config(old_agent):

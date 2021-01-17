@@ -484,3 +484,18 @@ def get_agent_version():
     if version_info['release'] != 'ga':
         version = '{0}-{1}'.format(version, version_info['release'])
     return version
+
+
+def get_windows_basedir():
+    # TODO: Get the program files directory from the machine itself
+    # instead of hardcoding it an assuming it's in C:\
+    # Or maybe we shouldn't- see RD-882
+    return 'C:\\Program Files\\Cloudify {} Agents'.format(get_agent_version())
+
+
+def get_linux_basedir():
+    return '/opt/cloudify-agent-{0}'.format(get_agent_version())
+
+
+def get_agent_basedir(is_windows=False):
+    return get_windows_basedir() if is_windows else get_linux_basedir()

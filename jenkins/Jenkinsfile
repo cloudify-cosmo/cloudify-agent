@@ -149,6 +149,7 @@ sudo systemctl start rabbitmq-server
 virtualenv py2
 source py2/bin/activate
 pushd cloudify-agent
+git checkout ${env.BRANCH_NAME}
 pip install -r test-requirements.txt
 pip install -r dev-requirements.txt
 pip install '.[fabric]'
@@ -182,16 +183,16 @@ EOT
         stage('build_rpm'){
           steps {
             container('rpmbuild'){
-              sh script: '''
+              sh script: """
                 cd && mkdir rpmbuild && cd rpmbuild
-                git clone https://github.com/cloudify-cosmo/cloudify-agent.git SOURCES && cd SOURCES
-              ''', label: 'Copying repo to seperate workspace'
-              sh script: '''
+                git clone https://github.com/cloudify-cosmo/cloudify-agent.git SOURCES && cd SOURCES && git checkout ${env.BRANCH_NAME}
+              """, label: 'Copying repo to seperate workspace'
+              sh script: """
                 chmod a+wx /opt
                 curl -o ~/rpmbuild/SOURCES/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
                 mkdir -p ~/rpmbuild/SOURCES/packaging/agents/ ;
                 curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
-                ''', label: 'Prepare rpm-building environment'
+                """, label: 'Prepare rpm-building environment'
               sh script: """
                 cd ~/rpmbuild/SOURCES
                 rpmbuild \

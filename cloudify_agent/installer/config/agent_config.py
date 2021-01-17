@@ -365,14 +365,7 @@ class CloudifyAgentConfig(dict):
     def _set_basedir(self, runner):
         if self.get('basedir'):
             return
-
-        if self.is_local:
-            basedir = agent_utils.get_home_dir(self['user'])
-        else:
-            if self.is_windows:
-                basedir = get_windows_basedir()
-            else:
-                basedir = get_linux_basedir()
+        basedir = agent_utils.get_agent_basedir(self.is_windows)
         self['basedir'] = basedir
 
     def set_config_paths(self):
@@ -511,15 +504,3 @@ def update_agent_runtime_properties(cloudify_agent):
         cloudify_agent.pop(item, None)
     ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent
     ctx.instance.update()
-
-
-def get_windows_basedir():
-    # TODO: Get the program files directory from the machine itself
-    # instead of hardcoding it an assuming it's in C:\
-    # Or maybe we shouldn't- see RD-882
-    return 'C:\\Program Files\\Cloudify {} Agents'.format(
-        agent_utils.get_agent_version())
-
-
-def get_linux_basedir():
-    return '/opt/cloudify-agent-{0}'.format(agent_utils.get_agent_version())

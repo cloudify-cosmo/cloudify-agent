@@ -35,3 +35,15 @@ class LocalLinuxAgentInstaller(LinuxInstallerMixin, LocalInstallerMixin):
         super(LocalLinuxAgentInstaller, self).__init__(
             cloudify_agent, logger
         )
+
+    @property
+    def remove_agent_dir_command(self):
+        return 'sg cfyagent "rm -rf {0}"'.format(
+            self.cloudify_agent['agent_dir']
+        )
+
+    def delete_agent(self):
+        self.run_daemon_command('delete')
+        # Its necessary to prefix the deletion for agent directory with "sg
+        # cfyagent" since we updated the agent setup and added "cfyagent" group
+        self.runner.run(self.remove_agent_dir_command)
