@@ -115,7 +115,8 @@ def _get_distro_package_url(rest_port=80, manager_host='127.0.0.1'):
 def _test_prepare(agent_ssl_cert, agent_config, expected_values,
                   context=None):
     user = getpass.getuser()
-    basedir = utils.get_home_dir(user)
+    is_windows = os.name == 'nt'
+    basedir = utils.get_agent_basedir(is_windows)
     agent_dir = os.path.join(basedir, 'test_deployment')
     envdir = os.path.join(agent_dir, 'env')
     workdir = os.path.join(agent_dir, 'work')
@@ -145,7 +146,7 @@ def _test_prepare(agent_ssl_cert, agent_config, expected_values,
         'min_workers': 0,
         'workdir': workdir,
         'broker_ssl_cert_path': os.environ[constants.BROKER_SSL_CERT_PATH],
-        'windows': os.name == 'nt',
+        'windows': is_windows,
         'system_python': 'python',
         'bypass_maintenance': False,
         'network': 'default',
