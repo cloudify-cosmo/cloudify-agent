@@ -7,7 +7,11 @@ run_as()
     user=$1
     if [ "$MYSELF" == "$user" ]
     then
-        sg cfyagent ${@:2}
+        {% if has_service %}
+        sg cfyagent "${@:2}"
+        {% else %}
+        ${@:2}
+        {% endif %}
     else
         su $user --shell /bin/bash -c "set -e; ${@:2}"
     fi
@@ -108,7 +112,9 @@ export -f download_and_extract_agent_package
 
 install_agent()
 {
+    {% if has_service %}
     configure_agent_installation
+    {% endif %}
     {% if add_ssl_cert %}
     run_as {{ conf.user }} add_ssl_cert
     {% endif %}

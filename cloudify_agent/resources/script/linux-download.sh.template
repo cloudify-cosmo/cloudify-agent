@@ -8,7 +8,11 @@ run_as()
     user=$1
     if [ "$MYSELF" == "$user" ]
     then
+        {% if has_service %}
         sg cfyagent "${@:2}"
+        {% else %}
+        ${@:2}
+        {% endif %}
     else
         su $user --shell /bin/bash -c "set -e; ${@:2}"
     fi
@@ -63,12 +67,17 @@ export TMPDIR={{ tmpdir }}
 {% endif %}
 cd $(mktemp -d)
 
+{% if has_service %}
+configure_agent_installation
+{% endif %}
+
 # If using `sudo` the script is running as a user, and there's no need
 # to use `su`. If running as root, `su` as the user, otherwise the cert
 # dir will be created with root privileges
-configure_agent_installation
-{% if sudo %}
+{% if sudo and has_service %}
 sg cfyagent "add_ssl_cert"
+{% elif sudo %}
+add_ssl_cert
 {% else %}
 run_as {{ user }} add_ssl_cert
 {% endif %}
