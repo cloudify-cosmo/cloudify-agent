@@ -79,6 +79,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             conf=self.cloudify_agent,
             daemon_env=daemon_env,
             pm_options=self._create_process_management_options(),
+            process_management=self.cloudify_agent['process_management'],
             custom_env=self.custom_env,
             custom_env_path=self.custom_env_path,
             file_server_url=self.file_server_url,
@@ -174,6 +175,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         use_sudo = self.cloudify_agent.get('install_with_sudo')
         sudo = 'sudo' if use_sudo else ''
         args_dict = dict(
+            process_management=self.cloudify_agent['process_management'],
             link=script_url,
             sudo=sudo,
             ssl_cert_content='\n'.join([

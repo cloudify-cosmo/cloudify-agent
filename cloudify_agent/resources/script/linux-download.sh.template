@@ -1,7 +1,8 @@
 #!/bin/bash -e
 
+set -x
 # Download and execute the script that will take care of the agent installation
-
+{% set has_service = process_management.name != 'detach' %}
 MYSELF=$(whoami)
 run_as()
 {

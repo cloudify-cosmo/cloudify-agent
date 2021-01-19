@@ -188,8 +188,6 @@ class CloudifyAgentConfig(dict):
             else:
                 default_pm_name = 'init.d'
         self['process_management'].setdefault('name', default_pm_name)
-        self.setdefault('has_service',
-                        self['process_management']['name'] != 'detach')
 
     @staticmethod
     def _get_process_management(runner):

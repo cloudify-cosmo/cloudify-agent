@@ -1,6 +1,6 @@
 #! /bin/bash -e
 
-
+{% set has_service = process_management.name != 'detach' %}
 MYSELF=$(whoami)
 run_as()
 {
