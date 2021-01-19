@@ -441,7 +441,7 @@ class CloudifyAgentConfig(dict):
             if distro[0] == "centos" and version == "8":
                 distro_codename = version
 
-            self['distro_codename'] = distro_codename
+            self['distro_codename'] = distro_codename.lower()
 
 
 def _get_agent_inputs(params):
