@@ -64,11 +64,55 @@ class DetachedDaemon(CronRespawnDaemonMixin):
         self._runner.run(self.create_disable_cron_script())
         super(DetachedDaemon, self).before_self_stop()
 
+    def _delete_queue(self, client):
+        queue = '{0}_service'.format(self.queue)
+        self._logger.info('Deleting amqp agent queue %s', queue)
+        try:
+            client.channel_method(
+                'queue_delete',
+                queue=queue,
+                if_empty=True,
+                wait=True
+            )
+        except Exception as err:
+            self._logger.warning('Error deleting queue'
+                                 ' queue %s: %s', queue, err)
+        else:
+            self._logger.info(
+                'AMQP agent queue %s is deleted '
+                'successfully', queue)
+
+    def _delete_exchange(self, client):
+        self._logger.info('Deleting amqp agent exchange %s', self.queue)
+        try:
+            client.channel_method(
+                'exchange_delete',
+                exchange=self.queue,
+            )
+        except Exception as err:
+            self._logger.warning('Error deleting exchange '
+                                 '%s: %s', self.queue, err)
+        else:
+            self._logger.info(
+                'AMQP agent exchange %s is deleted '
+                'successfully', self.queue)
+
+    def delete_agent_resources(self):
+        self._logger.info('Deleting amqp agent resources...')
+        client = self._get_client()
+        with client:
+            self._delete_queue(client)
+            self._delete_exchange(client)
+        self._logger.info('All amqp agent resources are deleted '
+                          'successfully')
+
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
         if self._is_daemon_running():
             if not force:
                 raise exceptions.DaemonStillRunningException(self.name)
             self.stop()
+
+        self.delete_agent_resources()
 
         if os.path.exists(self.pid_file):
             self._logger.debug('Removing {0}'.format(self.pid_file))
