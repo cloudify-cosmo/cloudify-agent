@@ -14,7 +14,7 @@ Jinja2==2.10.3
 kitchen==1.1.1
 MarkupSafe==1.0
 monotonic==1.5
-packaging==17.1
+packaging==16.8
 pika==0.11.2
 proxy-tools==0.1.0
 psycopg2==2.5.1
