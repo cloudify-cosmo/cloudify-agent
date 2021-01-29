@@ -5,7 +5,7 @@ backports.ssl-match-hostname==3.5.0.1
 bottle==0.12.18
 certifi==2020.12.5
 chardet==3.0.4
-click==7.1.2
+click==6.7
 fasteners==0.13.0
 idna==2.10
 iniparse==0.4
@@ -23,7 +23,7 @@ pygpgme==0.3
 pyliblzma==0.5.3
 pyparsing==2.4.7
 pyxattr==0.5.1
-requests==2.24.0
+requests>=2.19.0,<2.20
 requests-toolbelt==0.8.0
 retrying==1.3.3
 six==1.15.0
