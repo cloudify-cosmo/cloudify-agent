@@ -12,10 +12,10 @@ MarkupSafe==0.23
 monotonic==1.5
 pika==0.11.2
 proxy-tools==0.1.0
+requests==2.19.1
 requests-toolbelt==0.8.0
-requests>=2.19.0,<2.20
 retrying==1.3.3
-six==1.15.0
-urllib3<1.24,>=1.21.1
+six==1.13.0
+urllib3==1.23
 virtualenv==15.1.0
 wagon==0.11.0
