@@ -1,2 +1,2 @@
-https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip
+https://github.com/cloudify-cosmo/cloudify-common/archive/5.2.0-build.zip
 pika==1.1.0
