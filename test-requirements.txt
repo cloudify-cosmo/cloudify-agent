@@ -10,6 +10,7 @@ idna==2.7
 
 # for creating the agent package in tests
 https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip
-pytest
-coverage
-pytest-cov
+pytest==6.2.2; python_version >'3.6'
+pytest==4.6.11; python_version=='2.7'
+coverage==5.4
+pytest-cov==2.11.1
