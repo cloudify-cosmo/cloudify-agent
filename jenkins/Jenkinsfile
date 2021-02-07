@@ -153,7 +153,6 @@ git checkout ${env.BRANCH_NAME}
 pip install -r test-requirements.txt
 pip install -r dev-requirements.txt
 pip install '.[fabric]'
-pip install pytest
 pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py2.xml
 popd
 deactivate
@@ -166,7 +165,7 @@ pushd cloudify-agent
 pip install -r test-requirements.txt
 pip install -r dev-requirements.txt
 pip install '.[fabric]'
-pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py3.xml
+pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent/tests/api/pm/test_detach.py --junitxml=test-results/cloudify_agent_py3.xml
 popd
 deactivate
 EOT
