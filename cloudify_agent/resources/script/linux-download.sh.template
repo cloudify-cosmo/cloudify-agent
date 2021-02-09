@@ -31,7 +31,7 @@ configure_agent_installation()
    # Currently agent data is expected to live in ~user/<agent name>, so we need to allow cfyagent group access to there,
    # but without breaking everything else in the homedir (e.g. we shouldn't mess with permissions in .ssh)
    sudo chgrp cfyagent $(dirname {{ agent_dir }})
-   sudo chmod g+x cfyagent $(dirname {{ agent_dir }})
+   sudo chmod g+x $(dirname {{ agent_dir }})
    # Ensure that the cfyagent user can read and write and files and directories, and access any dirs
    sudo chgrp -R cfyagent {{ agent_dir }}
    sudo chmod -R g+rwX {{ agent_dir }}
