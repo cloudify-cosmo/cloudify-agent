@@ -485,6 +485,7 @@ class Daemon(object):
         shutdown.
 
         """
+        self.before_self_stop()
 
         stop_command = self.stop_command()
         self._logger.info('Stopping daemon with command: {0}'
