@@ -135,7 +135,7 @@ def restart(new_name=None, delay_period=5, **_):
 
 
 @operation
-def stop(delay_period=5, **_):
+def stop(*_, **__):
     daemon = _load_daemon(logger=ctx.logger)
     daemon.before_self_stop()
     raise StopAgent()

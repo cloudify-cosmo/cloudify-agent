@@ -56,8 +56,6 @@ def test_cron_respawn(detach_daemon):
     detach_daemon.runner.run(daemon.cron_respawn_path)
     wait_for_daemon_alive(daemon.queue)
 
-    # this should also disable the crontab entry
-    daemon.before_self_stop()
     daemon.stop()
     wait_for_daemon_dead(daemon.queue)
 

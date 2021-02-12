@@ -166,6 +166,10 @@ class NonSuckingServiceManagerDaemon(Daemon):
                 '& Stop-Service -Name {0}'.format(self.name)]
 
     def start(self, *args, **kwargs):
+        if self.startup_policy in ['boot', 'system', 'auto']:
+            self._logger.debug('Enabling service: {0}'.format(self.name))
+            self._runner.run('sc config {0} start= {1}'.format(
+                self.name, self.startup_policy))
         try:
             super(NonSuckingServiceManagerDaemon, self).start(*args, **kwargs)
         except CommandExecutionException as e:
