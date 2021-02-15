@@ -21,12 +21,12 @@ def test_create_agent_dict(agent_ssl_cert, tmp_path):
         new_agent = operations.create_new_agent_config(old_agent)
         new_agent['version'] = '3.4'
         third_agent = operations.create_new_agent_config(new_agent)
-        equal_keys = ['ip', 'basedir', 'user']
+        equal_keys = ['ip', 'user']
         for k in equal_keys:
             assert old_agent[k] == new_agent[k]
             assert old_agent[k] == third_agent[k]
         nonequal_keys = ['agent_dir', 'workdir', 'envdir', 'name',
-                         'rest_host']
+                         'rest_host', 'basedir']
         for k in nonequal_keys:
             assert old_agent[k] != new_agent[k]
             assert old_agent[k] != third_agent[k]
