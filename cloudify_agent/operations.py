@@ -176,6 +176,8 @@ def _copy_values_from_old_agent_config(old_agent, new_agent):
             new_agent[field] = old_agent[field]
     if new_agent['windows']:
         new_agent['basedir'] = utils.get_windows_basedir()
+    else:
+        new_agent['basedir'] = utils.get_linux_basedir()
 
 
 def create_new_agent_config(old_agent):
