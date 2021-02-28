@@ -19,10 +19,10 @@ spec:
     resources:
       requests:
         cpu: 1
-        memory: 2Gi
+        memory: 3Gi
       limits:
         cpu: 1
-        memory: 2Gi
+        memory: 3Gi
   - name: py36
     image: circleci/python:3.6
     command:
@@ -45,8 +45,8 @@ spec:
       privileged: true
     resources:
       limits:
-        cpu: 0.3
-        memory: 256Mi
+        cpu: 0.5
+        memory: 512Mi
   - name: rpmbuild
     image: rpmbuild/centos7
     command:
