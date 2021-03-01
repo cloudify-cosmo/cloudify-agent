@@ -2,6 +2,12 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
+  - name: jnlp
+    image: jenkins/inbound-agent:4.3-4
+    resources:
+      limits:
+        cpu: 0.3
+        memory: 256Mi
   - name: py27
     image: circleci/python:2.7
     command:
@@ -13,6 +19,10 @@ spec:
     resources:
       requests:
         cpu: 1
+        memory: 3Gi
+      limits:
+        cpu: 1
+        memory: 3Gi
   - name: py36
     image: circleci/python:3.6
     command:
@@ -21,6 +31,10 @@ spec:
     securityContext:
       runAsUser: 0
       privileged: true
+    resources:
+      limits:
+        cpu: 0.3
+        memory: 256Mi
   - name: centos7
     image: centos:7
     command:
@@ -29,6 +43,10 @@ spec:
     securityContext:
       runAsUser: 0
       privileged: true
+    resources:
+      limits:
+        cpu: 0.5
+        memory: 512Mi
   - name: rpmbuild
     image: rpmbuild/centos7
     command:
@@ -38,7 +56,8 @@ spec:
       runAsUser: 0
       privileged: true
     resources:
-      requests:
-        cpu: 0.6
+      limits:
+        cpu: 0.3
+        memory: 256Mi
   nodeSelector:
     instance-type: spot-xlarge
