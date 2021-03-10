@@ -38,7 +38,7 @@ def test_create_agent_dict(agent_ssl_cert, tmp_path):
         assert len(third_name) <= len(new_name)
         new_agent['name'] = '{0}{1}'.format(new_agent['name'], 'not-uuid')
         agent = operations.create_new_agent_config(new_agent)
-        assert new_agent['name'] not in agent['name']
+        assert new_agent['name'] in agent['name']
 
 
 @pytest.mark.only_posix
