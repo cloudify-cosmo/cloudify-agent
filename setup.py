@@ -32,7 +32,7 @@ else:
     install_requires += [
         'click>7,<8',
         'packaging==17.1',
-        'requests>=2.24.0,<2.25',
+        'requests>=2.25.0,<3.0.0',
     ]
 
 setup(
