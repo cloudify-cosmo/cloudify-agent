@@ -179,6 +179,11 @@ EOT
               }
             }
           }
+          post {
+            always {
+              junit '**/test-results/*.xml'
+            }
+          }
         }
         stage('build_rpm'){
           steps {
@@ -324,11 +329,6 @@ EOT
           }
         }
       }
-    }
-  }
-  post {
-    always {
-      junit '**/test-results/*.xml'
     }
   }
 }
