@@ -36,6 +36,7 @@ def create(cloudify_agent, installer, **_):
                 try:
                     ctx.logger.info('Attempting to cleanup after agent %s',
                                     cloudify_agent['name'])
+                    installer.stop_agent()
                     installer.delete_agent()
                 except Exception as err:
                     ctx.logger.info('Deletion failed: %s', err)
