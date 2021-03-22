@@ -20,7 +20,7 @@ import logging
 import os
 import time
 
-from pika.exceptions import ConnectionClosed
+from pika.exceptions import ConnectionClosed, ProbableAuthenticationError
 
 from cloudify.utils import (LocalCommandRunner,
                             setup_logger)
@@ -348,8 +348,8 @@ class Daemon(object):
                     durable=True)
                 return utils.is_agent_alive(
                     self.queue, client, timeout=3, connect=False)
-        except ConnectionClosed:
-            self._logger.debug('Connection was closed, AMQP is unreachable.')
+        except (ConnectionClosed, ProbableAuthenticationError):
+            self._logger.debug('Connection error, AMQP is unreachable.')
             return False
 
     ########################################################################
