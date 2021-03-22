@@ -20,6 +20,8 @@ import logging
 import os
 import time
 
+from pika.exceptions import ConnectionClosed
+
 from cloudify.utils import (LocalCommandRunner,
                             setup_logger)
 from cloudify import constants
@@ -335,16 +337,20 @@ class Daemon(object):
     def _is_daemon_running(self):
         self._logger.debug('Checking if agent daemon is running...')
         client = self._get_client()
-        with client:
-            # precreate the queue that the agent will use, so that the
-            # message is already waiting for the agent when it starts up
-            client.channel_method(
-                'queue_declare',
-                queue='{0}_service'.format(self.queue),
-                auto_delete=False,
-                durable=True)
-            return utils.is_agent_alive(
-                self.queue, client, timeout=3, connect=False)
+        try:
+            with client:
+                # precreate the queue that the agent will use, so that the
+                # message is already waiting for the agent when it starts up
+                client.channel_method(
+                    'queue_declare',
+                    queue='{0}_service'.format(self.queue),
+                    auto_delete=False,
+                    durable=True)
+                return utils.is_agent_alive(
+                    self.queue, client, timeout=3, connect=False)
+        except ConnectionClosed:
+            self._logger.debug('Connection was closed, AMQP is unreachable.')
+            return False
 
     ########################################################################
     # the following methods must be implemented by the sub-classes as they
