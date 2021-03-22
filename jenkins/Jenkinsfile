@@ -76,7 +76,7 @@ pipeline {
             container('centos7'){
               dir("${env.WORKSPACE}/build_agent") {
                 sh script: '''
-                  curl -O https://bootstrap.pypa.io/2.7/get-pip.py | python
+                  curl -O https://bootstrap.pypa.io/pip/2.7/get-pip.py | python
                   python get-pip.py
                   yum install -y python-devel git gcc gcc-c++
                   ''', label: 'installing prerequisities'
