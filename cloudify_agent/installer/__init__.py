@@ -38,6 +38,8 @@ from cloudify_agent.shell import env
 from cloudify_agent.api import utils, defaults
 
 from cloudify import broker_config
+from cloudify.exceptions import (CommandExecutionError,
+                                 CommandExecutionException)
 
 
 class AgentInstaller(object):
@@ -99,6 +101,14 @@ class AgentInstaller(object):
 
     def stop_agent(self):
         self.run_daemon_command('stop')
+
+    @property
+    def agent_exists(self):
+        try:
+            self.run_daemon_command('status')
+            return True
+        except (CommandExecutionError, CommandExecutionException):
+            return False
 
     def delete_agent(self):
         self.run_daemon_command('delete')

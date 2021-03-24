@@ -27,19 +27,20 @@ def create(cloudify_agent, installer, **_):
         with script.install_script_path(cloudify_agent) as script_path:
             ctx.logger.info('Creating Agent {0}'.format(
                 cloudify_agent['name']))
+            if installer.agent_exists:
+                try:
+                    ctx.logger.info('Attempting to cleanup existing agent %s',
+                                    cloudify_agent['name'])
+                    installer.stop_agent()
+                    installer.delete_agent()
+                except Exception as err:
+                    ctx.logger.warning('Cleanup failed: %s', err)
             try:
                 installer.runner.run_script(script_path)
             except (CommandExecutionError, CommandExecutionException):
                 ctx.logger.error("Failed creating agent; marking agent as "
                                  "failed")
                 update_agent_record(cloudify_agent, AgentState.FAILED)
-                try:
-                    ctx.logger.info('Attempting to cleanup after agent %s',
-                                    cloudify_agent['name'])
-                    installer.stop_agent()
-                    installer.delete_agent()
-                except Exception as err:
-                    ctx.logger.info('Deletion failed: %s', err)
                 raise
             ctx.logger.info(
                 'Agent created, configured and started successfully'
