@@ -320,6 +320,7 @@ EOT
             withVault([configuration: configuration, vaultSecrets: secrets]){
               echo 'Uninstall and delete blueprint from manager'
               sh """#!/bin/bash
+                set -euxo pipefail
                 source .venv/bin/activate
                 cfy uninstall ec2-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} --force --allow-custom-parameters -p ignore_failure=true
               """
