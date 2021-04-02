@@ -97,18 +97,13 @@ pipeline {
         stage('Deploy EC2 instances'){
           steps{
             catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
-              container('py27'){
+              container('py36'){
                 echo 'Setup Github SSH key'
                 setupGithubSSHKey()
                 dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
                   withVault([configuration: configuration, vaultSecrets: secrets]){
                     sh script:"""#!/bin/bash
-                      apt-get update
-                      python -m ensurepip --upgrade
-                      python -m pip install --upgrade pip
-                      python -m pip install --upgrade virtualenv
-
-                      virtualenv .venv
+                      python -m venv .venv
                       source .venv/bin/activate
 
                       pip install cloudify==5.1.2
