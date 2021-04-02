@@ -129,7 +129,7 @@ pipeline {
     }
     stage('pytest and build rpm'){
       parallel {
-        stage('Configure & Run-tests on EC2 instance'){
+        stage('Configure & Run-tests py27 on EC2 instance'){
           steps{
             catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
               container('py36'){
