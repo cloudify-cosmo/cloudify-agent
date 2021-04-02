@@ -107,11 +107,9 @@ pipeline {
                       python -m venv .venv
                       source .venv/bin/activate
                       pip install --upgrade pip
-
-                      apt-get update
-                      apt-get install -y jq
-
                       pip install cloudify==5.1.2
+                      pip install jq==1.1.2
+
                       cfy profile use ${env.MANAGER_IP} -u ${env.MANAGER_USERNAME} -p ${env.MANAGER_PASSWORD} -t ${env.MANAGER_TENANT} --ssl
                       pushd 'bp'
                         cfy install -b ec2-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} ec2-blueprint.yaml
