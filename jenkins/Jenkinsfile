@@ -7,7 +7,6 @@ def secrets = [
     [envVar: 'MANAGER_IP', vaultKey: 'ip'],
     [envVar: 'MANAGER_PASSWORD', vaultKey: 'password']]],
 ]
-
 @Library('pipeline-shared-library') _
 
 pipeline {
@@ -29,283 +28,30 @@ pipeline {
     PRERELEASE = getPreRelease("${env.PROJECT}", "${env.BRANCH_NAME}").trim()
   }
   stages{
-    stage ('compatability and flake8') {
-      environment {
-        PATH = "/root/.local/bin:$PATH"
-      }
-      parallel{
-        stage ('py3_compat'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/py3_compat && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/py3_compat", label: "copying repo to seperate workspace"
-            container('py27'){
-              dir("${env.WORKSPACE}/py3_compat"){
-                py3Compat()
-              }
-            }
-          }
-        }
-        stage('flake8_py27'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
-            container('py27'){
-              dir("${env.WORKSPACE}/flake8") {
-                echo 'install flake 8'
-                sh 'pip install flake8 --user'
-                echo 'run flake8'
-                sh 'flake8 cloudify_agent'
-              }
-            }
-          }
-        }
-        stage('flake8_py36'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
-            container('py36'){
-              dir("${env.WORKSPACE}/flake8") {
-                echo 'install flake 8'
-                sh 'pip install flake8 --user'
-                echo 'run flake8'
-                sh 'flake8 cloudify_agent'
-              }
-            }
-          }
-        }
-        stage('build_agent'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/build_agent && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/build_agent", label: "copying repo to seperate workspace"
-            container('centos7'){
-              dir("${env.WORKSPACE}/build_agent") {
-                sh script: '''
-                  curl -O https://bootstrap.pypa.io/pip/2.7/get-pip.py | python
-                  python get-pip.py
-                  yum install -y python-devel git gcc gcc-c++
-                  ''', label: 'installing prerequisities'
-                sh script: 'pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip', label: 'installing agent packager'
-                sh script: '''
-                  cp packaging/local.ini centos7.ini
-                  cat >>centos7.ini <<EOF
-                  [system]
-                  distribution=centos
-                  release=Core
-                  EOF
-                  cfy-ap -f -v -c centos7.ini
-                  '''.stripIndent().trim(), label: 'creating the agent package'
-              }
-            }
-          }
-        }
-        stage('Deploy EC2 instances'){
-          steps{
-            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
-              container('py36'){
-                echo 'Setup Github SSH key'
-                setupGithubSSHKey()
-                dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
-                  withVault([configuration: configuration, vaultSecrets: secrets]){
-                    sh script:"""#!/bin/bash
-                      set -euxo pipefail
-                      python -m venv .venv
-                      source .venv/bin/activate
-                      pip install --upgrade pip
-                      pip install cloudify==5.1.2
-
-                      cfy profile use ${env.MANAGER_IP} -u ${env.MANAGER_USERNAME} -p ${env.MANAGER_PASSWORD} -t ${env.MANAGER_TENANT} --ssl
-                      pushd 'bp'
-                        cfy install -b ec2-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} ec2-blueprint.yaml
-                      popd
-                      cfy deployments capabilities ec2-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} --json > capabilities.json
-                      jq -r '.key_content.value' capabilities.json > ~/.ssh/ec2_ssh_key && chmod 600 ~/.ssh/ec2_ssh_key
-                      sleep 160
-                      ssh-keyscan -H \$(jq -r '.endpoint.value' capabilities.json) >> ~/.ssh/known_hosts
-                      echo 'ClientAliveInterval 50' | sudo tee --append /etc/ssh/sshd_config
-                    """, label:'Configure and install blueprint on manager'
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    stage('pytest and build rpm'){
-      parallel {
-        stage('Configure & Run-tests py27 on EC2 instance'){
-          steps{
-            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
-              container('py36'){
-                dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
-                  withVault([configuration: configuration, vaultSecrets: secrets]){
-                    sh script:"""#!/bin/bash
-                      ssh -i ~/.ssh/ec2_ssh_key -l centos \$(cat capabilities.json | jq '.endpoint.value' | tr -d '"') /bin/bash << 'EOT'
-sudo yum install -y epel-release git vim python-virtualenv
-sudo yum install -y rabbitmq-server
-sudo yum install -y wget
-git clone https://github.com/cloudify-cosmo/cloudify-agent.git
-sudo systemctl enable rabbitmq-server
-sudo systemctl start rabbitmq-server
-virtualenv py2
-source py2/bin/activate
-pushd cloudify-agent
-git checkout ${env.BRANCH_NAME}
-pip install -r test-requirements.txt
-pip install -r dev-requirements.txt
-pip install '.[fabric]'
-pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py2.xml
-popd
-deactivate
-sudo yum install -y python3
-python3 -m venv py3
-source py3/bin/activate
-export LC_ALL=en_US.utf-8
-export LANG=en_US.utf-8
-pushd cloudify-agent
-pip install -r test-requirements.txt
-pip install -r dev-requirements.txt
-pip install '.[fabric]'
-pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py3.xml
-popd
-deactivate
-EOT
-                    """, label: 'Prepare instance and run pytests'
-                    sh script:"""
-                      mkdir ${env.WORKSPACE}/${env.PROJECT}/jenkins/test-results
-                      scp -i ~/.ssh/ec2_ssh_key centos@\$(cat capabilities.json | jq '.endpoint.value' | tr -d '"'):"~/cloudify-agent/test-results/*.xml" ${env.WORKSPACE}/${env.PROJECT}/jenkins/test-results/
-                      """, label: 'copy test results'
-                  }
-                }
-              }
-            }
-          }
-          post {
-            always {
-              junit '**/test-results/*.xml'
-            }
-          }
-        }
-        stage('build_rpm'){
-          steps {
-            container('rpmbuild'){
-              sh script: """
-                cd && mkdir rpmbuild && cd rpmbuild
-                git clone https://github.com/cloudify-cosmo/cloudify-agent.git SOURCES && cd SOURCES && git checkout ${env.BRANCH_NAME}
-              """, label: 'Copying repo to seperate workspace'
-              sh script: """
-                chmod a+wx /opt
-                curl -o ~/rpmbuild/SOURCES/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
-                mkdir -p ~/rpmbuild/SOURCES/packaging/agents/ ;
-                curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
-                """, label: 'Prepare rpm-building environment'
-              sh script: """
-                cd ~/rpmbuild/SOURCES
-                rpmbuild \
-                  -D "CLOUDIFY_VERSION ${env.VERSION}" \
-                  -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
-                  -bb cloudify-agents.spec
-                """, label: 'Building a CI agent rpm'
-              sh script:("mkdir -p ${env.WORKSPACE}/rpm && cp -rf ~/rpmbuild/RPMS/noarch/. ${env.WORKSPACE}/rpm"), label: "Copy RPM to rpm folder"
-            }
-          }
-          post {
-            success {
-              archiveArtifacts '**/rpm/*.rpm'
-            }
-          }
-        }
-        stage('Windows-Build'){
-          agent{
-            kubernetes {
-              label "cloudify-agent-win-${env.BUILD_NUMBER}"
-              yamlFile 'jenkins/build-pod-windows.yaml'
-            }
-          }
-          environment {
-            TOX_ENV = 'pywin'
-            ERLANG_DOWNLOAD_URL = 'http://erlang.org/download/otp_win64_21.3.exe'
-            ERLANG_INSTALLER_PATH = 'C:\\erlang_install.exe'
-            RABBITMQ_DOWNLOAD_URL = 'https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.8.4/rabbitmq-server-3.8.4.exe'
-            RABBITMQ_INSTALLER_PATH = 'C:\\rabbitmq_install.exe'
-            PYTHON = 'C:\\Python36'
-          }
-          options {
-            checkoutToSubdirectory('cloudify-agent')
-            timeout(time: 60, unit: 'MINUTES')
-            timestamps()
-          }
-          steps{
-            script{
-              container('shell'){
-                powershell """
-                  Write-Host "Uninstalling existing erlang installs"
-                  Get-Package -Provider Programs -IncludeWindowsInstaller -Name '*erlang*' |% { & \$_.Meta.Attributes["UninstallString"] /S }
-                  if (-Not (Test-Path "${env.ERLANG_INSTALLER_PATH}")) {
-                    Write-Host "Downloading Erlang..."
-                    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-                    Invoke-RestMethod -uri "${env.ERLANG_DOWNLOAD_URL}" -outfile "${env.ERLANG_INSTALLER_PATH}"
-                  } else {
-                    Write-Host "Found" ${env.ERLANG_INSTALLER_PATH} "in cache. Not downloading Erlang."
-                  }
-                  Write-Host "Installing Erlang..."
-                  Start-Process "${env.ERLANG_INSTALLER_PATH}" -ArgumentList /S -NoNewWindow -Wait
-                """
-                powershell """
-                  if (-Not (Test-Path "${env.RABBITMQ_INSTALLER_PATH}")) {
-                    Write-Host "Downloading Rabbit..."
-                    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-                    Invoke-RestMethod -uri "${env.RABBITMQ_DOWNLOAD_URL}" -outfile "${env.RABBITMQ_INSTALLER_PATH}"
-                  } else {
-                    Write-Host "Found" ${env.RABBITMQ_INSTALLER_PATH} "in cache. Not downloading RabbitMQ."
-                  }
-                  Write-Host "Installing RabbitMQ..."
-                  # Don't wait for rabbitmq installer as it seems to never return when run silently
-                  Start-Process "${env.RABBITMQ_INSTALLER_PATH}" -ArgumentList /S,/QN -NoNewWindow
-                  for (\$attempt=1; \$attempt -le 60; \$attempt=\$attempt+1) {
-                    \$status=(Get-Service RabbitMQ).Status
-                    if ("\$status" -eq "Running") {
-                      Write-Host "RabbitMQ is running."
-                      Break
-                    } else {
-                      if ("\$status" -eq "Stopped") {
-                        Write-Host "Saw RabbitMQ stopped, attempting to start."
-                        Start-Service RabbitMQ
-                      }
-                      Write-Host "Waiting for RabbitMQ to start (Attempt: \$attempt, State: \$status)..."
-                      Sleep 2
-                    }
-                  }
-                  if ("\$status" -ne "Running") {
-                    Write-Host "WARNING: RabbitMQ DID NOT START"
-                    \$host.SetShouldExit(1)
-                  }
-                """
-                echo 'Install python'
-                powershell """
-                  echo "### Install Chocolatey ###"
-                  Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-                  choco install -y python --version=3.6.0
-                  choco install -y git
-                """
-                echo 'Configure python'
-                powershell """
-                  SET \$PATH=${env.PYTHON};\$PATH
-                  python --version
-                  python -c "import struct; print(struct.calcsize('P') * 8)"
-                  echo Upgrading pip...
-                  python -m pip install --upgrade pip==9.0.1
-                  pip --version
-                """
-                powershell """
-                  git clone https://github.com/cloudify-cosmo/cloudify-agent.git C:\\projects\\cloudify-agent
-                  cd C:\\projects\\cloudify-agent
-                  git checkout ${env.BRANCH_NAME}
-                  pip install virtualenv
-                  echo 'Installing dependencies'
-                  py -m venv env
-                  .\\env\\Scripts\\activate
-                  pip install -r dev-requirements.txt
-                  pip install -r test-requirements.txt
-                  pip install -U .
-                  pytest -sv --run-ci-tests --run-rabbit-tests cloudify_agent\\tests
-                """
+    stage('Deploy EC2 instances'){
+      steps{
+        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+          container('py36'){
+            echo 'Setup Github SSH key'
+            setupGithubSSHKey()
+            dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
+              withVault([configuration: configuration, vaultSecrets: secrets]){
+                sh script:"""#!/bin/bash
+                  set -euxo pipefail
+                  python -m venv .venv
+                  source .venv/bin/activate
+                  pip install --upgrade pip
+                  pip install cloudify==5.1.1
+                  cfy profile use ${env.MANAGER_IP} -u ${env.MANAGER_USERNAME} -p ${env.MANAGER_PASSWORD} -t ${env.MANAGER_TENANT} --ssl
+                  pushd 'bp'
+                    cfy install -b ec2-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} ec2-blueprint.yaml
+                  popd
+                  cfy deployments capabilities ec2-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} --json > capabilities.json
+                  jq -r '.key_content.value' capabilities.json > ~/.ssh/ec2_ssh_key && chmod 600 ~/.ssh/ec2_ssh_key
+                  sleep 160
+                  ssh-keyscan -H \$(jq -r '.endpoint.value' capabilities.json) >> ~/.ssh/known_hosts
+                  echo 'ClientAliveInterval 50' | sudo tee --append /etc/ssh/sshd_config
+                """, label:'Configure and install blueprint on manager'
               }
             }
           }
@@ -330,4 +76,3 @@ EOT
     }
   }
 }
-
