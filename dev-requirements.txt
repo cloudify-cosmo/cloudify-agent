@@ -1,1 +1,1 @@
-https://github.com/cloudify-cosmo/cloudify-common/archive/5.2.1-build.zip
+https://github.com/cloudify-cosmo/cloudify-common/archive/5.2.2-build.zip
