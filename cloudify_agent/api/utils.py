@@ -487,9 +487,10 @@ def get_agent_version():
 
 
 def get_windows_basedir():
-    # TODO: Get the program files directory from the machine itself
-    # instead of hardcoding it an assuming it's in C:\
-    # Or maybe we shouldn't- see RD-882
+    # While this is hardcoded, Microsoft documentation states that changing it
+    # is not really supported. They do then give details of how to do so, but
+    # as it's stated as not supported by MS, we won't support it.
+    # https://support.microsoft.com/en-us/help/933700/microsoft-does-not-support-changing-the-location-of-the-program-files  # noqa
     return 'C:\\Program Files\\Cloudify {} Agents'.format(get_agent_version())
 
 
