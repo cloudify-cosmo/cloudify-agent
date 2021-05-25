@@ -78,7 +78,7 @@ node_templates:
           BlockDeviceMappings:
           - DeviceName: '/dev/xvda'
             Ebs:
-              VolumeSize: 8
+              VolumeSize: 30
               VolumeType: standard
               DeleteOnTermination: True
       Tags:
