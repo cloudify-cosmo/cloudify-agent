@@ -197,6 +197,13 @@ EOT
                 """, label: 'Prepare rpm-building environment'
               sh script: """
                 cd ~/rpmbuild/SOURCES
+                yum install rpmdevtools -y
+                for i in {1..30}; do yum-builddep -y cloudify-agents.spec && break || sleep 10; done
+                spectool \
+                  -d "CLOUDIFY_VERSION ${env.VERSION}" \
+                  -d "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
+                  -P cloudify-agents.spec \
+                  -S -g
                 rpmbuild \
                   -D "CLOUDIFY_VERSION ${env.VERSION}" \
                   -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
