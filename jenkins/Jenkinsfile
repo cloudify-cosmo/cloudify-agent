@@ -197,6 +197,7 @@ EOT
                 """, label: 'Prepare rpm-building environment'
               sh script: """
                 cd ~/rpmbuild/SOURCES
+                cp -rf ${env.WORKSPACE}/build_agent/*.tar.gz .
                 rpmbuild \
                   -D "CLOUDIFY_VERSION ${env.VERSION}" \
                   -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
