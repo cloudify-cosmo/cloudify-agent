@@ -106,7 +106,7 @@ pipeline {
                       set -euxo pipefail
                       python -m venv .venv
                       source .venv/bin/activate
-                      pip install --upgrade pip
+                      pip install --upgrade pip==20.3.4
                       pip install cloudify==5.1.2
 
                       cfy profile use ${env.MANAGER_IP} -u ${env.MANAGER_USERNAME} -p ${env.MANAGER_PASSWORD} -t ${env.MANAGER_TENANT} --ssl
@@ -197,6 +197,7 @@ EOT
                 """, label: 'Prepare rpm-building environment'
               sh script: """
                 cd ~/rpmbuild/SOURCES
+                cp -rf ${env.WORKSPACE}/build_agent/*.tar.gz .
                 rpmbuild \
                   -D "CLOUDIFY_VERSION ${env.VERSION}" \
                   -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
@@ -273,41 +274,42 @@ EOT
                         Sleep 2
                       }
                     }
-                    if ("\$status" -ne "Running") {
-                      Write-Host "WARNING: RabbitMQ DID NOT START"
-                      \$host.SetShouldExit(1)
-                    }
-                  """
-                  echo 'Install python'
-                  powershell """
-                    echo "### Install Chocolatey ###"
-                    Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-                    choco install -y python --version=3.6.0
-                    choco install -y git
-                  """
-                  echo 'Configure python'
-                  powershell """
-                    SET \$PATH=${env.PYTHON};\$PATH
-                    python --version
-                    python -c "import struct; print(struct.calcsize('P') * 8)"
-                    echo Upgrading pip...
-                    python -m pip install --upgrade pip==9.0.1
-                    pip --version
-                  """
-                  powershell """
-                    git clone https://github.com/cloudify-cosmo/cloudify-agent.git C:\\projects\\cloudify-agent
-                    cd C:\\projects\\cloudify-agent
-                    git checkout ${env.BRANCH_NAME}
-                    pip install virtualenv
-                    echo 'Installing dependencies'
-                    py -m venv env
-                    .\\env\\Scripts\\activate
-                    pip install -r dev-requirements.txt
-                    pip install -r test-requirements.txt
-                    pip install -U .
-                    pytest -sv --run-ci-tests --run-rabbit-tests cloudify_agent\\tests
-                  """
-                }
+                  }
+                  if ("\$status" -ne "Running") {
+                    Write-Host "WARNING: RabbitMQ DID NOT START"
+                    \$host.SetShouldExit(1)
+                  }
+                """
+                echo 'Install python'
+                powershell """
+                  echo "### Install Chocolatey ###"
+                  Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+                  choco install -y python --version=3.6.0
+                  choco install -y git
+                """
+                echo 'Configure python'
+                powershell """
+                  SET \$PATH=${env.PYTHON};\$PATH
+                  python --version
+                  python -c "import struct; print(struct.calcsize('P') * 8)"
+                  echo Upgrading pip...
+                  python -m pip install pip
+                  pip --version
+                """
+                powershell """
+                  git clone https://github.com/cloudify-cosmo/cloudify-agent.git C:\\projects\\cloudify-agent
+                  cd C:\\projects\\cloudify-agent
+                  git checkout ${env.BRANCH_NAME}
+                  pip install virtualenv
+                  echo 'Installing dependencies'
+                  py -m venv env
+                  .\\env\\Scripts\\activate
+                  pip install --upgrade pip==20.3.4
+                  pip install -r dev-requirements.txt
+                  pip install -r test-requirements.txt
+                  pip install -U .
+                  pytest -sv --run-ci-tests --run-rabbit-tests cloudify_agent\\tests
+                """
               }
             }
           }
