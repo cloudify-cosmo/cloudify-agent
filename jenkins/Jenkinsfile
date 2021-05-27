@@ -105,12 +105,11 @@ pipeline {
                     sh script:"""#!/bin/bash
                       apt-get update
                       python -m ensurepip --upgrade
-                      python -m pip install --upgrade pip
+                      python -m pip install --upgrade pip==20.3.4
                       python -m pip install --upgrade virtualenv
 
                       virtualenv .venv
                       source .venv/bin/activate
-
                       pip install cloudify==5.1.2
                       cfy profile use ${env.MANAGER_IP} -u ${env.MANAGER_USERNAME} -p ${env.MANAGER_PASSWORD} -t ${env.MANAGER_TENANT} --ssl
                       pushd 'bp'
@@ -195,6 +194,7 @@ EOT
                 """, label: 'Prepare rpm-building environment'
               sh script: """
                 cd ~/rpmbuild/SOURCES
+                cp -rf ${env.WORKSPACE}/build_agent/*.tar.gz .
                 rpmbuild \
                   -D "CLOUDIFY_VERSION ${env.VERSION}" \
                   -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
@@ -299,6 +299,7 @@ EOT
                   echo 'Installing dependencies'
                   py -m venv env
                   .\\env\\Scripts\\activate
+                  pip install --upgrade pip==20.3.4
                   pip install -r dev-requirements.txt
                   pip install -r test-requirements.txt
                   pip install -U .
