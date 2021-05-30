@@ -274,11 +274,10 @@ EOT
                         Sleep 2
                       }
                     }
-                  }
-                  if ("\$status" -ne "Running") {
-                    Write-Host "WARNING: RabbitMQ DID NOT START"
-                    \$host.SetShouldExit(1)
-                  }
+                    if ("\$status" -ne "Running") {
+                      Write-Host "WARNING: RabbitMQ DID NOT START"
+                      \$host.SetShouldExit(1)
+                    }
                   """
                   echo 'Install python'
                   powershell """
