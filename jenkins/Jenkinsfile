@@ -106,7 +106,7 @@ pipeline {
                       set -euxo pipefail
                       python -m venv .venv
                       source .venv/bin/activate
-                      pip install --upgrade pip
+                      pip install --upgrade pip==20.3.4
                       pip install cloudify==5.1.2
 
                       cfy profile use ${env.MANAGER_IP} -u ${env.MANAGER_USERNAME} -p ${env.MANAGER_PASSWORD} -t ${env.MANAGER_TENANT} --ssl
@@ -197,6 +197,7 @@ EOT
                 """, label: 'Prepare rpm-building environment'
               sh script: """
                 cd ~/rpmbuild/SOURCES
+                cp -rf ${env.WORKSPACE}/build_agent/*.tar.gz .
                 rpmbuild \
                   -D "CLOUDIFY_VERSION ${env.VERSION}" \
                   -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
@@ -290,7 +291,7 @@ EOT
                   python --version
                   python -c "import struct; print(struct.calcsize('P') * 8)"
                   echo Upgrading pip...
-                  python -m pip install --upgrade pip==9.0.1
+                  python -m pip install pip
                   pip --version
                 """
                 powershell """
@@ -301,6 +302,7 @@ EOT
                   echo 'Installing dependencies'
                   py -m venv env
                   .\\env\\Scripts\\activate
+                  pip install --upgrade pip==20.3.4
                   pip install -r dev-requirements.txt
                   pip install -r test-requirements.txt
                   pip install -U .
