@@ -137,35 +137,35 @@ pipeline {
                   withVault([configuration: configuration, vaultSecrets: secrets]){
                     sh script:"""#!/bin/bash
                       ssh -i ~/.ssh/ec2_ssh_key -l centos \$(cat capabilities.json | jq '.endpoint.value' | tr -d '"') /bin/bash << 'EOT'
-    sudo yum install -y epel-release git vim python-virtualenv
-    sudo yum install -y rabbitmq-server
-    sudo yum install -y wget
-    git clone https://github.com/cloudify-cosmo/cloudify-agent.git
-    sudo systemctl enable rabbitmq-server
-    sudo systemctl start rabbitmq-server
-    virtualenv py2
-    source py2/bin/activate
-    pushd cloudify-agent
-    git checkout ${env.BRANCH_NAME}
-    pip install -r test-requirements.txt
-    pip install -r dev-requirements.txt
-    pip install '.[fabric]'
-    pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py2.xml
-    popd
-    deactivate
-    sudo yum install -y python3
-    python3 -m venv py3
-    source py3/bin/activate
-    export LC_ALL=en_US.utf-8
-    export LANG=en_US.utf-8
-    pushd cloudify-agent
-    pip install -r test-requirements.txt
-    pip install -r dev-requirements.txt
-    pip install '.[fabric]'
-    pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py3.xml
-    popd
-    deactivate
-    EOT
+sudo yum install -y epel-release git vim python-virtualenv
+sudo yum install -y rabbitmq-server
+sudo yum install -y wget
+git clone https://github.com/cloudify-cosmo/cloudify-agent.git
+sudo systemctl enable rabbitmq-server
+sudo systemctl start rabbitmq-server
+virtualenv py2
+source py2/bin/activate
+pushd cloudify-agent
+git checkout ${env.BRANCH_NAME}
+pip install -r test-requirements.txt
+pip install -r dev-requirements.txt
+pip install '.[fabric]'
+pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py2.xml
+popd
+deactivate
+sudo yum install -y python3
+python3 -m venv py3
+source py3/bin/activate
+export LC_ALL=en_US.utf-8
+export LANG=en_US.utf-8
+pushd cloudify-agent
+pip install -r test-requirements.txt
+pip install -r dev-requirements.txt
+pip install '.[fabric]'
+pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py3.xml
+popd
+deactivate
+EOT
                     """, label: 'Prepare instance and run pytests'
                     sh script:"""
                       mkdir ${env.WORKSPACE}/${env.PROJECT}/jenkins/test-results
