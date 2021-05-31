@@ -320,7 +320,7 @@ EOT
     }
     stage('Terminate py27 instnace'){
       steps{
-        container('py27'){
+        container('py36'){
           dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
             withVault([configuration: configuration, vaultSecrets: secrets]){
               echo 'Uninstall and delete blueprint from manager'
