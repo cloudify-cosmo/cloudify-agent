@@ -33,8 +33,8 @@ spec:
       privileged: true
     resources:
       limits:
-        cpu: 0.3
-        memory: 256Mi
+        cpu: 1
+        memory: 1Gi
   - name: centos7
     image: centos:7
     command:
