@@ -314,7 +314,7 @@ EOT
         }
       }
     }
-    stage('Terminate py27 instnace'){ // we made github to wait on a job with this exact name, typo included
+    stage('Terminate py27 instnace'){ // we made github to wait on a job with this exact name, typo included.
       steps{
         container('py36'){
           dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
