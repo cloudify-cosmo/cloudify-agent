@@ -1,7 +1,7 @@
 tosca_definitions_version: cloudify_dsl_1_3
 
 description: >
-  This blueprint deploy EC2 for integration tests
+  This blueprint deploy EC2 for agent tests
 imports:
   - http://cloudify.co/spec/cloudify/5.2.3.dev1/types.yaml
   - plugin:cloudify-aws-plugin
@@ -76,9 +76,9 @@ node_templates:
             AvailabilityZone: { get_input:  availability_zone }
           UserData: { get_attribute: [ cloud_init, cloud_config ] }
           BlockDeviceMappings:
-          - DeviceName: '/dev/xvda'
+          - DeviceName: '/dev/sda1'
             Ebs:
-              VolumeSize: 8
+              VolumeSize: 30
               VolumeType: standard
               DeleteOnTermination: True
       Tags:

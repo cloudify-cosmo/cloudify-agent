@@ -96,29 +96,27 @@ pipeline {
         }
         stage('Deploy EC2 instances'){
           steps{
-            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
-              container('py27'){
+            catchError(message: 'Failure on: cloudify-agent tests', buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+              container('py36'){
                 echo 'Setup Github SSH key'
                 setupGithubSSHKey()
                 dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
                   withVault([configuration: configuration, vaultSecrets: secrets]){
                     sh script:"""#!/bin/bash
-                      apt-get update
-                      python -m ensurepip --upgrade
-                      python -m pip install --upgrade pip==20.3.4
-                      python -m pip install --upgrade virtualenv
-
-                      virtualenv .venv
+                      set -euxo pipefail
+                      python -m venv .venv
                       source .venv/bin/activate
+                      pip install --upgrade pip==20.3.4
                       pip install cloudify==5.1.2
+
                       cfy profile use ${env.MANAGER_IP} -u ${env.MANAGER_USERNAME} -p ${env.MANAGER_PASSWORD} -t ${env.MANAGER_TENANT} --ssl
                       pushd 'bp'
-                        cfy install -b ec2-py27-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} ec2-py27-blueprint.yaml
+                        cfy install -b ec2-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} ec2-blueprint.yaml
                       popd
-                      cfy deployments capabilities ec2-py27-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} --json > capabilities.json
-                      echo -e \$(cat capabilities.json | jq '.key_content.value' | tr -d '"') > ~/.ssh/ec2_ssh_key && chmod 600 ~/.ssh/ec2_ssh_key
+                      cfy deployments capabilities ec2-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} --json > capabilities.json
+                      jq -r '.key_content.value' capabilities.json > ~/.ssh/ec2_ssh_key && chmod 600 ~/.ssh/ec2_ssh_key
                       sleep 160
-                      ssh-keyscan -H \$(cat capabilities.json | jq '.endpoint.value' | tr -d '"') >> ~/.ssh/known_hosts
+                      ssh-keyscan -H \$(jq -r '.endpoint.value' capabilities.json) >> ~/.ssh/known_hosts
                       echo 'ClientAliveInterval 50' | sudo tee --append /etc/ssh/sshd_config
                     """, label:'Configure and install blueprint on manager'
                   }
@@ -133,8 +131,8 @@ pipeline {
       parallel {
         stage('Configure & Run-tests py27 on EC2 instance'){
           steps{
-            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
-              container('py27'){
+            catchError(message: 'Failure on: cloudify-agent tests', buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+              container('py36'){
                 dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
                   withVault([configuration: configuration, vaultSecrets: secrets]){
                     sh script:"""#!/bin/bash
@@ -176,6 +174,11 @@ EOT
                   }
                 }
               }
+            }
+          }
+          post {
+            always {
+              junit '**/test-results/*.xml'
             }
           }
         }
@@ -230,7 +233,7 @@ EOT
             timestamps()
           }
           steps{
-            script{
+            catchError(message: 'Failure on: cloudify-agent tests', buildResult: 'SUCCESS', stageResult: 'FAILURE') {
               container('shell'){
                 powershell """
                   Write-Host "Uninstalling existing erlang installs"
@@ -288,7 +291,7 @@ EOT
                   python --version
                   python -c "import struct; print(struct.calcsize('P') * 8)"
                   echo Upgrading pip...
-                  python -m pip install --upgrade pip==9.0.1
+                  python -m pip install pip
                   pip --version
                 """
                 powershell """
@@ -311,15 +314,16 @@ EOT
         }
       }
     }
-    stage('Terminate py27 instnace'){
+    stage('Terminate py27 instnace'){ // we made github to wait on a job with this exact name, typo included
       steps{
-        container('py27'){
+        container('py36'){
           dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
             withVault([configuration: configuration, vaultSecrets: secrets]){
               echo 'Uninstall and delete blueprint from manager'
               sh """#!/bin/bash
+                set -euxo pipefail
                 source .venv/bin/activate
-                cfy uninstall ec2-py27-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} --force --allow-custom-parameters -p ignore_failure=true
+                cfy uninstall ec2-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} --force --allow-custom-parameters -p ignore_failure=true
               """
             }
           }
@@ -329,8 +333,10 @@ EOT
   }
   post {
     always {
-      junit '**/test-results/*.xml'
+      findText(textFinders: [
+        textFinder(regexp: 'Failure on:*', fileSet: '', alsoCheckConsoleOutput: true, buildResult: 'FAILURE')
+        ]
+      )
     }
   }
 }
-
