@@ -306,7 +306,8 @@ pipeline {
                     pip install -r dev-requirements.txt
                     pip install -r test-requirements.txt
                     pip install -U .
-                    pytest -sv --run-ci-tests --run-rabbit-tests cloudify_agent\\tests\\test_operations.py::test_local_agent_from_package_nt
+                    pytest -sv --run-ci-tests --run-rabbit-tests cloudify_agent\\tests\\installer\\test_operations.py::test_local_agent_from_package_nt
+                    cloudify_agent/tests/test_operations.py
                   """
                 }
               }
