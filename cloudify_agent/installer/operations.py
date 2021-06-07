@@ -139,6 +139,9 @@ def delete(cloudify_agent, installer, **_):
         # eg. the tenant data. We'd be possibly leaving queues around,
         # but without that info, we can't really do anything else
         ctx.logger.error('Could not delete agent queues: %s', e)
+    except Exception as e:
+        ctx.logger.error('Something went wrong wit agent: %s', e)
+        raise e
 
 
 @operation
