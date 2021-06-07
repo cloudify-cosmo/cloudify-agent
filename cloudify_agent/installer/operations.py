@@ -12,6 +12,7 @@ from cloudify.agent_utils import (create_agent_record,
 
 from cloudify_agent.api import utils
 from cloudify_agent.installer import script
+from cloudify._compat import StringIO
 
 from .config.agent_config import update_agent_runtime_properties
 from .config.agent_config import create_agent_config_and_installer
@@ -140,7 +141,11 @@ def delete(cloudify_agent, installer, **_):
         # but without that info, we can't really do anything else
         ctx.logger.error('Could not delete agent queues: %s', e)
     except Exception as e:
+        import traceback
         ctx.logger.error('Something went wrong wit agent: %s', e)
+        error = StringIO()
+        traceback.print_exc(file=error)
+        ctx.logger.error('Full stack trace: %s', error.getvalue())
         raise e
 
 
