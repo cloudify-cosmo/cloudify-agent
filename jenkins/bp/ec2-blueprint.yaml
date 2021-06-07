@@ -61,7 +61,7 @@ dsl_definitions:
 node_templates:
 
   vm:
-    type: cloudify.nodes.aws.ec2.Instances
+    type: cloudify.nodes.aws.ec2.SpotInstances
     properties:
       client_config: *client_config
       agent_config:
