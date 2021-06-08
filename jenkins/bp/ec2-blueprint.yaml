@@ -85,7 +85,7 @@ node_templates:
       Tags:
       - Key: Name  
         Value: cfy-agent-tests      
-      use_public_ip: true
+      #use_public_ip: true
     relationships:
     - type: cloudify.relationships.depends_on
       target: nic
