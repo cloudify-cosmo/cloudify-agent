@@ -82,10 +82,11 @@ node_templates:
                 VolumeSize: 30
                 VolumeType: standard
                 DeleteOnTermination: True
-      Tags:
-      - Key: Name  
-        Value: cfy-agent-tests      
-      #use_public_ip: true
+          TagSpecifications:
+            - ResourceType: instance
+              Tags:
+                - Key: Name  
+                  Value: cfy-agent-tests    
     relationships:
     - type: cloudify.relationships.depends_on
       target: nic
