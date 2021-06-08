@@ -107,7 +107,7 @@ pipeline {
                       python -m venv .venv
                       source .venv/bin/activate
                       pip install --upgrade pip==20.3.4
-                      pip install cloudify==6.0.0
+                      yum install -y https://cloudify-release-eu.s3-eu-west-1.amazonaws.com/cloudify/6.0.0/ga-release/cloudify-cli-6.0.0-ga.el7.x86_64.rpm
 
                       cfy profile use ${env.MANAGER_IP} -u ${env.MANAGER_USERNAME} -p ${env.MANAGER_PASSWORD} -t ${env.MANAGER_TENANT} --ssl
                       pushd 'bp'
