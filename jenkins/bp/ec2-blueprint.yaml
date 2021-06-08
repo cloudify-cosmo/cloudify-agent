@@ -74,14 +74,14 @@ node_templates:
             ImageId: { get_input:  aws_image_name }
             InstanceType: { get_input: instance_type }
             UserData: { get_attribute: [ cloud_init, cloud_config ] }
-          Placement:
-            AvailabilityZone: { get_input:  availability_zone }        
-          BlockDeviceMappings:
-          - DeviceName: '/dev/sda1'
-            Ebs:
-              VolumeSize: 30
-              VolumeType: standard
-              DeleteOnTermination: True
+            Placement:
+              AvailabilityZone: { get_input:  availability_zone }        
+            BlockDeviceMappings:
+            - DeviceName: '/dev/sda1'
+              Ebs:
+                VolumeSize: 30
+                VolumeType: standard
+                DeleteOnTermination: True
       Tags:
       - Key: Name  
         Value: cfy-agent-tests      
@@ -127,6 +127,7 @@ node_templates:
       resource_id: { get_input: aws_subnet_id }
       resource_config:
         CidrBlock:  10.20.0.0/24
+        AvailabilityZone: { get_input:  availability_zone }
     relationships:
     - type: cloudify.relationships.depends_on
       target: vpc
