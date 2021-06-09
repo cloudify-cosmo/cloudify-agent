@@ -87,10 +87,10 @@ node_templates:
               Tags:
                 - Key: Name  
                   Value: cfy-agent-tests
-            - ResourceType: instance
-              Tags:
-                - Key: Name  
-                  Value: cfy-agent-tests    
+            # - ResourceType: instance
+            #   Tags:
+            #     - Key: Name  
+            #       Value: cfy-agent-tests    
     relationships:
     - type: cloudify.relationships.depends_on
       target: nic
