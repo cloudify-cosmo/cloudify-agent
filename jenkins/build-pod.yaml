@@ -9,7 +9,7 @@ spec:
         cpu: 0.3
         memory: 256Mi
   - name: py27
-    image: circleci/python:2.7
+    image: python:2.7
     command:
     - cat
     tty: true
@@ -24,7 +24,7 @@ spec:
         cpu: 0.3
         memory: 512Mi
   - name: py36
-    image: circleci/python:3.6
+    image: python:3.6
     command:
     - cat
     tty: true
