@@ -82,11 +82,15 @@ node_templates:
                 VolumeSize: 30
                 VolumeType: standard
                 DeleteOnTermination: True
-            TagSpecifications:
-              - ResourceType: instance
-                Tags:
-                  - Key: Name  
-                    Value: cfy-agent-tests    
+          TagSpecifications:
+            - ResourceType: spot-instances-request
+              Tags:
+                - Key: Name  
+                  Value: cfy-agent-tests
+            # - ResourceType: instance
+            #   Tags:
+            #     - Key: Name  
+            #       Value: cfy-agent-tests    
     relationships:
     - type: cloudify.relationships.depends_on
       target: nic
