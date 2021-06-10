@@ -27,6 +27,9 @@ pipeline {
     PROJECT = "cloudify-agent"
     VERSION = getVersion("${env.PROJECT}", "${env.BRANCH_NAME}").trim()
     PRERELEASE = getPreRelease("${env.PROJECT}", "${env.BRANCH_NAME}").trim()
+    S3_BASE_URL = "${env.VERSION}/${env.PRERELEASE}-build/${env.PROJECT}/${env.BRANCH_NAME}"
+    S3_BUILD_PATH = "${env.S3_BASE_URL}/${env.BUILD_NUMBER}"
+    S3_LATEST_BUILD_PATH = "${env.S3_BASE_URL}/latest"
   }
   stages{
     stage ('compatability and flake8') {
@@ -198,6 +201,16 @@ EOT
               sh script: """
                 cd ~/rpmbuild/SOURCES
                 cp -rf ${env.WORKSPACE}/build_agent/*.tar.gz .
+
+                yum install rpmdevtools -y
+                for i in {1..30}; do yum-builddep -y cloudify-agents.spec && break || sleep 10; done
+
+                spectool \
+                  -d "CLOUDIFY_VERSION ${env.VERSION}" \
+                  -d "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
+                  -P cloudify-agents.spec \
+                  -S -g
+
                 rpmbuild \
                   -D "CLOUDIFY_VERSION ${env.VERSION}" \
                   -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
@@ -208,6 +221,8 @@ EOT
           }
           post {
             success {
+              uploadToReleaseS3("${env.WORKSPACE}/rpm/","${env.S3_BUILD_PATH}")
+              uploadToReleaseS3("${env.WORKSPACE}/rpm/","${env.S3_LATEST_BUILD_PATH}")
               archiveArtifacts '**/rpm/*.rpm'
             }
           }
