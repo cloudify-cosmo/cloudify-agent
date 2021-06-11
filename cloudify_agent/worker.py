@@ -373,7 +373,7 @@ class CloudifyOperationConsumer(TaskConsumer):
         subprocess_kwargs.setdefault('stderr', subprocess.STDOUT)
         subprocess_kwargs.setdefault('stdout', subprocess.PIPE)
         p = subprocess.Popen(*subprocess_args, **subprocess_kwargs)
-        self._process_registry.register(self, p)
+        self._process_registry.register(ctx.execution_id, p)
 
         with TimeoutWrapper(ctx, p) as timeout_wrapper:
             with self.logfile(ctx) as f:
@@ -386,8 +386,8 @@ class CloudifyOperationConsumer(TaskConsumer):
 
         cancelled = False
         if self._process_registry:
-            cancelled = self._process_registry.is_cancelled(self)
-            self._process_registry.unregister(self, p)
+            cancelled = self._process_registry.is_cancelled(ctx.execution_id)
+            self._process_registry.unregister(ctx.execution_id, p)
 
         if timeout_wrapper.timeout_encountered:
             message = 'Process killed due to timeout of %d seconds' % \
@@ -554,7 +554,7 @@ class ServiceTaskConsumer(TaskConsumer):
         factory.save(daemon)
 
     def cancel_operation_task(self, execution_id):
-        logger.info('Cancelling task {0}'.format(execution_id))
+        logger.info('Cancelling task %s', execution_id)
         self._operation_registry.cancel(execution_id)
 
     def replace_ca_certs_task(self, new_manager_ca, new_broker_ca):
@@ -618,23 +618,23 @@ class ProcessRegistry(object):
         self._processes = {}
         self._cancelled = set()
 
-    def register(self, handler, process):
-        self._processes.setdefault(self.make_key(handler), []).append(process)
+    def register(self, execution_id, process):
+        self._processes.setdefault(execution_id, []).append(process)
 
-    def unregister(self, handler, process):
-        key = self.make_key(handler)
+    def unregister(self, execution_id, process):
         try:
-            self._processes[key].remove(process)
+            self._processes[execution_id].remove(process)
         except (KeyError, ValueError):
             pass
-        if not self._processes[key] and key in self._cancelled:
-            self._cancelled.remove(key)
+        if not self._processes[execution_id] and \
+                execution_id in self._cancelled:
+            self._cancelled.remove(execution_id)
 
-    def cancel(self, task_id):
-        self._cancelled.add(task_id)
+    def cancel(self, execution_id):
+        self._cancelled.add(execution_id)
         threads = [
             threading.Thread(target=self._stop_process, args=(p,))
-            for p in self._processes.get(task_id, [])
+            for p in self._processes.get(execution_id, [])
         ]
         for thread in threads:
             thread.start()
@@ -651,11 +651,8 @@ class ProcessRegistry(object):
             time.sleep(0.5)
         process.kill()
 
-    def is_cancelled(self, handler):
-        return self.make_key(handler) in self._cancelled
-
-    def make_key(self, handler):
-        return handler.ctx.execution_id
+    def is_cancelled(self, execution_id):
+        return execution_id in self._cancelled
 
 
 def make_amqp_worker(args):
