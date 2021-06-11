@@ -164,9 +164,12 @@ class CloudifyOperationConsumer(TaskConsumer):
         if ctx.task_type in ['workflow', 'hook']:
             prefix = '{0} {1}'.format(action, ctx.task_type)
             suffix = ''
-        else:
+        elif ctx.type == constants.NODE_INSTANCE:
             prefix = '{0} operation'.format(action)
             suffix = '\n\tNode ID: {0}'.format(ctx.node.id)
+        else:
+            prefix = ''
+            suffix = ''
 
         if status:
             suffix += '\n\tStatus: {0}'.format(status)
