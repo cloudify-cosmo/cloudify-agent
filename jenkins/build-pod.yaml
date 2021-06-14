@@ -59,6 +59,15 @@ spec:
       limits:
         cpu: 0.3
         memory: 256Mi
+  - name: awscli
+    image: amazon/aws-cli
+    command:
+    - cat
+    tty: true
+    resources:
+      limits:
+        cpu: 0.2
+        memory: 256Mi
   imagePullSecrets:
     - name: dockerhub
   nodeSelector:
