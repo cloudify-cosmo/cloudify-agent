@@ -400,7 +400,10 @@ def _assert_task_runnable(task_name, expected_return=None, *args, **kwargs):
 
 
 def _assert_task_not_runnable(*args, **kwargs):
-    pytest.raises(IOError, _run_task, *args, **kwargs)
+    # Exception, because it can be py2-OSError, IOError,
+    # or py3-FileNotFoundError, depending what's wrong (not installed at all,
+    # or malformed)
+    pytest.raises(Exception, _run_task, *args, **kwargs)
 
 
 def _assert_wagon_plugin_installed():
