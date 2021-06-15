@@ -185,7 +185,7 @@ def pytest_collection_modifyitems(config, items):
         reason='Not relevant OS to run the test.'
     )
     skip_rabbit = pytest.mark.skip(
-        reason='--run-rabbit-test not set. Install rabbit before using this.'
+        reason='--run-rabbit-tests not set. Install rabbit before using this.'
     )
     for item in items:
         if "only_rabbit" in item.keywords and not config.getoption(
