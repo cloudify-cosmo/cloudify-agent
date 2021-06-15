@@ -1,5 +1,6 @@
 import json
 import mock
+import os
 import pytest
 
 from cloudify import exceptions, constants
@@ -19,9 +20,9 @@ def _make_mock_popen():
 def test_full_dispatch(mock_popen, tmpdir):
     """Check that the main subprocess method works at all"""
     consumer = worker.CloudifyOperationConsumer(None)
-    with open(tmpdir / 'output.json', 'w') as f:
+    with open(os.path.join(str(tmpdir), 'output.json'), 'w') as f:
         json.dump({'type': 'result', 'payload': 42}, f)
-    with mock.patch('tempfile.mkdtemp', return_value=tmpdir):
+    with mock.patch('tempfile.mkdtemp', return_value=str(tmpdir)):
         result = consumer.dispatch_to_subprocess(CloudifyContext({
             'task_name': 'plugin.task',
         }), (), {})
