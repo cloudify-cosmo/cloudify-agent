@@ -305,23 +305,26 @@ class CloudifyOperationConsumer(TaskConsumer):
                                 close_fds=os.name != 'nt')
             with open(os.path.join(dispatch_dir, 'output.json')) as f:
                 dispatch_output = json.load(f)
-            if dispatch_output['type'] == 'result':
-                return dispatch_output['payload']
-            elif dispatch_output['type'] == 'error':
-                e = dispatch_output['payload']
-                error = deserialize_known_exception(e)
-                error.causes.append({
-                    'message': e['message'],
-                    'type': e['exception_type'],
-                    'traceback': e.get('traceback')
-                })
-                raise error
-            else:
-                raise exceptions.NonRecoverableError(
-                    'Unexpected output type: {0}'
-                    .format(dispatch_output['type']))
+            return self._handle_subprocess_output(dispatch_output)
         finally:
             shutil.rmtree(dispatch_dir, ignore_errors=True)
+
+    def _handle_subprocess_output(self, dispatch_output):
+        if dispatch_output['type'] == 'result':
+            return dispatch_output['payload']
+        elif dispatch_output['type'] == 'error':
+            e = dispatch_output['payload']
+            error = deserialize_known_exception(e)
+            error.causes.append({
+                'message': e['message'],
+                'type': e['exception_type'],
+                'traceback': e.get('traceback')
+            })
+            raise error
+        else:
+            raise exceptions.NonRecoverableError(
+                'Unexpected output type: {0}'
+                .format(dispatch_output['type']))
 
     def _build_subprocess_env(self, ctx):
         env = os.environ.copy()
