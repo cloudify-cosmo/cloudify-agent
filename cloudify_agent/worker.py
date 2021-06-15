@@ -157,7 +157,7 @@ class CloudifyOperationConsumer(TaskConsumer):
     handler = dispatch.OperationHandler
 
     def __init__(self, *args, **kwargs):
-        self._process_registry = kwargs.pop('registry')
+        self._process_registry = kwargs.pop('registry', None)
         super(CloudifyOperationConsumer, self).__init__(*args, **kwargs)
 
     def _print_task(self, ctx, action, status=None):
@@ -376,7 +376,8 @@ class CloudifyOperationConsumer(TaskConsumer):
         subprocess_kwargs.setdefault('stderr', subprocess.STDOUT)
         subprocess_kwargs.setdefault('stdout', subprocess.PIPE)
         p = subprocess.Popen(*subprocess_args, **subprocess_kwargs)
-        self._process_registry.register(ctx.execution_id, p)
+        if self._process_registry:
+            self._process_registry.register(ctx.execution_id, p)
 
         with TimeoutWrapper(ctx, p) as timeout_wrapper:
             with self.logfile(ctx) as f:
