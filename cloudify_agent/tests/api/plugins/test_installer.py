@@ -5,16 +5,16 @@ import platform
 import pytest
 import shutil
 import threading
+import subprocess
 from contextlib import contextmanager
 
 import wagon
 
 from mock import patch
 
-from cloudify import dispatch
 from cloudify import exceptions as cloudify_exceptions
 from cloudify.state import ctx, current_ctx
-from cloudify.utils import setup_logger, target_plugin_prefix
+from cloudify.utils import setup_logger, target_plugin_prefix, get_python_path
 from cloudify.exceptions import NonRecoverableError
 from cloudify_rest_client.plugins import Plugin
 from cloudify_rest_client.constants import VisibilityState
@@ -378,33 +378,32 @@ class MockConcurrentClient(object):
                                              download_path=download_path)
 
 
-def _assert_task_runnable(task_name,
-                          expected_return=None,
-                          package_name=plugins.PACKAGE_NAME,
-                          package_version=None,
-                          deployment_id=None):
-    assert (
-        dispatch.dispatch(test_utils.op_context(
-            task_name,
-            plugin_name=plugins.PLUGIN_NAME,
-            package_name=package_name,
-            package_version=package_version,
-            deployment_id=deployment_id))
-    ) == expected_return
+def _run_task(task_name, expected_return=None,
+              package_name=plugins.PACKAGE_NAME, package_version=None,
+              deployment_id=None):
+    prefix = target_plugin_prefix(
+        package_name, tenant_name='default_tenant', version=package_version,
+        deployment_id=deployment_id)
+    python = get_python_path(prefix)
+    package, func = task_name.rsplit('.', 1)
+    env = os.environ.copy()
+    env['PATH'] = '{0}:{1}'.format(os.path.dirname(python), env['PATH'])
+
+    return subprocess.check_output([
+        python, '-c',
+        'from {0} import {1}; print({1}())'.format(package, func)
+    ], env=env).strip().decode('utf-8')
 
 
-def _assert_task_not_runnable(task_name,
-                              deployment_id=None,
-                              package_name=plugins.PACKAGE_NAME,
-                              package_version=None):
-    pytest.raises(
-        cloudify_exceptions.NonRecoverableError,
-        dispatch.dispatch,
-        test_utils.op_context(task_name,
-                              plugin_name=plugins.PLUGIN_NAME,
-                              deployment_id=deployment_id,
-                              package_name=package_name,
-                              package_version=package_version))
+def _assert_task_runnable(task_name, expected_return=None, *args, **kwargs):
+    assert _run_task(task_name, *args, **kwargs) == expected_return
+
+
+def _assert_task_not_runnable(*args, **kwargs):
+    # Exception, because it can be py2-OSError, IOError,
+    # or py3-FileNotFoundError, depending what's wrong (not installed at all,
+    # or malformed)
+    pytest.raises(Exception, _run_task, *args, **kwargs)
 
 
 def _assert_wagon_plugin_installed():

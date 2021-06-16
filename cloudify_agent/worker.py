@@ -20,25 +20,136 @@ import time
 import logging
 import argparse
 import traceback
+import tempfile
+import json
+import subprocess
+import shutil
 import threading
 
+from cloudify import plugin_installer
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
 
 from cloudify_rest_client.exceptions import UserUnauthorizedError
 
 from cloudify import constants, dispatch, exceptions, state
+from cloudify.context import CloudifyContext
 from cloudify.models_states import ExecutionState
 from cloudify.logs import setup_agent_logger
 from cloudify.state import current_ctx
-from cloudify.error_handling import serialize_known_exception
+from cloudify.error_handling import (
+    serialize_known_exception,
+    deserialize_known_exception
+)
 from cloudify.amqp_client import (
     AMQPConnection, TaskConsumer, NO_RESPONSE, STOP_AGENT
 )
-from cloudify.utils import get_manager_name
+from cloudify.utils import get_manager_name, get_python_path
 from cloudify_agent.operations import install_plugins, uninstall_plugins
+from cloudify._compat import PY2
 
+SYSTEM_DEPLOYMENT = '__system__'
+ENV_ENCODING = 'utf-8'  # encoding for env variables
 DEFAULT_MAX_WORKERS = 10
+CLOUDIFY_DISPATCH = 'CLOUDIFY_DISPATCH'
+PREINSTALLED_PLUGINS = [
+    'agent',
+    'diamond',  # Stub for back compat
+    'script',
+    'cfy_extensions',
+    'default_workflows',
+    'worker_installer',
+    'cloudify_system_workflows',
+    'agent_installer',
+]
+
+
+class LockedFile(object):
+    """Like a writable file object, but writes are under a lock.
+
+    Used for logging, so that multiple threads can write to the same logfile
+    safely (deployment.log).
+
+    We keep track of the number of users, so that we can close the file
+    only when the last one stops writing.
+    """
+    SETUP_LOGGER_LOCK = threading.Lock()
+    LOGFILES = {}
+
+    @classmethod
+    def open(cls, fn):
+        """Create a new LockedFile, or get a cached one if one for this
+        filename already exists.
+        """
+        with cls.SETUP_LOGGER_LOCK:
+            if fn not in cls.LOGFILES:
+                if not os.path.exists(os.path.dirname(fn)):
+                    os.mkdir(os.path.dirname(fn))
+                cls.LOGFILES[fn] = cls(fn)
+            rv = cls.LOGFILES[fn]
+            rv.users += 1
+        return rv
+
+    def __init__(self, filename):
+        self._filename = filename
+        self._f = None
+        self.users = 0
+        self._lock = threading.Lock()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        self.close()
+
+    def write(self, data):
+        with self._lock:
+            if self._f is None:
+                self._f = open(self._filename, 'ab')
+            self._f.write(data)
+            self._f.flush()
+
+    def close(self):
+        with self.SETUP_LOGGER_LOCK:
+            self.users -= 1
+            if self.users == 0:
+                if self._f:
+                    self._f.close()
+                self.LOGFILES.pop(self._filename)
+
+
+class TimeoutWrapper(object):
+    def __init__(self, ctx, process):
+        self.timeout = ctx.timeout
+        self.timeout_recoverable = ctx.timeout_recoverable
+        self.timeout_encountered = False
+        self.process = process
+        self.timer = None
+        self.logger = logging.getLogger(__name__)
+
+    def _timer_func(self):
+        self.timeout_encountered = True
+        self.logger.warning("Terminating subprocess; PID=%d...",
+                            self.process.pid)
+        self.process.terminate()
+        for i in range(10):
+            if self.process.poll() is not None:
+                return
+            self.logger.warning("Subprocess still alive; waiting...")
+            time.sleep(0.5)
+        self.logger.warning("Subprocess still alive; sending KILL signal")
+        self.process.kill()
+        self.logger.warning("Subprocess killed")
+
+    def __enter__(self):
+        if self.timeout:
+            self.timer = threading.Timer(self.timeout, self._timer_func)
+            self.timer.start()
+        return self
+
+    def __exit__(self, *args):
+        if self.timer:
+            self.timer.cancel()
 
 
 class CloudifyOperationConsumer(TaskConsumer):
@@ -46,37 +157,38 @@ class CloudifyOperationConsumer(TaskConsumer):
     handler = dispatch.OperationHandler
 
     def __init__(self, *args, **kwargs):
-        self._registry = kwargs.pop('registry')
+        self._process_registry = kwargs.pop('registry', None)
         super(CloudifyOperationConsumer, self).__init__(*args, **kwargs)
 
-    def _print_task(self, ctx, action, handler, status=None):
-        with state.current_ctx.push(handler.ctx):
-            if ctx['type'] in ['workflow', 'hook']:
-                prefix = '{0} {1}'.format(action, ctx['type'])
-                suffix = ''
-            else:
-                prefix = '{0} operation'.format(action)
-                suffix = '\n\tNode ID: {0}'.format(ctx.get('node_id'))
+    def _print_task(self, ctx, action, status=None):
+        if ctx.task_type in ['workflow', 'hook']:
+            prefix = '{0} {1}'.format(action, ctx.task_type)
+            suffix = ''
+        elif ctx.type == constants.NODE_INSTANCE:
+            prefix = '{0} operation'.format(action)
+            suffix = '\n\tNode ID: {0}'.format(ctx.node.id)
+        else:
+            prefix = ''
+            suffix = ''
 
-            if status:
-                suffix += '\n\tStatus: {0}'.format(status)
+        if status:
+            suffix += '\n\tStatus: {0}'.format(status)
 
-            tenant_name = ctx.get('tenant', {}).get('name')
-            logger.info(
-                '\n\t%(prefix)s on queue `%(queue)s` on tenant `%(tenant)s`:\n'
-                '\tTask name: %(name)s\n'
-                '\tExecution ID: %(execution_id)s\n'
-                '\tWorkflow ID: %(workflow_id)s%(suffix)s\n',
-                {'tenant': tenant_name,
-                 'prefix': prefix,
-                 'name': ctx['task_name'],
-                 'queue': ctx.get('task_target'),
-                 'execution_id': ctx.get('execution_id'),
-                 'workflow_id': ctx.get('workflow_id'),
-                 'suffix': suffix})
+        logger.info(
+            '\n\t%(prefix)s on queue `%(queue)s` on tenant `%(tenant)s`:\n'
+            '\tTask name: %(name)s\n'
+            '\tExecution ID: %(execution_id)s\n'
+            '\tWorkflow ID: %(workflow_id)s%(suffix)s\n',
+            {'tenant': ctx.tenant_name,
+             'prefix': prefix,
+             'name': ctx.task_name,
+             'queue': ctx.task_target,
+             'execution_id': ctx.execution_id,
+             'workflow_id': ctx.workflow_id,
+             'suffix': suffix})
 
     @staticmethod
-    def _validate_not_cancelled(handler, ctx):
+    def _validate_not_cancelled(ctx):
         """
         This method will validate if the current running tasks is cancelled
         or not
@@ -91,13 +203,11 @@ class CloudifyOperationConsumer(TaskConsumer):
         # tasks still in the queue which holds an invalid execution token
         # which could raise 401 error
         # Need to use the context associated with the that task
-        with state.current_ctx.push(handler.ctx):
+        with state.current_ctx.push(ctx):
             try:
                 # Get the status of the current execution so that we can
                 # tell if the current running task can be run or not
-                current_execution = handler.ctx.get_execution(
-                    ctx.get('execution_id')
-                )
+                current_execution = ctx.get_execution()
                 if current_execution:
                     logger.info(
                         'The current status of the execution is {0}'
@@ -121,17 +231,15 @@ class CloudifyOperationConsumer(TaskConsumer):
 
     def handle_task(self, full_task):
         task = full_task['cloudify_task']
-        ctx = task['kwargs'].pop('__cloudify_context')
+        raw_ctx = task['kwargs'].pop('__cloudify_context')
+        ctx = CloudifyContext(raw_ctx)
+        task_args = task.get('args', [])
+        task_kwargs = task['kwargs']
 
-        handler = self.handler(cloudify_context=ctx,
-                               args=task.get('args', []),
-                               kwargs=task['kwargs'],
-                               process_registry=self._registry)
-
-        self._print_task(ctx, 'Started handling', handler)
+        self._print_task(ctx, 'Started handling')
         try:
-            self._validate_not_cancelled(handler, ctx)
-            rv = handler.handle_or_dispatch_to_subprocess_if_remote()
+            self._validate_not_cancelled(ctx)
+            rv = self.dispatch_to_subprocess(ctx, task_args, task_kwargs)
             result = {'ok': True, 'result': rv}
             status = 'SUCCESS - result: {0}'.format(result)
         except exceptions.StopAgent:
@@ -141,7 +249,7 @@ class CloudifyOperationConsumer(TaskConsumer):
             result = {'ok': False, 'error': serialize_known_exception(e)}
             status = 'Operation rescheduled'
         except exceptions.ProcessKillCancelled:
-            self._print_task(ctx, 'Task kill-cancelled', handler)
+            self._print_task(ctx, 'Task kill-cancelled')
             return NO_RESPONSE
         except Exception as e:
             error = serialize_known_exception(e)
@@ -153,8 +261,176 @@ class CloudifyOperationConsumer(TaskConsumer):
                 '\n{0}'.format(error['traceback'])
                 if error.get('traceback') else ''
             )
-        self._print_task(ctx, 'Finished handling', handler, status)
+        self._print_task(ctx, 'Finished handling', status)
         return result
+
+    def dispatch_to_subprocess(self, ctx, task_args, task_kwargs):
+        # inputs.json, output.json and output are written to a temporary
+        # directory that only lives during the lifetime of the subprocess
+        split = ctx.task_name.split('.')
+        dispatch_dir = tempfile.mkdtemp(prefix='task-{0}.{1}-'.format(
+            split[0], split[-1]))
+
+        try:
+            with open(os.path.join(dispatch_dir, 'input.json'), 'w') as f:
+                json.dump({
+                    'cloudify_context': ctx._context,
+                    'args': task_args,
+                    'kwargs': task_kwargs
+                }, f)
+            if ctx.bypass_maintenance:
+                os.environ[constants.BYPASS_MAINTENANCE] = 'True'
+            env = self._build_subprocess_env(ctx)
+
+            if self._uses_external_plugin(ctx):
+                plugin_dir = self._extract_plugin_dir(ctx)
+                if plugin_dir is None:
+                    self._install_plugin(ctx)
+                    plugin_dir = self._extract_plugin_dir(ctx)
+                if plugin_dir is None:
+                    raise RuntimeError(
+                        'Plugin was not installed: {0}'
+                        .format(ctx.plugin.name))
+                executable = get_python_path(plugin_dir)
+            else:
+                executable = sys.executable
+
+            env['PATH'] = '{0}:{1}'.format(
+                os.path.dirname(executable), env['PATH'])
+            command_args = [executable, '-u', '-m', 'cloudify.dispatch',
+                            dispatch_dir]
+            self.run_subprocess(ctx, command_args,
+                                env=env,
+                                bufsize=1,
+                                close_fds=os.name != 'nt')
+            with open(os.path.join(dispatch_dir, 'output.json')) as f:
+                dispatch_output = json.load(f)
+            return self._handle_subprocess_output(dispatch_output)
+        finally:
+            shutil.rmtree(dispatch_dir, ignore_errors=True)
+
+    def _handle_subprocess_output(self, dispatch_output):
+        if dispatch_output['type'] == 'result':
+            return dispatch_output['payload']
+        elif dispatch_output['type'] == 'error':
+            e = dispatch_output['payload']
+            error = deserialize_known_exception(e)
+            error.causes.append({
+                'message': e['message'],
+                'type': e['exception_type'],
+                'traceback': e.get('traceback')
+            })
+            raise error
+        else:
+            raise exceptions.NonRecoverableError(
+                'Unexpected output type: {0}'
+                .format(dispatch_output['type']))
+
+    def _build_subprocess_env(self, ctx):
+        env = os.environ.copy()
+
+        # marker for code that only gets executed when inside the dispatched
+        # subprocess, see usage in the imports section of this module
+        env[CLOUDIFY_DISPATCH] = 'true'
+
+        # This is used to support environment variables configurations for
+        # central deployment based operations. See workflow_context to
+        # understand where this value gets set initially
+        # Note that this is received via json, so it is unicode. It must
+        # be encoded, because environment variables must be bytes.
+        execution_env = ctx.execution_env
+        if PY2:
+            execution_env = dict((k.encode(ENV_ENCODING),
+                                  v.encode(ENV_ENCODING))
+                                 for k, v in execution_env.items())
+        env.update(execution_env)
+
+        if ctx.bypass_maintenance:
+            env[constants.BYPASS_MAINTENANCE] = 'True'
+        return env
+
+    def _uses_external_plugin(self, ctx):
+        """Whether this operation uses a plugin that is not built-in"""
+        if not ctx.plugin.name:
+            return False
+        if ctx.plugin.name in PREINSTALLED_PLUGINS:
+            return False
+        return True
+
+    def _extract_plugin_dir(self, ctx):
+        return ctx.plugin.prefix
+
+    def _install_plugin(self, ctx):
+        with state.current_ctx.push(ctx):
+            # source plugins are per-deployment/blueprint, while non-source
+            # plugins are expected to be "managed", ie. uploaded to the manager
+            if ctx.plugin.source:
+                dep_id = ctx.deployment.id
+                bp_id = ctx.blueprint.id
+            else:
+                dep_id = None
+                bp_id = None
+            plugin_installer.install(
+                ctx.plugin._plugin_context,
+                deployment_id=dep_id,
+                blueprint_id=bp_id)
+
+    def run_subprocess(self, ctx, *subprocess_args, **subprocess_kwargs):
+        subprocess_kwargs.setdefault('stderr', subprocess.STDOUT)
+        subprocess_kwargs.setdefault('stdout', subprocess.PIPE)
+        p = subprocess.Popen(*subprocess_args, **subprocess_kwargs)
+        if self._process_registry:
+            self._process_registry.register(ctx.execution_id, p)
+
+        with TimeoutWrapper(ctx, p) as timeout_wrapper:
+            with self.logfile(ctx) as f:
+                while True:
+                    line = p.stdout.readline()
+                    if line:
+                        f.write(line)
+                    if p.poll() is not None:
+                        break
+
+        cancelled = False
+        if self._process_registry:
+            cancelled = self._process_registry.is_cancelled(ctx.execution_id)
+            self._process_registry.unregister(ctx.execution_id, p)
+
+        if timeout_wrapper.timeout_encountered:
+            message = 'Process killed due to timeout of %d seconds' % \
+                      timeout_wrapper.timeout
+            if p.poll() is None:
+                message += ', however it has not stopped yet; please check ' \
+                           'process ID {0} manually'.format(p.pid)
+            exception_class = exceptions.RecoverableError if \
+                timeout_wrapper.timeout_recoverable else \
+                exceptions.NonRecoverableError
+            raise exception_class(message)
+
+        if p.returncode in (-15, -9):  # SIGTERM, SIGKILL
+            if cancelled:
+                raise exceptions.ProcessKillCancelled()
+            raise exceptions.NonRecoverableError('Process terminated (rc={0})'
+                                                 .format(p.returncode))
+        if p.returncode != 0:
+            raise exceptions.NonRecoverableError(
+                'Unhandled exception occurred in operation dispatch (rc={0})'
+                .format(p.returncode))
+
+    def logfile(self, ctx):
+        try:
+            handler_context = ctx.deployment.id
+        except AttributeError:
+            handler_context = SYSTEM_DEPLOYMENT
+        else:
+            # an operation may originate from a system wide workflow.
+            # in that case, the deployment id will be None
+            handler_context = handler_context or SYSTEM_DEPLOYMENT
+
+        log_name = os.path.join(os.environ.get('AGENT_LOG_DIR', ''), 'logs',
+                                '{0}.log'.format(handler_context))
+
+        return LockedFile.open(log_name)
 
 
 class ServiceTaskConsumer(TaskConsumer):
@@ -285,7 +561,7 @@ class ServiceTaskConsumer(TaskConsumer):
         factory.save(daemon)
 
     def cancel_operation_task(self, execution_id):
-        logger.info('Cancelling task {0}'.format(execution_id))
+        logger.info('Cancelling task %s', execution_id)
         self._operation_registry.cancel(execution_id)
 
     def replace_ca_certs_task(self, new_manager_ca, new_broker_ca):
@@ -349,23 +625,23 @@ class ProcessRegistry(object):
         self._processes = {}
         self._cancelled = set()
 
-    def register(self, handler, process):
-        self._processes.setdefault(self.make_key(handler), []).append(process)
+    def register(self, execution_id, process):
+        self._processes.setdefault(execution_id, []).append(process)
 
-    def unregister(self, handler, process):
-        key = self.make_key(handler)
+    def unregister(self, execution_id, process):
         try:
-            self._processes[key].remove(process)
+            self._processes[execution_id].remove(process)
         except (KeyError, ValueError):
             pass
-        if not self._processes[key] and key in self._cancelled:
-            self._cancelled.remove(key)
+        if not self._processes[execution_id] and \
+                execution_id in self._cancelled:
+            self._cancelled.remove(execution_id)
 
-    def cancel(self, task_id):
-        self._cancelled.add(task_id)
+    def cancel(self, execution_id):
+        self._cancelled.add(execution_id)
         threads = [
             threading.Thread(target=self._stop_process, args=(p,))
-            for p in self._processes.get(task_id, [])
+            for p in self._processes.get(execution_id, [])
         ]
         for thread in threads:
             thread.start()
@@ -382,11 +658,8 @@ class ProcessRegistry(object):
             time.sleep(0.5)
         process.kill()
 
-    def is_cancelled(self, handler):
-        return self.make_key(handler) in self._cancelled
-
-    def make_key(self, handler):
-        return handler.ctx.execution_id
+    def is_cancelled(self, execution_id):
+        return execution_id in self._cancelled
 
 
 def make_amqp_worker(args):
