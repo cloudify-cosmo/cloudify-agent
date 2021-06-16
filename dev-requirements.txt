@@ -1,1 +1,1 @@
-https://github.com/cloudify-cosmo/cloudify-common/archive/dispatch-move-subprocess-1.zip
+https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip

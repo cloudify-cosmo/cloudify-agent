@@ -1,4 +1,4 @@
-https://github.com/cloudify-cosmo/cloudify-common/archive/dispatch-move-subprocess-1.zip#egg=cloudify-common[dispatcher]
+https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip#egg=cloudify-common[dispatcher]
 mock==1.0.1
 pywinrm==0.4.1
 cryptography>=3.3.2,<3.4
