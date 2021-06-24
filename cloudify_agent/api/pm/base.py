@@ -768,7 +768,6 @@ class CronRespawnDaemonMixin(Daemon):
             self.workdir, '{0}-respawn.sh'.format(self.name))
 
     def create_enable_cron_script(self):
-
         enable_cron_script = os.path.join(
             self.workdir, '{0}-enable-cron.sh'.format(self.name))
 
@@ -793,7 +792,6 @@ class CronRespawnDaemonMixin(Daemon):
         return enable_cron_script
 
     def create_disable_cron_script(self):
-
         disable_cron_script = os.path.join(
             self.workdir, '{0}-disable-cron.sh'.format(self.name))
 
