@@ -120,7 +120,7 @@ pipeline {
                       jq -r '.key_content.value' capabilities.json > ~/.ssh/ec2_ssh_key && chmod 600 ~/.ssh/ec2_ssh_key
                       sleep 160
                       ssh-keyscan -H \$(jq -r '.endpoint.value' capabilities.json) >> ~/.ssh/known_hosts
-                      echo 'ClientAliveInterval 50' | sudo tee --append /etc/ssh/sshd_config
+                      echo 'ServerAliveInterval 60' | sudo tee --append /etc/ssh/sshd_config
                     """, label:'Configure and install blueprint on manager'
                   }
                 }
