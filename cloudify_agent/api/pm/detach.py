@@ -57,11 +57,13 @@ class DetachedDaemon(CronRespawnDaemonMixin):
 
         # add cron job to re-spawn the process
         self._logger.debug('Adding cron JOB')
-        self._runner.run(self.create_enable_cron_script())
+        if self.cron_respawn:
+            self._runner.run(self.create_enable_cron_script())
 
     def before_self_stop(self):
         self._logger.debug('Removing cron JOB')
-        self._runner.run(self.create_disable_cron_script())
+        if self.cron_respawn:
+            self._runner.run(self.create_disable_cron_script())
         super(DetachedDaemon, self).before_self_stop()
 
     def _delete_queue(self, client):
