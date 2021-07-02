@@ -25,12 +25,16 @@ import json
 import subprocess
 import shutil
 import threading
+from contextlib import contextmanager
 
 from cloudify import plugin_installer
 from cloudify_agent.api import utils
 from cloudify_agent.api.factory import DaemonFactory
 
-from cloudify_rest_client.exceptions import UserUnauthorizedError
+from cloudify_rest_client.exceptions import (
+    UserUnauthorizedError,
+    CloudifyClientError
+)
 
 from cloudify import constants, dispatch, exceptions, state
 from cloudify.context import CloudifyContext
@@ -229,6 +233,29 @@ class CloudifyOperationConsumer(TaskConsumer):
                 # there is a new token re-generated because of resume workflow
                 raise exceptions.ProcessKillCancelled()
 
+    @contextmanager
+    def _update_operation_state(self, ctx):
+        store = True
+        try:
+            op = ctx.get_operation()
+        except CloudifyClientError as e:
+            if e.status_code == 404:
+                op = None
+                store = False
+            else:
+                raise
+        if op and op.state == constants.TASK_STARTED:
+            # this operation has been started before? that means we're
+            # resuming a re-delivered operation
+            ctx.resume = True
+        if store:
+            ctx.update_operation(constants.TASK_STARTED)
+        try:
+            yield
+        finally:
+            if store:
+                ctx.update_operation(constants.TASK_RESPONSE_SENT)
+
     def handle_task(self, full_task):
         task = full_task['cloudify_task']
         raw_ctx = task['kwargs'].pop('__cloudify_context')
@@ -239,7 +266,8 @@ class CloudifyOperationConsumer(TaskConsumer):
         self._print_task(ctx, 'Started handling')
         try:
             self._validate_not_cancelled(ctx)
-            rv = self.dispatch_to_subprocess(ctx, task_args, task_kwargs)
+            with self._update_operation_state(ctx):
+                rv = self.dispatch_to_subprocess(ctx, task_args, task_kwargs)
             result = {'ok': True, 'result': rv}
             status = 'SUCCESS - result: {0}'.format(result)
         except exceptions.StopAgent:
