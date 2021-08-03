@@ -83,7 +83,9 @@ node_templates:
               DeleteOnTermination: True
       Tags:
       - Key: Name  
-        Value: cfy-agent-tests      
+        Value: cfy-agent-tests    
+      - Key: pipeline
+        Value: cfy-agent-tests  
       use_public_ip: true
     relationships:
     - type: cloudify.relationships.depends_on
