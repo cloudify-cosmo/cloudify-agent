@@ -37,6 +37,10 @@ inputs:
     type: string
     default: 'sg-0bc113600cb5002a2'
 
+  aws_fleet_role:
+    type:
+    default: 'arn:aws:iam::263721492972:role/aws-service-role/spotfleet.amazonaws.com/AWSServiceRoleForEC2SpotFleet'
+
   agent_user:
     description: >
       The username of the agent running on the instance created from the image.
@@ -60,33 +64,49 @@ dsl_definitions:
 
 node_templates:
 
-  vm:
-    type: cloudify.nodes.aws.ec2.Instances
+  fleet:
+    type: cloudify.nodes.aws.ec2.SpotFleetRequest
     properties:
       client_config: *client_config
-      agent_config:
-        install_method: none
-        user: { get_input: agent_user }
-        key: { get_attribute: [agent_key, private_key_export] }
+      # agent_config:
+      #   install_method: none
+      #   user: { get_input: agent_user }
+      #   key: { get_attribute: [agent_key, private_key_export] }
       resource_config:
         ImageId: { get_input:  aws_image_name }
         InstanceType: { get_input: instance_type }
         kwargs:
-          Placement:
-            AvailabilityZone: { get_input:  availability_zone }
-          UserData: { get_attribute: [ cloud_init, cloud_config ] }
-          BlockDeviceMappings:
-          - DeviceName: '/dev/sda1'
-            Ebs:
-              VolumeSize: 30
-              VolumeType: standard
-              DeleteOnTermination: True
-      Tags:
-      - Key: Name  
-        Value: cfy-agent-tests    
-      - Key: pipeline
-        Value: cfy-agent-tests  
-      use_public_ip: true
+          SpotFleetRequestConfig:
+            IamFleetRole: { get_input: aws_fleet_role }
+            LaunchSpecification:
+              # - IamInstanceProfile:
+              #     Arn: { get_attribute: [ cfy_fleet_profile, aws_resource_arn ] }
+                ImageId: { get_input:  aws_image_name }
+                InstanceType: { get_input: instance_type }
+                KeyName: { get_input: agent_key_name}
+                Placement:
+                  AvailabilityZone: { get_input:  availability_zone }
+                UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                BlockDeviceMappings:
+                - DeviceName: '/dev/sda1'
+                  Ebs:
+                    VolumeSize: 30
+                    VolumeType: standard
+                    DeleteOnTermination: True
+                TagSpecification:
+                - ResourceType: instance
+                  Tags:
+                  - Key: Name  
+                    Value: cfy-agent-tests    
+                  - Key: pipeline
+                    Value: cfy-agent-tests
+            TargetCapacity: 1
+            Type: request
+            TerminateInstancesWithExpiration: True
+            ReplaceUnhealthyInstances: False
+            InstanceInterruptionBehavior: terminate
+            InstancePoolsToUseCount: 24
+      #use_public_ip: true
     relationships:
     - type: cloudify.relationships.depends_on
       target: nic
