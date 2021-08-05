@@ -78,7 +78,7 @@ node_templates:
         kwargs:
           SpotFleetRequestConfig:
             IamFleetRole: { get_input: aws_fleet_role }
-            LaunchSpecification:
+            LaunchSpecifications:
               # - IamInstanceProfile:
               #     Arn: { get_attribute: [ cfy_fleet_profile, aws_resource_arn ] }
                 ImageId: { get_input:  aws_image_name }
