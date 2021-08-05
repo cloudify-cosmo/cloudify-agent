@@ -93,7 +93,7 @@ node_templates:
                       VolumeSize: 30
                       VolumeType: standard
                       DeleteOnTermination: True
-                - TagSpecification:
+                - TagSpecifications:
                   - ResourceType: instance
                     Tags:
                     - Key: Name  
