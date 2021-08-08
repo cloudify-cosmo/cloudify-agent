@@ -181,7 +181,7 @@ node_templates:
         users:
         - name: { get_input: agent_user }
           shell: /bin/bash
-          sudo: ['ALL=(ALL) NOPASSWD:ALL']
+          sudo: [ALL=(ALL) NOPASSWD:ALL]
           ssh-authorized-keys:
           - { get_attribute: [agent_key, public_key_export] }
     relationships:
