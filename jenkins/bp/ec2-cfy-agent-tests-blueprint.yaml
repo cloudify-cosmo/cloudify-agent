@@ -180,7 +180,6 @@ node_templates:
       encode_base64: true
       resource_config:
         users:
-        - encoding: base64
         - name: { get_input: agent_user }
           shell: /bin/bash
           sudo: ['ALL=(ALL) NOPASSWD:ALL']
