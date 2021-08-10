@@ -177,6 +177,7 @@ node_templates:
   cloud_init:
     type: cloudify.nodes.CloudInit.CloudConfig
     properties:
+      encode_base64: true
       resource_config:
         users:
         - encoding: base64
