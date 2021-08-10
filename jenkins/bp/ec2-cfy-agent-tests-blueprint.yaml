@@ -179,7 +179,7 @@ node_templates:
     properties:
       # encode_base64: true
       resource_config:
-        dXNlcnM6Ci0gbmFtZTogeyBnZXRfaW5wdXQ6IGFnZW50X3VzZXIgfQpzaGVsbDogL2Jpbi9iYXNoCnN1ZG86IFsnQUxMPShBTEwpIE5PUEFTU1dEOkFMTCdd"
+        "dXNlcnM6Ci0gbmFtZTogeyBnZXRfaW5wdXQ6IGFnZW50X3VzZXIgfQpzaGVsbDogL2Jpbi9iYXNoCnN1ZG86IFsnQUxMPShBTEwpIE5PUEFTU1dEOkFMTCdd"
           # ssh-authorized-keys:
           # - { get_attribute: [agent_key, public_key_export] }
     relationships:
