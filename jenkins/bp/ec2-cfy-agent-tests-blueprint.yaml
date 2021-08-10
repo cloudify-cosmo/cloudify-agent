@@ -180,7 +180,7 @@ node_templates:
       resource_config:
         users:
         - name: { get_input: agent_user }
-          shell: /bin/bash
+          shell: L2Jpbi9iYXNo
           sudo: ['QUxMPShBTEwpIE5PUEFTU1dEOkFMTA==']
           ssh-authorized-keys:
           - { get_attribute: [agent_key, public_key_export] }
