@@ -323,8 +323,9 @@ class CloudifyOperationConsumer(TaskConsumer):
             else:
                 executable = sys.executable
 
-            env['PATH'] = '{0}:{1}'.format(
-                os.path.dirname(executable), env['PATH'])
+            env['PATH'] = os.pathsep.join([
+                os.path.dirname(executable), env['PATH']
+            ])
             command_args = [executable, '-u', '-m', 'cloudify.dispatch',
                             dispatch_dir]
             self.run_subprocess(ctx, command_args,
