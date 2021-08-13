@@ -236,7 +236,7 @@ class CloudifyOperationConsumer(TaskConsumer):
 
     @contextmanager
     def _update_operation_state(self, ctx, common_version):
-        if common_version < parse_version('6.1.0'):
+        if common_version < parse_version('6.2.0'):
             # plugin's common is old - it does the operation state bookkeeping
             # by itself.
             yield
