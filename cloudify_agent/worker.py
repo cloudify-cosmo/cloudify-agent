@@ -278,6 +278,8 @@ class CloudifyOperationConsumer(TaskConsumer):
                     [executable, '-c', get_version_script], env=env
                 ).decode('utf-8')
                 version = parse_version(version_output)
+                # also strip any possible .dev1 etc suffixes
+                version = parse_version(version.base_version)
             except subprocess.CalledProcessError:
                 # we couldn't get it? it's most likely very old
                 version = parse_version('0.0.0')
