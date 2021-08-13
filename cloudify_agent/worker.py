@@ -266,8 +266,7 @@ class CloudifyOperationConsumer(TaskConsumer):
         self._print_task(ctx, 'Started handling')
         try:
             self._validate_not_cancelled(ctx)
-            with self._update_operation_state(ctx):
-                rv = self.dispatch_to_subprocess(ctx, task_args, task_kwargs)
+            rv = self.dispatch_to_subprocess(ctx, task_args, task_kwargs)
             result = {'ok': True, 'result': rv}
             status = 'SUCCESS - result: {0}'.format(result)
         except exceptions.StopAgent:
@@ -328,10 +327,11 @@ class CloudifyOperationConsumer(TaskConsumer):
             ])
             command_args = [executable, '-u', '-m', 'cloudify.dispatch',
                             dispatch_dir]
-            self.run_subprocess(ctx, command_args,
-                                env=env,
-                                bufsize=1,
-                                close_fds=os.name != 'nt')
+            with self._update_operation_state(ctx):
+                self.run_subprocess(ctx, command_args,
+                                    env=env,
+                                    bufsize=1,
+                                    close_fds=os.name != 'nt')
             with open(os.path.join(dispatch_dir, 'output.json')) as f:
                 dispatch_output = json.load(f)
             return self._handle_subprocess_output(dispatch_output)
