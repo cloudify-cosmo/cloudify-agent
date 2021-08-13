@@ -50,7 +50,7 @@ from cloudify.amqp_client import (
 )
 from cloudify.utils import get_manager_name, get_python_path
 from cloudify_agent.operations import install_plugins, uninstall_plugins
-from cloudify._compat import PY2
+from cloudify._compat import PY2, parse_version
 
 SYSTEM_DEPLOYMENT = '__system__'
 ENV_ENCODING = 'utf-8'  # encoding for env variables
@@ -162,6 +162,7 @@ class CloudifyOperationConsumer(TaskConsumer):
 
     def __init__(self, *args, **kwargs):
         self._process_registry = kwargs.pop('registry', None)
+        self._plugin_version_cache = {}
         super(CloudifyOperationConsumer, self).__init__(*args, **kwargs)
 
     def _print_task(self, ctx, action, status=None):
@@ -234,7 +235,12 @@ class CloudifyOperationConsumer(TaskConsumer):
                 raise exceptions.ProcessKillCancelled()
 
     @contextmanager
-    def _update_operation_state(self, ctx):
+    def _update_operation_state(self, ctx, common_version):
+        if common_version < parse_version('6.1.0'):
+            # plugin's common is old - it does the operation state bookkeeping
+            # by itself.
+            yield
+            return
         store = True
         try:
             op = ctx.get_operation()
@@ -255,6 +261,28 @@ class CloudifyOperationConsumer(TaskConsumer):
         finally:
             if store:
                 ctx.update_operation(constants.TASK_RESPONSE_SENT)
+
+    def _plugin_common_version(self, executable, env):
+        """The cloudify-common version included in the venv at executable.
+
+        Old cloudify-common versions have a slightly different interface,
+        so we need to figure out what version each plugin uses.
+        """
+        if executable not in self._plugin_version_cache:
+            get_version_script = (
+                'import pkg_resources; '
+                'print(pkg_resources.require("cloudify-common")[0].version)'
+            )
+            try:
+                version_output = subprocess.check_output(
+                    [executable, '-c', get_version_script], env=env
+                ).decode('utf-8')
+                version = parse_version(version_output)
+            except subprocess.CalledProcessError:
+                # we couldn't get it? it's most likely very old
+                version = parse_version('0.0.0')
+            self._plugin_version_cache[executable] = version
+        return self._plugin_version_cache[executable]
 
     def handle_task(self, full_task):
         task = full_task['cloudify_task']
@@ -321,13 +349,13 @@ class CloudifyOperationConsumer(TaskConsumer):
                 executable = get_python_path(plugin_dir)
             else:
                 executable = sys.executable
-
             env['PATH'] = os.pathsep.join([
                 os.path.dirname(executable), env['PATH']
             ])
             command_args = [executable, '-u', '-m', 'cloudify.dispatch',
                             dispatch_dir]
-            with self._update_operation_state(ctx):
+            common_version = self._plugin_common_version(executable, env)
+            with self._update_operation_state(ctx, common_version):
                 self.run_subprocess(ctx, command_args,
                                     env=env,
                                     bufsize=1,
