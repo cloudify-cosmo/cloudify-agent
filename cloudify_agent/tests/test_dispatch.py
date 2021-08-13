@@ -4,6 +4,7 @@ import os
 import pytest
 
 from cloudify import exceptions, constants
+from cloudify._compat import parse_version
 from cloudify.context import CloudifyContext
 from cloudify_agent import worker
 
@@ -22,7 +23,13 @@ def test_full_dispatch(mock_popen, tmpdir):
     consumer = worker.CloudifyOperationConsumer(None)
     with open(os.path.join(str(tmpdir), 'output.json'), 'w') as f:
         json.dump({'type': 'result', 'payload': 42}, f)
-    with mock.patch('tempfile.mkdtemp', return_value=str(tmpdir)):
+
+    tempfile_mock = mock.patch('tempfile.mkdtemp', return_value=str(tmpdir))
+    version_mock = mock.patch.object(
+        consumer, '_plugin_common_version',
+        return_value=parse_version('6.0.0'))
+
+    with tempfile_mock, version_mock:
         result = consumer.dispatch_to_subprocess(CloudifyContext({
             'task_name': 'plugin.task',
         }), (), {})
