@@ -324,17 +324,8 @@ class CloudifyOperationConsumer(TaskConsumer):
     def dispatch_to_subprocess(self, ctx, task_args, task_kwargs):
         # inputs.json, output.json and output are written to a temporary
         # directory that only lives during the lifetime of the subprocess
-        split = ctx.task_name.split('.')
-        dispatch_dir = tempfile.mkdtemp(prefix='task-{0}.{1}-'.format(
-            split[0], split[-1]))
-
+        dispatch_dir = None
         try:
-            with open(os.path.join(dispatch_dir, 'input.json'), 'w') as f:
-                json.dump({
-                    'cloudify_context': ctx._context,
-                    'args': task_args,
-                    'kwargs': task_kwargs
-                }, f)
             if ctx.bypass_maintenance:
                 os.environ[constants.BYPASS_MAINTENANCE] = 'True'
             env = self._build_subprocess_env(ctx)
@@ -354,10 +345,20 @@ class CloudifyOperationConsumer(TaskConsumer):
             env['PATH'] = os.pathsep.join([
                 os.path.dirname(executable), env['PATH']
             ])
+
+            split = ctx.task_name.split('.')
+            dispatch_dir = tempfile.mkdtemp(prefix='task-{0}.{1}-'.format(
+                split[0], split[-1]))
             command_args = [executable, '-u', '-m', 'cloudify.dispatch',
                             dispatch_dir]
             common_version = self._plugin_common_version(executable, env)
             with self._update_operation_state(ctx, common_version):
+                with open(os.path.join(dispatch_dir, 'input.json'), 'w') as f:
+                    json.dump({
+                        'cloudify_context': ctx._context,
+                        'args': task_args,
+                        'kwargs': task_kwargs
+                    }, f)
                 self.run_subprocess(ctx, command_args,
                                     env=env,
                                     bufsize=1,
@@ -366,7 +367,8 @@ class CloudifyOperationConsumer(TaskConsumer):
                 dispatch_output = json.load(f)
             return self._handle_subprocess_output(dispatch_output)
         finally:
-            shutil.rmtree(dispatch_dir, ignore_errors=True)
+            if dispatch_dir:
+                shutil.rmtree(dispatch_dir, ignore_errors=True)
 
     def _handle_subprocess_output(self, dispatch_output):
         if dispatch_output['type'] == 'result':
