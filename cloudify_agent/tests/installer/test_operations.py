@@ -83,7 +83,9 @@ def _test_local_agent_from_package(agent_name, fs, ssl_cert, request, *_):
     ]
 
     with patch('cloudify.endpoint.LocalEndpoint.get_managers',
-               return_value=managers):
+               return_value=managers), \
+        patch('cloudify.rabbitmq_client.RabbitMQClient.get_users',
+              return_value=[]):
         env = local.init_env(name=request.node.name,
                              blueprint_path=blueprint_path,
                              inputs=inputs)
