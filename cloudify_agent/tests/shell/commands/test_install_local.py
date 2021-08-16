@@ -34,6 +34,8 @@ def test_installation_no_basedir(agent_package, agent_ssl_cert):
 
 @patch('cloudify.agent_utils.get_rest_client',
        return_value=MockRestclient())
+@patch('cloudify_agent.installer.operations.get_agent_rabbitmq_user',
+       return_value={})
 @patch('cloudify.utils.get_manager_name', return_value='cloudify')
 def _test_agent_installation(agent_ssl_cert, agent_config, *_):
     new_ctx = mock_context(agent_ssl_cert)
