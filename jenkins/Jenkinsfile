@@ -354,5 +354,10 @@ EOT
         ]
       )
     }
+    failure {
+      slackSend(channel:"jenkins-tests-results", message: "Pipeline: ${env.PROJECT}, Build Number: ${env.BUILD_NUMBER}, Build Failed, see test results: ${env.JENKINS_URL}job/${env.JOB_NAME}/${env.BRANCH_NAME}/test_results_analyzer/")
+    }
+    success
+      slackSend(channel:"jenkins-tests-results", message: "Pipeline: ${env.PROJECT}, Build Number: ${env.BUILD_NUMBER}, Build Succeeded, see test results: ${env.JENKINS_URL}job/${env.JOB_NAME}/${env.BRANCH_NAME}/test_results_analyzer/")
   }
 }
