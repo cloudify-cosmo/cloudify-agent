@@ -30,7 +30,7 @@ from jinja2 import Template
 from cloudify._compat import urlquote, PY2
 from cloudify.cluster import CloudifyClusterClient
 from cloudify.workflows import tasks as workflows_tasks
-from cloudify.utils import setup_logger, get_exec_tempdir
+from cloudify.utils import setup_logger, get_exec_tempdir, ipv6_url_compat
 from cloudify.constants import (SECURED_PROTOCOL,
                                 BROKER_PORT_SSL,
                                 BROKER_PORT_NO_SSL)
@@ -474,7 +474,8 @@ def _parse_comma_separated(ctx, param, value):
 def get_manager_file_server_url(hostname, port, scheme=None):
     if scheme is None:
         scheme = 'http' if port == 80 else 'https'
-    return '{0}://{1}:{2}/resources'.format(scheme, hostname, port)
+    return '{0}://{1}:{2}/resources'.format(
+        scheme, ipv6_url_compat(hostname), port)
 
 
 def get_agent_version():
