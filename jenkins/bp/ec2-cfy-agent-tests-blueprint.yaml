@@ -82,7 +82,7 @@ node_templates:
               # - IamInstanceProfile:
               #     Arn: { get_attribute: [ cfy_fleet_profile, aws_resource_arn ] }
                 - ImageId: { get_input:  aws_image_name }
-                - InstanceType: 't3.medium'
+                  InstanceType: 't3.medium'
                 - KeyName: { get_input: agent_key_name}
                 - Placement:
                     AvailabilityZone: { get_input:  availability_zone }
