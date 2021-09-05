@@ -19,7 +19,7 @@ inputs:
 
   instance_type:
     type: string
-    default: t3.medium
+    default: 't3.medium'
 
   aws_image_name:
     type: string
@@ -52,7 +52,7 @@ inputs:
 
   agent_key_name:
     type: string
-    default: agent_key
+    default: 'agent_key'
 
 
 dsl_definitions:
