@@ -38,8 +38,12 @@ inputs:
     default: 'sg-0bc113600cb5002a2'
 
   aws_fleet_role:
-    type:
+    type: string
     default: 'arn:aws:iam::263721492972:role/aws-service-role/spotfleet.amazonaws.com/AWSServiceRoleForEC2SpotFleet'
+
+  aws_fleet_iam_instance_profile:
+    type: string
+    default: 'arn:aws:iam::263721492972:instance-profile/cfyfleetprofile-jenkins-ci/cfyfleetprofile-jenkins-ci'
 
   agent_user:
     description: >
@@ -84,7 +88,7 @@ node_templates:
             IamFleetRole: { get_input: aws_fleet_role }
             LaunchSpecifications:
                 - IamInstanceProfile:
-                    Arn: { get_attribute: [ cfy_fleet_profile, aws_resource_arn ] }
+                    Arn: { get_input: aws_fleet_iam_instance_profile }
                 - ImageId: { get_input:  aws_image_name }
                 - InstanceType: { get_input: instance_type }
                 - KeyName: { get_input: agent_key_name}
@@ -118,38 +122,40 @@ node_templates:
       target: floating_ip
     - type: cloudify.relationships.depends_on
       target: cloud_init
+    # - type: cloudify.relationships.depends_on
+    #   target: cfy_fleet_profile
 
-  cfy_fleet_profile:
-    type: cloudify.nodes.aws.iam.InstanceProfile
-    properties:
-      client_config: *client_config
-      resource_config:
-        InstanceProfileName: { concat: [ 'cfyfleetprofile', { get_input: suffix } ] }
-        Path: { concat: [ '/cfyfleetprofile', { get_input: suffix }, '/' ] }
-    relationships:
-      - type: cloudify.relationships.depends_on
-        target: cfy_fleet_role
+  # cfy_fleet_profile:
+  #   type: cloudify.nodes.aws.iam.InstanceProfile
+  #   properties:
+  #     client_config: *client_config
+  #     resource_config:
+  #       InstanceProfileName: { concat: [ 'cfyfleetprofile', { get_input: suffix } ] }
+  #       Path: { concat: [ '/cfyfleetprofile', { get_input: suffix }, '/' ] }
+  #   relationships:
+  #     - type: cloudify.relationships.depends_on
+  #       target: cfy_fleet_role
 
-  cfy_fleet_role:
-    type: cloudify.nodes.aws.iam.Role
-    properties:
-      client_config: *client_config
-      resource_config:
-        RoleName: { concat: [ 'cfyfleetrole', { get_input: suffix } ] }
-        Path: { concat: [ '/cfyfleetrole', { get_input: suffix }, '/' ] }
-        AssumeRolePolicyDocument:
-          Version: !!str 2012-10-17
-          Statement:
-          - Effect: Allow
-            Principal:
-              Service: !!str spotfleet.amazonaws.com
-            Action: !!str sts:AssumeRole
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          inputs:
-            modify_role_attribute_args:
-              - PolicyArn: arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
+  # cfy_fleet_role:
+  #   type: cloudify.nodes.aws.iam.Role
+  #   properties:
+  #     client_config: *client_config
+  #     resource_config:
+  #       RoleName: { concat: [ 'cfyfleetrole', { get_input: suffix } ] }
+  #       Path: { concat: [ '/cfyfleetrole', { get_input: suffix }, '/' ] }
+  #       AssumeRolePolicyDocument:
+  #         Version: !!str 2012-10-17
+  #         Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: !!str spotfleet.amazonaws.com
+  #           Action: !!str sts:AssumeRole
+  #   interfaces:
+  #     cloudify.interfaces.lifecycle:
+  #       create:
+  #         inputs:
+  #           modify_role_attribute_args:
+  #             - PolicyArn: arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
 
 
   floating_ip:
