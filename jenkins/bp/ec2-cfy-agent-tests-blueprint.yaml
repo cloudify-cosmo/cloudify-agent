@@ -89,12 +89,12 @@ node_templates:
             LaunchSpecifications:
                 - IamInstanceProfile:
                     Arn: { get_input: aws_fleet_iam_instance_profile }
-                - ImageId: { get_input:  aws_image_name }
-                - InstanceType: { get_input: instance_type }
-                - KeyName: { get_input: agent_key_name}
+                  ImageId: { get_input:  aws_image_name }
+                  InstanceType: { get_input: instance_type }
+                  KeyName: { get_input: agent_key_name}
                 - Placement:
                     AvailabilityZone: { get_input:  availability_zone }
-                - UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                  UserData: { get_attribute: [ cloud_init, cloud_config ] }
                 - BlockDeviceMappings:
                   - DeviceName: '/dev/sda1'
                     Ebs:
