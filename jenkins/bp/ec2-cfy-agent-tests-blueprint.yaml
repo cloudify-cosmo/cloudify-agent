@@ -92,16 +92,16 @@ node_templates:
                   ImageId: { get_input:  aws_image_name }
                   InstanceType: { get_input: instance_type }
                   KeyName: { get_input: agent_key_name}
-                - Placement:
+                  Placement:
                     AvailabilityZone: { get_input:  availability_zone }
                   UserData: { get_attribute: [ cloud_init, cloud_config ] }
-                - BlockDeviceMappings:
+                  BlockDeviceMappings:
                   - DeviceName: '/dev/sda1'
                     Ebs:
                       VolumeSize: 30
                       VolumeType: standard
                       DeleteOnTermination: True
-                - TagSpecifications:
+                  TagSpecifications:
                   - ResourceType: instance
                     Tags:
                     - Key: Name  
