@@ -56,7 +56,7 @@ inputs:
 
   suffix:
     type: string
-    default: '-test-ci'
+    default: '-jenkins-ci'
 
 
 dsl_definitions:
