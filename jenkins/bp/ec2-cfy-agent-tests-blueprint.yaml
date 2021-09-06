@@ -149,7 +149,7 @@ node_templates:
         create:
           inputs:
             modify_role_attribute_args:
-              - PolicyArn: arn:aws:iam::263721492972:role/AmazonEC2SpotFleetTaggingRole
+              - PolicyArn: arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
 
 
   floating_ip:
