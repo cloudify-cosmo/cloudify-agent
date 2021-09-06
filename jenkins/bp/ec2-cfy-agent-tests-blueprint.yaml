@@ -39,7 +39,7 @@ inputs:
 
   aws_fleet_role:
     type: string
-    default: 'arn:aws:iam::263721492972:role/aws-service-role/spotfleet.amazonaws.com/AWSServiceRoleForEC2SpotFleet'
+    default: 'arn:aws:iam::263721492972:role/AmazonEC2SpotFleetTaggingRole'
 
   aws_fleet_iam_instance_profile:
     type: string
