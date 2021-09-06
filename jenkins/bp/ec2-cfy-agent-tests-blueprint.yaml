@@ -56,7 +56,7 @@ inputs:
 
   suffix:
     type: string
-    default: '-ci-test'
+    default: '-test-ci'
 
 
 dsl_definitions:
@@ -149,7 +149,7 @@ node_templates:
         create:
           inputs:
             modify_role_attribute_args:
-              - PolicyArn: arn:aws:iam::263721492972:role/aws-ec2-spot-fleet-tagging-role
+              - PolicyArn: arn:aws:iam::263721492972:role/AmazonEC2SpotFleetTaggingRole
 
 
   floating_ip:
