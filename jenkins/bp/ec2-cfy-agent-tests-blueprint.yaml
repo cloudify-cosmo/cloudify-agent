@@ -56,7 +56,7 @@ inputs:
 
   suffix:
     type: string
-    default: 'fleet-test'
+    default: '-ci'
 
 
 dsl_definitions:
