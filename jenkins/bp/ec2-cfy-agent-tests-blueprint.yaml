@@ -54,6 +54,10 @@ inputs:
     type: string
     default: 'agent_key'
 
+  suffix:
+    type: string
+    default: 'fleet-test'
+
 
 dsl_definitions:
 
@@ -79,8 +83,8 @@ node_templates:
           SpotFleetRequestConfig:
             IamFleetRole: { get_input: aws_fleet_role }
             LaunchSpecifications:
-              # - IamInstanceProfile:
-              #     Arn: { get_attribute: [ cfy_fleet_profile, aws_resource_arn ] }
+                - IamInstanceProfile:
+                    Arn: { get_attribute: [ cfy_fleet_profile, aws_resource_arn ] }
                 - ImageId: { get_input:  aws_image_name }
                 - InstanceType: { get_input: instance_type }
                 - KeyName: { get_input: agent_key_name}
@@ -114,6 +118,38 @@ node_templates:
       target: floating_ip
     - type: cloudify.relationships.depends_on
       target: cloud_init
+
+  cfy_fleet_profile:
+    type: cloudify.nodes.aws.iam.InstanceProfile
+    properties:
+      client_config: *client_config
+      resource_config:
+        InstanceProfileName: { concat: [ 'cfyfleetprofile', { get_input: suffix } ] }
+        Path: { concat: [ '/cfyfleetprofile', { get_input: suffix }, '/' ] }
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: cfy_fleet_role
+
+  cfy_fleet_role:
+    type: cloudify.nodes.aws.iam.Role
+    properties:
+      client_config: *client_config
+      resource_config:
+        RoleName: { concat: [ 'cfyfleetrole', { get_input: suffix } ] }
+        Path: { concat: [ '/cfyfleetrole', { get_input: suffix }, '/' ] }
+        AssumeRolePolicyDocument:
+          Version: !!str 2012-10-17
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: !!str spotfleet.amazonaws.com
+            Action: !!str sts:AssumeRole
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            modify_role_attribute_args:
+              - PolicyArn: arn:aws:iam::263721492972:role/aws-service-role/spotfleet.amazonaws.com/AWSServiceRoleForEC2SpotFleet
 
 
   floating_ip:
