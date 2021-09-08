@@ -93,7 +93,7 @@ setup(
             'python-gssapi==0.6.4'
         ],
         'celery': [
-            'celery==3.1.17',
+            'celery==4.4.7',
         ],
         'fabric': [
             'fabric==2.5.0',
