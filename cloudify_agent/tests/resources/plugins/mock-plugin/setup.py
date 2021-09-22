@@ -19,7 +19,7 @@ from setuptools import setup
 
 setup(
     name='mock-plugin',
-    version='5.2.6',
+    version='5.2.7.dev1',
     author='Gigaspaces',
     author_email='cloudify@gigaspaces.com',
     packages=[
