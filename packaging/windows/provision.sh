@@ -28,8 +28,8 @@ function download_resources() {
 }
 
 # VERSION/PRERELEASE/BUILD must be exported as they is being read as an env var by the install wizard
-export CORE_TAG_NAME="4.4.1"
-export CORE_BRANCH="4.4.1-build"
+export CORE_TAG_NAME="4.4.1.2.dev1"
+export CORE_BRANCH="4.4.1.2-build"
 export GITHUB_USERNAME=$1
 export GITHUB_PASSWORD=$2
 export AWS_ACCESS_KEY_ID=$3
