@@ -109,6 +109,10 @@ pushd cloudify-agent
     run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" .
 popd
 
+Write-Host "Adding ctx and cfy-agent symlinks..."
+New-Item -ItemType SymbolicLink -Path "$AGENT_PATH\ctx.exe" -Value "$AGENT_PATH\Scripts\ctx.exe"
+New-Item -ItemType SymbolicLink -Path "$AGENT_PATH\cfy-agent.exe" -Value "$AGENT_PATH\Scripts\cfy-agent.exe"
+
 Write-Host "Building agent package"
 $env:VERSION = $VERSION
 $env:DISPLAY_NAME = $DISPLAY_NAME
