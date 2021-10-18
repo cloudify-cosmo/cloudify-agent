@@ -16,30 +16,29 @@ from cloudify_agent.tests.installer.config import mock_context
 
 @pytest.mark.only_posix
 def test_create_agent_dict(agent_ssl_cert, tmp_path):
-    # with _set_context(agent_ssl_cert, tmp_path, host='192.0.2.98'):
-    #     old_agent = _create_agent(agent_ssl_cert)
-    #     new_agent = operations.create_new_agent_config(old_agent)
-    #     new_agent['version'] = '3.4'
-    #     third_agent = operations.create_new_agent_config(new_agent)
-    #     equal_keys = ['ip', 'user']
-    #     for k in equal_keys:
-    #         assert old_agent[k] == new_agent[k]
-    #         assert old_agent[k] == third_agent[k]
-    #     nonequal_keys = ['agent_dir', 'workdir', 'envdir', 'name',
-    #                      'rest_host', 'basedir']
-    #     for k in nonequal_keys:
-    #         assert old_agent[k] != new_agent[k]
-    #         assert old_agent[k] != third_agent[k]
-    #     old_name = old_agent['name']
-    #     new_name = new_agent['name']
-    #     third_name = third_agent['name']
-    #     assert old_name in new_name
-    #     assert old_name in third_name
-    #     assert len(third_name) <= len(new_name)
-    #     new_agent['name'] = '{0}{1}'.format(new_agent['name'], 'not-uuid')
-    #     agent = operations.create_new_agent_config(new_agent)
-    #     assert new_agent['name'] in agent['name']
-    raise Exception
+    with _set_context(agent_ssl_cert, tmp_path, host='192.0.2.98'):
+        old_agent = _create_agent(agent_ssl_cert)
+        new_agent = operations.create_new_agent_config(old_agent)
+        new_agent['version'] = '3.4'
+        third_agent = operations.create_new_agent_config(new_agent)
+        equal_keys = ['ip', 'user']
+        for k in equal_keys:
+            assert old_agent[k] == new_agent[k]
+            assert old_agent[k] == third_agent[k]
+        nonequal_keys = ['agent_dir', 'workdir', 'envdir', 'name',
+                         'rest_host', 'basedir']
+        for k in nonequal_keys:
+            assert old_agent[k] != new_agent[k]
+            assert old_agent[k] != third_agent[k]
+        old_name = old_agent['name']
+        new_name = new_agent['name']
+        third_name = third_agent['name']
+        assert old_name in new_name
+        assert old_name in third_name
+        assert len(third_name) <= len(new_name)
+        new_agent['name'] = '{0}{1}'.format(new_agent['name'], 'not-uuid')
+        agent = operations.create_new_agent_config(new_agent)
+        assert new_agent['name'] in agent['name']
 
 
 @pytest.mark.only_posix
