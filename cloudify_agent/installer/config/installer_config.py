@@ -85,10 +85,9 @@ def create_runner(agent_config, validate_connection):
                     tmpdir=agent_config.tmpdir,
                     validate_connection=validate_connection)
         except CommandExecutionError as e:
-            message = e.error
-            if not message:
-                message = 'Failed connecting to host on {0}'.format(
-                    host)
+            message = 'Failed connecting to host on {host}: {err}'.format(
+                host=host,
+                err=e)
             return ctx.operation.retry(message=message)
 
     return runner

@@ -113,7 +113,8 @@ class FabricRunner(object):
                 env['connect_kwargs']['pkey'] = \
                     self._load_private_key(self.key)
             else:
-                env['connect_kwargs']['key_filename'] = self.key
+                env['connect_kwargs']['key_filename'] = os.path.expanduser(
+                    self.key)
         if self.password:
             env['connect_kwargs']['password'] = self.password
         if is_kerberos_env():

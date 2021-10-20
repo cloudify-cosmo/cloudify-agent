@@ -6,6 +6,7 @@ from cloudify.exceptions import (CommandExecutionError,
                                  CommandExecutionException)
 from cloudify.agent_utils import (create_agent_record,
                                   update_agent_record,
+                                  get_agent_rabbitmq_user,
                                   delete_agent_rabbitmq_user,
                                   delete_agent_queues,
                                   delete_agent_exchange)
@@ -22,7 +23,10 @@ from .config.agent_config import create_agent_config_and_installer
 def create(cloudify_agent, installer, **_):
     # When not in "remote" mode, this operation is called only to set the
     # agent_config dict in the runtime properties
-    create_agent_record(cloudify_agent)
+    create_agent_record(
+        cloudify_agent,
+        create_rabbitmq_user=not get_agent_rabbitmq_user(cloudify_agent)
+    )
     if cloudify_agent.has_installer:
         with script.install_script_path(cloudify_agent) as script_path:
             ctx.logger.info('Creating Agent {0}'.format(

@@ -17,7 +17,7 @@ import sys
 from setuptools import setup
 
 install_requires = [
-    'cloudify-common==6.2.0.dev1',
+    'cloudify-common==6.3.0.dev1',
     'appdirs==1.4.3',
     'jinja2>=2.10,<2.11',
     'virtualenv==15.1.0',
@@ -37,7 +37,7 @@ else:
 
 setup(
     name='cloudify-agent',
-    version='6.2.0.dev1',
+    version='6.3.0.dev1',
     author='Cloudify',
     author_email='cosmo-admin@cloudify.co',
     packages=[
@@ -90,10 +90,11 @@ setup(
     extras_require={
         'kerberos': [
             'pywinrm[Kerberos]==0.4.1',
-            'python-gssapi==0.6.4'
+            'python-gssapi==0.6.4',
+            'cffi>=1.14,<1.15',
         ],
         'celery': [
-            'celery==3.1.17',
+            'celery==4.4.7',
         ],
         'fabric': [
             'fabric==2.5.0',
