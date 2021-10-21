@@ -23,7 +23,7 @@ inputs:
 
   aws_image_name:
     type: string
-    default: 'ami-011939b19c6bd1492'
+    default: 'ami-05a178e6f938f2c39'
 
   aws_subnet_id:
     type: string
