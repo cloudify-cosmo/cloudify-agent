@@ -87,7 +87,7 @@ node_templates:
           SpotFleetRequestConfig:
             IamFleetRole: { get_input: aws_fleet_role }
             LaunchSpecifications:
-                  ImageId: { get_input:  aws_image_name }
+                - ImageId: { get_input:  aws_image_name }
                   InstanceType: { get_input: instance_type }
                   KeyName: { get_input: agent_key_name}
                   Placement:
