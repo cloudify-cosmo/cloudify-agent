@@ -98,7 +98,8 @@ node_templates:
                     InstanceType: t3.medium
                     SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
-                    BlockDeviceMappings: 
+                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                    BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
@@ -106,13 +107,14 @@ node_templates:
                           VolumeSize: 8
                           Encrypted: false
                           VolumeType: gp2
-                    SpotPrice: 0.0456
+                    SpotPrice: '0.0456'
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3a.medium
                     SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
-                    BlockDeviceMappings: 
+                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                    BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
@@ -120,13 +122,14 @@ node_templates:
                           VolumeSize: 8
                           Encrypted: false
                           VolumeType: gp2
-                    SpotPrice: 0.0408
+                    SpotPrice: '0.0408'
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t2.medium
                     SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
-                    BlockDeviceMappings: 
+                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                    BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
@@ -134,13 +137,14 @@ node_templates:
                           VolumeSize: 8
                           Encrypted: false
                           VolumeType: gp2
-                    SpotPrice: 0.05
+                    SpotPrice: '0.05'
               
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: m1.large
                     SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
-                    BlockDeviceMappings: 
+                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                    BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
@@ -148,13 +152,14 @@ node_templates:
                           VolumeSize: 8
                           Encrypted: false
                           VolumeType: gp2
-                    SpotPrice: 0.19
+                    SpotPrice: '0.19'
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3a.large
                     SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
-                    BlockDeviceMappings: 
+                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                    BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
@@ -162,13 +167,14 @@ node_templates:
                           VolumeSize: 8
                           Encrypted: false
                           VolumeType: gp2
-                    SpotPrice: 0.0816
+                    SpotPrice: '0.0816'
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: m2.xlarge
                     SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
-                    BlockDeviceMappings: 
+                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                    BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
@@ -176,13 +182,14 @@ node_templates:
                           VolumeSize: 8
                           Encrypted: false
                           VolumeType: gp2
-                    SpotPrice: 0.275
+                    SpotPrice: '0.275'
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.large
                     SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
-                    BlockDeviceMappings: 
+                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                    BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
@@ -190,13 +197,14 @@ node_templates:
                           VolumeSize: 8
                           Encrypted: false
                           VolumeType: gp2
-                    SpotPrice: 0.0912
+                    SpotPrice: '0.0912'
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.xlarge
                     SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
-                    BlockDeviceMappings: 
+                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                    BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
@@ -205,13 +213,14 @@ node_templates:
                           Encrypted: false
                           VolumeType: gp2
                     WeightedCapacity: 2
-                    SpotPrice: 0.0912
+                    SpotPrice: '0.0912'
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.2xlarge
                     SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
-                    BlockDeviceMappings: 
+                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                    BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
@@ -220,7 +229,7 @@ node_templates:
                           Encrypted: false
                           VolumeType: gp2
                     WeightedCapacity: 4,
-                    SpotPrice: 0.0912
+                    SpotPrice: '0.0912'
             # IamFleetRole: { get_input: aws_fleet_role }
             # LaunchSpecifications:
             #     - ImageId: { get_input:  aws_image_name }
@@ -250,10 +259,10 @@ node_templates:
             # InstancePoolsToUseCount: 24
       #use_public_ip: true
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: nic
-    - type: cloudify.relationships.depends_on
-      target: floating_ip
+    # - type: cloudify.relationships.depends_on
+    #   target: nic
+    # - type: cloudify.relationships.depends_on
+    #   target: floating_ip
     - type: cloudify.relationships.depends_on
       target: cloud_init
     # - type: cloudify.relationships.depends_on
