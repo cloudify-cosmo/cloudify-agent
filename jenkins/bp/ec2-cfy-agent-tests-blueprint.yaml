@@ -23,7 +23,7 @@ inputs:
 
   aws_image_name:
     type: string
-    default: 'ami-05a178e6f938f2c39'
+    default: 'ami-05cd35b907b4ffe77'
 
   aws_subnet_id:
     type: string
@@ -39,7 +39,7 @@ inputs:
 
   aws_fleet_role:
     type: string
-    default: 'arn:aws:iam::263721492972:role/AmazonEC2SpotFleetTaggingRole'
+    default: 'arn:aws:iam::263721492972:role/aws-ec2-spot-fleet-tagging-role'
 
   aws_fleet_iam_instance_profile:
     type: string
@@ -48,7 +48,7 @@ inputs:
   agent_user:
     description: >
       The username of the agent running on the instance created from the image.
-    default: 'centos'
+    default: 'ec2-user'
 
   ssh_key_name:
     type: string
@@ -87,8 +87,6 @@ node_templates:
           SpotFleetRequestConfig:
             IamFleetRole: { get_input: aws_fleet_role }
             LaunchSpecifications:
-                - IamInstanceProfile:
-                    Arn: { get_input: aws_fleet_iam_instance_profile }
                   ImageId: { get_input:  aws_image_name }
                   InstanceType: { get_input: instance_type }
                   KeyName: { get_input: agent_key_name}
