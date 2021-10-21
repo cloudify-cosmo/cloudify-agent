@@ -85,33 +85,169 @@ node_templates:
         # InstanceType: { get_input: instance_type }
         kwargs:
           SpotFleetRequestConfig:
-            IamFleetRole: { get_input: aws_fleet_role }
-            LaunchSpecifications:
-                - ImageId: { get_input:  aws_image_name }
-                  InstanceType: { get_input: instance_type }
-                  KeyName: { get_input: agent_key_name}
-                  Placement:
-                    AvailabilityZone: { get_input:  availability_zone }
-                  UserData: { get_attribute: [ cloud_init, cloud_config ] }
-                  BlockDeviceMappings:
-                  - DeviceName: '/dev/sda1'
-                    Ebs:
-                      VolumeSize: 30
-                      VolumeType: standard
-                      DeleteOnTermination: True
-                  TagSpecifications:
-                  - ResourceType: instance
-                    Tags:
-                    - Key: Name  
-                      Value: cfy-agent-tests    
-                    - Key: pipeline
-                      Value: cfy-agent-tests
+            IamFleetRole: arn:aws:iam::263721492972:role/aws-ec2-spot-fleet-tagging-role
+            AllocationStrategy: capacityOptimized
             TargetCapacity: 1
+            # ValidFrom: 2021-10-21T10:57:23Z
+            # ValidUntil: 2022-10-21T10:57:23Z
+            # SpotPrice: 0.275
+            TerminateInstancesWithExpiration: true
             Type: request
-            TerminateInstancesWithExpiration: True
-            ReplaceUnhealthyInstances: False
-            InstanceInterruptionBehavior: terminate
-            InstancePoolsToUseCount: 24
+            LaunchSpecifications:
+                  - ImageId: ami-05cd35b907b4ffe77
+                    InstanceType: t3.medium
+                    SubnetId: subnet-07896a88a91ea802f
+                    KeyName: yuval_keypair_auto
+                    BlockDeviceMappings: 
+                      - DeviceName: '/dev/xvda'
+                        Ebs: 
+                          DeleteOnTermination: true
+                          SnapshotId: snap-020ee8a5f94cb76b0
+                          VolumeSize: 8
+                          Encrypted: false
+                          VolumeType: gp2
+                    SpotPrice: 0.0456
+
+                  - ImageId: ami-05cd35b907b4ffe77
+                    InstanceType: t3a.medium
+                    SubnetId: subnet-07896a88a91ea802f
+                    KeyName: yuval_keypair_auto
+                    BlockDeviceMappings: 
+                      - DeviceName: '/dev/xvda'
+                        Ebs: 
+                          DeleteOnTermination: true
+                          SnapshotId: snap-020ee8a5f94cb76b0
+                          VolumeSize: 8
+                          Encrypted: false
+                          VolumeType: gp2
+                    SpotPrice: 0.0408
+
+                  - ImageId: ami-05cd35b907b4ffe77
+                    InstanceType: t2.medium
+                    SubnetId: subnet-07896a88a91ea802f
+                    KeyName: yuval_keypair_auto
+                    BlockDeviceMappings: 
+                      - DeviceName: '/dev/xvda'
+                        Ebs: 
+                          DeleteOnTermination: true
+                          SnapshotId: snap-020ee8a5f94cb76b0
+                          VolumeSize: 8
+                          Encrypted: false
+                          VolumeType: gp2
+                    SpotPrice: 0.05
+              
+                  - ImageId: ami-05cd35b907b4ffe77
+                    InstanceType: m1.large
+                    SubnetId: subnet-07896a88a91ea802f
+                    KeyName: yuval_keypair_auto
+                    BlockDeviceMappings: 
+                      - DeviceName: '/dev/xvda'
+                        Ebs: 
+                          DeleteOnTermination: true
+                          SnapshotId: snap-020ee8a5f94cb76b0
+                          VolumeSize: 8
+                          Encrypted: false
+                          VolumeType: gp2
+                    SpotPrice: 0.19
+
+                  - ImageId: ami-05cd35b907b4ffe77
+                    InstanceType: t3a.large
+                    SubnetId: subnet-07896a88a91ea802f
+                    KeyName: yuval_keypair_auto
+                    BlockDeviceMappings: 
+                      - DeviceName: '/dev/xvda'
+                        Ebs: 
+                          DeleteOnTermination: true
+                          SnapshotId: snap-020ee8a5f94cb76b0
+                          VolumeSize: 8
+                          Encrypted: false
+                          VolumeType: gp2
+                    SpotPrice: 0.0816
+
+                  - ImageId: ami-05cd35b907b4ffe77
+                    InstanceType: m2.xlarge
+                    SubnetId: subnet-07896a88a91ea802f
+                    KeyName: yuval_keypair_auto
+                    BlockDeviceMappings: 
+                      - DeviceName: '/dev/xvda'
+                        Ebs: 
+                          DeleteOnTermination: true
+                          SnapshotId: snap-020ee8a5f94cb76b0
+                          VolumeSize: 8
+                          Encrypted: false
+                          VolumeType: gp2
+                    SpotPrice: 0.275
+
+                  - ImageId: ami-05cd35b907b4ffe77
+                    InstanceType: t3.large
+                    SubnetId: subnet-07896a88a91ea802f
+                    KeyName: yuval_keypair_auto
+                    BlockDeviceMappings: 
+                      - DeviceName: '/dev/xvda'
+                        Ebs: 
+                          DeleteOnTermination: true
+                          SnapshotId: snap-020ee8a5f94cb76b0
+                          VolumeSize: 8
+                          Encrypted: false
+                          VolumeType: gp2
+                    SpotPrice: 0.0912
+
+                  - ImageId: ami-05cd35b907b4ffe77
+                    InstanceType: t3.xlarge
+                    SubnetId: subnet-07896a88a91ea802f
+                    KeyName: yuval_keypair_auto
+                    BlockDeviceMappings: 
+                      - DeviceName: '/dev/xvda'
+                        Ebs: 
+                          DeleteOnTermination: true
+                          SnapshotId: snap-020ee8a5f94cb76b0
+                          VolumeSize: 8
+                          Encrypted: false
+                          VolumeType: gp2
+                    WeightedCapacity: 2
+                    SpotPrice: 0.0912
+
+                  - ImageId: ami-05cd35b907b4ffe77
+                    InstanceType: t3.2xlarge
+                    SubnetId: subnet-07896a88a91ea802f
+                    KeyName: yuval_keypair_auto
+                    BlockDeviceMappings: 
+                      - DeviceName: '/dev/xvda'
+                        Ebs: 
+                          DeleteOnTermination: true
+                          SnapshotId: snap-020ee8a5f94cb76b0
+                          VolumeSize: 8
+                          Encrypted: false
+                          VolumeType: gp2
+                    WeightedCapacity: 4,
+                    SpotPrice: 0.0912
+            # IamFleetRole: { get_input: aws_fleet_role }
+            # LaunchSpecifications:
+            #     - ImageId: { get_input:  aws_image_name }
+            #       InstanceType: { get_input: instance_type }
+            #       KeyName: { get_input: agent_key_name}
+            #       Placement:
+            #         AvailabilityZone: { get_input:  availability_zone }
+            #       UserData: { get_attribute: [ cloud_init, cloud_config ] }
+            #       BlockDeviceMappings:
+            #       - DeviceName: '/dev/sda1'
+            #         Ebs:
+            #           VolumeSize: 30
+            #           VolumeType: standard
+            #           DeleteOnTermination: True
+            #       TagSpecifications:
+            #       - ResourceType: instance
+            #         Tags:
+            #         - Key: Name  
+            #           Value: cfy-agent-tests    
+            #         - Key: pipeline
+            #           Value: cfy-agent-tests
+            # TargetCapacity: 1
+            # Type: request
+            # TerminateInstancesWithExpiration: True
+            # ReplaceUnhealthyInstances: False
+            # InstanceInterruptionBehavior: terminate
+            # InstancePoolsToUseCount: 24
       #use_public_ip: true
     relationships:
     - type: cloudify.relationships.depends_on
