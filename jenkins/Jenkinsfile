@@ -180,7 +180,7 @@ EOT
           steps {
             container('rpmbuild'){
               sh script: """
-                cd rpmbuild
+                cd ~/rpmbuild
                 git clone https://github.com/cloudify-cosmo/cloudify-agent.git SOURCES && cd SOURCES && git checkout ${env.BRANCH_NAME}
               """, label: 'Copying repo to seperate workspace'
               sh script: """
