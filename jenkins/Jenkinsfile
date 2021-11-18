@@ -78,6 +78,10 @@ pipeline {
             sh script: "mkdir -p ${env.WORKSPACE}/build_agent && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/build_agent", label: "copying repo to seperate workspace"
             container('rpmbuild'){
               dir("${env.WORKSPACE}/build_agent") {
+                sh script: '''
+                  curl -O https://bootstrap.pypa.io/pip/2.7/get-pip.py | python
+                  python get-pip.py
+                  ''', label: 'installing pip'
                 sh script: 'pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip', label: 'installing agent packager'
                 sh script: '''
                   cp packaging/local.ini centos7.ini
@@ -111,7 +115,7 @@ pipeline {
                       popd
                       cfy deployments capabilities ec2-cfy-agent-tests-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} --json > capabilities.json
                       jq -r '.key_content.value' capabilities.json > ~/.ssh/ec2_ssh_key && chmod 600 ~/.ssh/ec2_ssh_key
-                      sleep 160
+                      sleep 120
                       ssh-keyscan -H \$(jq -r '.endpoint.value' capabilities.json) >> ~/.ssh/known_hosts
                       echo 'ClientAliveInterval 50' | sudo tee --append /etc/ssh/sshd_config
                     """, label:'Configure and install blueprint on manager'
