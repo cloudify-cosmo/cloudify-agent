@@ -18,13 +18,13 @@ spec:
       privileged: true
     resources:
       requests:
-        cpu: 1
-        memory: 3Gi
+        cpu: 0.5
+        memory: 1.5Gi
       limits:
-        cpu: 1
-        memory: 3Gi
+        cpu: 0.5
+        memory: 1.5Gi
   - name: py36
-    image: circleci/python:3.6
+    image: 263721492972.dkr.ecr.eu-west-1.amazonaws.com/cloudify-python3.6
     command:
     - cat
     tty: true
@@ -35,20 +35,8 @@ spec:
       limits:
         cpu: 1
         memory: 1Gi
-  - name: centos7
-    image: centos:7
-    command:
-    - cat
-    tty: true
-    securityContext:
-      runAsUser: 0
-      privileged: true
-    resources:
-      limits:
-        cpu: 0.5
-        memory: 512Mi
   - name: rpmbuild
-    image: rpmbuild/centos7
+    image: 263721492972.dkr.ecr.eu-west-1.amazonaws.com/cloudify-rpmbuild
     command:
     - cat
     tty: true
@@ -57,8 +45,8 @@ spec:
       privileged: true
     resources:
       limits:
-        cpu: 0.3
-        memory: 256Mi
+        cpu: 1
+        memory: 1Gi
   - name: awscli
     image: amazon/aws-cli
     command:
