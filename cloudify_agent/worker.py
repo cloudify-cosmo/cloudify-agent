@@ -325,8 +325,6 @@ class CloudifyOperationConsumer(TaskConsumer):
         # directory that only lives during the lifetime of the subprocess
         dispatch_dir = None
         try:
-            if ctx.bypass_maintenance:
-                os.environ[constants.BYPASS_MAINTENANCE] = 'True'
             env = self._build_subprocess_env(ctx)
 
             if self._uses_external_plugin(ctx):
