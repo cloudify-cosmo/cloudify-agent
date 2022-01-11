@@ -98,6 +98,7 @@ setup(
         ],
         'fabric': [
             'fabric==2.5.0',
+            'pynacl==1.4.0',
         ]
     }
 )
