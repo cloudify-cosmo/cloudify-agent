@@ -1,7 +1,7 @@
 https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip
 
 appdirs==1.4.3
-bottle==0.12.18
+bottle==0.12.19
 certifi==2020.12.5
 chardet==3.0.4
 click==6.7
