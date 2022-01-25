@@ -1,1 +1,1 @@
-https://github.com/cloudify-cosmo/cloudify-common/archive/6.3.0-build.zip
+https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip
