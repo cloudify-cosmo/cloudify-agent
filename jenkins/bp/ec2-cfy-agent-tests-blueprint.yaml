@@ -342,6 +342,7 @@ node_templates:
     properties:
       client_config: *client_config
       use_external_resource: true
+      create_if_missing: true
       resource_id: { get_input: aws_security_group_id }
       resource_config:
         GroupName: cfy-agent-tests
