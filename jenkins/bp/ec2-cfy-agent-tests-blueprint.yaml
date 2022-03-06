@@ -96,7 +96,7 @@ node_templates:
             LaunchSpecifications:
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.medium
-                    # SubnetId: subnet-07896a88a91ea802f
+                    SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -109,13 +109,13 @@ node_templates:
                           VolumeType: gp2
                     SpotPrice: '0.0456'
                     NetworkInterfaces:
-                    - SubnetId: subnet-07896a88a91ea802f
+                    - DeviceIndex: 0
                       Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3a.medium
-                    # SubnetId: subnet-07896a88a91ea802f
+                    SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -128,13 +128,13 @@ node_templates:
                           VolumeType: gp2
                     SpotPrice: '0.0408'
                     NetworkInterfaces:
-                    - SubnetId: subnet-07896a88a91ea802f
+                    - DeviceIndex: 0
                       Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t2.medium
-                    # SubnetId: subnet-07896a88a91ea802f
+                    SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -147,13 +147,13 @@ node_templates:
                           VolumeType: gp2
                     SpotPrice: '0.05'
                     NetworkInterfaces:
-                    - SubnetId: subnet-07896a88a91ea802f
+                    - DeviceIndex: 0
                       Groups:
                       - sg-0bc113600cb5002a2
               
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: m1.large
-                    # SubnetId: subnet-07896a88a91ea802f
+                    SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -166,13 +166,13 @@ node_templates:
                           VolumeType: gp2
                     SpotPrice: '0.19'
                     NetworkInterfaces:
-                    - SubnetId: subnet-07896a88a91ea802f
+                    - DeviceIndex: 0
                       Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3a.large
-                    # SubnetId: subnet-07896a88a91ea802f
+                    SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -185,13 +185,13 @@ node_templates:
                           VolumeType: gp2
                     SpotPrice: '0.0816'
                     NetworkInterfaces:
-                    - SubnetId: subnet-07896a88a91ea802f
+                    - DeviceIndex: 0
                       Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: m2.xlarge
-                    # SubnetId: subnet-07896a88a91ea802f
+                    SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -204,13 +204,13 @@ node_templates:
                           VolumeType: gp2
                     SpotPrice: '0.275'
                     NetworkInterfaces:
-                    - SubnetId: subnet-07896a88a91ea802f
+                    - DeviceIndex: 0
                       Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.large
-                    # SubnetId: subnet-07896a88a91ea802f
+                    SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -223,13 +223,13 @@ node_templates:
                           VolumeType: gp2
                     SpotPrice: '0.0912'
                     NetworkInterfaces:
-                    - SubnetId: subnet-07896a88a91ea802f
+                    - DeviceIndex: 0
                       Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.xlarge
-                    # SubnetId: subnet-07896a88a91ea802f
+                    SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -243,13 +243,13 @@ node_templates:
                     WeightedCapacity: 2
                     SpotPrice: '0.0912'
                     NetworkInterfaces:
-                    - SubnetId: subnet-07896a88a91ea802f
+                    - DeviceIndex: 0
                       Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.2xlarge
-                    # SubnetId: subnet-07896a88a91ea802f
+                    SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -263,7 +263,7 @@ node_templates:
                     WeightedCapacity: 4
                     SpotPrice: '0.0912'
                     NetworkInterfaces:
-                    - SubnetId: subnet-07896a88a91ea802f
+                    - DeviceIndex: 0
                       Groups:
                       - sg-0bc113600cb5002a2
             # IamFleetRole: { get_input: aws_fleet_role }
