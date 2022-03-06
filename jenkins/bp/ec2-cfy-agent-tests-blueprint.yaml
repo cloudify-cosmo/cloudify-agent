@@ -4,7 +4,7 @@ description: >
   This blueprint deploy EC2 for agent tests
 imports:
   - http://cloudify.co/spec/cloudify/6.3.0.dev1/types.yaml
-  - plugin:cloudify-aws-plugin
+  - plugin:cloudify-aws-plugin?version=3.0.0
   - plugin:cloudify-utilities-plugin?version= >=1.22.1
 
 inputs:
