@@ -109,7 +109,8 @@ node_templates:
                           VolumeType: gp2
                     SpotPrice: '0.0456'
                     NetworkInterfaces:
-                    - Groups:
+                    - SubnetId: subnet-07896a88a91ea802f
+                      Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
@@ -127,7 +128,8 @@ node_templates:
                           VolumeType: gp2
                     SpotPrice: '0.0408'
                     NetworkInterfaces:
-                    - Groups:
+                    - SubnetId: subnet-07896a88a91ea802f
+                      Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
@@ -145,7 +147,8 @@ node_templates:
                           VolumeType: gp2
                     SpotPrice: '0.05'
                     NetworkInterfaces:
-                    - Groups:
+                    - SubnetId: subnet-07896a88a91ea802f
+                      Groups:
                       - sg-0bc113600cb5002a2
               
                   - ImageId: ami-05cd35b907b4ffe77
@@ -163,7 +166,8 @@ node_templates:
                           VolumeType: gp2
                     SpotPrice: '0.19'
                     NetworkInterfaces:
-                    - Groups:
+                    - SubnetId: subnet-07896a88a91ea802f
+                      Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
@@ -181,7 +185,8 @@ node_templates:
                           VolumeType: gp2
                     SpotPrice: '0.0816'
                     NetworkInterfaces:
-                    - Groups:
+                    - SubnetId: subnet-07896a88a91ea802f
+                      Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
@@ -199,7 +204,8 @@ node_templates:
                           VolumeType: gp2
                     SpotPrice: '0.275'
                     NetworkInterfaces:
-                    - Groups:
+                    - SubnetId: subnet-07896a88a91ea802f
+                      Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
@@ -217,7 +223,8 @@ node_templates:
                           VolumeType: gp2
                     SpotPrice: '0.0912'
                     NetworkInterfaces:
-                    - Groups:
+                    - SubnetId: subnet-07896a88a91ea802f
+                      Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
@@ -236,7 +243,8 @@ node_templates:
                     WeightedCapacity: 2
                     SpotPrice: '0.0912'
                     NetworkInterfaces:
-                    - Groups:
+                    - SubnetId: subnet-07896a88a91ea802f
+                      Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
@@ -255,7 +263,8 @@ node_templates:
                     WeightedCapacity: 4
                     SpotPrice: '0.0912'
                     NetworkInterfaces:
-                    - Groups:
+                    - SubnetId: subnet-07896a88a91ea802f
+                      Groups:
                       - sg-0bc113600cb5002a2
             # IamFleetRole: { get_input: aws_fleet_role }
             # LaunchSpecifications:
