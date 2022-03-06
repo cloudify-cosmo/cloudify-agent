@@ -96,7 +96,7 @@ node_templates:
             LaunchSpecifications:
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.medium
-                    SubnetId: subnet-07896a88a91ea802f
+                    # SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -110,12 +110,13 @@ node_templates:
                     SpotPrice: '0.0456'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3a.medium
-                    SubnetId: subnet-07896a88a91ea802f
+                    # SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -129,12 +130,13 @@ node_templates:
                     SpotPrice: '0.0408'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t2.medium
-                    SubnetId: subnet-07896a88a91ea802f
+                    # SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -148,12 +150,13 @@ node_templates:
                     SpotPrice: '0.05'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
               
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: m1.large
-                    SubnetId: subnet-07896a88a91ea802f
+                    # SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -167,12 +170,13 @@ node_templates:
                     SpotPrice: '0.19'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3a.large
-                    SubnetId: subnet-07896a88a91ea802f
+                    # SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -186,12 +190,13 @@ node_templates:
                     SpotPrice: '0.0816'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: m2.xlarge
-                    SubnetId: subnet-07896a88a91ea802f
+                    # SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -205,12 +210,13 @@ node_templates:
                     SpotPrice: '0.275'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.large
-                    SubnetId: subnet-07896a88a91ea802f
+                    # SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -224,12 +230,13 @@ node_templates:
                     SpotPrice: '0.0912'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.xlarge
-                    SubnetId: subnet-07896a88a91ea802f
+                    # SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -244,12 +251,13 @@ node_templates:
                     SpotPrice: '0.0912'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.2xlarge
-                    SubnetId: subnet-07896a88a91ea802f
+                    # SubnetId: subnet-07896a88a91ea802f
                     KeyName: yuval_keypair_auto
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -264,6 +272,7 @@ node_templates:
                     SpotPrice: '0.0912'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
             # IamFleetRole: { get_input: aws_fleet_role }
