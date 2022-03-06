@@ -108,18 +108,17 @@ pipeline {
                     sh script:"""#!/bin/bash
                       set -euxo pipefail
                       python -m venv .venv
-                      source .venv/bin/activate
-                      pip install --upgrade pip==20.3.4
-                      pip install cloudify==6.3.0
+                      source .venv/bin/activate                      
 
-                      cfy profile use ${env.MANAGER_IP} -u ${env.MANAGER_USERNAME} -p ${env.MANAGER_PASSWORD} -t ${env.MANAGER_TENANT} --ssl
+                      cfy profile use ${env.MANAGER_IP} -u ${env.MANAGER_USERNAME} -p ${env.MANAGER_PASSWORD} -t ${env.MANAGER_TENANT} --ssl -vv
                       pushd 'bp'
-                        cfy install -b ec2-cfy-agent-tests-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} ec2-cfy-agent-tests-blueprint.yaml -vv
+                        cfy install -b ec2-cfy-agent-tests-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} ec2-cfy-agent-tests-blueprint.yaml
                       popd
                       cfy deployments capabilities ec2-cfy-agent-tests-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} --json > capabilities.json
                       jq -r '.key_content.value' capabilities.json > ~/.ssh/ec2_ssh_key && chmod 600 ~/.ssh/ec2_ssh_key
+                      sleep 160
                       ssh-keyscan -H \$(jq -r '.endpoint.value' capabilities.json) >> ~/.ssh/known_hosts
-                      echo 'ClientAliveInterval 50' | sudo tee --append /etc/ssh/sshd_config
+                      echo 'ClientAliveInterval 50' >> /etc/ssh/sshd_config
                     """, label:'Configure and install blueprint on manager'
                   }
                 }
@@ -180,11 +179,10 @@ EOT
           steps {
             container('rpmbuild'){
               sh script: """
-                cd && mkdir rpmbuild && cd rpmbuild
+                cd ~/rpmbuild
                 git clone https://github.com/cloudify-cosmo/cloudify-agent.git SOURCES && cd SOURCES && git checkout ${env.BRANCH_NAME}
               """, label: 'Copying repo to seperate workspace'
               sh script: """
-                chmod a+wx /opt
                 curl -o ~/rpmbuild/SOURCES/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
                 mkdir -p ~/rpmbuild/SOURCES/packaging/agents/ ;
                 curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
@@ -192,16 +190,12 @@ EOT
               sh script: """
                 cd ~/rpmbuild/SOURCES
                 cp -rf ${env.WORKSPACE}/build_agent/*.tar.gz .
-
-                yum install rpmdevtools -y
                 for i in {1..30}; do yum-builddep -y cloudify-agents.spec && break || sleep 10; done
-
                 spectool \
                   -d "CLOUDIFY_VERSION ${env.VERSION}" \
                   -d "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
                   -P cloudify-agents.spec \
                   -S -g
-
                 rpmbuild \
                   -D "CLOUDIFY_VERSION ${env.VERSION}" \
                   -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
