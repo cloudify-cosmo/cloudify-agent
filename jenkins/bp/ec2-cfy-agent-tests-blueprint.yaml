@@ -35,7 +35,7 @@ inputs:
 
   aws_security_group_id:
     type: string
-    default: 'sg-02bf1051c24414128'
+    default: 'sg-0bc113600cb5002a2'
 
   aws_fleet_role:
     type: string
@@ -342,7 +342,6 @@ node_templates:
     properties:
       client_config: *client_config
       use_external_resource: true
-      create_if_missing: true
       resource_id: { get_input: aws_security_group_id }
       resource_config:
         GroupName: cfy-agent-tests

@@ -114,7 +114,7 @@ pipeline {
 
                       cfy profile use ${env.MANAGER_IP} -u ${env.MANAGER_USERNAME} -p ${env.MANAGER_PASSWORD} -t ${env.MANAGER_TENANT} --ssl
                       pushd 'bp'
-                        cfy install -b ec2-cfy-agent-tests-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} ec2-cfy-agent-tests-blueprint.yaml -vvv
+                        cfy install -b ec2-cfy-agent-tests-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} ec2-cfy-agent-tests-blueprint.yaml -vv
                       popd
                       cfy deployments capabilities ec2-cfy-agent-tests-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} --json > capabilities.json
                       jq -r '.key_content.value' capabilities.json > ~/.ssh/ec2_ssh_key && chmod 600 ~/.ssh/ec2_ssh_key
