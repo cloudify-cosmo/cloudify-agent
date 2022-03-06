@@ -108,6 +108,9 @@ node_templates:
                           Encrypted: false
                           VolumeType: gp2
                     SpotPrice: '0.0456'
+                    NetworkInterfaces:
+                    - AssociatePublicIpAddress: true
+                      NetworkInterfaceId: { get_attribute: [nic, aws_resource_id] }
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3a.medium
@@ -123,6 +126,9 @@ node_templates:
                           Encrypted: false
                           VolumeType: gp2
                     SpotPrice: '0.0408'
+                    NetworkInterfaces:
+                    - AssociatePublicIpAddress: true
+                      NetworkInterfaceId: { get_attribute: [nic, aws_resource_id] }
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t2.medium
@@ -138,6 +144,9 @@ node_templates:
                           Encrypted: false
                           VolumeType: gp2
                     SpotPrice: '0.05'
+                    NetworkInterfaces:
+                    - AssociatePublicIpAddress: true
+                      NetworkInterfaceId: { get_attribute: [nic, aws_resource_id] }
               
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: m1.large
@@ -153,6 +162,9 @@ node_templates:
                           Encrypted: false
                           VolumeType: gp2
                     SpotPrice: '0.19'
+                    NetworkInterfaces:
+                    - AssociatePublicIpAddress: true
+                      NetworkInterfaceId: { get_attribute: [nic, aws_resource_id] }
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3a.large
@@ -168,6 +180,9 @@ node_templates:
                           Encrypted: false
                           VolumeType: gp2
                     SpotPrice: '0.0816'
+                    NetworkInterfaces:
+                    - AssociatePublicIpAddress: true
+                      NetworkInterfaceId: { get_attribute: [nic, aws_resource_id] }
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: m2.xlarge
@@ -183,6 +198,9 @@ node_templates:
                           Encrypted: false
                           VolumeType: gp2
                     SpotPrice: '0.275'
+                    NetworkInterfaces:
+                    - AssociatePublicIpAddress: true
+                      NetworkInterfaceId: { get_attribute: [nic, aws_resource_id] }
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.large
@@ -198,6 +216,9 @@ node_templates:
                           Encrypted: false
                           VolumeType: gp2
                     SpotPrice: '0.0912'
+                    NetworkInterfaces:
+                    - AssociatePublicIpAddress: true
+                      NetworkInterfaceId: { get_attribute: [nic, aws_resource_id] }
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.xlarge
@@ -214,6 +235,9 @@ node_templates:
                           VolumeType: gp2
                     WeightedCapacity: 2
                     SpotPrice: '0.0912'
+                    NetworkInterfaces:
+                    - AssociatePublicIpAddress: true
+                      NetworkInterfaceId: { get_attribute: [nic, aws_resource_id] }
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.2xlarge
@@ -230,6 +254,9 @@ node_templates:
                           VolumeType: gp2
                     WeightedCapacity: 4
                     SpotPrice: '0.0912'
+                    NetworkInterfaces:
+                    - AssociatePublicIpAddress: true
+                      NetworkInterfaceId: { get_attribute: [nic, aws_resource_id] }
             # IamFleetRole: { get_input: aws_fleet_role }
             # LaunchSpecifications:
             #     - ImageId: { get_input:  aws_image_name }
@@ -257,7 +284,7 @@ node_templates:
             # ReplaceUnhealthyInstances: False
             # InstanceInterruptionBehavior: terminate
             # InstancePoolsToUseCount: 24
-      use_public_ip: true
+      #use_public_ip: true
     relationships:
     - type: cloudify.relationships.depends_on
       target: nic
