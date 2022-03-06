@@ -35,7 +35,7 @@ inputs:
 
   aws_security_group_id:
     type: string
-    default: 'sg-0bc113600cb5002a2'
+    default: 'sg-02bf1051c24414128'
 
   aws_fleet_role:
     type: string
