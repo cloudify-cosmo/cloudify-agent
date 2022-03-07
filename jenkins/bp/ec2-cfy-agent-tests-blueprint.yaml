@@ -110,6 +110,7 @@ node_templates:
                     SpotPrice: '0.0456'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      AssociatePublicIpAddress: true
                       SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
@@ -130,6 +131,7 @@ node_templates:
                     SpotPrice: '0.0408'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      AssociatePublicIpAddress: true
                       SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
@@ -150,29 +152,31 @@ node_templates:
                     SpotPrice: '0.05'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      AssociatePublicIpAddress: true
                       SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
               
-                  - ImageId: ami-05cd35b907b4ffe77
-                    InstanceType: m1.large
-                    # SubnetId: subnet-07896a88a91ea802f
-                    KeyName: yuval_keypair_auto
-                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
-                    BlockDeviceMappings:
-                      - DeviceName: '/dev/xvda'
-                        Ebs: 
-                          DeleteOnTermination: true
-                          SnapshotId: snap-020ee8a5f94cb76b0
-                          VolumeSize: 30
-                          Encrypted: false
-                          VolumeType: gp2
-                    SpotPrice: '0.19'
-                    NetworkInterfaces:
-                    - DeviceIndex: 0
-                      SubnetId: subnet-07896a88a91ea802f
-                      Groups:
-                      - sg-0bc113600cb5002a2
+                  # - ImageId: ami-05cd35b907b4ffe77
+                  #   InstanceType: m1.large
+                  #   # SubnetId: subnet-07896a88a91ea802f
+                  #   KeyName: yuval_keypair_auto
+                  #   UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                  #   BlockDeviceMappings:
+                  #     - DeviceName: '/dev/xvda'
+                  #       Ebs: 
+                  #         DeleteOnTermination: true
+                  #         SnapshotId: snap-020ee8a5f94cb76b0
+                  #         VolumeSize: 30
+                  #         Encrypted: false
+                  #         VolumeType: gp2
+                  #   SpotPrice: '0.19'
+                  #   NetworkInterfaces:
+                  #   - DeviceIndex: 0
+                  #     AssociatePublicIpAddress: true
+                  #     SubnetId: subnet-07896a88a91ea802f
+                  #     Groups:
+                  #     - sg-0bc113600cb5002a2
 
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3a.large
@@ -190,6 +194,7 @@ node_templates:
                     SpotPrice: '0.0816'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      AssociatePublicIpAddress: true
                       SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
@@ -210,6 +215,7 @@ node_templates:
                     SpotPrice: '0.275'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      AssociatePublicIpAddress: true
                       SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
@@ -230,6 +236,7 @@ node_templates:
                     SpotPrice: '0.0912'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      AssociatePublicIpAddress: true
                       SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
@@ -251,30 +258,32 @@ node_templates:
                     SpotPrice: '0.0912'
                     NetworkInterfaces:
                     - DeviceIndex: 0
+                      AssociatePublicIpAddress: true
                       SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
 
-                  - ImageId: ami-05cd35b907b4ffe77
-                    InstanceType: t3.2xlarge
-                    # SubnetId: subnet-07896a88a91ea802f
-                    KeyName: yuval_keypair_auto
-                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
-                    BlockDeviceMappings:
-                      - DeviceName: '/dev/xvda'
-                        Ebs: 
-                          DeleteOnTermination: true
-                          SnapshotId: snap-020ee8a5f94cb76b0
-                          VolumeSize: 30
-                          Encrypted: false
-                          VolumeType: gp2
-                    WeightedCapacity: 4
-                    SpotPrice: '0.0912'
-                    NetworkInterfaces:
-                    - DeviceIndex: 0
-                      SubnetId: subnet-07896a88a91ea802f
-                      Groups:
-                      - sg-0bc113600cb5002a2
+                  # - ImageId: ami-05cd35b907b4ffe77
+                  #   InstanceType: t3.2xlarge
+                  #   # SubnetId: subnet-07896a88a91ea802f
+                  #   KeyName: yuval_keypair_auto
+                  #   UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                  #   BlockDeviceMappings:
+                  #     - DeviceName: '/dev/xvda'
+                  #       Ebs: 
+                  #         DeleteOnTermination: true
+                  #         SnapshotId: snap-020ee8a5f94cb76b0
+                  #         VolumeSize: 30
+                  #         Encrypted: false
+                  #         VolumeType: gp2
+                  #   WeightedCapacity: 4
+                  #   SpotPrice: '0.0912'
+                  #   NetworkInterfaces:
+                  #   - DeviceIndex: 0
+                  #     AssociatePublicIpAddress: true
+                  #     SubnetId: subnet-07896a88a91ea802f
+                  #     Groups:
+                  #     - sg-0bc113600cb5002a2
             # IamFleetRole: { get_input: aws_fleet_role }
             # LaunchSpecifications:
             #     - ImageId: { get_input:  aws_image_name }
@@ -310,6 +319,8 @@ node_templates:
     #   target: floating_ip
     - type: cloudify.relationships.depends_on
       target: cloud_init
+    - type: cloudify.relationships.depends_on
+      target: vpc
     # - type: cloudify.relationships.depends_on
     #   target: cfy_fleet_profile
 
@@ -346,13 +357,13 @@ node_templates:
   #             - PolicyArn: arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
 
 
-  floating_ip:
-    type: cloudify.nodes.aws.ec2.ElasticIP
-    properties:
-      client_config: *client_config
-    relationships:
-    - type: cloudify.relationships.depends_on
-      target: fleet
+  # floating_ip:
+  #   type: cloudify.nodes.aws.ec2.ElasticIP
+  #   properties:
+  #     client_config: *client_config
+  #   relationships:
+  #   - type: cloudify.relationships.depends_on
+  #     target: fleet
 
   # nic:
   #   type: cloudify.nodes.aws.ec2.Interface
@@ -372,30 +383,30 @@ node_templates:
   #   # - type: cloudify.relationships.depends_on
   #   #   target: fleet
 
-  subnet:
-    type: cloudify.nodes.aws.ec2.Subnet
-    properties:
-      client_config: *client_config
-      use_external_resource: true
-      resource_id: { get_input: aws_subnet_id }
-      resource_config:
-        CidrBlock:  10.20.0.0/24
-    relationships:
-    - type: cloudify.relationships.depends_on
-      target: vpc
+  # subnet:
+  #   type: cloudify.nodes.aws.ec2.Subnet
+  #   properties:
+  #     client_config: *client_config
+  #     use_external_resource: true
+  #     resource_id: { get_input: aws_subnet_id }
+  #     resource_config:
+  #       CidrBlock:  10.20.0.0/24
+  #   relationships:
+  #   - type: cloudify.relationships.depends_on
+  #     target: vpc
 
-  security_group:
-    type: cloudify.nodes.aws.ec2.SecurityGroup
-    properties:
-      client_config: *client_config
-      use_external_resource: true
-      resource_id: { get_input: aws_security_group_id }
-      resource_config:
-        GroupName: cfy-agent-tests
-        Description: cfy-agent-tests
-    relationships:
-    - type: cloudify.relationships.depends_on
-      target: vpc
+  # security_group:
+  #   type: cloudify.nodes.aws.ec2.SecurityGroup
+  #   properties:
+  #     client_config: *client_config
+  #     use_external_resource: true
+  #     resource_id: { get_input: aws_security_group_id }
+  #     resource_config:
+  #       GroupName: cfy-agent-tests
+  #       Description: cfy-agent-tests
+  #   relationships:
+  #   - type: cloudify.relationships.depends_on
+  #     target: vpc
 
   vpc:
     type: cloudify.nodes.aws.ec2.Vpc
@@ -440,7 +451,7 @@ capabilities:
 
   endpoint:
     description: The external endpoint of the application.
-    value: { get_attribute: [ floating_ip, aws_resource_id ] }
+    value: { get_attribute: [ fleet, aws_resource_id ] }
 
   user:
     description: user ID.
