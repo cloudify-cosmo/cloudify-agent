@@ -447,7 +447,7 @@ node_templates:
           inputs:
             store_private_key_material: true
 
-fleet2:
+  fleet2:
     type: cloudify.nodes.aws.ec2.SpotFleetRequest
     properties:
       client_config: *client_config
