@@ -451,7 +451,7 @@ node_templates:
     type: cloudify.nodes.aws.ec2.SpotFleetRequest
     properties:
       client_config: *client_config
-      external_resource: true
+      use_external_resource: true
       resource_config:
         SpotFleetRequestId: { get_attribute: [ fleet, aws_resource_id ] }
     relationships:
