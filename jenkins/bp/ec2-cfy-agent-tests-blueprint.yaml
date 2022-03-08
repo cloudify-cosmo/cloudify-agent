@@ -452,6 +452,7 @@ node_templates:
     properties:
       client_config: *client_config
       use_external_resource: true
+      resource_id: { get_attribute: [ fleet, aws_resource_id ] }
       # resource_config:
       #   kwargs:
       #     SpotFleetRequestId: { get_attribute: [ fleet, aws_resource_id ] }
