@@ -447,12 +447,12 @@ node_templates:
           inputs:
             store_private_key_material: true
 
-  fleet2:
-    type: cloudify.nodes.aws.ec2.SpotFleetRequest
+  instance_details:
+    type: cloudify.nodes.aws.ec2.Instances
     properties:
       client_config: *client_config
       use_external_resource: true
-      resource_id: { get_attribute: [ fleet, aws_resource_id ] }
+      resource_id: { get_attribute: [ fleet, describe, ActiveInstances, 0, InstanceId ] }
       # resource_config:
       #   kwargs:
       #     SpotFleetRequestId: { get_attribute: [ fleet, aws_resource_id ] }
@@ -466,7 +466,7 @@ capabilities:
 
   endpoint:
     description: The external endpoint of the application.
-    value: { get_attribute: [ fleet, aws_resource_id ] }
+    value: { get_attribute: [ instance_details, create_response, PublicIpAddress ] }
 
   user:
     description: user ID.
