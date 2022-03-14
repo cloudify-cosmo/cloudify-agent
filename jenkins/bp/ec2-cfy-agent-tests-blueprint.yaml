@@ -452,6 +452,7 @@ node_templates:
     properties:
       client_config: *client_config
       use_external_resource: true
+      use_public_ip: true
       resource_id: { get_attribute: [ fleet, describe, ActiveInstances, 0, InstanceId ] }
       # resource_config:
       #   kwargs:
@@ -466,7 +467,7 @@ capabilities:
 
   endpoint:
     description: The external endpoint of the application.
-    value: { get_attribute: [ instance_details, create_response, PublicIpAddress ] }
+    value: { get_attribute: [instance_details, public_ip_address] }
 
   user:
     description: user ID.
