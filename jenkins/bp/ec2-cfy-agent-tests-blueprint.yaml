@@ -453,10 +453,10 @@ node_templates:
       client_config: *client_config
       use_external_resource: true
       use_public_ip: true
-      resource_id: { get_attribute: [ fleet, describe, ActiveInstances, 0, InstanceId ] }
-      # resource_config:
-      #   kwargs:
-      #     SpotFleetRequestId: { get_attribute: [ fleet, aws_resource_id ] }
+      # resource_id: { get_attribute: [ fleet, describe, ActiveInstances, 0, InstanceId ] }
+      resource_config:
+        kwargs:
+          SpotFleetRequestId: { get_attribute: [ fleet, aws_resource_id ] }
     relationships:
     - type: cloudify.relationships.depends_on
       target: fleet
