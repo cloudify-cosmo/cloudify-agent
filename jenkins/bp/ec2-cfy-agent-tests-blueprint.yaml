@@ -76,10 +76,10 @@ node_templates:
     type: cloudify.nodes.aws.ec2.SpotFleetRequest
     properties:
       client_config: *client_config
-      agent_config:
-        install_method: none
-        user: { get_input: agent_user }
-        key: { get_attribute: [agent_key, private_key_export] }
+      # agent_config:
+      #   install_method: none
+      #   user: { get_input: agent_user }
+      #   key: { get_attribute: [agent_key, private_key_export] }
       resource_config:
         # ImageId: { get_input:  aws_image_name }
         # InstanceType: { get_input: instance_type }
