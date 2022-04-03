@@ -76,10 +76,10 @@ node_templates:
     type: cloudify.nodes.aws.ec2.SpotFleetRequest
     properties:
       client_config: *client_config
-      # agent_config:
-      #   install_method: none
-      #   user: { get_input: agent_user }
-      #   key: { get_attribute: [agent_key, private_key_export] }
+      agent_config:
+        install_method: none
+        user: { get_input: agent_user }
+        key: { get_attribute: [agent_key, private_key_export] }
       resource_config:
         # ImageId: { get_input:  aws_image_name }
         # InstanceType: { get_input: instance_type }
@@ -98,6 +98,10 @@ node_templates:
                     InstanceType: t3.medium
                     # SubnetId: subnet-07896a88a91ea802f
                     # KeyName: { get_input: agent_key_name }
+                    agent_config:
+                      install_method: none
+                      user: { get_input: agent_user }
+                      key: { get_attribute: [agent_key, private_key_export] }
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
@@ -119,6 +123,10 @@ node_templates:
                     InstanceType: t3a.medium
                     # SubnetId: subnet-07896a88a91ea802f
                     # KeyName: { get_input: agent_key_name }
+                    agent_config:
+                      install_method: none
+                      user: { get_input: agent_user }
+                      key: { get_attribute: [agent_key, private_key_export] }
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
@@ -140,6 +148,10 @@ node_templates:
                     InstanceType: t2.medium
                     # SubnetId: subnet-07896a88a91ea802f
                     # KeyName: { get_input: agent_key_name }
+                    agent_config:
+                      install_method: none
+                      user: { get_input: agent_user }
+                      key: { get_attribute: [agent_key, private_key_export] }
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
@@ -156,7 +168,32 @@ node_templates:
                       SubnetId: subnet-07896a88a91ea802f
                       Groups:
                       - sg-0bc113600cb5002a2
-              
+
+                  - ImageId: ami-05cd35b907b4ffe77
+                    InstanceType: t3.large
+                    # SubnetId: subnet-07896a88a91ea802f
+                    # KeyName: { get_input: agent_key_name }
+                    agent_config:
+                      install_method: none
+                      user: { get_input: agent_user }
+                      key: { get_attribute: [agent_key, private_key_export] }
+                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                    BlockDeviceMappings:
+                      - DeviceName: '/dev/xvda'
+                        Ebs: 
+                          DeleteOnTermination: true
+                          SnapshotId: snap-020ee8a5f94cb76b0
+                          VolumeSize: 30
+                          Encrypted: false
+                          VolumeType: gp2
+                    SpotPrice: '0.0912'
+                    NetworkInterfaces:
+                    - DeviceIndex: 0
+                      AssociatePublicIpAddress: true
+                      SubnetId: subnet-07896a88a91ea802f
+                      Groups:
+                      - sg-0bc113600cb5002a2
+
                   # - ImageId: ami-05cd35b907b4ffe77
                   #   InstanceType: m1.large
                   #   # SubnetId: subnet-07896a88a91ea802f
@@ -178,90 +215,69 @@ node_templates:
                   #     Groups:
                   #     - sg-0bc113600cb5002a2
 
-                  - ImageId: ami-05cd35b907b4ffe77
-                    InstanceType: t3a.large
-                    # SubnetId: subnet-07896a88a91ea802f
-                    # KeyName: { get_input: agent_key_name }
-                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
-                    BlockDeviceMappings:
-                      - DeviceName: '/dev/xvda'
-                        Ebs: 
-                          DeleteOnTermination: true
-                          SnapshotId: snap-020ee8a5f94cb76b0
-                          VolumeSize: 30
-                          Encrypted: false
-                          VolumeType: gp2
-                    SpotPrice: '0.0816'
-                    NetworkInterfaces:
-                    - DeviceIndex: 0
-                      AssociatePublicIpAddress: true
-                      SubnetId: subnet-07896a88a91ea802f
-                      Groups:
-                      - sg-0bc113600cb5002a2
+                  # - ImageId: ami-05cd35b907b4ffe77
+                  #   InstanceType: t3a.large
+                  #   # SubnetId: subnet-07896a88a91ea802f
+                  #   # KeyName: { get_input: agent_key_name }
+                  #   UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                  #   BlockDeviceMappings:
+                  #     - DeviceName: '/dev/xvda'
+                  #       Ebs: 
+                  #         DeleteOnTermination: true
+                  #         SnapshotId: snap-020ee8a5f94cb76b0
+                  #         VolumeSize: 30
+                  #         Encrypted: false
+                  #         VolumeType: gp2
+                  #   SpotPrice: '0.0816'
+                  #   NetworkInterfaces:
+                  #   - DeviceIndex: 0
+                  #     AssociatePublicIpAddress: true
+                  #     SubnetId: subnet-07896a88a91ea802f
+                  #     Groups:
+                  #     - sg-0bc113600cb5002a2
 
-                  - ImageId: ami-05cd35b907b4ffe77
-                    InstanceType: m2.xlarge
-                    # SubnetId: subnet-07896a88a91ea802f
-                    # KeyName: { get_input: agent_key_name }
-                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
-                    BlockDeviceMappings:
-                      - DeviceName: '/dev/xvda'
-                        Ebs: 
-                          DeleteOnTermination: true
-                          SnapshotId: snap-020ee8a5f94cb76b0
-                          VolumeSize: 30
-                          Encrypted: false
-                          VolumeType: gp2
-                    SpotPrice: '0.275'
-                    NetworkInterfaces:
-                    - DeviceIndex: 0
-                      AssociatePublicIpAddress: true
-                      SubnetId: subnet-07896a88a91ea802f
-                      Groups:
-                      - sg-0bc113600cb5002a2
+                  # - ImageId: ami-05cd35b907b4ffe77
+                  #   InstanceType: m2.xlarge
+                  #   # SubnetId: subnet-07896a88a91ea802f
+                  #   # KeyName: { get_input: agent_key_name }
+                  #   UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                  #   BlockDeviceMappings:
+                  #     - DeviceName: '/dev/xvda'
+                  #       Ebs: 
+                  #         DeleteOnTermination: true
+                  #         SnapshotId: snap-020ee8a5f94cb76b0
+                  #         VolumeSize: 30
+                  #         Encrypted: false
+                  #         VolumeType: gp2
+                  #   SpotPrice: '0.275'
+                  #   NetworkInterfaces:
+                  #   - DeviceIndex: 0
+                  #     AssociatePublicIpAddress: true
+                  #     SubnetId: subnet-07896a88a91ea802f
+                  #     Groups:
+                  #     - sg-0bc113600cb5002a2
 
-                  - ImageId: ami-05cd35b907b4ffe77
-                    InstanceType: t3.large
-                    # SubnetId: subnet-07896a88a91ea802f
-                    # KeyName: { get_input: agent_key_name }
-                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
-                    BlockDeviceMappings:
-                      - DeviceName: '/dev/xvda'
-                        Ebs: 
-                          DeleteOnTermination: true
-                          SnapshotId: snap-020ee8a5f94cb76b0
-                          VolumeSize: 30
-                          Encrypted: false
-                          VolumeType: gp2
-                    SpotPrice: '0.0912'
-                    NetworkInterfaces:
-                    - DeviceIndex: 0
-                      AssociatePublicIpAddress: true
-                      SubnetId: subnet-07896a88a91ea802f
-                      Groups:
-                      - sg-0bc113600cb5002a2
-
-                  - ImageId: ami-05cd35b907b4ffe77
-                    InstanceType: t3.xlarge
-                    # SubnetId: subnet-07896a88a91ea802f
-                    # KeyName: { get_input: agent_key_name }
-                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
-                    BlockDeviceMappings:
-                      - DeviceName: '/dev/xvda'
-                        Ebs: 
-                          DeleteOnTermination: true
-                          SnapshotId: snap-020ee8a5f94cb76b0
-                          VolumeSize: 30
-                          Encrypted: false
-                          VolumeType: gp2
-                    WeightedCapacity: 2
-                    SpotPrice: '0.0912'
-                    NetworkInterfaces:
-                    - DeviceIndex: 0
-                      AssociatePublicIpAddress: true
-                      SubnetId: subnet-07896a88a91ea802f
-                      Groups:
-                      - sg-0bc113600cb5002a2
+                  # - ImageId: ami-05cd35b907b4ffe77
+                  #   InstanceType: t3.xlarge
+                  #   # SubnetId: subnet-07896a88a91ea802f
+                  #   # KeyName: { get_input: agent_key_name }
+                  #   UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                  #   BlockDeviceMappings:
+                  #     - DeviceName: '/dev/xvda'
+                  #       Ebs: 
+                  #         DeleteOnTermination: true
+                  #         SnapshotId: snap-020ee8a5f94cb76b0
+                  #         VolumeSize: 30
+                  #         Encrypted: false
+                  #         VolumeType: gp2
+                  #   WeightedCapacity: 2
+                  #   SpotPrice: '0.0912'
+                  #   NetworkInterfaces:
+                  #   - DeviceIndex: 0
+                  #     AssociatePublicIpAddress: true
+                  #     SubnetId: subnet-07896a88a91ea802f
+                  #     Groups:
+                  #     - sg-0bc113600cb5002a2
 
                   # - ImageId: ami-05cd35b907b4ffe77
                   #   InstanceType: t3.2xlarge
