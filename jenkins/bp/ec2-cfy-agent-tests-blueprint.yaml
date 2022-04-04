@@ -52,7 +52,7 @@ inputs:
 
   ssh_key_name:
     type: string
-    default: 'cfy-agent-tests-key'
+    default: 'cfy-agent-tests'
 
   agent_key_name:
     type: string
@@ -402,7 +402,6 @@ node_templates:
       use_external_resource: true
       resource_config:
         KeyName: { get_input: ssh_key_name }
-      store_in_runtime_properties: true
       client_config: *client_config
 
   instance_details:
