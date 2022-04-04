@@ -97,11 +97,11 @@ node_templates:
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.medium
                     # SubnetId: subnet-07896a88a91ea802f
-                    # KeyName: { get_input: agent_key_name }
-                    agent_config:
-                      install_method: none
-                      user: { get_input: agent_user }
-                      key: { get_attribute: [agent_key, private_key_export] }
+                    KeyName: { get_input: agent_key_name }
+                    # agent_config:
+                    #   install_method: none
+                    #   user: { get_input: agent_user }
+                    #   key: { get_attribute: [agent_key, private_key_export] }
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
@@ -122,11 +122,11 @@ node_templates:
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3a.medium
                     # SubnetId: subnet-07896a88a91ea802f
-                    # KeyName: { get_input: agent_key_name }
-                    agent_config:
-                      install_method: none
-                      user: { get_input: agent_user }
-                      key: { get_attribute: [agent_key, private_key_export] }
+                    KeyName: { get_input: agent_key_name }
+                    # agent_config:
+                    #   install_method: none
+                    #   user: { get_input: agent_user }
+                    #   key: { get_attribute: [agent_key, private_key_export] }
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
@@ -147,11 +147,11 @@ node_templates:
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t2.medium
                     # SubnetId: subnet-07896a88a91ea802f
-                    # KeyName: { get_input: agent_key_name }
-                    agent_config:
-                      install_method: none
-                      user: { get_input: agent_user }
-                      key: { get_attribute: [agent_key, private_key_export] }
+                    KeyName: { get_input: agent_key_name }
+                    # agent_config:
+                    #   install_method: none
+                    #   user: { get_input: agent_user }
+                    #   key: { get_attribute: [agent_key, private_key_export] }
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
@@ -172,11 +172,11 @@ node_templates:
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.large
                     # SubnetId: subnet-07896a88a91ea802f
-                    # KeyName: { get_input: agent_key_name }
-                    agent_config:
-                      install_method: none
-                      user: { get_input: agent_user }
-                      key: { get_attribute: [agent_key, private_key_export] }
+                    KeyName: { get_input: agent_key_name }
+                    # agent_config:
+                    #   install_method: none
+                    #   user: { get_input: agent_user }
+                    #   key: { get_attribute: [agent_key, private_key_export] }
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
                       - DeviceName: '/dev/xvda'
@@ -397,28 +397,18 @@ node_templates:
         target: agent_key
 
   agent_key:
-    type: cloudify.keys.nodes.RSAKey
+    type: cloudify.nodes.aws.ec2.Keypair
     properties:
+      use_external_resource: true
       resource_config:
-        key_name: { get_input: agent_key_name }
-        openssh_format: true
-      use_secret_store: true
-      use_secrets_if_exist: true
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          implementation: keys.cloudify_ssh_key.operations.create
-          inputs:
-            store_private_key_material: true
+        KeyName: { get_input: agent_key_name }
+      store_in_runtime_properties: true
+      client_config: *client_config
 
   instance_details:
     type: cloudify.nodes.aws.ec2.Instances
     properties:
       client_config: *client_config
-      agent_config:
-        install_method: none
-        user: { get_input: agent_user }
-        key: { get_attribute: [agent_key, private_key_export] }
       use_external_resource: true
       use_public_ip: true
       resource_id: { get_attribute: [ fleet, instance_ids, 0 ] }
