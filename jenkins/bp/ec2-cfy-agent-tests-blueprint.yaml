@@ -52,7 +52,7 @@ inputs:
 
   ssh_key_name:
     type: string
-    default: 'cfy-agent-tests'
+    default: 'key-0ac1ed08b0a266d9e'
 
   agent_key_name:
     type: string
