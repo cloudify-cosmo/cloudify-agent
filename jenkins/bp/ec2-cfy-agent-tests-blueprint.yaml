@@ -401,7 +401,7 @@ node_templates:
     properties:
       use_external_resource: true
       resource_config:
-        KeyName: { get_input: agent_key_name }
+        KeyName: { get_input: ssh_key_name }
       store_in_runtime_properties: true
       client_config: *client_config
 
