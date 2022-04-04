@@ -400,8 +400,7 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Keypair
     properties:
       use_external_resource: true
-      resource_config:
-        KeyName: { get_input: ssh_key_name }
+      resource_id: { get_input: ssh_key_name }
       client_config: *client_config
 
   instance_details:
