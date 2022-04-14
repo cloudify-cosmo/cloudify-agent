@@ -409,6 +409,10 @@ node_templates:
       use_external_resource: true
       use_public_ip: true
       resource_id: { get_attribute: [ fleet, instance_ids, 0 ] }
+      agent_config:
+        install_method: none
+        user: { get_input: agent_user }
+        key: { get_attribute: [agent_key, private_key_export] }
     relationships:
     - type: cloudify.relationships.depends_on
       target: fleet
