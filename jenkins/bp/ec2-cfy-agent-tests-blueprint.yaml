@@ -50,9 +50,9 @@ inputs:
       The username of the agent running on the instance created from the image.
     default: 'ec2-user'
 
-  ssh_key_name:
-    type: string
-    default: 'key-0ac1ed08b0a266d9e'
+  # ssh_key_name:
+  #   type: string
+  #   default: 'key-0ac1ed08b0a266d9e'
 
   agent_key_name:
     type: string
@@ -97,7 +97,7 @@ node_templates:
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.medium
                     # SubnetId: subnet-07896a88a91ea802f
-                    KeyName: { get_input: agent_key_name }
+                    # KeyName: { get_input: agent_key_name }
                     # agent_config:
                     #   install_method: none
                     #   user: { get_input: agent_user }
@@ -122,7 +122,7 @@ node_templates:
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3a.medium
                     # SubnetId: subnet-07896a88a91ea802f
-                    KeyName: { get_input: agent_key_name }
+                    # KeyName: { get_input: agent_key_name }
                     # agent_config:
                     #   install_method: none
                     #   user: { get_input: agent_user }
@@ -147,7 +147,7 @@ node_templates:
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t2.medium
                     # SubnetId: subnet-07896a88a91ea802f
-                    KeyName: { get_input: agent_key_name }
+                    # KeyName: { get_input: agent_key_name }
                     # agent_config:
                     #   install_method: none
                     #   user: { get_input: agent_user }
@@ -172,7 +172,7 @@ node_templates:
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.large
                     # SubnetId: subnet-07896a88a91ea802f
-                    KeyName: { get_input: agent_key_name }
+                    # KeyName: { get_input: agent_key_name }
                     # agent_config:
                     #   install_method: none
                     #   user: { get_input: agent_user }
@@ -399,8 +399,7 @@ node_templates:
   agent_key:
     type: cloudify.nodes.aws.ec2.Keypair
     properties:
-      use_external_resource: true
-      resource_id: { get_input: ssh_key_name }
+      store_in_runtime_properties: true
       client_config: *client_config
 
   instance_details:
