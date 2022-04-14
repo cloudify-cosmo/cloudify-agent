@@ -412,7 +412,7 @@ node_templates:
       agent_config:
         install_method: none
         user: { get_input: agent_user }
-        key: { get_attribute: [agent_key, private_key_export] }
+        key: { get_attribute: [agent_key, create_response, KeyMaterial] }
     relationships:
     - type: cloudify.relationships.depends_on
       target: fleet
@@ -433,4 +433,4 @@ capabilities:
 
   key_content:
     description: Private agent key
-    value: { get_attribute: [agent_key, private_key_export] } 
+    value: { get_attribute: [agent_key, create_response, KeyMaterial] } 
