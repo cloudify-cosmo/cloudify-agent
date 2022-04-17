@@ -36,7 +36,7 @@ from cloudify_rest_client.exceptions import (
     CloudifyClientError
 )
 
-from cloudify import constants, dispatch, exceptions, state
+from cloudify import constants, exceptions, state
 from cloudify.context import CloudifyContext
 from cloudify.models_states import ExecutionState
 from cloudify.logs import setup_agent_logger
@@ -158,7 +158,6 @@ class TimeoutWrapper(object):
 
 class CloudifyOperationConsumer(TaskConsumer):
     routing_key = 'operation'
-    handler = dispatch.OperationHandler
 
     def __init__(self, *args, **kwargs):
         self._process_registry = kwargs.pop('registry', None)
@@ -326,8 +325,6 @@ class CloudifyOperationConsumer(TaskConsumer):
         # directory that only lives during the lifetime of the subprocess
         dispatch_dir = None
         try:
-            if ctx.bypass_maintenance:
-                os.environ[constants.BYPASS_MAINTENANCE] = 'True'
             env = self._build_subprocess_env(ctx)
 
             if self._uses_external_plugin(ctx):

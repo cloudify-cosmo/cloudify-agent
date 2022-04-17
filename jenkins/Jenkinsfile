@@ -20,7 +20,7 @@ pipeline {
   options {
     checkoutToSubdirectory('cloudify-agent')
     buildDiscarder(logRotator(numToKeepStr:'10'))
-    timeout(time: 60, unit: 'MINUTES')
+    timeout(time: 90, unit: 'MINUTES')
     timestamps()
   }
   environment {
@@ -130,7 +130,7 @@ pipeline {
     }
     stage('pytest and build rpm'){
       parallel {
-        stage('Configure & Run-tests py27 on EC2 instance'){
+        stage('Configure & Run-tests on EC2 instance'){
           steps{
             catchError(message: 'Failure on: cloudify-agent tests', buildResult: 'SUCCESS', stageResult: 'FAILURE') {
               container('py36'){
@@ -153,6 +153,7 @@ git checkout ${env.BRANCH_NAME}
 pip install -r test-requirements.txt
 pip install -r dev-requirements.txt
 pip install '.[fabric]'
+echo 'run py2.7 tests'
 pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py2.xml
 popd
 deactivate
@@ -165,6 +166,7 @@ pushd cloudify-agent
 pip install -r test-requirements.txt
 pip install -r dev-requirements.txt
 pip install '.[fabric]'
+echo 'run py3.6 tests'
 pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py3.xml
 popd
 deactivate
