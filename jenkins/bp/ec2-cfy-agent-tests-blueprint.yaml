@@ -402,7 +402,7 @@ node_templates:
       type: cloudify.keys.nodes.RSAKey
       properties:
         resource_config:
-          key_name: { get_input: agent_key_name }
+          key_name: { get_input: ssh_keypair }
           openssh_format: true
         use_secret_store: true
         use_secrets_if_exist: true
@@ -417,7 +417,7 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Keypair
     properties:
       use_external_resource: true
-      create_if_missing: true
+      # create_if_missing: true
       resource_config:
         KeyName: { get_input: ssh_keypair }
         PublicKeyMaterial: { get_attribute: [agent_key, public_key_export] }
