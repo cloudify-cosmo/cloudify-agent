@@ -140,7 +140,6 @@ pipeline {
                       ssh -i ~/.ssh/ec2_ssh_key -l centos \$(cat capabilities.json | jq '.endpoint.value' | tr -d '"') /bin/bash << 'EOT'
 set -ex
 sudo yum install -y epel-release git vim python-virtualenv
-sudo amazon-linux-extras install -y epel
 sudo yum install -y rabbitmq-server
 sudo yum install -y wget
 git clone https://github.com/cloudify-cosmo/cloudify-agent.git

@@ -3,9 +3,9 @@ tosca_definitions_version: cloudify_dsl_1_3
 description: >
   This blueprint deploy EC2 for agent tests
 imports:
-  - http://cloudify.co/spec/cloudify/6.4.0.dev1/types.yaml
-  - plugin:cloudify-aws-plugin
-  - plugin:cloudify-utilities-plugin?version= >=1.22.1
+  - http://cloudify.co/spec/cloudify/6.3.0/types.yaml
+  - plugin:cloudify-aws-plugin?version=3.0.3
+  - plugin:cloudify-utilities-plugin
 
 inputs:
 
@@ -21,9 +21,9 @@ inputs:
     type: string
     default: 't3.medium'
 
-  aws_image_name:
+  aws_image_id:
     type: string
-    default: 'ami-082ed116ae2c6d2cc'
+    default: 'ami-0b850cf02cc00fdc8'
 
   aws_subnet_id:
     type: string
@@ -81,7 +81,7 @@ node_templates:
             TerminateInstancesWithExpiration: true
             Type: request
             LaunchSpecifications:
-                  - ImageId: ami-05cd35b907b4ffe77
+                  - ImageId: { get_input: aws_image_id }
                     InstanceType: t3.medium
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -100,7 +100,7 @@ node_templates:
                       Groups:
                       - sg-0bc113600cb5002a2
 
-                  - ImageId: ami-05cd35b907b4ffe77
+                  - ImageId: { get_input: aws_image_id }
                     InstanceType: t3a.medium
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -119,7 +119,7 @@ node_templates:
                       Groups:
                       - sg-0bc113600cb5002a2
 
-                  - ImageId: ami-05cd35b907b4ffe77
+                  - ImageId: { get_input: aws_image_id }
                     InstanceType: t2.medium
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
@@ -138,7 +138,7 @@ node_templates:
                       Groups:
                       - sg-0bc113600cb5002a2
 
-                  - ImageId: ami-05cd35b907b4ffe77
+                  - ImageId: { get_input: aws_image_id }
                     InstanceType: t3.large
                     UserData: { get_attribute: [ cloud_init, cloud_config ] }
                     BlockDeviceMappings:
