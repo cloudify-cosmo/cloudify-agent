@@ -97,7 +97,7 @@ node_templates:
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.medium
                     # SubnetId: subnet-07896a88a91ea802f
-                    # KeyName: { get_input: agent_key_name }
+                    KeyName: { get_input: ssh_keypair }
                     # agent_config:
                     #   install_method: none
                     #   user: { get_input: agent_user }
@@ -122,7 +122,7 @@ node_templates:
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3a.medium
                     # SubnetId: subnet-07896a88a91ea802f
-                    # KeyName: { get_input: agent_key_name }
+                    KeyName: { get_input: ssh_keypair }
                     # agent_config:
                     #   install_method: none
                     #   user: { get_input: agent_user }
@@ -147,7 +147,7 @@ node_templates:
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t2.medium
                     # SubnetId: subnet-07896a88a91ea802f
-                    # KeyName: { get_input: agent_key_name }
+                    KeyName: { get_input: ssh_keypair }
                     # agent_config:
                     #   install_method: none
                     #   user: { get_input: agent_user }
@@ -172,7 +172,7 @@ node_templates:
                   - ImageId: ami-05cd35b907b4ffe77
                     InstanceType: t3.large
                     # SubnetId: subnet-07896a88a91ea802f
-                    # KeyName: { get_input: agent_key_name }
+                    KeyName: { get_input: ssh_keypair }
                     # agent_config:
                     #   install_method: none
                     #   user: { get_input: agent_user }
@@ -218,7 +218,7 @@ node_templates:
                   # - ImageId: ami-05cd35b907b4ffe77
                   #   InstanceType: t3a.large
                   #   # SubnetId: subnet-07896a88a91ea802f
-                  #   # KeyName: { get_input: agent_key_name }
+                  #   KeyName: { get_input: ssh_keypair }
                   #   UserData: { get_attribute: [ cloud_init, cloud_config ] }
                   #   BlockDeviceMappings:
                   #     - DeviceName: '/dev/xvda'
@@ -239,7 +239,7 @@ node_templates:
                   # - ImageId: ami-05cd35b907b4ffe77
                   #   InstanceType: m2.xlarge
                   #   # SubnetId: subnet-07896a88a91ea802f
-                  #   # KeyName: { get_input: agent_key_name }
+                  #   KeyName: { get_input: ssh_keypair }
                   #   UserData: { get_attribute: [ cloud_init, cloud_config ] }
                   #   BlockDeviceMappings:
                   #     - DeviceName: '/dev/xvda'
@@ -413,17 +413,18 @@ node_templates:
             inputs:
               store_private_key_material: true
 
-  # keypair:
-  #   type: cloudify.nodes.aws.ec2.Keypair
-  #   properties:
-  #     resource_config:
-  #       KeyName: { get_input: ssh_keypair }
-  #       PublicKeyMaterial: { get_attribute: [agent_key, public_key_export] }
-  #     store_in_runtime_properties: true
-  #     client_config: *client_config
-  #   relationships:
-  #     - type: cloudify.relationships.depends_on
-  #       target: agent_key
+  keypair:
+    type: cloudify.nodes.aws.ec2.Keypair
+    properties:
+      resource_config:
+        KeyName: { get_input: ssh_keypair }
+        PublicKeyMaterial: { get_attribute: [agent_key, public_key_export] }
+        PrivateKeyMaterial: { get_attribute: [agent_key, private_key_export]}
+      store_in_runtime_properties: true
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: agent_key
 
   instance_details:
     type: cloudify.nodes.aws.ec2.Instances
