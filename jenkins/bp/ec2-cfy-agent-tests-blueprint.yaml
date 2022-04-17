@@ -416,6 +416,8 @@ node_templates:
   keypair:
     type: cloudify.nodes.aws.ec2.Keypair
     properties:
+      use_external_resource: true
+      create_if_missing: true
       resource_config:
         KeyName: { get_input: ssh_keypair }
         PublicKeyMaterial: { get_attribute: [agent_key, public_key_export] }
