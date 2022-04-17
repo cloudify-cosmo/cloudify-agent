@@ -395,8 +395,8 @@ node_templates:
     relationships:
       - type: cloudify.relationships.depends_on
         target: agent_key
-      # - type: cloudify.relationships.depends_on
-      #   target: keypair
+      - type: cloudify.relationships.depends_on
+        target: keypair
 
   agent_key:
       type: cloudify.keys.nodes.RSAKey
@@ -419,7 +419,6 @@ node_templates:
       resource_config:
         KeyName: { get_input: ssh_keypair }
         PublicKeyMaterial: { get_attribute: [agent_key, public_key_export] }
-        PrivateKeyMaterial: { get_attribute: [agent_key, private_key_export]}
       store_in_runtime_properties: true
       client_config: *client_config
     relationships:

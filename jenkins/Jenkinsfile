@@ -175,43 +175,43 @@ EOT
             }
           }
         }
-        stage('build_rpm'){
-          steps {
-            container('rpmbuild'){
-              sh script: """
-                cd ~/rpmbuild
-                git clone https://github.com/cloudify-cosmo/cloudify-agent.git SOURCES && cd SOURCES && git checkout ${env.BRANCH_NAME}
-              """, label: 'Copying repo to seperate workspace'
-              sh script: """
-                curl -o ~/rpmbuild/SOURCES/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
-                mkdir -p ~/rpmbuild/SOURCES/packaging/agents/ ;
-                curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
-                """, label: 'Prepare rpm-building environment'
-              sh script: """
-                cd ~/rpmbuild/SOURCES
-                cp -rf ${env.WORKSPACE}/build_agent/*.tar.gz .
-                for i in {1..30}; do yum-builddep -y cloudify-agents.spec && break || sleep 10; done
-                spectool \
-                  -d "CLOUDIFY_VERSION ${env.VERSION}" \
-                  -d "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
-                  -P cloudify-agents.spec \
-                  -S -g
-                rpmbuild \
-                  -D "CLOUDIFY_VERSION ${env.VERSION}" \
-                  -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
-                  -bb cloudify-agents.spec
-                """, label: 'Building a CI agent rpm'
-              sh script:("mkdir -p ${env.WORKSPACE}/rpm && cp -rf ~/rpmbuild/RPMS/noarch/. ${env.WORKSPACE}/rpm"), label: "Copy RPM to rpm folder"
-            }
-          }
-          post {
-            success {
-              uploadToReleaseS3("${env.WORKSPACE}/rpm/","${env.S3_BUILD_PATH}")
-              uploadToReleaseS3("${env.WORKSPACE}/rpm/","${env.S3_LATEST_BUILD_PATH}")
-              archiveArtifacts '**/rpm/*.rpm'
-            }
-          }
-        }
+        // stage('build_rpm'){
+        //   steps {
+        //     container('rpmbuild'){
+        //       sh script: """
+        //         cd ~/rpmbuild
+        //         git clone https://github.com/cloudify-cosmo/cloudify-agent.git SOURCES && cd SOURCES && git checkout ${env.BRANCH_NAME}
+        //       """, label: 'Copying repo to seperate workspace'
+        //       sh script: """
+        //         curl -o ~/rpmbuild/SOURCES/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
+        //         mkdir -p ~/rpmbuild/SOURCES/packaging/agents/ ;
+        //         curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
+        //         """, label: 'Prepare rpm-building environment'
+        //       sh script: """
+        //         cd ~/rpmbuild/SOURCES
+        //         cp -rf ${env.WORKSPACE}/build_agent/*.tar.gz .
+        //         for i in {1..30}; do yum-builddep -y cloudify-agents.spec && break || sleep 10; done
+        //         spectool \
+        //           -d "CLOUDIFY_VERSION ${env.VERSION}" \
+        //           -d "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
+        //           -P cloudify-agents.spec \
+        //           -S -g
+        //         rpmbuild \
+        //           -D "CLOUDIFY_VERSION ${env.VERSION}" \
+        //           -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
+        //           -bb cloudify-agents.spec
+        //         """, label: 'Building a CI agent rpm'
+        //       sh script:("mkdir -p ${env.WORKSPACE}/rpm && cp -rf ~/rpmbuild/RPMS/noarch/. ${env.WORKSPACE}/rpm"), label: "Copy RPM to rpm folder"
+        //     }
+        //   }
+        //   post {
+        //     success {
+        //       uploadToReleaseS3("${env.WORKSPACE}/rpm/","${env.S3_BUILD_PATH}")
+        //       uploadToReleaseS3("${env.WORKSPACE}/rpm/","${env.S3_LATEST_BUILD_PATH}")
+        //       archiveArtifacts '**/rpm/*.rpm'
+        //     }
+        //   }
+        // }
         // stage('Windows-Build'){
         //   agent{
         //     kubernetes {
