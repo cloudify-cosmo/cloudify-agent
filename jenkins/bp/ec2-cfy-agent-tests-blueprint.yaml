@@ -395,8 +395,8 @@ node_templates:
     relationships:
       - type: cloudify.relationships.depends_on
         target: agent_key
-      - type: cloudify.relationships.depends_on
-        target: keypair
+      # - type: cloudify.relationships.depends_on
+      #   target: keypair
 
   agent_key:
       type: cloudify.keys.nodes.RSAKey
@@ -406,24 +406,24 @@ node_templates:
           openssh_format: true
         use_secret_store: true
         use_secrets_if_exist: true
-      # interfaces:
-      #   cloudify.interfaces.lifecycle:
-      #     create:
-      #       implementation: keys.cloudify_ssh_key.operations.create
-      #       inputs:
-      #         store_private_key_material: true
+      interfaces:
+        cloudify.interfaces.lifecycle:
+          create:
+            implementation: keys.cloudify_ssh_key.operations.create
+            inputs:
+              store_private_key_material: true
 
-  keypair:
-    type: cloudify.nodes.aws.ec2.Keypair
-    properties:
-      resource_config:
-        KeyName: { get_input: ssh_keypair }
-        PublicKeyMaterial: { get_attribute: [agent_key, public_key_export] }
-      store_in_runtime_properties: true
-      client_config: *client_config
-    relationships:
-      - type: cloudify.relationships.depends_on
-        target: agent_key
+  # keypair:
+  #   type: cloudify.nodes.aws.ec2.Keypair
+  #   properties:
+  #     resource_config:
+  #       KeyName: { get_input: ssh_keypair }
+  #       PublicKeyMaterial: { get_attribute: [agent_key, public_key_export] }
+  #     store_in_runtime_properties: true
+  #     client_config: *client_config
+  #   relationships:
+  #     - type: cloudify.relationships.depends_on
+  #       target: agent_key
 
   instance_details:
     type: cloudify.nodes.aws.ec2.Instances
@@ -435,7 +435,7 @@ node_templates:
       agent_config:
         install_method: none
         user: { get_input: agent_user }
-        key: { get_attribute: [keypair, create_response, KeyMaterial] }
+        key: { get_attribute: [agent_key, private_key_export] }
     relationships:
     - type: cloudify.relationships.depends_on
       target: fleet
@@ -456,4 +456,4 @@ capabilities:
 
   key_content:
     description: Private agent key
-    value: { get_attribute: [keypair, create_response, KeyMaterial] } 
+    value: { get_attribute: [agent_key, private_key_export] } 
