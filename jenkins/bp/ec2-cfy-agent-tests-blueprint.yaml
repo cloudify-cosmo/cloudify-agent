@@ -50,9 +50,9 @@ inputs:
       The username of the agent running on the instance created from the image.
     default: 'ec2-user'
 
-  # ssh_key_name:
-  #   type: string
-  #   default: 'key-0ac1ed08b0a266d9e'
+  keypair_name:
+    type: string
+    default: 'agent-tests-key'
 
   agent_key_name:
     type: string
@@ -395,12 +395,35 @@ node_templates:
     relationships:
       - type: cloudify.relationships.depends_on
         target: agent_key
+      - type: cloudify.relationships.depends_on
+        target: keypair
 
   agent_key:
+      type: cloudify.keys.nodes.RSAKey
+      properties:
+        resource_config:
+          key_name: { get_input: agent_key_name }
+          openssh_format: true
+        use_secret_store: true
+        use_secrets_if_exist: true
+      # interfaces:
+      #   cloudify.interfaces.lifecycle:
+      #     create:
+      #       implementation: keys.cloudify_ssh_key.operations.create
+      #       inputs:
+      #         store_private_key_material: true
+
+  keypair:
     type: cloudify.nodes.aws.ec2.Keypair
     properties:
+      resource_config:
+        KeyName: { get_input: ssh_keypair }
+        PublicKeyMaterial: { get_attribute: [agent_key, public_key_export] }
       store_in_runtime_properties: true
       client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: agent_key
 
   instance_details:
     type: cloudify.nodes.aws.ec2.Instances
@@ -412,7 +435,7 @@ node_templates:
       agent_config:
         install_method: none
         user: { get_input: agent_user }
-        key: { get_attribute: [agent_key, create_response, KeyMaterial] }
+        key: { get_attribute: [keypair, create_response, KeyMaterial] }
     relationships:
     - type: cloudify.relationships.depends_on
       target: fleet
@@ -433,4 +456,4 @@ capabilities:
 
   key_content:
     description: Private agent key
-    value: { get_attribute: [agent_key, create_response, KeyMaterial] } 
+    value: { get_attribute: [keypair, create_response, KeyMaterial] } 
