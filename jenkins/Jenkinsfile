@@ -332,7 +332,7 @@ EOT
         }
       }
     }
-    stage('Terminate py27 instnace'){ // we made github to wait on a job with this exact name, typo included
+    stage('Terminate py36 instance'){ // we made github to wait on a job with this exact name, typo included
       steps{
         catchError(message: 'Failure on: cloudify-agent tests', buildResult: 'SUCCESS', stageResult: 'FAILURE') {
           container('py36'){
