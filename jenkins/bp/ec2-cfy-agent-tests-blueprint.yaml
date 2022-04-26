@@ -92,7 +92,7 @@ node_templates:
                           VolumeSize: 30
                           Encrypted: false
                           VolumeType: gp2
-                    SpotPrice: '0.0456'
+                    SpotPrice: '0.0365'
                     NetworkInterfaces:
                     - DeviceIndex: 0
                       AssociatePublicIpAddress: true
@@ -111,7 +111,7 @@ node_templates:
                           VolumeSize: 30
                           Encrypted: false
                           VolumeType: gp2
-                    SpotPrice: '0.0408'
+                    SpotPrice: '0.0326'
                     NetworkInterfaces:
                     - DeviceIndex: 0
                       AssociatePublicIpAddress: true
@@ -130,26 +130,7 @@ node_templates:
                           VolumeSize: 30
                           Encrypted: false
                           VolumeType: gp2
-                    SpotPrice: '0.05'
-                    NetworkInterfaces:
-                    - DeviceIndex: 0
-                      AssociatePublicIpAddress: true
-                      SubnetId: subnet-07896a88a91ea802f
-                      Groups:
-                      - sg-0bc113600cb5002a2
-
-                  - ImageId: { get_input: aws_image_id }
-                    InstanceType: t3.large
-                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
-                    BlockDeviceMappings:
-                      - DeviceName: '/dev/xvda'
-                        Ebs: 
-                          DeleteOnTermination: true
-                          SnapshotId: snap-020ee8a5f94cb76b0
-                          VolumeSize: 30
-                          Encrypted: false
-                          VolumeType: gp2
-                    SpotPrice: '0.0912'
+                    SpotPrice: '0.04'
                     NetworkInterfaces:
                     - DeviceIndex: 0
                       AssociatePublicIpAddress: true
@@ -168,7 +149,45 @@ node_templates:
                           VolumeSize: 30
                           Encrypted: false
                           VolumeType: gp2
-                    SpotPrice: '0.0816'
+                    SpotPrice: '0.0652'
+                    NetworkInterfaces:
+                    - DeviceIndex: 0
+                      AssociatePublicIpAddress: true
+                      SubnetId: subnet-07896a88a91ea802f
+                      Groups:
+                      - sg-0bc113600cb5002a2
+
+                  - ImageId: { get_input: aws_image_id }
+                    InstanceType: t3.large
+                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                    BlockDeviceMappings:
+                      - DeviceName: '/dev/xvda'
+                        Ebs: 
+                          DeleteOnTermination: true
+                          SnapshotId: snap-020ee8a5f94cb76b0
+                          VolumeSize: 30
+                          Encrypted: false
+                          VolumeType: gp2
+                    SpotPrice: '0.0729'
+                    NetworkInterfaces:
+                    - DeviceIndex: 0
+                      AssociatePublicIpAddress: true
+                      SubnetId: subnet-07896a88a91ea802f
+                      Groups:
+                      - sg-0bc113600cb5002a2
+
+                  - ImageId: { get_input: aws_image_id }
+                    InstanceType: t2.large
+                    UserData: { get_attribute: [ cloud_init, cloud_config ] }
+                    BlockDeviceMappings:
+                      - DeviceName: '/dev/xvda'
+                        Ebs: 
+                          DeleteOnTermination: true
+                          SnapshotId: snap-020ee8a5f94cb76b0
+                          VolumeSize: 30
+                          Encrypted: false
+                          VolumeType: gp2
+                    SpotPrice: '0.07'
                     NetworkInterfaces:
                     - DeviceIndex: 0
                       AssociatePublicIpAddress: true
