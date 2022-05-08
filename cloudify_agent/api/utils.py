@@ -35,7 +35,7 @@ from cloudify.constants import (SECURED_PROTOCOL,
                                 BROKER_PORT_SSL,
                                 BROKER_PORT_NO_SSL)
 # imported here for backwards compat
-from cloudify.utils import is_agent_alive  # noqa
+from cloudify.amqp_client import is_agent_alive  # noqa
 
 import cloudify_agent
 from cloudify_agent.api import defaults
