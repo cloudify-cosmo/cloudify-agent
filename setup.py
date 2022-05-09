@@ -90,6 +90,7 @@ setup(
         'fabric': [
             'fabric==2.5.0',
             'pynacl==1.4.0',
+            'invoke==1.6.0',
         ]
     }
 )
