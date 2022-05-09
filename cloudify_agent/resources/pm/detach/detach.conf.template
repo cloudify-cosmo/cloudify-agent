@@ -17,7 +17,7 @@ export LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}"
 export REST_HOST="{{ rest_host|join(',') }}"
 export REST_PORT="{{ rest_port }}"
 
-{%- if executable_temp_path -%}
+{% if executable_temp_path -%}
 # Executable tempfiles directory override
 export CFY_EXEC_TEMP="{{ executable_temp_path }}"
 {% endif %}
