@@ -15,7 +15,7 @@ export REST_PORT="{{ rest_port }}"
 export CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}"
 export AGENT_NAME="{{ name }}"
 
-{%- if executable_temp_path -%}
+{% if executable_temp_path -%}
 # Executable tempfiles directory override
 export CFY_EXEC_TEMP="{{ executable_temp_path }}"
 {% endif %}
