@@ -96,9 +96,9 @@ node_templates:
                     NetworkInterfaces:
                     - DeviceIndex: 0
                       AssociatePublicIpAddress: true
-                      SubnetId: subnet-07896a88a91ea802f
+                      SubnetId: { get_input: aws_subnet_id }
                       Groups:
-                      - sg-0bc113600cb5002a2
+                      - { get_input: aws_security_group_id }
 
                   - ImageId: { get_input: aws_image_id }
                     InstanceType: t3a.medium
@@ -115,9 +115,9 @@ node_templates:
                     NetworkInterfaces:
                     - DeviceIndex: 0
                       AssociatePublicIpAddress: true
-                      SubnetId: subnet-07896a88a91ea802f
+                      SubnetId: { get_input: aws_subnet_id }
                       Groups:
-                      - sg-0bc113600cb5002a2
+                      - { get_input: aws_security_group_id }
 
                   - ImageId: { get_input: aws_image_id }
                     InstanceType: t2.medium
@@ -134,9 +134,9 @@ node_templates:
                     NetworkInterfaces:
                     - DeviceIndex: 0
                       AssociatePublicIpAddress: true
-                      SubnetId: subnet-07896a88a91ea802f
+                      SubnetId: { get_input: aws_subnet_id }
                       Groups:
-                      - sg-0bc113600cb5002a2
+                      - { get_input: aws_security_group_id }
 
                   - ImageId: { get_input: aws_image_id }
                     InstanceType: t3a.large
@@ -153,9 +153,9 @@ node_templates:
                     NetworkInterfaces:
                     - DeviceIndex: 0
                       AssociatePublicIpAddress: true
-                      SubnetId: subnet-07896a88a91ea802f
+                      SubnetId: { get_input: aws_subnet_id }
                       Groups:
-                      - sg-0bc113600cb5002a2
+                      - { get_input: aws_security_group_id }
 
                   - ImageId: { get_input: aws_image_id }
                     InstanceType: t3.large
@@ -172,9 +172,9 @@ node_templates:
                     NetworkInterfaces:
                     - DeviceIndex: 0
                       AssociatePublicIpAddress: true
-                      SubnetId: subnet-07896a88a91ea802f
+                      SubnetId: { get_input: aws_subnet_id }
                       Groups:
-                      - sg-0bc113600cb5002a2
+                      - { get_input: aws_security_group_id }
 
                   - ImageId: { get_input: aws_image_id }
                     InstanceType: t2.large
@@ -191,9 +191,9 @@ node_templates:
                     NetworkInterfaces:
                     - DeviceIndex: 0
                       AssociatePublicIpAddress: true
-                      SubnetId: subnet-07896a88a91ea802f
+                      SubnetId: { get_input: aws_subnet_id }
                       Groups:
-                      - sg-0bc113600cb5002a2
+                      - { get_input: aws_security_group_id }
       
     relationships:
     - type: cloudify.relationships.depends_on
