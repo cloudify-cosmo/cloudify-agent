@@ -81,7 +81,7 @@ pipeline {
                 sh script: '''
                   curl -O https://bootstrap.pypa.io/pip/2.7/get-pip.py | python
                   python get-pip.py
-                  ''', label: 'installing pip'
+                  ''', label: 'installing prerequisities'
                 sh script: 'pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip', label: 'installing agent packager'
                 sh script: '''
                   cp packaging/local.ini centos7.ini
@@ -115,8 +115,9 @@ pipeline {
                       popd
                       cfy deployments capabilities ec2-cfy-agent-tests-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} --json > capabilities.json
                       jq -r '.key_content.value' capabilities.json > ~/.ssh/ec2_ssh_key && chmod 600 ~/.ssh/ec2_ssh_key
-                      sleep 160
-                      ssh-keyscan -H \$(jq -r '.endpoint.value' capabilities.json) >> ~/.ssh/known_hosts
+                      for i in {1..16};
+                        do ssh-keyscan -H \$(jq -r '.endpoint.value' capabilities.json) >> ~/.ssh/known_hosts && break || sleep 10;
+                      done
                       echo 'ClientAliveInterval 50' >> /etc/ssh/sshd_config
                     """, label:'Configure and install blueprint on manager'
                   }
@@ -191,15 +192,12 @@ EOT
               sh script: """
                 cd ~/rpmbuild/SOURCES
                 cp -rf ${env.WORKSPACE}/build_agent/*.tar.gz .
-
                 for i in {1..30}; do yum-builddep -y cloudify-agents.spec && break || sleep 10; done
-
                 spectool \
                   -d "CLOUDIFY_VERSION ${env.VERSION}" \
                   -d "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
                   -P cloudify-agents.spec \
                   -S -g
-
                 rpmbuild \
                   -D "CLOUDIFY_VERSION ${env.VERSION}" \
                   -D "CLOUDIFY_PACKAGE_RELEASE ${env.PRERELEASE}" \
@@ -334,17 +332,19 @@ EOT
         }
       }
     }
-    stage('Terminate py27 instnace'){ // we made github to wait on a job with this exact name, typo included
+    stage('Terminate py36 instance'){ // we made github to wait on a job with this exact name, typo included
       steps{
-        container('py36'){
-          dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
-            withVault([configuration: configuration, vaultSecrets: secrets]){
-              echo 'Uninstall and delete blueprint from manager'
-              sh """#!/bin/bash
-                set -euxo pipefail
-                source .venv/bin/activate
-                cfy uninstall ec2-cfy-agent-tests-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} --force --allow-custom-parameters -p ignore_failure=true
-              """
+        catchError(message: 'Failure on: cloudify-agent tests', buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+          container('py36'){
+            dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
+              withVault([configuration: configuration, vaultSecrets: secrets]){
+                echo 'Uninstall and delete blueprint from manager'
+                sh """#!/bin/bash
+                  set -euxo pipefail
+                  source .venv/bin/activate
+                  cfy uninstall ec2-cfy-agent-tests-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} --force --allow-custom-parameters -p ignore_failure=true
+                """
+              }
             }
           }
         }
