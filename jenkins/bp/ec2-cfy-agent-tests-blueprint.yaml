@@ -24,7 +24,7 @@ inputs:
   aws_image_id:
     type: string
     default: 'ami-0b850cf02cc00fdc8'
-
+  
   aws_subnet_id:
     type: string
     default: 'subnet-07896a88a91ea802f'
@@ -37,13 +37,13 @@ inputs:
     type: string
     default: 'sg-0bc113600cb5002a2'
 
+  aws_snapshot_id:
+    type: string
+    default: 'snap-020ee8a5f94cb76b0'
+
   aws_fleet_role:
     type: string
     default: 'arn:aws:iam::263721492972:role/aws-ec2-spot-fleet-tagging-role'
-
-  aws_fleet_iam_instance_profile:
-    type: string
-    default: 'arn:aws:iam::263721492972:instance-profile/cfyfleetprofile-jenkins-ci/cfyfleetprofile-jenkins-ci'
 
   agent_user:
     description: >
@@ -75,7 +75,7 @@ node_templates:
       resource_config:
         kwargs:
           SpotFleetRequestConfig:
-            IamFleetRole: arn:aws:iam::263721492972:role/aws-ec2-spot-fleet-tagging-role
+            IamFleetRole: { get_input: aws_fleet_role }
             AllocationStrategy: capacityOptimized
             TargetCapacity: 1
             TerminateInstancesWithExpiration: true
@@ -88,7 +88,7 @@ node_templates:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
-                          SnapshotId: snap-020ee8a5f94cb76b0
+                          SnapshotId: { get_input: aws_snapshot_id }
                           VolumeSize: 30
                           Encrypted: false
                           VolumeType: gp2
@@ -107,7 +107,7 @@ node_templates:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
-                          SnapshotId: snap-020ee8a5f94cb76b0
+                          SnapshotId: { get_input: aws_snapshot_id }
                           VolumeSize: 30
                           Encrypted: false
                           VolumeType: gp2
@@ -126,7 +126,7 @@ node_templates:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
-                          SnapshotId: snap-020ee8a5f94cb76b0
+                          SnapshotId: { get_input: aws_snapshot_id }
                           VolumeSize: 30
                           Encrypted: false
                           VolumeType: gp2
@@ -145,7 +145,7 @@ node_templates:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
-                          SnapshotId: snap-020ee8a5f94cb76b0
+                          SnapshotId: { get_input: aws_snapshot_id }
                           VolumeSize: 30
                           Encrypted: false
                           VolumeType: gp2
@@ -164,7 +164,7 @@ node_templates:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
-                          SnapshotId: snap-020ee8a5f94cb76b0
+                          SnapshotId: { get_input: aws_snapshot_id }
                           VolumeSize: 30
                           Encrypted: false
                           VolumeType: gp2
@@ -183,7 +183,7 @@ node_templates:
                       - DeviceName: '/dev/xvda'
                         Ebs: 
                           DeleteOnTermination: true
-                          SnapshotId: snap-020ee8a5f94cb76b0
+                          SnapshotId: { get_input: aws_snapshot_id }
                           VolumeSize: 30
                           Encrypted: false
                           VolumeType: gp2
