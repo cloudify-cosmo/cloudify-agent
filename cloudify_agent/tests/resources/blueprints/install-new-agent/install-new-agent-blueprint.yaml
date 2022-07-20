@@ -42,7 +42,7 @@ node_templates:
             current_amqp: false
     relationships:
       - target: host
-        type: cloudify.relationships.depends_on:
+        type: cloudify.relationships.depends_on
         source_interfaces:
           cloudify.interfaces.relationship_lifecycle:
             preconfigure:
