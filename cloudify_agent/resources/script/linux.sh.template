@@ -22,17 +22,17 @@ configure_agent_installation()
    # Create cfyagent group so that we can assign it user that execute and install agent
    # to that group so that they can have access to `/opt/cloudify-agent-{version}`
    sudo groupadd -f cfyagent
-   sudo usermod -a -G cfyagent {{ conf.user }}
+   sudo usermod -a -G cfyagent "{{ conf.user }}"
 
    # Prepare and create agent directory and provide write permission to users belongs to cfyagent group
-   sudo mkdir -p {{ conf.agent_dir }}
+   sudo mkdir -p "{{ conf.agent_dir }}"
    # Currently agent data is expected to live in ~user/<agent name>, so we need to allow cfyagent group access to there,
    # but without breaking everything else in the homedir (e.g. we shouldn't mess with permissions in .ssh)
-   sudo chgrp cfyagent $(dirname {{ conf.agent_dir }})
-   sudo chmod g+wx $(dirname {{ conf.agent_dir }})
+   sudo chgrp cfyagent $(dirname "{{ conf.agent_dir }}")
+   sudo chmod g+wx $(dirname "{{ conf.agent_dir }}")
    # Ensure that the cfyagent user can read and write and files and directories, and access any dirs
-   sudo chgrp -R cfyagent {{ conf.agent_dir }}
-   sudo chmod -R g+rwX {{ conf.agent_dir }}
+   sudo chgrp -R cfyagent "{{ conf.agent_dir }}"
+   sudo chmod -R g+rwX "{{ conf.agent_dir }}"
 }
 
 export -f configure_agent_installation
@@ -41,8 +41,8 @@ export -f configure_agent_installation
 add_ssl_cert()
 {
     # Create all the directories in the path to the cert file
-    mkdir -p $(dirname {{ ssl_cert_path }})
-    echo "{{ ssl_cert_content }}" > {{ ssl_cert_path }}
+    mkdir -p $(dirname "{{ ssl_cert_path }}")
+    echo "{{ ssl_cert_content }}" > "{{ ssl_cert_path }}"
 }
 export -f add_ssl_cert
 {% endif %}
@@ -59,11 +59,11 @@ export -f export_daemon_env
 
 export_agent_cli_env()
 {
-    local agent_env_bin={{ conf.envdir }}/bin
-    export AGENT_PYTHON_INTERPRETER=${agent_env_bin}/python
-    export AGENT_CLI=${agent_env_bin}/cfy-agent
-    export PATH=${agent_env_bin}:$PATH
-    export AGENT_NAME={{ conf.name }}
+    local agent_env_bin="{{ conf.envdir }}/bin"
+    export AGENT_PYTHON_INTERPRETER="${agent_env_bin}/python"
+    export AGENT_CLI="${agent_env_bin}/cfy-agent"
+    export PATH="${agent_env_bin}:$PATH"
+    export AGENT_NAME="{{ conf.name }}"
 
 }
 export -f  export_agent_cli_env
@@ -78,9 +78,9 @@ download()
 {
     echo "Downloading $1..."
     if command -v wget > /dev/null 2>&1; then
-        wget $1 -O $2 --header="{{ auth_token_header }}: {{ auth_token_value }}" -nv --ca-certificate {{ ssl_cert_path }}
+        wget "$1" -O "$2" --header="{{ auth_token_header }}: {{ auth_token_value }}" -nv --ca-certificate "{{ ssl_cert_path }}"
     elif command -v curl > /dev/null 2>&1; then
-        STATUS_CODE=$(curl -g -L -o $2 --write-out "%{http_code}" $1 -H "{{ auth_token_header }}: {{ auth_token_value }}" --cacert {{ ssl_cert_path }})
+        STATUS_CODE=$(curl -g -L -o "$2" --write-out "%{http_code}" "$1" -H "{{ auth_token_header }}: {{ auth_token_value }}" --cacert "{{ ssl_cert_path }}")
         if [ "${STATUS_CODE}" -ne "200" ] ; then
             echo >&2 "Received unexpected HTTP response code (${STATUS_CODE}). Response data was saved into $2."
             return 1
@@ -94,7 +94,7 @@ export -f download
 
 package_url()
 {
-    if [[ ! -z "{{ conf.package_url }}" ]]; then
+    if [[ -n "{{ conf.package_url }}" ]]; then
         echo "{{ conf.package_url }}"
     else
         local python_bin=$(which python || which python3)
@@ -109,9 +109,9 @@ download_and_extract_agent_package()
 {
     temp_pkg_dir=$(mktemp -d)
     pkg_loc=${temp_pkg_dir}/agent.tar.gz
-    download $(package_url) ${pkg_loc}
-    tar xzf ${pkg_loc} --strip=1 -C {{ conf.agent_dir }}
-    rm -rf ${temp_pkg_dir}
+    download "$(package_url)" "${pkg_loc}"
+    tar xzf "${pkg_loc}" --strip=1 -C "{{ conf.agent_dir }}"
+    rm -rf "${temp_pkg_dir}"
 }
 export -f download_and_extract_agent_package
 
@@ -121,9 +121,9 @@ install_agent()
     configure_agent_installation
     {% endif %}
     {% if add_ssl_cert %}
-    run_as {{ conf.user }} add_ssl_cert
+    run_as "{{ conf.user }}" add_ssl_cert
     {% endif %}
-    run_as {{ conf.user }} download_and_extract_agent_package
+    run_as "{{ conf.user }}" download_and_extract_agent_package
 }
 export -f install_agent
 {% endif %}
@@ -161,7 +161,7 @@ export -f disable_requiretty
 configure_agent()
 {
     echo "Configuring agent..."
-    run_as {{ conf.user }} configure_virtualenv
+    run_as "{{ conf.user }}" configure_virtualenv
     disable_requiretty
     echo "Agent configured successfully"
 }
@@ -176,7 +176,7 @@ export -f configure_agent
 create_custom_env_file()
 {
     {% if custom_env is not none %}
-    cat <<EOF > {{ custom_env_path }}
+    cat <<EOF > "{{ custom_env_path }}"
 {% if conf.process_management.name == 'init.d' -%}
 #!/bin/bash
 {% endif %}
@@ -213,8 +213,8 @@ export -f start_daemon
 
 start_agent()
 {
-    run_as {{ conf.user }} create_custom_env_file
-    run_as {{ conf.user }} start_daemon
+    run_as "{{ conf.user }}" create_custom_env_file
+    run_as "{{ conf.user }}" start_daemon
 }
 export -f start_agent
 {% endif %}
@@ -233,6 +233,6 @@ main()
 }
 export -f main
 {% if tmpdir %}
-export TMPDIR={{ tmpdir }}
+export TMPDIR="{{ tmpdir }}"
 {% endif %}
 main
