@@ -13,6 +13,9 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import os
+import re
+import sys
 import click
 
 from cloudify_agent.api import utils
@@ -46,6 +49,8 @@ def configure(disable_requiretty, relocated_env, no_sudo):
         click.echo('Disabling requiretty directive in sudoers file')
         _disable_requiretty(no_sudo)
         click.echo('Successfully disabled requiretty for cfy-agent')
+    if relocated_env:
+        _relocate_venv()
 
 
 def _disable_requiretty(no_sudo):
@@ -69,3 +74,34 @@ def _disable_requiretty(no_sudo):
     runner.run('chmod +x {0}'.format(disable_requiretty_script_path))
     maybe_sudo = '' if no_sudo else 'sudo'
     runner.run('{0} {1}'.format(disable_requiretty_script_path, maybe_sudo))
+
+
+def _relocate_venv():
+    """Rewrite the activate script in the virtualenv.
+
+    The only part of the virtualenv that contains hardcoded paths - to the
+    build environment - is the activate script. Let's rewrite the path
+    in it (which is typically going to be something like /home/jenkins/...),
+    with the path of the virtualenv itself.
+
+    This way, the activate script will still work, allowing the user to
+    source it and use the agent's python.
+    """
+    bin_dir = os.path.dirname(sys.executable)
+    env_dir = os.path.dirname(bin_dir)
+    activate_script = os.path.join(bin_dir, 'activate')
+    try:
+        with open(activate_script, 'r+') as f:
+            content = f.read()
+            replaced = re.sub(
+                '^VIRTUAL_ENV=.*$',
+                'VIRTUAL_ENV="{0}"'.format(env_dir),
+                content,
+                count=1,
+                flags=re.MULTILINE,
+            )
+            f.seek(0)
+            f.truncate()
+            f.write(replaced)
+    except IOError as e:
+        click.echo('Error rewriting venv activate: {0}'.format(e))
