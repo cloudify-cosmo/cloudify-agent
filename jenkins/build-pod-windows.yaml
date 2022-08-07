@@ -4,6 +4,16 @@ spec:
   containers:
   - name: jnlp
     image: jenkins/inbound-agent:windowsservercore-ltsc2019
+    command:
+    - "powershell.exe"
+    args:
+    - "Start-Sleep"
+    - "-s"
+    - "5"
+    - ";"
+    - "powershell.exe"
+    - "-f"
+    - "C:/ProgramData/Jenkins/jenkins-agent.ps1"
   - name: shell
     image: mcr.microsoft.com/powershell:preview-windowsservercore-1809
     command:
