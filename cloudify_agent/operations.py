@@ -145,7 +145,10 @@ def _load_daemon(logger):
     factory = DaemonFactory(
         username=utils.internal.get_daemon_user(),
         storage=utils.internal.get_daemon_storage_dir())
-    return factory.load(get_daemon_name(), logger=logger)
+    name = get_daemon_name()
+    if name is None:
+        raise RuntimeError('Agent name not set')
+    return factory.load(name, logger=logger)
 
 
 def _save_daemon(daemon):
