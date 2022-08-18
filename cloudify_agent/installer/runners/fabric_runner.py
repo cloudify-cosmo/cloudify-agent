@@ -18,11 +18,10 @@ import sys
 import logging
 
 from fabric import Connection
+from io import StringIO
 from paramiko import RSAKey, ECDSAKey, Ed25519Key, SSHException
 
-from cloudify._compat import reraise, StringIO
-from cloudify.utils import CommandExecutionResponse
-from cloudify.utils import setup_logger
+from cloudify.utils import CommandExecutionResponse, reraise, setup_logger
 from cloudify.exceptions import CommandExecutionException
 from cloudify.exceptions import CommandExecutionError
 

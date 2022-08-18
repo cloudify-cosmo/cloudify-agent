@@ -50,7 +50,11 @@ from cloudify.amqp_client import (
 )
 from cloudify.utils import get_manager_name, get_python_path
 from cloudify_agent.operations import install_plugins, uninstall_plugins
-from cloudify._compat import PY2, parse_version
+
+try:
+    from packaging.version import parse as parse_version
+except ImportError:
+    from distutils.version import LooseVersion as parse_version
 
 SYSTEM_DEPLOYMENT = '__system__'
 ENV_ENCODING = 'utf-8'  # encoding for env variables
@@ -202,8 +206,8 @@ class CloudifyOperationConsumer(TaskConsumer):
         # We need also to handle old tasks still in queue and not picked by
         # the worker so that we can ignore them as the state of the
         # execution is cancelled and ignore pending tasks picked by the
-        # worker but still not executed. Morever,we need to handle a case when
-        # resume workflow is running while there are some old operations
+        # worker but still not executed. Moreover, we need to handle a case
+        # when resume workflow is running while there are some old operations
         # tasks still in the queue which holds an invalid execution token
         # which could raise 401 error
         # Need to use the context associated with the that task
@@ -397,10 +401,6 @@ class CloudifyOperationConsumer(TaskConsumer):
         # Note that this is received via json, so it is unicode. It must
         # be encoded, because environment variables must be bytes.
         execution_env = ctx.execution_env
-        if PY2:
-            execution_env = dict((k.encode(ENV_ENCODING),
-                                  v.encode(ENV_ENCODING))
-                                 for k, v in execution_env.items())
         env.update(execution_env)
 
         if ctx.bypass_maintenance:

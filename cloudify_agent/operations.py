@@ -35,8 +35,8 @@ from cloudify.agent_utils import create_agent_record, update_agent_record
 from cloudify.utils import (get_rest_token,
                             ManagerVersion,
                             get_local_rest_certificate,
-                            get_daemon_name)
-from cloudify._compat import reraise
+                            get_daemon_name,
+                            reraise)
 
 from cloudify_agent.celery_app import get_celery_app
 from cloudify_agent.api.plugins import installer as plugin_installer

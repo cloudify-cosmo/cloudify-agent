@@ -17,7 +17,7 @@ import click
 import sys
 from functools import wraps
 
-from cloudify._compat import reraise
+from cloudify.utils import reraise
 from cloudify_agent.api import exceptions
 
 
