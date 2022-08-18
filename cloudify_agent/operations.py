@@ -15,7 +15,6 @@
 
 import tempfile
 import time
-import sys
 import os
 import copy
 from posixpath import join as urljoin
@@ -36,7 +35,6 @@ from cloudify.utils import (get_rest_token,
                             ManagerVersion,
                             get_local_rest_certificate,
                             get_daemon_name)
-from cloudify._compat import reraise
 
 from cloudify_agent.celery_app import get_celery_app
 from cloudify_agent.api.plugins import installer as plugin_installer
@@ -66,10 +64,8 @@ def install_plugins(plugins, **_):
                 plugin=plugin,
                 deployment_id=ctx.deployment.id,
                 blueprint_id=ctx.blueprint.id)
-        except exceptions.PluginInstallationError as e:
-            # preserve traceback
-            tpe, value, tb = sys.exc_info()
-            reraise(NonRecoverableError, NonRecoverableError(str(e)), tb)
+        except exceptions.PluginInstallationError:
+            raise
 
 
 @operation

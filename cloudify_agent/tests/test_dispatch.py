@@ -4,9 +4,13 @@ import os
 import pytest
 
 from cloudify import exceptions, constants
-from cloudify._compat import parse_version
 from cloudify.context import CloudifyContext
 from cloudify_agent import worker
+
+try:
+    from packaging.version import parse as parse_version
+except ImportError:
+    from distutils.version import LooseVersion as parse_version
 
 
 def _make_mock_popen():

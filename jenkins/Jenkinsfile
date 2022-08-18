@@ -32,37 +32,14 @@ pipeline {
     S3_LATEST_BUILD_PATH = "${env.S3_BASE_URL}/latest"
   }
   stages{
-    stage ('compatability and flake8') {
+    stage ('flake8 and build') {
       environment {
         PATH = "/root/.local/bin:$PATH"
       }
       parallel{
-        stage ('py3_compat'){
+        stage('flake8'){
           steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/py3_compat && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/py3_compat", label: "copying repo to seperate workspace"
-            container('py27'){
-              dir("${env.WORKSPACE}/py3_compat"){
-                py3Compat()
-              }
-            }
-          }
-        }
-        stage('flake8_py27'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
-            container('py27'){
-              dir("${env.WORKSPACE}/flake8") {
-                echo 'install flake 8'
-                sh 'pip install flake8 --user'
-                echo 'run flake8'
-                sh 'flake8 cloudify_agent'
-              }
-            }
-          }
-        }
-        stage('flake8_py36'){
-          steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to seperate workspace"
+            sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to separate workspace"
             container('py36'){
               dir("${env.WORKSPACE}/flake8") {
                 echo 'install flake 8'
@@ -75,7 +52,7 @@ pipeline {
         }
         stage('build_agent'){
           steps{
-            sh script: "mkdir -p ${env.WORKSPACE}/build_agent && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/build_agent", label: "copying repo to seperate workspace"
+            sh script: "mkdir -p ${env.WORKSPACE}/build_agent && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/build_agent", label: "copying repo to separate workspace"
             container('rpmbuild'){
               dir("${env.WORKSPACE}/build_agent") {
                 sh script: '''
@@ -84,13 +61,13 @@ pipeline {
                   ''', label: 'installing prerequisities'
                 sh script: 'pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip', label: 'installing agent packager'
                 sh script: '''
-                  cp packaging/local.ini centos7.ini
-                  cat >>centos7.ini <<EOF
+                  cp packaging/local.ini centos8.ini
+                  cat >>centos8.ini <<EOF
                   [system]
                   distribution=centos
-                  release=Core
+                  release=8
                   EOF
-                  cfy-ap -f -v -c centos7.ini
+                  cfy-ap -f -v -c centos8.ini
                   '''.stripIndent().trim(), label: 'creating the agent package'
               }
             }
@@ -142,26 +119,16 @@ set -ex
 sudo yum install -y epel-release git vim python-virtualenv
 sudo yum install -y rabbitmq-server
 sudo yum install -y wget
+sudo yum install -y python3
 git clone https://github.com/cloudify-cosmo/cloudify-agent.git
 sudo systemctl enable rabbitmq-server
 sudo systemctl start rabbitmq-server
-virtualenv py2
-source py2/bin/activate
-pushd cloudify-agent
-git checkout ${env.BRANCH_NAME}
-pip install -r test-requirements.txt
-pip install -r dev-requirements.txt
-pip install '.[fabric]'
-echo 'run py2.7 tests'
-pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py2.xml
-popd
-deactivate
-sudo yum install -y python3
 python3 -m venv py3
 source py3/bin/activate
 export LC_ALL=en_US.utf-8
 export LANG=en_US.utf-8
 pushd cloudify-agent
+git checkout ${env.BRANCH_NAME}
 pip install -r test-requirements.txt
 pip install -r dev-requirements.txt
 pip install '.[fabric]'
@@ -183,7 +150,7 @@ EOT
               sh script: """
                 cd ~/rpmbuild
                 git clone https://github.com/cloudify-cosmo/cloudify-agent.git SOURCES && cd SOURCES && git checkout ${env.BRANCH_NAME}
-              """, label: 'Copying repo to seperate workspace'
+              """, label: 'Copying repo to separate workspace'
               sh script: """
                 curl -o ~/rpmbuild/SOURCES/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
                 mkdir -p ~/rpmbuild/SOURCES/packaging/agents/ ;

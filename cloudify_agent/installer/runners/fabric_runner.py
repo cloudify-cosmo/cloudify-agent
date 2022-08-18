@@ -18,11 +18,10 @@ import sys
 import logging
 
 from fabric import Connection
+from io import StringIO
 from paramiko import RSAKey, ECDSAKey, Ed25519Key, SSHException
 
-from cloudify._compat import reraise, StringIO
-from cloudify.utils import CommandExecutionResponse
-from cloudify.utils import setup_logger
+from cloudify.utils import CommandExecutionResponse, setup_logger
 from cloudify.exceptions import CommandExecutionException
 from cloudify.exceptions import CommandExecutionError
 
@@ -138,11 +137,7 @@ class FabricRunner(object):
                 self._connection.open()
             except Exception as e:
                 _, _, tb = sys.exc_info()
-                reraise(
-                    FabricCommandExecutionError,
-                    FabricCommandExecutionError(str(e)),
-                    tb
-                )
+                raise FabricCommandExecutionError(str(e)).with_traceback(tb)
 
     def run(self, command, execution_env=None, **attributes):
 
