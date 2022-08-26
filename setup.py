@@ -18,7 +18,7 @@ from setuptools import setup
 install_requires = [
     'cloudify-common==7.0.0.dev1',
     'appdirs==1.4.3',
-    'jinja2==2.11.3',
+    'jinja2>3,<4',
     'virtualenv==15.1.0',
     'click>7,<8',
     'packaging==17.1',
