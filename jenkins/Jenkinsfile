@@ -125,6 +125,7 @@ sudo systemctl enable rabbitmq-server
 sudo systemctl start rabbitmq-server
 python3 -m venv py3
 source py3/bin/activate
+pip install --upgrade pip setuptools
 export LC_ALL=en_US.utf-8
 export LANG=en_US.utf-8
 pushd cloudify-agent
