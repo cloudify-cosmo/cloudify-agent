@@ -272,10 +272,10 @@ EOT
                   echo 'Installing dependencies'
                   py -m venv env
                   .\\env\\Scripts\\activate
-                  pip install --upgrade pip==20.3.4
+                  pip install --upgrade pip setuptools
                   pip install -r dev-requirements.txt
                   pip install -r test-requirements.txt
-                  pip install -U .
+                  pip install .
                   pytest -sv --run-ci-tests --run-rabbit-tests cloudify_agent\\tests
                 """
               }
