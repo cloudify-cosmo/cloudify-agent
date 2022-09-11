@@ -54,7 +54,7 @@ pipeline {
         stage('flake8'){
           steps{
             sh script: "mkdir -p ${env.WORKSPACE}/flake8 && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/flake8", label: "copying repo to separate workspace"
-            container('py36'){
+            container('py310'){
               dir("${env.WORKSPACE}/flake8") {
                 echo 'install flake 8'
                 sh 'pip install flake8 --user'
@@ -67,7 +67,7 @@ pipeline {
         stage('build_agent'){
           steps{
             sh script: "mkdir -p ${env.WORKSPACE}/build_agent && cp -rf ${env.WORKSPACE}/${env.PROJECT}/. ${env.WORKSPACE}/build_agent", label: "copying repo to separate workspace"
-            container('py36'){
+            container('py310'){
               dir("${env.WORKSPACE}/build_agent") {
                 sh script: '''
                   python3 -m venv packager_env
@@ -88,7 +88,7 @@ pipeline {
         stage('Deploy EC2 instances'){
           steps{
             catchError(message: 'Failure on: cloudify-agent tests', buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-              container('py36'){
+              container('py310'){
                 echo 'Setup Github SSH key'
                 setupGithubSSHKey()
                 dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
@@ -122,7 +122,7 @@ pipeline {
         stage('Configure & Run-tests on EC2 instance'){
           steps{
             catchError(message: 'Failure on: cloudify-agent tests', buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-              container('py36'){
+              container('py310'){
                 dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
                   withVault([configuration: configuration, vaultSecrets: secrets]){
                     sh script:"""#!/bin/bash
@@ -145,7 +145,7 @@ git checkout ${env.BRANCH_NAME}
 pip install -r test-requirements.txt
 pip install -r dev-requirements.txt
 pip install '.[fabric]'
-echo 'run py3.6 tests'
+echo 'run py3.10 tests'
 pytest --run-rabbit-tests --run-ci-tests --cov-report term-missing --cov=cloudify_agent cloudify_agent --junitxml=test-results/cloudify_agent_py3.xml
 popd
 deactivate
@@ -206,7 +206,7 @@ EOT
     stage('Copy test results'){
       steps{
         catchError(message: 'Failure on: cloudify-agent tests copy', buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-          container('py36'){
+          container('py310'){
             dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
               withVault([configuration: configuration, vaultSecrets: secrets]){
                 sh script:"""#!/bin/bash
@@ -219,10 +219,10 @@ EOT
         }
       }
     }
-    stage('Terminate py36 instance'){ // we made github to wait on a job with this exact name, typo included
+    stage('Terminate py310 instance'){
       steps{
         catchError(message: 'Failure on: cloudify-agent tests', buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-          container('py36'){
+          container('py310'){
             dir("${env.WORKSPACE}/${env.PROJECT}/jenkins"){
               withVault([configuration: configuration, vaultSecrets: secrets]){
                 echo 'Uninstall and delete blueprint from manager'
