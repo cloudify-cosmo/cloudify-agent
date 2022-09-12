@@ -18,7 +18,7 @@ import os
 import platform
 
 from ntpath import join as nt_join
-from functools import wraps, partial
+from functools import wraps
 from posixpath import join as posix_join
 
 from cloudify_agent.installer import exceptions
