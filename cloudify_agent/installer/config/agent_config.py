@@ -34,17 +34,11 @@ from .installer_config import create_runner, get_installer
 from .config_errors import raise_missing_attribute, raise_missing_attributes
 
 
-def create_agent_config_and_installer(func=None,
-                                      validate_connection=True,
-                                      new_agent_config=False):
-    # This allows the decorator to be used with or without arguments
-    if not func:
-        return partial(
-            create_agent_config_and_installer,
-            validate_connection=validate_connection,
-            new_agent_config=new_agent_config
-        )
-
+def create_agent_config_and_installer(
+    func=None,
+    validate_connection=True,
+    new_agent_config=False,
+):
     @wraps(func)
     def wrapper(*args, **kwargs):
         cloudify_agent = CloudifyAgentConfig()

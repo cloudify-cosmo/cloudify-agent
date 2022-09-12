@@ -67,7 +67,7 @@ def create(cloudify_agent, installer, **_):
 
 
 @operation
-@create_agent_config_and_installer
+@create_agent_config_and_installer()
 def configure(cloudify_agent, installer, **_):
     ctx.logger.info('Configuring Agent {0}'.format(cloudify_agent['name']))
     update_agent_record(cloudify_agent, AgentState.CONFIGURING)
@@ -81,7 +81,7 @@ def configure(cloudify_agent, installer, **_):
 
 
 @operation
-@create_agent_config_and_installer
+@create_agent_config_and_installer()
 def start(cloudify_agent, **_):
     """
     Only called in "init_script"/"plugin" mode, where the agent is started
@@ -146,7 +146,7 @@ def delete(cloudify_agent, installer, **_):
 
 
 @operation
-@create_agent_config_and_installer
+@create_agent_config_and_installer()
 def restart(cloudify_agent, installer, **_):
     # no need to handling remote_execution False because this operation is
     # not invoked in that case
