@@ -1,15 +1,22 @@
+import time
+
 from cloudify.decorators import operation
 from cloudify.amqp_client import get_client
 from cloudify.models_states import AgentState
 from cloudify import ctx, utils as cloudify_utils
-from cloudify.exceptions import (CommandExecutionError,
-                                 CommandExecutionException)
-from cloudify.agent_utils import (create_agent_record,
-                                  update_agent_record,
-                                  get_agent_rabbitmq_user,
-                                  delete_agent_rabbitmq_user,
-                                  delete_agent_queues,
-                                  delete_agent_exchange)
+from cloudify.exceptions import (
+    CommandExecutionError,
+    CommandExecutionException,
+    NonRecoverableError,
+)
+from cloudify.agent_utils import (
+    create_agent_record,
+    update_agent_record,
+    get_agent_rabbitmq_user,
+    delete_agent_rabbitmq_user,
+    delete_agent_queues,
+    delete_agent_exchange,
+)
 
 from cloudify_agent.api import utils
 from cloudify_agent.installer import script
@@ -87,6 +94,7 @@ def start(cloudify_agent, **_):
     Only called in "init_script"/"plugin" mode, where the agent is started
     externally (e.g. userdata script), and all we have to do is wait for it
     """
+    agent_name = cloudify_agent['queue']
     update_agent_record(cloudify_agent, AgentState.STARTING)
     tenant = cloudify_utils.get_tenant()
     client = get_client(
@@ -94,19 +102,51 @@ def start(cloudify_agent, **_):
         amqp_pass=tenant['rabbitmq_password'],
         amqp_vhost=tenant['rabbitmq_vhost']
     )
-    agent_alive = utils.is_agent_alive(cloudify_agent['queue'], client)
 
-    if not agent_alive:
-        if ctx.operation.retry_number > 3:
-            ctx.logger.warning('Waiting too long for Agent to start')
-            update_agent_record(cloudify_agent, AgentState.NONRESPONSIVE)
-        return ctx.operation.retry(
-            message='Waiting for Agent to start...')
+    marked_nonresponsive = False
+    # we'll wait up to an hour for the agent to start. It really should
+    # start sooner than that, but we have to give up eventually.
+    start_time = time.time()
+    deadline = start_time + 3600
+    # we can't poll too often, because we need to give the agent a chance to
+    # respond. 10 seconds should be PLENTY even on very latency-deficient
+    # networks.
+    poll_interval = 10
+    with client:
+        agent_alive = False
+        while time.time() < deadline:
+            agent_alive = utils.is_agent_alive(
+                name=agent_name,
+                client=client,
+                timeout=poll_interval,
+                connect=False,
+            )
+            if agent_alive:
+                break
+            elapsed = time.time() - start_time
+            _log = ctx.logger.warning if elapsed > 300 else ctx.logger.info
+            _log(
+                'Agent %s has not started after %d seconds',
+                agent_name, elapsed,
+            )
+            if elapsed > 300 and not marked_nonresponsive:
+                # we've already waited 5 minutes, and the agent still
+                # hasn't started. Perhaps the VM is really slow to boot,
+                # or there is some problem booting it.
+                marked_nonresponsive = True
+                update_agent_record(cloudify_agent, AgentState.NONRESPONSIVE)
+            time.sleep(poll_interval)
 
-    ctx.logger.info('Agent has started')
-    update_agent_record(cloudify_agent, AgentState.STARTED)
     if not cloudify_agent.is_provided:
         script.cleanup_scripts()
+
+    if agent_alive:
+        ctx.logger.info('Agent has started')
+        update_agent_record(cloudify_agent, AgentState.STARTED)
+    else:
+        raise NonRecoverableError(
+            f'Agent {agent_name} did not start in {deadline} seconds'
+        )
 
 
 @operation
