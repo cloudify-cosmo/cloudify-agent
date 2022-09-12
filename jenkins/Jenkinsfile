@@ -56,7 +56,7 @@ pipeline {
             container('rpmbuild'){
               dir("${env.WORKSPACE}/build_agent") {
                 sh script: '''
-                  curl https://michael-qa.s3.eu-west-1.amazonaws.com/cfy-python3.10.tgz -o cfy-python3.10.tgz
+                  curl https://cloudify-cicd.s3.amazonaws.com/python-build-packages/cfy-python3.10.tgz -o cfy-python3.10.tgz
                   sudo tar zxvf cfy-python3.10.tgz -C /
                   ''', label: 'installing prerequisities'
                 sh script: '/opt/python3.10/bin/pip3.10 install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip', label: 'installing agent packager'
