@@ -107,14 +107,17 @@ def start(cloudify_agent, **_):
     # we'll wait up to an hour for the agent to start. It really should
     # start sooner than that, but we have to give up eventually.
     start_time = time.time()
-    deadline = start_time + 3600
+    timeout = 3600
     # we can't poll too often, because we need to give the agent a chance to
     # respond. 10 seconds should be PLENTY even on very latency-deficient
     # networks.
     poll_interval = 10
     with client:
         agent_alive = False
-        while time.time() < deadline:
+        while True:
+            elapsed = time.time() - start_time
+            if elapsed > timeout:
+                break
             agent_alive = utils.is_agent_alive(
                 name=agent_name,
                 client=client,
@@ -145,7 +148,7 @@ def start(cloudify_agent, **_):
         update_agent_record(cloudify_agent, AgentState.STARTED)
     else:
         raise NonRecoverableError(
-            f'Agent {agent_name} did not start in {deadline} seconds'
+            f'Agent {agent_name} did not start in {timeout} seconds'
         )
 
 
