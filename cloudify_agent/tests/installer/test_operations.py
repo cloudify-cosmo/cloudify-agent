@@ -5,7 +5,7 @@ import pytest
 
 from cloudify.workflows import local
 from cloudify.utils import setup_logger
-from cloudify.tests.mocks.mock_rest_client import MockRestclient
+from cloudify.test_utils.mock_rest_client import MockRestclient
 
 from cloudify_agent.api import utils
 from cloudify_agent.tests import resources
