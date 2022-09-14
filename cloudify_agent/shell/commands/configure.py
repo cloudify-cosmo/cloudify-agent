@@ -14,7 +14,6 @@
 #  * limitations under the License.
 
 import os
-import re
 import sys
 import click
 

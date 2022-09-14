@@ -70,17 +70,14 @@ pipeline {
             container('py310'){
               dir("${env.WORKSPACE}/build_agent") {
                 sh script: '''
-                  python3 -m venv packager_env
-                  . packager_env/bin/activate
-                  pip install https://github.com/cloudify-cosmo/cloudify-agent-packager/archive/master.zip
-                  cp packaging/local.ini centos8.ini
-                  cat >>centos8.ini <<EOF
-                  [system]
-                  distribution=centos
-                  release=8
-                  EOF
-                  cfy-ap -f -v -c centos8.ini
-                  '''.stripIndent().trim(), label: 'creating the agent package'
+                  SO_DIR=$(find /usr/lib -name "libffi.so*" -exec dirname {} \\; -quit)
+                  sudo ln -s $SO_DIR/libffi.so.7 $SO_DIR/libffi.so.6
+                ''', label: 'installing prerequisities'
+                sh script: """
+                  curl "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/${env.BRANCH_NAME}/packaging/linux/linux_agent_builder.sh" -o linux_agent_builder.sh
+                  chmod 755 linux_agent_builder.sh
+                  ./linux_agent_builder.sh alpine python ${env.VERSION}-${env.PRERELEASE}
+                """.stripIndent().trim(), label: 'creating the agent package'
               }
             }
           }
@@ -171,7 +168,12 @@ EOT
                 """, label: 'Prepare rpm-building environment'
               sh script: """
                 cd ~/rpmbuild/SOURCES
+
+
                 cp -rf ${env.WORKSPACE}/build_agent/*.tar.gz .
+
+
+
                 for i in {1..30}; do yum-builddep -y cloudify-agents.spec && break || sleep 10; done
                 spectool \
                   -d "CLOUDIFY_VERSION ${env.VERSION}" \
