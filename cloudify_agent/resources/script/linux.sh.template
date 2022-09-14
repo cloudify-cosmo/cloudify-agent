@@ -137,10 +137,10 @@ export -f install_agent
 configure_virtualenv()
 {
     export_daemon_env
-    # configure command is run explictly as the virtualenv has not been "fixed"
-    # yet
+    # configure command is run explictly as the shebangs in the "virtualenv"
+    # have not been "fixed" yet
     echo "Configuring virtualenv..."
-    ${AGENT_PYTHON_INTERPRETER} ${AGENT_CLI} configure --relocated-env
+    sudo ${AGENT_PYTHON_INTERPRETER} ${AGENT_CLI} configure --fix-shebangs
     echo "Virtualenv configured successfully"
 }
 export -f configure_virtualenv
