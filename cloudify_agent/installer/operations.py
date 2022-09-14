@@ -1,3 +1,4 @@
+import logging
 import time
 
 from cloudify.decorators import operation
@@ -126,9 +127,8 @@ def start(cloudify_agent, **_):
             )
             if agent_alive:
                 break
-            elapsed = time.time() - start_time
-            _log = ctx.logger.warning if elapsed > 300 else ctx.logger.info
-            _log(
+            ctx.logger.log(
+                logging.WARNING if elapsed > 300 else logging.INFO,
                 'Agent %s has not started after %d seconds',
                 agent_name, elapsed,
             )
