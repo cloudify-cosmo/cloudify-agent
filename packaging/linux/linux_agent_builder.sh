@@ -8,12 +8,12 @@ curl https://cloudify-cicd.s3.amazonaws.com/python-build-packages/cfy-python3.10
 tar zxvf cfy-python3.10.tgz -C /
 
 cp -rf /opt/python3.10/. cloudify/env/
-cd cloudify/env/bin
-ln -s python3.10 python
-ln -s python3.10 python3
-ln -s pip3.10 pip
-ln -s pip3.10 pip3
-cd $WORKDIR
+pushd 'cloudify/env/bin'
+    ln -s python3.10 python
+    ln -s python3.10 python3
+    ln -s pip3.10 pip
+    ln -s pip3.10 pip3
+popd
 
 # -- install agent
 export DESTINATION_TAR=$AGT_NAME.tar.gz
