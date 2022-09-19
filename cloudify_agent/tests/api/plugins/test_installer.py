@@ -1,7 +1,6 @@
 import tempfile
 import logging
 import os
-import platform
 import pytest
 import shutil
 import threading
@@ -18,6 +17,14 @@ from cloudify.utils import setup_logger, target_plugin_prefix, get_python_path
 from cloudify.exceptions import NonRecoverableError
 from cloudify_rest_client.plugins import Plugin
 from cloudify_rest_client.constants import VisibilityState
+
+try:
+    from distro import linux_distribution
+except ImportError:
+    try:
+        from platform import linux_distribution
+    except ImportError:
+        linux_distribution = None
 
 from cloudify_agent.api import exceptions
 from cloudify_agent.api.plugins import installer
@@ -269,8 +276,7 @@ def test_implicit_supported_platform():
 
 @pytest.mark.only_posix
 def test_implicit_dist_and_dist_release():
-    dist, _, dist_release = platform.linux_distribution(
-        full_distribution_name=False)
+    dist, _, dist_release = linux_distribution(full_distribution_name=False)
     dist, dist_release = dist.lower(), dist_release.lower()
     plugins = [
         {'id': '1', 'package_version': '1'},
