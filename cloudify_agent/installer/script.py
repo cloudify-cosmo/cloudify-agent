@@ -212,8 +212,10 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         return self._get_script_path_and_url(script_filename, script_content)
 
 
-@create_agent_config_and_installer(validate_connection=False,
-                                   new_agent_config=True)
+@create_agent_config_and_installer(
+    validate_connection=False,
+    new_agent_config=True,
+)
 def _get_script_builder(cloudify_agent, **_):
     return AgentInstallationScriptBuilder(cloudify_agent=cloudify_agent)
 
