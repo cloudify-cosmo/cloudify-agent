@@ -75,7 +75,7 @@ pipeline {
                 ''', label: 'installing prerequisities'
                 sh script: """
                   curl "https://raw.githubusercontent.com/cloudify-cosmo/cloudify-agent/${env.BRANCH_NAME}/packaging/linux/linux_agent_builder.sh" -o linux_agent_builder.sh
-                  chmod 755 linux_agent_builder.sh
+                  chmod +x linux_agent_builder.sh
                   ./linux_agent_builder.sh alpine python ${env.VERSION}-${env.PRERELEASE}
                 """.stripIndent().trim(), label: 'creating the agent package'
               }
