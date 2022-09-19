@@ -54,7 +54,7 @@ def _fixup_scripts():
     """Make scripts in bin_dir relative by rewriting their shebangs
 
     Examine each file in bin_dir - if it looks like a python script, and has a
-    shebang - replace it with a new, "relative" shebang.
+    shebang - replace it with a shebang pointing to the agent's python.
     """
     from cloudify_agent.shell.main import get_logger
     logger = get_logger()
@@ -62,7 +62,8 @@ def _fixup_scripts():
     new_shebang = f"#!{sys.executable}"
     logger.debug('New shebang = %s', new_shebang)
     for filename in _find_scripts_to_fix(os.path.dirname(sys.executable)):
-        logger.debug('Making script {0} relative'.format(filename))
+        logger.debug('Rewriting shebangs in script {0}'.format(
+            filename))
         _rewrite_shebang(filename, new_shebang)
 
 
@@ -74,18 +75,12 @@ def _find_scripts_to_fix(bin_dir):
         if not os.path.isfile(filename):   # ignore subdirs, e.g. .svn ones
             continue
 
-        with open(filename, 'rb') as f:
-            try:
-                lines = f.read().decode('utf-8').splitlines()
-            except UnicodeDecodeError:
-                # This is probably a binary program instead
-                # of a script, so just ignore it.
-                continue
-
-        if not lines:
+        try:
+            shebang = open(filename, 'rb').readline().decode('utf-8')
+        except UnicodeDecodeError:
+            # This is probably a binary program, not a script. Just ignore it.
             continue
 
-        shebang = lines[0]
         if not (shebang.startswith('#!') and 'bin/python' in shebang):
             # the file doesn't have a /../bin/python shebang? nothing to fix
             continue
