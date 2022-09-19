@@ -102,7 +102,7 @@ pipeline {
                   distribution=centos
                   release=8
                   EOF
-                  cfy-ap -f -v -c centos7.ini
+                  cfy-ap -f -v -c centos8.ini
                   '''.stripIndent().trim(), label: 'creating the agent package'
               }
             }
