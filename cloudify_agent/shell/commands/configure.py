@@ -14,7 +14,6 @@
 #  * limitations under the License.
 
 import os
-import re
 import sys
 import click
 
@@ -28,18 +27,15 @@ from cloudify_agent.shell.commands import cfy
 @click.option('--disable-requiretty',
               help='Disables the requiretty directive in the sudoers file.',
               is_flag=True)
-@click.option('--relocated-env',
-              help='Indication that this virtualenv was relocated. '
-                   'If this option is passed, an auto-correction '
-                   'to the virtualenv shabang entries '
-                   'will be performed',
+@click.option('--fix-shebangs',
+              help='Fixes shebangs in scripts.',
               is_flag=True)
 @click.option('--no-sudo',
               help='Indication whether sudo should be used when applying '
                    ' disable-requiretty part',
               is_flag=True)
 @handle_failures
-def configure(disable_requiretty, relocated_env, no_sudo):
+def configure(disable_requiretty, fix_shebangs, no_sudo):
 
     """
     Configures global agent properties.
@@ -49,8 +45,55 @@ def configure(disable_requiretty, relocated_env, no_sudo):
         click.echo('Disabling requiretty directive in sudoers file')
         _disable_requiretty(no_sudo)
         click.echo('Successfully disabled requiretty for cfy-agent')
-    if relocated_env:
-        _relocate_venv()
+    if fix_shebangs:
+        click.echo('Fixing shebangs in scripts')
+        _fixup_scripts()
+
+
+def _fixup_scripts():
+    """Make scripts in bin_dir relative by rewriting their shebangs
+
+    Examine each file in bin_dir - if it looks like a python script, and has a
+    shebang - replace it with a shebang pointing to the agent's python.
+    """
+    from cloudify_agent.shell.main import get_logger
+    logger = get_logger()
+    for filename in _find_scripts_to_fix(os.path.dirname(sys.executable)):
+        logger.debug('Rewriting shebangs in script {0}'.format(
+            filename))
+        _rewrite_shebang(filename)
+
+
+def _find_scripts_to_fix(bin_dir):
+    """Search bin_dir for files that look like python scripts with a shebang
+    """
+    for filename in os.listdir(bin_dir):
+        filename = os.path.join(bin_dir, filename)
+        if not os.path.isfile(filename):   # ignore subdirs, e.g. .svn ones
+            continue
+
+        try:
+            shebang = open(filename, 'rb').readline().decode('utf-8')
+        except UnicodeDecodeError:
+            # This is probably a binary program, not a script. Just ignore it.
+            continue
+
+        if not (shebang.startswith('#!') and 'bin/python' in shebang):
+            # the file doesn't have a /../bin/python shebang? nothing to fix
+            continue
+        yield filename
+
+
+def _rewrite_shebang(filename):
+    """Replace the first line of the file with the new shebang"""
+    with open(filename, 'rb') as f:
+        lines = f.read().decode('utf-8').splitlines()
+
+    new_shebang = ['#!/bin/sh', '"exec" "`dirname $0`/python3.10" "$0" "$@"']
+    script = new_shebang + lines[1:]
+
+    with open(filename, 'wb') as f:
+        f.write('\n'.join(script).encode('utf-8'))
 
 
 def _disable_requiretty(no_sudo):
@@ -74,34 +117,3 @@ def _disable_requiretty(no_sudo):
     runner.run('chmod +x {0}'.format(disable_requiretty_script_path))
     maybe_sudo = '' if no_sudo else 'sudo'
     runner.run('{0} {1}'.format(disable_requiretty_script_path, maybe_sudo))
-
-
-def _relocate_venv():
-    """Rewrite the activate script in the virtualenv.
-
-    The only part of the virtualenv that contains hardcoded paths - to the
-    build environment - is the activate script. Let's rewrite the path
-    in it (which is typically going to be something like /home/jenkins/...),
-    with the path of the virtualenv itself.
-
-    This way, the activate script will still work, allowing the user to
-    source it and use the agent's python.
-    """
-    bin_dir = os.path.dirname(sys.executable)
-    env_dir = os.path.dirname(bin_dir)
-    activate_script = os.path.join(bin_dir, 'activate')
-    try:
-        with open(activate_script, 'r+') as f:
-            content = f.read()
-            replaced = re.sub(
-                '^VIRTUAL_ENV=.*$',
-                'VIRTUAL_ENV="{0}"'.format(env_dir),
-                content,
-                count=1,
-                flags=re.MULTILINE,
-            )
-            f.seek(0)
-            f.truncate()
-            f.write(replaced)
-    except IOError as e:
-        click.echo('Error rewriting venv activate: {0}'.format(e))

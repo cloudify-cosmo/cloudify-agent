@@ -1,4 +1,4 @@
-#! /bin/bash -e
+#! /bin/bash -ex
 
 {% set has_service = process_management.name != 'detach' %}
 MYSELF=$(whoami)
@@ -134,16 +134,15 @@ export -f install_agent
 
 {% if configure %}
 
-configure_virtualenv()
+configure_pyenv()
 {
     export_daemon_env
-    # configure command is run explictly as the virtualenv has not been "fixed"
-    # yet
-    echo "Configuring virtualenv..."
-    ${AGENT_PYTHON_INTERPRETER} ${AGENT_CLI} configure --relocated-env
-    echo "Virtualenv configured successfully"
+    # configure command is run explicitly as the shebangs are not updated yet
+    echo "Configuring python environment..."
+    ${AGENT_PYTHON_INTERPRETER} ${AGENT_CLI} configure --fix-shebangs
+    echo "Python environment configured successfully"
 }
-export -f configure_virtualenv
+export -f configure_pyenv
 
 disable_requiretty()
 {
@@ -161,7 +160,7 @@ export -f disable_requiretty
 configure_agent()
 {
     echo "Configuring agent..."
-    run_as "{{ conf.user }}" configure_virtualenv
+    run_as "{{ conf.user }}" configure_pyenv
     disable_requiretty
     echo "Agent configured successfully"
 }

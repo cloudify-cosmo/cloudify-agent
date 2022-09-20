@@ -110,7 +110,7 @@ class AgentInstaller(object):
     def _configure_flags(self):
         flags = ''
         if not self.cloudify_agent.is_windows:
-            flags = '--relocated-env'
+            flags = '--fix-shebangs'
             if self.cloudify_agent.get('disable_requiretty'):
                 flags = '{0} --disable-requiretty'.format(flags)
         return flags
