@@ -135,10 +135,10 @@ pushd cloudify-agent
   pip install -r test-requirements.txt
   pip install -r dev-requirements.txt
   pip install '.[fabric]'
-  echo 'run py3.10 tests'
 
   # run all tests
   pytest \
+    -sv \
     --run-rabbit-tests \
     --run-ci-tests \
     cloudify_agent \
