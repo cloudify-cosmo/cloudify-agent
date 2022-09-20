@@ -148,7 +148,8 @@ def start(cloudify_agent, **_):
         update_agent_record(cloudify_agent, AgentState.STARTED)
     else:
         raise NonRecoverableError(
-            f'Agent {agent_name} did not start in {timeout} seconds'
+            'Agent {0} did not start in {1} seconds'
+            .format(agent_name, timeout)
         )
 
 
