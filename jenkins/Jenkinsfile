@@ -106,32 +106,38 @@ pipeline {
                   withVault([configuration: configuration, vaultSecrets: secrets]){
                     sh script:"""
                       ssh -i ~/.ssh/ec2_ssh_key -l centos \$(jq -r '.endpoint.value' capabilities.json) /bin/bash -ex << 'EOT'
+# install & start rabbitmq
 sudo yum install -y epel-release git
 sudo yum install -y rabbitmq-server
-
 sudo systemctl enable rabbitmq-server
 sudo systemctl start rabbitmq-server
 
+# setup python3.10
 curl -fL --retry 5 \
   https://cloudify-cicd.s3.amazonaws.com/python-build-packages/cfy-python3.10.tgz \
   -o cfy-python3.10.tgz
 mkdir python3.10
 tar --strip-components=2 -zxf cfy-python3.10.tgz -C python3.10
 python3.10/bin/python3.10 -m venv venv
+set +x
 . venv/bin/activate
+set -x
 
+# fetch the code
 git clone https://github.com/cloudify-cosmo/cloudify-agent.git \
   --branch "${env.BRANCH_NAME}" \
   --single-branch \
   --depth 1
 
 pushd cloudify-agent
+  # install prereqs
   pip install --upgrade pip setuptools
   pip install -r test-requirements.txt
   pip install -r dev-requirements.txt
   pip install '.[fabric]'
   echo 'run py3.10 tests'
 
+  # run all tests
   pytest \
     --run-rabbit-tests \
     --run-ci-tests \
