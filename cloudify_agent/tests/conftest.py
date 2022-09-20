@@ -9,7 +9,7 @@ import pytest
 
 from cloudify import constants, mocks
 from cloudify.state import current_ctx
-from cloudify.tests.mocks.mock_rest_client import MockRestclient
+from cloudify.test_utils.mock_rest_client import MockRestclient
 
 from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.tests.agent_package_generator import AgentPackageGenerator

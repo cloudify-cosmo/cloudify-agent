@@ -16,7 +16,7 @@
 from setuptools import setup
 
 install_requires = [
-    'cloudify-common==6.4.1.dev1',
+    'cloudify-common==6.4.1',
     'appdirs==1.4.3',
     'jinja2==2.11.3',
     'virtualenv==15.1.0',
@@ -28,7 +28,7 @@ install_requires = [
 
 setup(
     name='cloudify-agent',
-    version='6.4.1.dev1',
+    version='6.4.1',
     author='Cloudify',
     author_email='cosmo-admin@cloudify.co',
     packages=[

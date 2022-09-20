@@ -6,7 +6,7 @@ import pytest
 from cloudify import ctx
 from cloudify.utils import LocalCommandRunner
 from cloudify.state import current_ctx
-from cloudify.tests.mocks.mock_rest_client import MockRestclient
+from cloudify.test_utils.mock_rest_client import MockRestclient
 from cloudify_agent.tests.daemon import (
     assert_daemon_dead,
     wait_for_daemon_alive,
