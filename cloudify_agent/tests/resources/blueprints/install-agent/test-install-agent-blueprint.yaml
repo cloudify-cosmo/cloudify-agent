@@ -7,4 +7,5 @@ node_templates:
   node:
     type: cloudify.nodes.Compute
     properties:
-      install_agent: true
+      agent_config:
+        install_method: plugin

@@ -18,15 +18,6 @@ def test_install_agent_windows():
     _test_install_agent('test-install-agent-blueprint-windows.yaml')
 
 
-def test_install_agent_3_2():
-    _test_install_agent('test-install-agent-blueprint-3-2.yaml')
-
-
-def test_install_agent_windows_3_2():
-    _test_install_agent(
-        'test-install-agent-blueprint-windows-3-2.yaml')
-
-
 def test_create_process_management_options():
     def _test_param(value, expected=None):
         installer = AgentInstaller({
@@ -45,18 +36,14 @@ def test_create_process_management_options():
 # Patch _validate_node, to allow installing agent in local mode
 @patch('cloudify.workflows.local._validate_node')
 @patch('cloudify_agent.installer.operations.start')
-@patch('cloudify_agent.installer.operations.configure')
 @patch('cloudify_agent.installer.operations.create')
 def _test_install_agent(blueprint,
                         create_mock,
-                        config_mock,
                         start_mock, *_):
     blueprint_path = get_resource(
         'blueprints/install-agent/{0}'.format(blueprint)
     )
     env = local.init_env(blueprint_path)
     env.execute('install')
-
-    create_mock.assert_has_any_calls()
-    config_mock.assert_has_any_calls()
-    start_mock.assert_has_any_calls()
+    create_mock.assert_called_once()
+    start_mock.assert_called_once()

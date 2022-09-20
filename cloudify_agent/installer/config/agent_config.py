@@ -18,7 +18,7 @@ import os
 import platform
 
 from ntpath import join as nt_join
-from functools import wraps, partial
+from functools import wraps
 from posixpath import join as posix_join
 
 from cloudify_agent.installer import exceptions
@@ -34,48 +34,42 @@ from .installer_config import create_runner, get_installer
 from .config_errors import raise_missing_attribute, raise_missing_attributes
 
 
-def create_agent_config_and_installer(func=None,
-                                      validate_connection=True,
-                                      new_agent_config=False):
-    # This allows the decorator to be used with or without arguments
-    if not func:
-        return partial(
-            create_agent_config_and_installer,
-            validate_connection=validate_connection,
-            new_agent_config=new_agent_config
-        )
+def create_agent_config_and_installer(
+    validate_connection=True,
+    new_agent_config=False,
+):
+    def wrapper(func):
+        @wraps(func)
+        def inner(*args, **kwargs):
+            cloudify_agent = CloudifyAgentConfig()
+            cloudify_agent.set_initial_values(new_agent_config, **kwargs)
 
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        cloudify_agent = CloudifyAgentConfig()
-        cloudify_agent.set_initial_values(new_agent_config, **kwargs)
+            if new_agent_config:
+                # Set values that need to be inferred from other ones
+                cloudify_agent.set_execution_params()
+                cloudify_agent.set_default_values()
 
-        if new_agent_config:
-            # Set values that need to be inferred from other ones
-            cloudify_agent.set_execution_params()
-            cloudify_agent.set_default_values()
+            runner = create_runner(cloudify_agent, validate_connection)
+            if not runner:
+                return
+            cloudify_agent.set_installation_params(runner)
 
-        runner = create_runner(cloudify_agent, validate_connection)
-        if not runner:
-            return
-        cloudify_agent.set_installation_params(runner)
+            if cloudify_agent.has_installer:
+                installer = get_installer(cloudify_agent, runner)
+            else:
+                installer = None
+            kwargs['installer'] = installer
+            kwargs['cloudify_agent'] = cloudify_agent
 
-        if cloudify_agent.has_installer:
-            installer = get_installer(cloudify_agent, runner)
-        else:
-            installer = None
-        kwargs['installer'] = installer
-        kwargs['cloudify_agent'] = cloudify_agent
+            if new_agent_config:
+                update_agent_runtime_properties(cloudify_agent)
 
-        if new_agent_config:
-            update_agent_runtime_properties(cloudify_agent)
-
-        try:
-            return func(*args, **kwargs)
-        finally:
-            if hasattr(runner, 'close'):
-                runner.close()
-
+            try:
+                return func(*args, **kwargs)
+            finally:
+                if hasattr(runner, 'close'):
+                    runner.close()
+        return inner
     return wrapper
 
 
