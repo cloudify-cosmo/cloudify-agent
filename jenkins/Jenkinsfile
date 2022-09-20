@@ -107,7 +107,7 @@ pipeline {
                     sh script:"""
                       ssh -i ~/.ssh/ec2_ssh_key -l centos \$(jq -r '.endpoint.value' capabilities.json) /bin/bash -ex << 'EOT'
 # install & start rabbitmq
-sudo yum install -y epel-release git
+sudo yum install -y epel-release git wget
 sudo yum install -y rabbitmq-server
 sudo systemctl enable rabbitmq-server
 sudo systemctl start rabbitmq-server
