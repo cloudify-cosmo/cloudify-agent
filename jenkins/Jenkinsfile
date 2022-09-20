@@ -64,6 +64,11 @@ pipeline {
             }
           }
         }
+        stage('build_agent'){
+          steps{
+            echo "this does nothing, and should be removed after the build_agent step is made non-required in github"
+          }
+        }
         stage('Deploy EC2 instances'){
           steps{
             catchError(message: 'Failure on: cloudify-agent tests', buildResult: 'SUCCESS', stageResult: 'FAILURE') {
