@@ -119,7 +119,7 @@ curl -fL --retry 5 \
 mkdir python3.10
 tar --strip-components=2 -zxf cfy-python3.10.tgz -C python3.10
 python3.10/bin/python3.10 -m venv venv
-set +x
+set +x  # going to activate the venv, hide activate output
 . venv/bin/activate
 set -x
 
@@ -141,8 +141,6 @@ pushd cloudify-agent
   pytest \
     --run-rabbit-tests \
     --run-ci-tests \
-    --cov-report term-missing \
-    --cov=cloudify_agent \
     cloudify_agent \
     --junitxml=test-results/cloudify_agent_py3.xml
 popd

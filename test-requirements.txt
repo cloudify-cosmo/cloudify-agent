@@ -3,5 +3,3 @@ mock==1.0.1
 pywinrm==0.4.1
 
 pytest
-coverage
-pytest-cov
