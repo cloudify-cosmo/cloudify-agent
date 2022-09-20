@@ -12,7 +12,7 @@ mkdir -p cloudify/env
 #   env/ folder, not a true virtualenv.
 
 # -- copy python 3.10 to "venv"
-curl https://cloudify-cicd.s3.amazonaws.com/python-build-packages/cfy-python3.10.tgz -o cfy-python3.10.tgz
+curl -f --retry 5 https://cloudify-cicd.s3.amazonaws.com/python-build-packages/cfy-python3.10.tgz -o cfy-python3.10.tgz
 tar --strip-components=2 -zxf cfy-python3.10.tgz -C cloudify/env/
 pushd 'cloudify/env/bin'
     ln -s python3.10 python
