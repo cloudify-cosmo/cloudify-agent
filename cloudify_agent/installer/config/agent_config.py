@@ -15,11 +15,12 @@
 
 import getpass
 import os
-import platform
 
 from ntpath import join as nt_join
 from functools import wraps
 from posixpath import join as posix_join
+
+import distro
 
 from cloudify_agent.installer import exceptions
 from cloudify_agent.api import utils as agent_utils
@@ -307,7 +308,8 @@ class CloudifyAgentConfig(dict):
             windows = False
         else:
             # 3.3 Compute node, determine by new property 'os_family'
-            windows = ctx.node.properties['os_family'].lower() == 'windows'
+            windows = \
+                ctx.node.properties.get('os_family', '').lower() == 'windows'
 
         self['windows'] = windows
 
@@ -411,28 +413,23 @@ class CloudifyAgentConfig(dict):
             return
 
         if self.is_local:
-            self['distro'] = platform.dist()[0].lower()
+            self['distro'] = distro.id().lower()
         elif self.is_remote:
-            distro = runner.machine_distribution()
-            self['distro'] = distro[0].lower()
+            self['distro'] = runner.machine_distribution()[0].lower()
 
     def _set_agent_distro_codename(self, runner):
         if self.get('distro_codename'):  # Might be an empty string
             return
 
         if self.is_local:
-            self['distro_codename'] = platform.dist()[2].lower()
+            self['distro_codename'] = distro.codename().lower()
         elif self.is_remote:
-            distro = runner.machine_distribution()
+            distribution = runner.machine_distribution()
             # Sometimes the code name for distro is returned as '' and we need
             # to fallback to the version number and pick the major version
-            # number Usually this is happened when run on some centos8 versions
-            # >> > import platform
-            # >> > platform.dist()
-            # ('centos', '8.3.2011', '')
-            version = distro[1].split('.')[0]
-            distro_codename = distro[2]
-            if distro[0] == "centos" and version == "8":
+            version = distribution[1].split('.')[0]
+            distro_codename = distribution[2]
+            if distribution[0] == "centos" and version == "8":
                 distro_codename = version
 
             self['distro_codename'] = distro_codename.lower()

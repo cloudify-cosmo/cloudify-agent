@@ -9,7 +9,6 @@ import subprocess
 import wsgiref.simple_server
 from contextlib import contextmanager
 
-# from agent_packager import packager
 import bottle
 import requests
 import wagon
