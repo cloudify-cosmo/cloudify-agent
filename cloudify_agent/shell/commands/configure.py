@@ -58,13 +58,10 @@ def _fixup_scripts():
     """
     from cloudify_agent.shell.main import get_logger
     logger = get_logger()
-
-    new_shebang = f"#!{sys.executable}"
-    logger.debug('New shebang = %s', new_shebang)
     for filename in _find_scripts_to_fix(os.path.dirname(sys.executable)):
         logger.debug('Rewriting shebangs in script {0}'.format(
             filename))
-        _rewrite_shebang(filename, new_shebang)
+        _rewrite_shebang(filename)
 
 
 def _find_scripts_to_fix(bin_dir):
@@ -84,16 +81,16 @@ def _find_scripts_to_fix(bin_dir):
         if not (shebang.startswith('#!') and 'bin/python' in shebang):
             # the file doesn't have a /../bin/python shebang? nothing to fix
             continue
-
         yield filename
 
 
-def _rewrite_shebang(filename, new_shebang):
+def _rewrite_shebang(filename):
     """Replace the first line of the file with the new shebang"""
     with open(filename, 'rb') as f:
         lines = f.read().decode('utf-8').splitlines()
 
-    script = [new_shebang] + lines[1:]
+    new_shebang = ['#!/bin/sh', '"exec" "`dirname $0`/python3.10" "$0" "$@"']
+    script = new_shebang + lines[1:]
 
     with open(filename, 'wb') as f:
         f.write('\n'.join(script).encode('utf-8'))

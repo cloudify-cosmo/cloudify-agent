@@ -5,10 +5,11 @@ import shutil
 import ssl
 import tarfile
 import threading
+import subprocess
 import wsgiref.simple_server
 from contextlib import contextmanager
 
-from agent_packager import packager
+# from agent_packager import packager
 import bottle
 import requests
 import wagon
@@ -135,16 +136,19 @@ def get_windows_built_agent_path():
     )
 
 
-def create_windows_installer(config, logger):
+def _get_agent_name_suffix():
     version_info = get_agent_version().split('-')
     version = version_info[0]
     if len(version_info) == 1:
         prerelease = 'ga'
-        agent_name_suffix = version
+        return version
     else:
         prerelease = version_info[1]
-        agent_name_suffix = '{0}-{1}'.format(version, prerelease)
+        return '{0}-{1}'.format(version, prerelease)
 
+
+def create_windows_installer():
+    agent_name_suffix = _get_agent_name_suffix()
     temp_agent_path = os.path.join(
         os.getcwd(),
         'cloudify-windows-agent-{0}.exe'.format(agent_name_suffix)
@@ -163,8 +167,7 @@ def create_windows_installer(config, logger):
                  'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\'
                  'powershell.exe',
                  agent_builder,
-                 version,
-                 prerelease,
+                 *agent_name_suffix.split('-'),
                  '.',
                  '',
             ],
@@ -172,9 +175,28 @@ def create_windows_installer(config, logger):
             stdout_pipe=False,
             stderr_pipe=False,
         )
-
+    temp_agent_path = os.path.join(
+        os.getcwd(),
+        'cloudify-linux-agent-{0}.exe'.format(agent_name_suffix)
+    )
     shutil.copy(
         get_windows_built_agent_path(),
+        temp_agent_path,
+    )
+
+
+def build_linux_agent_package():
+    agent_name_suffix = _get_agent_name_suffix()
+    temp_agent_path = os.path.join(
+        os.getcwd(),
+        'cloudify-linux-agent-{0}.tar.gz'.format(agent_name_suffix)
+    )
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    agent_topdir = os.path.dirname(os.path.dirname(current_dir))
+    subprocess.run(['packaging/linux/linux_agent_builder.sh'],
+                   cwd=agent_topdir)
+    shutil.copy(
+        os.path.join(agent_topdir, 'manylinux-none-agent_.tar.gz'),
         temp_agent_path,
     )
 
@@ -187,15 +209,11 @@ def create_agent_package(directory, config, package_logger=None):
     try:
         package_logger.info('Creating Agent Package')
         os.chdir(directory)
-        if platform.system() == 'Linux':
-            packager.create(config=config,
-                            config_file=None,
-                            force=False,
-                            verbose=False)
-            distname, _, distid = platform.dist()
-            return '{0}-{1}-agent.tar.gz'.format(distname, distid)
+        if platform.system() in ['Linux', 'Darwin']:
+            build_linux_agent_package()
+            return 'cloudify-linux-agent-{}.tar.gz'.format(get_agent_version())
         elif platform.system() == 'Windows':
-            create_windows_installer(config, logger)
+            create_windows_installer()
             return 'cloudify-windows-agent-{}.exe'.format(get_agent_version())
         else:
             raise NonRecoverableError('Platform not supported: {0}'

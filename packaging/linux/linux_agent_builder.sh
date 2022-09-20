@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-DISTRO="${1:-centos}"
-RELEASE="${2:-core}"
-CFY_VERSION="$3"
+DISTRO="${1:-manylinux}"
+RELEASE="${2:-none}"
+CFY_VERSION="${3:-}"
 
 AGT_NAME="$DISTRO-$RELEASE-agent_$CFY_VERSION"
 mkdir -p cloudify/env
@@ -27,3 +27,4 @@ cloudify/env/bin/python3.10 -m pip install .
 
 # -- build agent package
 tar czf "$AGT_NAME.tar.gz" cloudify/env
+rm -rf cloudify
