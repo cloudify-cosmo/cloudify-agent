@@ -1,8 +1,8 @@
 from contextlib import contextmanager
 import getpass
 import os
-import platform
 
+import distro
 from mock import patch
 
 from cloudify import constants
@@ -96,11 +96,11 @@ def _get_distro_package_url(rest_port=80, manager_host='127.0.0.1'):
     base_url = utils.get_manager_file_server_url(manager_host, rest_port)
     agent_package_url = '{0}/packages/agents'.format(base_url)
     if os.name == 'posix':
-        distro = platform.dist()[0].lower()
-        distro_codename = platform.dist()[2].lower()
-        result['distro'] = platform.dist()[0].lower()
-        result['distro_codename'] = platform.dist()[2].lower()
-        package = '{0}-{1}-agent.tar.gz'.format(distro, distro_codename)
+        distro_name = distro.id()
+        distro_codename = distro.codename().lower()
+        result['distro'] = distro_name
+        result['distro_codename'] = distro_codename
+        package = '{0}-{1}-agent.tar.gz'.format(distro_name, distro_codename)
     else:
         package = 'cloudify-windows-agent.exe'
     result['package_url'] = '{0}/{1}'.format(agent_package_url, package)
