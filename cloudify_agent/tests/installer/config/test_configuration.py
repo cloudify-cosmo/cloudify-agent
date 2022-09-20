@@ -96,7 +96,7 @@ def _get_distro_package_url(rest_port=80, manager_host='127.0.0.1'):
     base_url = utils.get_manager_file_server_url(manager_host, rest_port)
     agent_package_url = '{0}/packages/agents'.format(base_url)
     if os.name == 'posix':
-        distro_name = distro.id()
+        distro_name = distro.id().lower()
         distro_codename = distro.codename().lower()
         result['distro'] = distro_name
         result['distro_codename'] = distro_codename
