@@ -14,13 +14,6 @@ spec:
     - "powershell.exe"
     - "-f"
     - "C:/ProgramData/Jenkins/jenkins-agent.ps1"
-  - name: shell
-    image: mcr.microsoft.com/powershell:preview-windowsservercore-1809
-    command:
-    - powershell
-    args:
-    - Start-Sleep
-    - 999999
   nodeSelector:
     instance-type: spot-windows
     beta.kubernetes.io/os: windows
