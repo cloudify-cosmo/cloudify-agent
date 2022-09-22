@@ -26,7 +26,6 @@ from cloudify.exceptions import CommandExecutionException
 from cloudify.exceptions import CommandExecutionError
 
 from cloudify_agent.installer import exceptions
-from cloudify_agent.api import utils as api_utils
 
 from cloudify_rest_client.utils import is_kerberos_env
 
@@ -354,24 +353,18 @@ class FabricRunner(object):
                         stdout.find(end)]
         return result
 
-    def machine_distribution(self, **attributes):
+    def machine_architecture(self):
 
         """
-        Retrieves the distribution information of the host.
+        Retrieves the architecture of the host.
 
-        :param attributes: custom attributes passed directly to
-                           fabric's run command
-
-        :return: dictionary of the platform distribution as returned from
-                 'platform.dist()'
-
+        :return: string ('x86_64', 'aarch64' or 'amd64')
         """
 
-        response = self.python(
-            imports_line='import platform, json',
-            command='json.dumps(platform.dist())', **attributes
+        return self.python(
+            imports_line='import platform',
+            command='platform.machine().lower()'
         )
-        return api_utils.json_loads(response)
 
     def delete(self, path):
         self.run('rm -rf {0}'.format(path))
