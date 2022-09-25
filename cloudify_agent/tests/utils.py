@@ -195,7 +195,7 @@ def build_linux_agent_package():
     subprocess.run(['packaging/linux/linux_agent_builder.sh'],
                    cwd=agent_topdir)
     shutil.copy(
-        os.path.join(agent_topdir, 'manylinux-none-agent_.tar.gz'),
+        os.path.join(agent_topdir, 'manylinux-x86_64-agent_.tar.gz'),
         temp_agent_path,
     )
 
