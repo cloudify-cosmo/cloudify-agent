@@ -72,11 +72,11 @@ def test_package_url_explicit(tmp_path, agent_ssl_cert):
             tmp_path,
             cert=agent_ssl_cert,
             extra_agent_params={
-                'distro': 'one',
-                'distro_codename': 'two'
+                'posix': True,
+                'architecture': 'arch',
             },
         )
-    assert 'one-two-agent.tar.gz' in output
+    assert 'manylinux-arch-agent.tar.gz' in output
 
 
 @pytest.mark.only_posix

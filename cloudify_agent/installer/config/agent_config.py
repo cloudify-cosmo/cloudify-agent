@@ -394,7 +394,7 @@ class CloudifyAgentConfig(dict):
         else:
             self._set_agent_architecture(runner)
 
-            if self.get('distro') and self.get('distro_codename'):
+            if self.get('architecture'):
                 agent_package_name = \
                     f'manylinux-{self["architecture"]}-agent.tar.gz'
 

@@ -2,7 +2,7 @@ from contextlib import contextmanager
 import getpass
 import os
 
-import distro
+import platform
 from mock import patch
 
 from cloudify import constants
@@ -12,7 +12,7 @@ from cloudify_agent.tests.installer.config import mock_context
 
 
 def test_prepare(agent_ssl_cert):
-    expected = _get_distro_package_url()
+    expected = _get_package_url()
 
     _test_prepare(
         agent_ssl_cert,
@@ -22,7 +22,7 @@ def test_prepare(agent_ssl_cert):
 
 
 def test_prepare_secured(agent_ssl_cert):
-    expected = _get_distro_package_url(rest_port='443')
+    expected = _get_package_url(rest_port='443')
     with patch('cloudify.utils.get_manager_rest_service_port',
                return_value=443):
         _test_prepare(
@@ -35,7 +35,7 @@ def test_prepare_secured(agent_ssl_cert):
 def test_prepare_multi_networks(agent_ssl_cert):
     manager_host = '10.0.0.1'
     network_name = 'test_network'
-    expected = _get_distro_package_url(manager_host=manager_host)
+    expected = _get_package_url(manager_host=manager_host)
     expected['rest_host'] = [manager_host]
     expected['broker_ip'] = [manager_host]
     expected['network'] = network_name
@@ -91,16 +91,14 @@ def test_connection_params_propagation(agent_ssl_cert):
         assert cloudify_agent['ssl_cert_path'] == '/tmp/blabla'
 
 
-def _get_distro_package_url(rest_port=80, manager_host='127.0.0.1'):
+def _get_package_url(rest_port=80, manager_host='127.0.0.1'):
     result = {'rest_port': rest_port}
     base_url = utils.get_manager_file_server_url(manager_host, rest_port)
     agent_package_url = '{0}/packages/agents'.format(base_url)
     if os.name == 'posix':
-        distro_name = distro.id().lower()
-        distro_codename = distro.codename().lower()
-        result['distro'] = distro_name
-        result['distro_codename'] = distro_codename
-        package = '{0}-{1}-agent.tar.gz'.format(distro_name, distro_codename)
+        architecture = platform.machine()
+        result['architecture'] = architecture
+        package = 'manylinux-{0}-agent.tar.gz'.format(architecture)
     else:
         package = 'cloudify-windows-agent.exe'
     result['package_url'] = '{0}/{1}'.format(agent_package_url, package)
