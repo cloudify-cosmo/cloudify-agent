@@ -166,8 +166,8 @@ def _set_default_new_agent_config_values(old_agent, new_agent):
 
 
 def _copy_values_from_old_agent_config(old_agent, new_agent):
-    fields_to_copy = ['windows', 'ip', 'basedir', 'user', 'distro_codename',
-                      'distro', 'broker_ssl_cert_path', 'agent_rest_cert_path',
+    fields_to_copy = ['windows', 'ip', 'basedir', 'user', 'architecture',
+                      'broker_ssl_cert_path', 'agent_rest_cert_path',
                       'network', 'local', 'install_method',
                       'process_management', 'node_instance_id']
     for field in fields_to_copy:
