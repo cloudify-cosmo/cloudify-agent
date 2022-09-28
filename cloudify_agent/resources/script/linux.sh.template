@@ -98,9 +98,8 @@ package_url()
         echo "{{ conf.package_url }}"
     else
         local python_bin=$(which python || which python3)
-        local distro="$($python_bin -c 'import sys, platform; sys.stdout.write(platform.dist()[0].lower())')"
-        local distro_codename="$($python_bin -c 'import sys, platform; data = platform.dist(); version = data[1].split(".")[0]; codename = version if data[0] == "centos" and version == "8" else data[2]; sys.stdout.write(codename.lower())')"
-        echo "{{ file_server_url }}/packages/agents/${distro}-${distro_codename}-agent.tar.gz"
+        local architecture="$($python_bin -c 'import sys, platform; sys.stdout.write(platform.machine().lower())')"
+        echo "{{ file_server_url }}/packages/agents/manylinux-${architecture}-agent.tar.gz"
     fi
 }
 export -f package_url
