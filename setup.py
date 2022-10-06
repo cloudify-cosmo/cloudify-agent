@@ -20,7 +20,7 @@ install_requires = [
     'appdirs==1.4.3',
     'jinja2>3,<4',
     'virtualenv==15.1.0',
-    'click>7,<8',
+    'click>8,<9',
     'packaging==17.1',
     'requests>=2.25.0,<3.0.0',
 ]
