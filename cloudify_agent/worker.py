@@ -511,7 +511,7 @@ class ServiceTaskConsumer(TaskConsumer):
 
         task = full_task['service_task']
         task_name = task['task_name']
-        kwargs = task['kwargs']
+        kwargs = task.get('kwargs') or {}
 
         logger.info(
             'Received `{0}` service task with kwargs: {1}'.format(
