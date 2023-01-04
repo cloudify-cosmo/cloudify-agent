@@ -1,4 +1,4 @@
-tosca_definitions_version: cloudify_dsl_1_4
+tosca_definitions_version: cloudify_dsl_1_5
 
 imports:
   - http://www.getcloudify.org/spec/cloudify/7.0.0.dev1/types.yaml
@@ -9,7 +9,7 @@ inputs:
     description: |
       Path to a file server resource base directory. The agent
       package will be placed under this directory so that it is
-      rechable by http
+      reachable by http
   source_url:
     description: URL to the source code of the agent
 
