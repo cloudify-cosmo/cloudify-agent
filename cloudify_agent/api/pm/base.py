@@ -148,7 +148,7 @@ class Daemon(object):
 
         path to a file containing environment variables to be added to the
         daemon environment. the file should be in the format of
-        multiple 'export A=B' lines for linux, ot 'set A=B' for windows.
+        multiple 'export A=B' lines for linux, to 'set A=B' for windows.
         defaults to None.
 
     ``log_level``:
@@ -281,6 +281,8 @@ class Daemon(object):
         self.process_management = self.PROCESS_MANAGEMENT
         self.virtualenv = VIRTUALENV
         self.network = params.get('network') or 'default'
+
+        self.resources_root = params.get('resources_root') or '/tmp/resources'
 
     def create_broker_conf(self):
         self._logger.info('Deploying broker configuration.')
