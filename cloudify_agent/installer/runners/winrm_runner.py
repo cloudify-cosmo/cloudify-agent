@@ -25,7 +25,6 @@ from cloudify.utils import CommandExecutionResponse
 from cloudify.utils import setup_logger
 
 from cloudify_agent.installer import utils
-from cloudify_agent.api import utils as api_utils
 
 from cloudify_rest_client.utils import is_kerberos_env
 from functools import reduce
@@ -250,20 +249,18 @@ class WinRMRunner(object):
 
         return self.run('mkdir \"{0}\" -Force'.format(path), powershell=True)
 
-    def machine_distribution(self):
+    def machine_architecture(self):
 
         """
-        Retrieves the distribution information of the host.
+        Retrieves the architecture of the host.
 
-        :return: dictionary of the platform distribution as returned from
-        'platform.dist()'
+        :return: string ('x86_64', 'aarch64' or 'amd64')
         """
 
-        response = self.python(
-            imports_line='import platform, json',
-            command='json.dumps(platform.dist())'
+        return self.python(
+            imports_line='import platform',
+            command='platform.machine().lower()'
         )
-        return api_utils.json_loads(response)
 
     def python(self, imports_line, command):
 

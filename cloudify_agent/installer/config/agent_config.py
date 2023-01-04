@@ -15,12 +15,11 @@
 
 import getpass
 import os
+import platform
 
 from ntpath import join as nt_join
 from functools import wraps
 from posixpath import join as posix_join
-
-import distro
 
 from cloudify_agent.installer import exceptions
 from cloudify_agent.api import utils as agent_utils
@@ -393,13 +392,11 @@ class CloudifyAgentConfig(dict):
             # No distribution difference in windows installation
             agent_package_name = 'cloudify-windows-agent.exe'
         else:
-            self._set_agent_distro(runner)
-            self._set_agent_distro_codename(runner)
+            self._set_agent_architecture(runner)
 
-            if self.get('distro') and self.get('distro_codename'):
-                agent_package_name = '{0}-{1}-agent.tar.gz'.format(
-                    self['distro'], self['distro_codename']
-                )
+            if self.get('architecture'):
+                agent_package_name = \
+                    f'manylinux-{self["architecture"]}-agent.tar.gz'
 
         if agent_package_name:
 
@@ -408,31 +405,14 @@ class CloudifyAgentConfig(dict):
                 agent_package_name
             )
 
-    def _set_agent_distro(self, runner):
-        if self.get('distro'):
+    def _set_agent_architecture(self, runner):
+        if self.get('architecture'):  # Might be an empty string
             return
 
         if self.is_local:
-            self['distro'] = distro.id().lower()
+            self['architecture'] = platform.machine()
         elif self.is_remote:
-            self['distro'] = runner.machine_distribution()[0].lower()
-
-    def _set_agent_distro_codename(self, runner):
-        if self.get('distro_codename'):  # Might be an empty string
-            return
-
-        if self.is_local:
-            self['distro_codename'] = distro.codename().lower()
-        elif self.is_remote:
-            distribution = runner.machine_distribution()
-            # Sometimes the code name for distro is returned as '' and we need
-            # to fallback to the version number and pick the major version
-            version = distribution[1].split('.')[0]
-            distro_codename = distribution[2]
-            if distribution[0] == "centos" and version == "8":
-                distro_codename = version
-
-            self['distro_codename'] = distro_codename.lower()
+            self['architecture'] = runner.machine_architecture()
 
 
 def _get_agent_inputs(params):

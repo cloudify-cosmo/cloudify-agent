@@ -178,7 +178,7 @@ EOT
                 #--- build the agent here
                 cp packaging/linux/linux_agent_builder.sh .
                 chmod +x linux_agent_builder.sh
-                ./linux_agent_builder.sh manylinux none ${VERSION}-${PRERELEASE}
+                ./linux_agent_builder.sh manylinux x86_64 ${VERSION}-${PRERELEASE}
 
                 # retries because yum mirrors aren't always reliable
                 for i in {1..30}; do yum-builddep -y cloudify-agents.spec && break || sleep 10; done
