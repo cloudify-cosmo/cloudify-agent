@@ -119,7 +119,7 @@ sudo systemctl start rabbitmq-server
 
 # setup python3.10
 curl -fL --retry 5 \
-  https://cloudify-cicd.s3.amazonaws.com/python-build-packages/cfy-python3.10.tgz \
+  https://cloudify-cicd.s3.amazonaws.com/python-build-packages/cfy-python3.10-x86_64.tgz \
   -o cfy-python3.10.tgz
 mkdir python3.10
 tar --strip-components=2 -zxf cfy-python3.10.tgz -C python3.10

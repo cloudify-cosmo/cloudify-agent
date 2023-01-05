@@ -95,4 +95,5 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             executable_temp_path=self.executable_temp_path,
             user=self.user,
             storage_dir=utils.internal.get_storage_directory(self.user),
+            resources_root=self.resources_root,
         )

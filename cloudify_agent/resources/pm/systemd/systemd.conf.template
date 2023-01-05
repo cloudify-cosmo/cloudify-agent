@@ -17,3 +17,4 @@ CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}"
 # Executable tempfiles directory override
 CFY_EXEC_TEMP="{{ executable_temp_path }}"
 {% endif %}
+CFY_RESOURCES_ROOT="{{ resources_root }}"

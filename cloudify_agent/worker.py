@@ -242,7 +242,9 @@ class CloudifyOperationConsumer(TaskConsumer):
         if common_version < parse_version('6.2.0'):
             # plugin's common is old - it does the operation state bookkeeping
             # by itself.
-            yield
+            with ctx.sync_deployment_workdir(ctx.deployment.id,
+                                             ctx.deployment.tenant_name):
+                yield
             return
         store = True
         try:
@@ -259,11 +261,14 @@ class CloudifyOperationConsumer(TaskConsumer):
             ctx.resume = True
         if store:
             ctx.update_operation(constants.TASK_STARTED)
-        try:
-            yield
-        finally:
-            if store:
-                ctx.update_operation(constants.TASK_RESPONSE_SENT)
+
+        with ctx.sync_deployment_workdir(ctx.deployment.id,
+                                         ctx.deployment.tenant_name):
+            try:
+                yield
+            finally:
+                if store:
+                    ctx.update_operation(constants.TASK_RESPONSE_SENT)
 
     def _plugin_common_version(self, executable, env):
         """The cloudify-common version included in the venv at executable.
