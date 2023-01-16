@@ -169,7 +169,9 @@ def _copy_values_from_old_agent_config(old_agent, new_agent):
     fields_to_copy = ['windows', 'ip', 'basedir', 'user', 'architecture',
                       'broker_ssl_cert_path', 'agent_rest_cert_path',
                       'network', 'local', 'install_method',
-                      'process_management', 'node_instance_id']
+                      'process_management', 'node_instance_id',
+                      'distro_codename']
+    # distro_codename for supporting upgrade from pre-7.0
     for field in fields_to_copy:
         if field in old_agent:
             new_agent[field] = old_agent[field]

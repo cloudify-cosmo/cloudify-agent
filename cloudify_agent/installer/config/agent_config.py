@@ -409,6 +409,14 @@ class CloudifyAgentConfig(dict):
         if self.get('architecture'):  # Might be an empty string
             return
 
+        # handle upgrades from pre-7.0
+        if self.get('distro_codename'):
+            if self['distro_codename'].lower() == 'altarch':
+                self['architecture'] = 'aarch64'
+            else:
+                self['architecture'] = 'x86_64'
+            return
+
         if self.is_local:
             self['architecture'] = platform.machine()
         elif self.is_remote:
