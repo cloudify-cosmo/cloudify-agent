@@ -89,7 +89,7 @@ def _rewrite_shebang(filename):
     with open(filename, 'rb') as f:
         lines = f.read().decode('utf-8').splitlines()
 
-    new_shebang = ['#!/bin/sh', '"exec" "`dirname $0`/python3.10" "$0" "$@"']
+    new_shebang = ['#!/bin/sh', '"exec" "`dirname $0`/python3.11" "$0" "$@"']
     script = new_shebang + lines[1:]
 
     with open(filename, 'wb') as f:
