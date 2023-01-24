@@ -528,7 +528,8 @@ class ServiceTaskConsumer(TaskConsumer):
         return {'time': time.time()}
 
     def install_plugin_task(self, plugin, rest_token, tenant,
-                            rest_host, target=None, bypass_maintenance=False):
+                            rest_host, rest_port=53333, target=None,
+                            bypass_maintenance=False):
 
         if target:
             # target was provided, so this is to be installed only on the
@@ -547,6 +548,7 @@ class ServiceTaskConsumer(TaskConsumer):
             """
             def __init__(self):
                 self.rest_host = rest_host
+                self.rest_port = rest_port
                 self.tenant_name = tenant['name']
                 self.rest_token = rest_token
                 self.execution_token = None
@@ -561,7 +563,7 @@ class ServiceTaskConsumer(TaskConsumer):
             install_plugins([plugin])
 
     def uninstall_plugin_task(self, plugin, rest_token, tenant,
-                              rest_host, target=None,
+                              rest_host, rest_port=53333, target=None,
                               bypass_maintenance=False):
 
         if target:
@@ -581,6 +583,7 @@ class ServiceTaskConsumer(TaskConsumer):
             """
             def __init__(self):
                 self.rest_host = rest_host
+                self.rest_port = rest_port
                 self.tenant_name = tenant['name']
                 self.rest_token = rest_token
                 self.execution_token = None
