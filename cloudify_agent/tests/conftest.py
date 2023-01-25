@@ -289,11 +289,8 @@ def mock_daemon_factory_load_all():
 
 
 @pytest.fixture(scope='function')
-def mock_daemon_api_internal_daemon_to_dict():
-    with patch(
-        'cloudify_agent.shell.commands.daemons.api_utils'
-        '.internal.daemon_to_dict'
-    ) as idtd:
+def mock_daemon_as_dict():
+    with patch('cloudify_agent.api.pm.base.Daemon.as_dict') as idtd:
         yield idtd
 
 

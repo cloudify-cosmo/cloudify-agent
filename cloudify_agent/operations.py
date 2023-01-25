@@ -102,7 +102,7 @@ def restart(new_name=None, delay_period=5, **_):
     )
 
     # clone the current daemon to preserve all the attributes
-    attributes = utils.internal.daemon_to_dict(daemon)
+    attributes = daemon.as_dict()
 
     # give the new daemon the new name
     attributes['name'] = new_name

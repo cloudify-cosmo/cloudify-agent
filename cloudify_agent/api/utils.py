@@ -129,33 +129,6 @@ class _Internal(object):
             return '{0}_{1}'.format(old_agent_name, suffix)
 
     @staticmethod
-    def daemon_to_dict(daemon):
-
-        """
-        Return a json representation of the daemon by copying the __dict__
-        attribute value. Also notice that this implementation removes any
-        attributes starting with the underscore ('_') character.
-
-        :param daemon: the daemon.
-        :type daemon: cloudify_agent.api.pm.base.Daemon
-        """
-
-        try:
-            getattr(daemon, '__dict__')
-        except AttributeError:
-            raise ValueError('Cannot save a daemon with '
-                             'no __dict__ attribute.')
-
-        # don't use deepcopy here because we this will try to copy
-        # the internal non primitive attributes
-        original = daemon.__dict__
-        result = copy.copy(original)
-        for attr in original:
-            if attr.startswith('_'):
-                result.pop(attr)
-        return result
-
-    @staticmethod
     def get_broker_url(agent):
         broker_ip = agent['broker_ip']
         broker_user = agent.get('broker_user', 'guest')

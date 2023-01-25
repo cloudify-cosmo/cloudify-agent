@@ -375,7 +375,7 @@ def inspect(name):
     """
 
     daemon = _load_daemon(name)
-    click.echo(json.dumps(api_utils.internal.daemon_to_dict(daemon), indent=2))
+    click.echo(json.dumps(daemon.as_dict(), indent=2))
 
 
 @cfy.command('list')

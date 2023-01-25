@@ -203,7 +203,7 @@ class DaemonFactory(object):
         self.logger.debug('Saving daemon configuration at: {0}'
                           .format(daemon_path))
         with open(daemon_path, 'w') as f:
-            props = utils.internal.daemon_to_dict(daemon)
+            props = daemon.as_dict()
             json.dump(props, f, indent=2)
             f.write(os.linesep)
 
