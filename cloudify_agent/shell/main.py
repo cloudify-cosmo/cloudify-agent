@@ -14,6 +14,7 @@
 #  * limitations under the License.
 
 import logging
+import os
 
 import click
 
@@ -21,15 +22,16 @@ from cloudify.utils import setup_logger
 
 from cloudify_agent.api.utils import (
     get_agent_version,
-    logger as api_utils_logger
+    logger as api_utils_logger,
+    get_rest_client,
 )
+from cloudify_agent.api.factory import DaemonFactory
 
 # adding all of our commands.
 
 from cloudify_agent.shell.commands import daemons
 from cloudify_agent.shell.commands import configure
 from cloudify_agent.shell.commands import cfy
-
 
 _logger = setup_logger('cloudify_agent.shell.main',
                        logger_format='%(asctime)s [%(levelname)-5s] '
@@ -66,6 +68,127 @@ def main(debug):
         api_utils_logger.setLevel(logging.DEBUG)
 
 
+def _save_daemon(daemon):
+    DaemonFactory(username=daemon.user).save(daemon)
+
+
+def _parse_rest_hosts(ctx, param, value):
+    return [host.strip() for host in value.split(',')]
+
+
+@cfy.command('setup')
+@click.option(
+    '--name',
+    help='The name of the agent',
+)
+@click.option(
+    '--rest-hosts',
+    help='Comma-separated list of Cloudify Manager REST-service addresses',
+    callback=_parse_rest_hosts,
+)
+@click.option(
+    '--rest-port',
+    help='Port to connect to the Cloudify Manager REST-service on',
+)
+@click.option(
+    '--rest-ca-path',
+    help='Path to the CA certificate of the Cloudify Manager REST-service',
+)
+@click.option(
+    '--tenant-name',
+    help='Name of the tenant this agent belongs to',
+)
+@click.option(
+    '--rest-token',
+    help='Authentication token for the REST-service',
+)
+@click.option(
+    '--agent-dir',
+    help='Directory to install the agent in',
+)
+@click.option(
+    '--process-management',
+    help='Process management system to use for the agent daemon',
+)
+@click.option(
+    '--bypass-maintenance',
+    is_flag=True,
+    default=False,
+    help='Install while the Cloudify Manager is in maintenance mode',
+)
+def setup(
+    name,
+    rest_hosts,
+    rest_port,
+    rest_ca_path,
+    tenant_name,
+    rest_token,
+    agent_dir,
+    process_management,
+    bypass_maintenance=False,
+):
+    """Prepare the agent, storing the agent settings"""
+    client = get_rest_client(
+        rest_host=rest_hosts,
+        rest_port=rest_port,
+        rest_token=rest_token,
+        rest_tenant=tenant_name,
+        ssl_cert_path=rest_ca_path,
+        bypass_maintenance_mode=bypass_maintenance,
+    )
+
+    inst = client.node_instances.get(name, evaluate_functions=True)
+    agent = client.agents.get(name)
+    agent_config = inst.runtime_properties['cloudify_agent']
+    network = agent_config.get('network') or 'default'
+
+    broker_certs = set()
+    brokers = client.manager.get_brokers()
+    for broker in brokers:
+        cert = broker.ca_cert_content
+        if cert:
+            broker_certs.add(cert.strip())
+    broker_ssl_cert_path = None
+    if broker_certs:
+        broker_ssl_cert_path = os.path.join(
+            agent_dir, 'cloudify', 'ssl', 'broker_cert.pem')
+        with open(broker_ssl_cert_path, 'w') as f:
+            f.write('\n'.join(broker_certs))
+
+    click.echo('Creating...')
+    daemon = DaemonFactory().new(
+        logger=get_logger(),
+        name=name,
+        broker_ip=[
+            broker.networks.get(network) or broker.host
+            for broker in brokers
+        ],
+        local_rest_cert_file=os.path.join(
+            agent_dir, 'cloudify', 'ssl', 'cloudify_internal_cert.pem'),
+        broker_user=agent.rabbitmq_username,
+        broker_pass=agent.rabbitmq_password,
+        broker_vhost=agent_config['tenant']['rabbitmq_vhost'],
+        broker_ssl_enabled=True,
+        broker_ssl_cert_path=broker_ssl_cert_path,
+        agent_dir=agent_dir,
+        deployment_id=inst.deployment_id,
+        process_management=process_management,
+        user=agent_config['user'],
+        queue=agent_config['queue'],
+        heartbeat=agent_config.get('heartbeat'),
+        extra_env=agent_config.get('env', {}),
+        log_level=agent_config.get('log_level'),
+        log_max_bytes=agent_config.get('log_max_bytes'),
+        log_max_history=agent_config.get('log_max_history'),
+        network=network,
+        min_workers=agent_config.get('min_workers'),
+        max_workers=agent_config.get('max_workers'),
+        executable_temp_path=agent_config.get('executable_temp_path'),
+    )
+    _save_daemon(daemon)
+    click.echo(f'Successfully created daemon: {daemon.name}')
+
+
 @cfy.group(name='daemons')
 def daemon_sub_command():
     pass
@@ -76,6 +199,7 @@ def plugins_sub_command():
     pass
 
 
+main.add_command(setup)
 main.add_command(configure.configure)
 
 daemon_sub_command.add_command(daemons.create)
