@@ -144,13 +144,6 @@ class Daemon(object):
         suggests, it will never exceed this number. allowing for the control
         of resource usage. defaults to 5.
 
-    ``extra_env_path``:
-
-        path to a file containing environment variables to be added to the
-        daemon environment. the file should be in the format of
-        multiple 'export A=B' lines for linux, to 'set A=B' for windows.
-        defaults to None.
-
     ``log_level``:
 
         log level of the daemon process itself. defaults to debug.
@@ -168,108 +161,88 @@ class Daemon(object):
     # override this when adding implementations.
     PROCESS_MANAGEMENT = None
 
-    # add specific mandatory parameters for different implementations.
-    # they will be validated upon daemon creation
-    MANDATORY_PARAMS = ['rest_host', 'broker_ip', 'local_rest_cert_file']
-
-    def __init__(self, logger=None, **params):
-
-        """
-
-        ####################################################################
-        # When subclassing this, do not implement any logic inside the
-        # constructor except for in-memory calculations and settings, as the
-        # daemon may be instantiated many times for an existing agent. Also,
-        # all daemon attributes must be JSON serializable, as daemons are
-        # represented as dictionaries and stored as JSON files on Disk. If
-        # you wish to have a non serializable attribute, mark it private by
-        # naming it _<name>. Attributes starting with underscore will be
-        # omitted when serializing the object.
-        ####################################################################
-
-        :param logger: a logger to be used to log various subsequent
-        operations.
-        :type logger: logging.Logger
-
-        :param params: key-value pairs as stated above.
-        :type params dict
-
-        """
-
-        # will be populated later on with runtime properties of the host
-        # node instance this agent is dedicated for (if needed)
-        self._runtime_properties = None
-
-        # configure logger
+    def __init__(
+        self,
+        *,
+        logger=None,
+        broker_ip,
+        name,
+        queue,
+        deployment_id=None,
+        user=None,
+        broker_user='guest',
+        broker_pass='guest',
+        broker_vhost='/',
+        broker_ssl_enabled=False,
+        broker_ssl_cert_path=None,
+        heartbeat=None,
+        min_workers=defaults.MIN_WORKERS,
+        max_workers=defaults.MAX_WORKERS,
+        agent_dir=None,
+        local_rest_cert_file=None,
+        log_max_bytes=defaults.LOG_FILE_SIZE,
+        log_max_history=defaults.LOG_BACKUPS,
+        executable_temp_path=None,
+        extra_env=None,
+        log_level=defaults.LOG_LEVEL,
+        log_dir=None,
+        pid_file=None,
+        network='default',
+        resources_root='/tmp/resources',
+        **params
+    ):
         self._logger = logger or setup_logger(
             logger_name='cloudify_agent.api.pm.{0}'
             .format(self.PROCESS_MANAGEMENT))
 
-        # save params
-        self._params = params
-
-        if self._logger.isEnabledFor(logging.DEBUG):
-            printed_params = copy.deepcopy(self._params)
-            for hidden_field in ['broker_pass',
-                                 'service_password']:
-                printed_params.pop(hidden_field, None)
-            self._logger.debug("Daemon attributes: %s", json.dumps(
-                printed_params, indent=4))
-
-        # configure command runner
         self._runner = LocalCommandRunner(logger=self._logger)
 
-        # Mandatory parameters
-        self.validate_mandatory()
-        self.rest_host = params['rest_host']
-        self.broker_ip = params['broker_ip']
-        self.local_rest_cert_file = params['local_rest_cert_file']
+        self.broker_ip = broker_ip
 
-        # Optional parameters - REST client
-        self.validate_optional()
-        self.rest_port = params.get('rest_port', defaults.INTERNAL_REST_PORT)
-        # REST token needs to be prefixed with _ so it's not stored
-        # when the daemon is serialized
-        self._rest_token = params.get('rest_token')
-        self._rest_tenant = params.get('rest_tenant')
+        self.name = name
+        self.user = user or getpass.getuser()
 
-        # Optional parameters
-        self.name = params.get('name') or self._get_name_from_manager()
-        self.user = params.get('user') or getpass.getuser()
-
-        self.broker_user = params.get('broker_user', 'guest')
-        self.broker_pass = params.get('broker_pass', 'guest')
-        self.broker_vhost = params.get('broker_vhost', '/')
-        self.broker_ssl_enabled = params.get('broker_ssl_enabled', False)
-        self.broker_ssl_cert_path = params['local_rest_cert_file']
+        self.broker_user = broker_user
+        self.broker_pass = broker_pass
+        self.broker_vhost = broker_vhost
+        self.broker_ssl_enabled = broker_ssl_enabled
+        self.broker_ssl_cert_path = broker_ssl_cert_path
         if self.broker_ssl_enabled:
             self.broker_port = constants.BROKER_PORT_SSL
         else:
             self.broker_port = constants.BROKER_PORT_NO_SSL
-        self.heartbeat = params.get('heartbeat')
+        self.heartbeat = heartbeat
 
-        self.host = params.get('host')
-        self.deployment_id = params.get('deployment_id')
-        self.queue = params.get('queue') or self._get_queue_from_manager()
+        self.deployment_id = deployment_id
+        self.queue = queue
 
-        self.min_workers = params.get('min_workers') or defaults.MIN_WORKERS
-        self.max_workers = params.get('max_workers') or defaults.MAX_WORKERS
-        self.workdir = params.get('workdir') or os.getcwd()
-        self.log_max_bytes = params.get('log_max_bytes',
-                                        defaults.LOG_FILE_SIZE)
-        self.log_max_history = params.get('log_max_history',
-                                          defaults.LOG_BACKUPS)
-        self.executable_temp_path = params.get('executable_temp_path')
+        self.min_workers = min_workers
+        self.max_workers = max_workers
 
-        self.extra_env_path = params.get('extra_env_path')
-        self.log_level = params.get('log_level') or defaults.LOG_LEVEL
-        self.log_dir = params.get('log_dir') or self.workdir
+        self.agent_dir = agent_dir or os.getcwd()
+        self.workdir = os.path.join(self.agent_dir, 'work')
+        self.local_rest_cert_file = (
+            local_rest_cert_file
+            or os.path.join(
+                self.agent_dir, 'cloudify', 'ssl', 'cloudify_internal_cert.pem'
+            )
+        )
+
+        self.log_max_bytes = log_max_bytes
+        self.log_max_history = log_max_history
+        self.log_level = log_level
+        self.log_dir = log_dir or self.workdir
+
+        self.executable_temp_path = executable_temp_path
+        self.extra_env = extra_env or {}
+
         # CentOS / RHEL 6 don't have /run; they have /var/run which is cleared
         # at boot time.
         # CentOS / RHEL 7 mount /run on tmpfs, and symlink /var/run to it.
         # We'll use /var/run globally for the time being.
-        self.pid_file = params.get(
-            'pid_file') or '/var/run/cloudify.{0}/agent.pid'.format(self.name)
+        self.pid_file = (
+            pid_file or '/var/run/cloudify.{0}/agent.pid'.format(self.name)
+        )
 
         # create working directory if its missing
         if not os.path.exists(self.workdir):
@@ -280,9 +253,18 @@ class Daemon(object):
         # we will make use of these values when loading agents by name.
         self.process_management = self.PROCESS_MANAGEMENT
         self.virtualenv = VIRTUALENV
-        self.network = params.get('network') or 'default'
+        self.network = network
 
-        self.resources_root = params.get('resources_root') or '/tmp/resources'
+        self.resources_root = resources_root or '/tmp/resources'
+
+        if self._logger.isEnabledFor(logging.DEBUG):
+            printed_params = self.as_dict()
+            for hidden_field in ['broker_pass', 'service_password']:
+                printed_params.pop(hidden_field, None)
+            self._logger.debug("Daemon attributes: %s", json.dumps(
+                printed_params, indent=4))
+
+        self._validate_autoscale(min_workers, max_workers)
 
     def create_broker_conf(self):
         self._logger.info('Deploying broker configuration.')
@@ -299,30 +281,8 @@ class Daemon(object):
         with open(broker_conf_path, 'w') as conf_handle:
             json.dump(config, conf_handle)
 
-    def validate_mandatory(self):
-
-        """
-        Validates that all mandatory parameters are given.
-
-        :raise DaemonMissingMandatoryPropertyError: in case one of the
-        mandatory parameters is missing.
-        """
-
-        for param in self.MANDATORY_PARAMS:
-            if param not in self._params:
-                raise exceptions.DaemonMissingMandatoryPropertyError(param)
-
-    def validate_optional(self):
-
-        """
-        Validates any optional parameters given to the daemon.
-
-        :raise DaemonPropertiesError:
-        in case one of the parameters is faulty.
-        """
-
-        self._validate_autoscale()
-        self._validate_host()
+    def as_dict(self):
+        return {k: v for k, v in vars(self).items() if not k.startswith('_')}
 
     def _get_client(self):
         return get_client(
@@ -570,9 +530,7 @@ class Daemon(object):
             os.remove(error_dump_path)
             raise exceptions.DaemonError(error)
 
-    def _validate_autoscale(self):
-        min_workers = self._params.get('min_workers')
-        max_workers = self._params.get('max_workers')
+    def _validate_autoscale(self, min_workers, max_workers):
         if min_workers:
             if not str(min_workers).isdigit():
                 raise exceptions.DaemonPropertiesError(
@@ -595,61 +553,6 @@ class Daemon(object):
                     'min_workers cannot be greater than max_workers '
                     '[min_workers={0}, max_workers={1}]'
                     .format(min_workers, max_workers))
-
-    def _validate_host(self):
-        queue = self._params.get('queue')
-        host = self._params.get('host')
-        if not queue and not host:
-            raise exceptions.DaemonPropertiesError(
-                'host must be supplied when queue is omitted'
-            )
-
-    def _validate_deployment_id(self):
-        queue = self._params.get('queue')
-        host = self._params.get('deployment_id')
-        if not queue and not host:
-            raise exceptions.DaemonPropertiesError(
-                'deployment_id must be supplied when queue is omitted'
-            )
-
-    def _get_name_from_manager(self):
-        if self._runtime_properties is None:
-            self._get_runtime_properties()
-        return self._runtime_properties['cloudify_agent']['name']
-
-    def _get_queue_from_manager(self):
-        if self._runtime_properties is None:
-            self._get_runtime_properties()
-        return self._runtime_properties['cloudify_agent']['queue']
-
-    def _get_runtime_properties(self):
-        client = utils.get_rest_client(
-            rest_host=self.rest_host,
-            rest_port=self.rest_port,
-            rest_token=self._rest_token,
-            rest_tenant=self._rest_tenant,
-            ssl_cert_path=self.local_rest_cert_file
-        )
-        node_instances = client.node_instances.list(
-            deployment_id=self.deployment_id,
-            _get_all_results=True)
-
-        matched = [
-            ni for ni in node_instances
-            if ni.host_id == ni.id and self.host == ni.runtime_properties['ip']
-        ]
-
-        if len(matched) > 1:
-            raise exceptions.DaemonConfigurationError(
-                'Found multiple node instances with ip {0}: {1}'.format(
-                    self.host, ','.join(matched))
-            )
-
-        if len(matched) == 0:
-            raise exceptions.DaemonConfigurationError(
-                'No node instances with ip {0} were found'.format(self.host)
-            )
-        self._runtime_properties = matched[0].runtime_propreties
 
 
 class GenericLinuxDaemonMixin(Daemon):
