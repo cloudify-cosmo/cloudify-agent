@@ -28,7 +28,10 @@ from cloudify_agent.api import defaults
 from cloudify import ctx
 from cloudify import constants
 from cloudify import utils as cloudify_utils
-from cloudify.exceptions import CommandExecutionException
+from cloudify.agent_utils import (
+    create_agent_record,
+    get_agent_rabbitmq_user,
+)
 
 from .installer_config import create_runner, get_installer
 from .config_errors import raise_missing_attribute, raise_missing_attributes
@@ -48,6 +51,11 @@ def create_agent_config_and_installer(
                 # Set values that need to be inferred from other ones
                 cloudify_agent.set_execution_params()
                 cloudify_agent.set_default_values()
+                user_already_exists = get_agent_rabbitmq_user(cloudify_agent)
+                create_agent_record(
+                    cloudify_agent,
+                    create_rabbitmq_user=not user_already_exists,
+                )
 
             runner = create_runner(cloudify_agent, validate_connection)
             if not runner:
