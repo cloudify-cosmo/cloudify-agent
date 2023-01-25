@@ -610,10 +610,10 @@ class GenericLinuxDaemonMixin(Daemon):
         self._runner.run('sudo rm {0}'.format(rendered))
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        if self._is_daemon_running():
-            if not force:
-                raise exceptions.DaemonStillRunningException(self.name)
+        try:
             self.stop()
+        except Exception as e:
+            self._logger.info('Deleting agent: could not stop daemon: %s', e)
 
         self._delete()
 

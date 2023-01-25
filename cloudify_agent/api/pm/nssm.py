@@ -140,10 +140,10 @@ class NonSuckingServiceManagerDaemon(Daemon):
         super(NonSuckingServiceManagerDaemon, self).before_self_stop()
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        if self._is_daemon_running():
-            if not force:
-                raise exceptions.DaemonStillRunningException(self.name)
+        try:
             self.stop()
+        except Exception as e:
+            self._logger.info('Deleting agent: could not stop daemon: %s', e)
 
         self._logger.info('Removing {0} service'.format(
             self.name))

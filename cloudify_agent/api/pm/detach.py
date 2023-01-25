@@ -109,12 +109,10 @@ class DetachedDaemon(CronRespawnDaemonMixin):
                           'successfully')
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        if self._is_daemon_running():
-            if not force:
-                raise exceptions.DaemonStillRunningException(self.name)
+        try:
             self.stop()
-
-        self.delete_agent_resources()
+        except Exception as e:
+            self._logger.info('Deleting agent: could not stop daemon: %s', e)
 
         if os.path.exists(self.pid_file):
             self._logger.debug('Removing {0}'.format(self.pid_file))
