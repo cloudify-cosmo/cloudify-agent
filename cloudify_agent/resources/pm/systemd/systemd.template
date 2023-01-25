@@ -5,7 +5,6 @@ Description=Cloudify Agent Worker Service
 TimeoutStartSec=0
 Restart=on-failure
 EnvironmentFile={{ config_path }}
-{% if extra_env_path -%} EnvironmentFile=-{{ extra_env_path }} {% endif %}
 User={{ user }}
 RestartSec=2
 ExecStart={{ virtualenv_path }}/bin/python -m cloudify_agent.worker \

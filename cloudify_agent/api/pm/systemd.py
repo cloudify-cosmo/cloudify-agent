@@ -75,7 +75,6 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             config_path=self.config_path,
             max_workers=self.max_workers,
             name=self.name,
-            extra_env_path=self.extra_env_path,
         )
 
     def _get_rendered_config(self):
@@ -94,6 +93,7 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             name=self.name,
             executable_temp_path=self.executable_temp_path,
             user=self.user,
+            extra_env=self.extra_env,
             storage_dir=utils.internal.get_storage_directory(self.user),
             resources_root=self.resources_root,
         )

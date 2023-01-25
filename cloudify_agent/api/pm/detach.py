@@ -186,7 +186,7 @@ class DetachedDaemon(CronRespawnDaemonMixin):
             log_dir=self.log_dir,
             log_max_bytes=self.log_max_bytes,
             log_max_history=self.log_max_history,
-            extra_env_path=self.extra_env_path,
+            extra_env=self.extra_env,
             storage_dir=utils.internal.get_storage_directory(self.user),
             workdir=self.workdir,
             executable_temp_path=self.executable_temp_path,

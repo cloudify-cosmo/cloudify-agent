@@ -118,7 +118,7 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
             enable_cron_script=self.create_enable_cron_script(),
             disable_cron_script=self.create_disable_cron_script(),
             executable_temp_path=self.executable_temp_path,
-            extra_env_path=self.extra_env_path,
+            extra_env=self.extra_env,
             storage_dir=utils.internal.get_storage_directory(self.user),
             name=self.name,
             resources_root=self.resources_root,

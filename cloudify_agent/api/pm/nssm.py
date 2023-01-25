@@ -194,13 +194,8 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
     def _create_env_string(self):
         env_string = ''
-        if self.extra_env_path and os.path.exists(self.extra_env_path):
-            with open(self.extra_env_path) as f:
-                content = f.read()
-            for line in content.splitlines():
-                if line.startswith('set'):
-                    parts = line.split(' ')[1].split('=')
-                    key = parts[0]
-                    value = parts[1]
-                    env_string = '{0} {1}={2}'.format(env_string, key, value)
+        if self.extra_env:
+            env_string = ' '.join(
+                f'{key}={value}' for key, value in self.extra_env.items()
+            )
         return env_string.rstrip()
