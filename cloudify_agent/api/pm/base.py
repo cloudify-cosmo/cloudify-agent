@@ -13,7 +13,6 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import copy
 import getpass
 import json
 import logging
@@ -38,9 +37,8 @@ AGENT_IS_REGISTERED_TIMEOUT = 1
 
 
 class Daemon(object):
+    """Base class for daemon implementations.
 
-    """
-    Base class for daemon implementations.
     Following is all the available common daemon keyword arguments. These
     will be available to any daemon without any configuration as instance
     attributes.
@@ -650,7 +648,7 @@ class CronRespawnDaemonMixin(Daemon):
     """
 
     def __init__(self, logger=None, **params):
-        super(CronRespawnDaemonMixin, self).__init__(logger, **params)
+        super().__init__(logger=logger, **params)
         self.cron_respawn_delay = params.get('cron_respawn_delay', 1)
         self.cron_respawn = params.get('cron_respawn', False)
 

@@ -42,7 +42,7 @@ class DetachedDaemon(CronRespawnDaemonMixin):
     PROCESS_MANAGEMENT = 'detach'
 
     def __init__(self, logger=None, **params):
-        super(DetachedDaemon, self).__init__(logger, **params)
+        super().__init__(logger=logger, **params)
         self.script_path = os.path.join(self.workdir, self.name)
         self.config_path = os.path.join(self.workdir, '{0}.conf'.
                                         format(self.name))
@@ -177,8 +177,6 @@ class DetachedDaemon(CronRespawnDaemonMixin):
             file_path=self.config_path,
             user=self.user,
             name=self.name,
-            rest_host=self.rest_host,
-            rest_port=self.rest_port,
             local_rest_cert_file=self.local_rest_cert_file,
             log_level=self.log_level.upper(),
             log_dir=self.log_dir,
@@ -186,6 +184,7 @@ class DetachedDaemon(CronRespawnDaemonMixin):
             log_max_history=self.log_max_history,
             extra_env=self.extra_env,
             storage_dir=utils.internal.get_storage_directory(self.user),
+            agent_dir=self.agent_dir,
             workdir=self.workdir,
             executable_temp_path=self.executable_temp_path,
             resources_root=self.resources_root,

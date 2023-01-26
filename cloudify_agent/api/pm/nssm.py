@@ -64,8 +64,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
     RUNNING_STATES = ['SERVICE_RUNNING', 'SERVICE_STOP_PENDING']
 
     def __init__(self, logger=None, **params):
-        super(NonSuckingServiceManagerDaemon, self).__init__(
-            logger=logger, **params)
+        super().__init__(logger=logger, **params)
 
         self.config_path = os.path.join(
             self.workdir,
@@ -95,11 +94,11 @@ class NonSuckingServiceManagerDaemon(Daemon):
             log_max_bytes=self.log_max_bytes,
             log_max_history=self.log_max_history,
             workdir=self.workdir,
+            agent_dir=self.agent_dir,
+            resources_root=self.resources_root,
             user=self.user,
             service_user=self.service_user,
             service_password=self.service_password,
-            rest_host=self.rest_host,
-            rest_port=self.rest_port,
             local_rest_cert_file=self.local_rest_cert_file,
             max_workers=self.max_workers,
             virtualenv_path=VIRTUALENV,

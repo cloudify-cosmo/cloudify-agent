@@ -42,7 +42,7 @@ from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.installer.script import (
-    init_script_download_link,
+    install_script_download_link,
     stop_agent_script_download_link,
     cleanup_scripts
 )
@@ -250,7 +250,7 @@ def _http_rest_host(cloudify_agent):
 
 
 def _get_init_script_path_and_url(new_agent, old_agent_version):
-    script_path, script_url = init_script_download_link(new_agent)
+    script_path, script_url = install_script_download_link(new_agent)
     # Prior to 4.2 (and script plugin 1.5.1) there was no way to pass
     # a certificate to the script plugin, so the initial script must be
     # passed over http
