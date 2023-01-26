@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 # This script downloads, installs, and starts a Cloudify Agent.
 # The agent is installed into {{ conf.basedir }}, then a service is
