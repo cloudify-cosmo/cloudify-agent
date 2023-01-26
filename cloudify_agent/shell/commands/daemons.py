@@ -48,41 +48,10 @@ def create(name, user, **params):
     attributes.update(_parse_custom_options(custom_arg))
 
     click.echo('Creating...')
-    from cloudify_agent.shell.main import get_logger
-    daemon = DaemonFactory().new(
-        logger=get_logger(),
-        **attributes
-    )
-    daemon.create()
-    _save_daemon(daemon)
-    click.echo('Successfully created daemon: {0}'
-               .format(daemon.name))
-
-
-@cfy.command()
-@click.option('--name',
-              help='The name of the daemon. [env {0}]'.format(env.AGENT_NAME),
-              required=True,
-              envvar=env.AGENT_NAME)
-@click.option('--user',
-              help='The user to load the configuration from. Defaults to '
-                   'current user. [env {0}]'
-              .format(env.CLOUDIFY_DAEMON_USER),
-              envvar=env.CLOUDIFY_DAEMON_USER)
-@handle_failures
-def configure(name, user=None):
-
-    """
-    Configures the daemon scripts and configuration files.
-
-    """
-
-    click.echo('Configuring...')
     daemon = _load_daemon(name, user=user)
+    daemon.create()
     daemon.configure()
-    _save_daemon(daemon)
-    click.echo('Successfully configured daemon: {0}'
-               .format(daemon.name))
+    click.echo(f'Successfully created daemon: {daemon.name}')
 
 
 @cfy.command()

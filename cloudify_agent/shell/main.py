@@ -203,7 +203,6 @@ main.add_command(setup)
 main.add_command(configure.configure)
 
 daemon_sub_command.add_command(daemons.create)
-daemon_sub_command.add_command(daemons.configure)
 daemon_sub_command.add_command(daemons.start)
 daemon_sub_command.add_command(daemons.stop)
 daemon_sub_command.add_command(daemons.delete)
