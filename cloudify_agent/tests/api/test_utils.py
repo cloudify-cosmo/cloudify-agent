@@ -50,11 +50,11 @@ def test_get_resource():
 def test_rendered_template_to_file():
     temp = utils.render_template_to_file(
         template_path=os.path.join('pm', 'initd', 'initd.conf.template'),
-        rest_host=['127.0.0.1']
+        name='agent1'
     )
     with open(temp) as f:
         rendered = f.read()
-        assert 'export REST_HOST="127.0.0.1"' in rendered
+        assert 'export AGENT_NAME="agent1' in rendered
 
 
 def test_resource_to_tempfile():

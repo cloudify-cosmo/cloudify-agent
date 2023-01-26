@@ -55,8 +55,7 @@ def base_test_management(agent_ssl_cert, tmp_path):
     os.chdir(str(tmp_path))
 
     with patch(
-        'cloudify_agent.shell.commands.daemons.api_utils.internal.'
-        'generate_agent_name',
+        'cloudify_agent.api.utils.internal.generate_agent_name',
         new=random_id,
     ):
         yield current_ctx

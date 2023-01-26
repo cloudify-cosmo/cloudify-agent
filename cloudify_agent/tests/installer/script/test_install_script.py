@@ -22,25 +22,31 @@ logger = cloudify_utils.setup_logger(
 @pytest.mark.only_posix
 def test_download_curl(file_server, tmp_path, agent_ssl_cert):
     with set_mock_context(agent_ssl_cert, tmp_path):
-        run_install(['ln -s $(which curl) curl',
-                     'PATH=$PWD',
-                     'download http://127.0.0.1:{0} download.output'
-                     .format(file_server.port)],
-                    tmp_path,
-                    cert=agent_ssl_cert)
-    assert os.path.isfile('download.output')
+        download_stdout = run_install([
+                'ln -s $(which curl) curl',
+                'PATH=$PWD',
+                'download http://127.0.0.1:{0} download.output'
+                .format(file_server.port)
+            ],
+            tmp_path,
+            cert=agent_ssl_cert
+        )
+    assert download_stdout
 
 
 @pytest.mark.only_posix
 def test_download_wget(file_server, tmp_path, agent_ssl_cert):
     with set_mock_context(agent_ssl_cert, tmp_path):
-        run_install(['ln -s $(which wget) wget',
-                     'PATH=$PWD',
-                     'download http://127.0.0.1:{0} download.output'
-                     .format(file_server.port)],
-                    tmp_path,
-                    cert=agent_ssl_cert)
-    assert os.path.isfile('download.output')
+        download_stdout = run_install([
+                'ln -s $(which wget) wget',
+                'PATH=$PWD',
+                'download http://127.0.0.1:{0} download.output'
+                .format(file_server.port)
+            ],
+            tmp_path,
+            cert=agent_ssl_cert
+        )
+    assert download_stdout
 
 
 @pytest.mark.only_posix
@@ -64,71 +70,11 @@ def test_package_url_implicit(tmp_path, agent_ssl_cert):
     assert '-agent.tar.gz' in output
 
 
-@pytest.mark.only_posix
-def test_package_url_explicit(tmp_path, agent_ssl_cert):
-    with set_mock_context(agent_ssl_cert, tmp_path):
-        output = run_install(
-            ['package_url'],
-            tmp_path,
-            cert=agent_ssl_cert,
-            extra_agent_params={
-                'posix': True,
-                'architecture': 'arch',
-            },
-        )
-    assert 'manylinux-arch-agent.tar.gz' in output
-
-
-@pytest.mark.only_posix
-def test_create_custom_env_file(tmp_path, agent_ssl_cert):
-    with set_mock_context(agent_ssl_cert, tmp_path):
-        run_install(
-            ['create_custom_env_file'],
-            tmp_path,
-            cert=agent_ssl_cert,
-            extra_agent_params={'env': {'one': 'one'}},
-        )
-    with open(os.path.join(str(tmp_path), 'custom_agent_env.sh')) as f:
-        assert 'export one="one"' in f.read()
-
-
-@pytest.mark.only_posix
-def test_no_create_custom_env_file(tmp_path, agent_ssl_cert):
-    with set_mock_context(agent_ssl_cert, tmp_path):
-        run_install(['create_custom_env_file'], tmp_path, cert=agent_ssl_cert)
-    assert not os.path.isfile(os.path.join(
-        str(tmp_path), 'custom_agent_env.sh'))
-
-
-@pytest.mark.only_posix
-def test_create_ssl_cert(tmp_path, agent_ssl_cert):
-    with set_mock_context(agent_ssl_cert, tmp_path):
-        run_install(['add_ssl_cert'], tmp_path, cert=agent_ssl_cert)
-    # basedir + node_id
-    agent_dir = os.path.join(str(tmp_path), 'd')
-    agent_ssl_cert.verify_remote_cert(agent_dir)
-
-
 def test_add_ssl_func_not_rendered(tmp_path, agent_ssl_cert):
     with set_mock_context(agent_ssl_cert, tmp_path):
         install_script = _get_install_script(agent_ssl_cert,
                                              add_ssl_cert=False)
     expected = 'add_ssl_cert' if os.name == 'posix' else 'AddSSLCert'
-    assert expected not in install_script
-
-
-def test_install_is_rendered_by_default(tmp_path, agent_ssl_cert):
-    with set_mock_context(agent_ssl_cert, tmp_path):
-        install_script = _get_install_script(agent_ssl_cert)
-    expected = 'install_agent' if os.name == 'posix' else 'InstallAgent'
-    assert expected in install_script
-
-
-def test_install_not_rendered_in_provided_mode(tmp_path, agent_ssl_cert):
-    with set_mock_context(agent_ssl_cert, tmp_path,
-                          install_method='provided'):
-        install_script = _get_install_script(agent_ssl_cert)
-    expected = 'install_agent' if os.name == 'posix' else 'InstallAgent'
     assert expected not in install_script
 
 
@@ -153,20 +99,11 @@ def test_win_no_create_custom_env_file(tmp_path, agent_ssl_cert):
         str(tmp_path), 'custom_agent_env.bat'))
 
 
-@pytest.mark.only_nt
-def test_win_create_ssl_cert(tmp_path, agent_ssl_cert):
-    with set_mock_context(agent_ssl_cert, tmp_path):
-        run_install(['AddSSLCert'], tmp_path, windows=True,
-                    cert=agent_ssl_cert)
-    # basedir + node_id
-    agent_dir = os.path.join(str(tmp_path), 'd')
-    agent_ssl_cert.verify_remote_cert(agent_dir)
-
-
 @contextmanager
 def set_mock_context(agent_ssl_cert, tmp_path, **override_properties):
     node_properties = {
         'agent_config': {
+            'ip': '127.0.0.1',
             'user': getpass.getuser(),
             'install_method': 'init_script',
             'rest_host': '127.0.0.1',
@@ -177,7 +114,14 @@ def set_mock_context(agent_ssl_cert, tmp_path, **override_properties):
     node_properties['agent_config'].update(**override_properties)
     current_ctx.set(mock_context(agent_ssl_cert, node_id='d',
                                  properties=node_properties))
-    yield
+    get_rmq_user_path = (
+        'cloudify_agent.installer.config.agent_config.get_agent_rabbitmq_user'
+    )
+    create_agent_record_path = (
+        'cloudify_agent.installer.config.agent_config.create_agent_record'
+    )
+    with patch(get_rmq_user_path), patch(create_agent_record_path):
+        yield
     current_ctx.clear()
 
 

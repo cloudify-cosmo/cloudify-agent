@@ -32,6 +32,7 @@ def mock_context(agent_ssl_cert,
         ],
         'brokers': [
             {
+                'management_host': '127.0.0.1',
                 'networks': {'default': '127.0.0.1'},
                 'ca_cert_content': agent_ssl_cert.DUMMY_CERT
             }
