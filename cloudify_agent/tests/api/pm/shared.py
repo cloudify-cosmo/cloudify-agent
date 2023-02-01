@@ -6,7 +6,6 @@ import pytest
 from cloudify import constants
 
 from cloudify_agent.api import exceptions
-from cloudify_agent.api import utils
 from cloudify_agent.api.plugins import installer
 from cloudify_agent.tests.daemon import (
     assert_daemon_alive,
@@ -120,7 +119,11 @@ def _test_restart(daemon_fixture):
     daemon = daemon_fixture.create_daemon()
     daemon.create()
     daemon.configure()
-    installer.install(daemon_fixture.plugin_struct())
+    with patch(
+        'cloudify.utils._plugins_base_dir',
+        return_value=daemon.agent_dir
+    ):
+        installer.install(daemon_fixture.plugin_struct())
     daemon.start()
     daemon.restart()
 
@@ -147,15 +150,14 @@ def _test_conf_env_variables(daemon_fixture):
     daemon = daemon_fixture.create_daemon()
     daemon.create()
     daemon.configure()
-    installer.install(daemon_fixture.plugin_struct())
+    with patch(
+        'cloudify.utils._plugins_base_dir',
+        return_value=daemon.agent_dir
+    ):
+        installer.install(daemon_fixture.plugin_struct())
     daemon.start()
 
     expected = {
-        constants.REST_HOST_KEY: ','.join(daemon.rest_host),
-        constants.REST_PORT_KEY: str(daemon.rest_port),
-        constants.MANAGER_FILE_SERVER_URL_KEY: ','.join(
-            'https://{0}:{1}/resources'.format(host, daemon.rest_port)
-            for host in daemon.rest_host),
         constants.AGENT_WORK_DIR_KEY: daemon.workdir,
     }
 
@@ -177,13 +179,14 @@ def _test_conf_env_variables(daemon_fixture):
 @patch_no_managed_plugin()
 def _test_extra_env(daemon_fixture):
     daemon = daemon_fixture.create_daemon()
-    daemon.extra_env_path = utils.env_to_file(
-        {'TEST_ENV_KEY': 'TEST_ENV_VALUE'},
-        posix=os.name == 'posix'
-    )
+    daemon.extra_env = {'TEST_ENV_KEY': 'TEST_ENV_VALUE'}
     daemon.create()
     daemon.configure()
-    installer.install(daemon_fixture.plugin_struct())
+    with patch(
+        'cloudify.utils._plugins_base_dir',
+        return_value=daemon.agent_dir
+    ):
+        installer.install(daemon_fixture.plugin_struct())
     daemon.start()
 
     # check the env file was properly sourced by querying the env
@@ -201,7 +204,11 @@ def _test_execution_env(daemon_fixture):
     daemon = daemon_fixture.create_daemon()
     daemon.create()
     daemon.configure()
-    installer.install(daemon_fixture.plugin_struct())
+    with patch(
+        'cloudify.utils._plugins_base_dir',
+        return_value=daemon.agent_dir
+    ):
+        installer.install(daemon_fixture.plugin_struct())
     daemon.start()
 
     # check that cloudify.dispatch.dispatch 'execution_env' processing
@@ -216,21 +223,12 @@ def _test_execution_env(daemon_fixture):
     assert value == 'TEST_ENV_VALUE2'
 
 
-def _test_delete_before_stop(daemon_fixture):
+def _test_delete(daemon_fixture):
     daemon = daemon_fixture.create_daemon()
     daemon.create()
     daemon.configure()
     daemon.start()
-    pytest.raises(exceptions.DaemonStillRunningException,
-                  daemon.delete)
-
-
-def _test_delete_before_stop_with_force(daemon_fixture):
-    daemon = daemon_fixture.create_daemon()
-    daemon.create()
-    daemon.configure()
-    daemon.start()
-    daemon.delete(force=True)
+    daemon.delete()
     wait_for_daemon_dead(daemon.queue)
 
 
@@ -242,9 +240,13 @@ def _test_logging(daemon_fixture):
     daemon = daemon_fixture.create_daemon()
     daemon.create()
     daemon.configure()
-    installer.install(daemon_fixture.plugin_struct())
-    installer.install(daemon_fixture.plugin_struct(),
-                      deployment_id=DEPLOYMENT_ID)
+    with patch(
+        'cloudify.utils._plugins_base_dir',
+        return_value=daemon.agent_dir
+    ):
+        installer.install(daemon_fixture.plugin_struct())
+        installer.install(daemon_fixture.plugin_struct(),
+                          deployment_id=DEPLOYMENT_ID)
     daemon.start()
 
     def log_and_assert(_message, _deployment_id=None):

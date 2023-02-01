@@ -24,11 +24,15 @@ def test_get_absolute_resource_path():
 
 
 def test_daemon_to_dict(agent_ssl_cert):
-    daemon = Daemon(rest_host=['127.0.0.1'], name='name',
-                    queue='queue', broker_ip=['127.0.0.1'],
-                    local_rest_cert_file=agent_ssl_cert.local_cert_path())
-    daemon_json = utils.internal.daemon_to_dict(daemon)
-    assert daemon_json['rest_host'] == ['127.0.0.1']
+    daemon = Daemon(
+        rest_host=['127.0.0.1'],
+        name='name',
+        queue='queue',
+        broker_ip=['127.0.0.1'],
+        local_rest_cert_file=agent_ssl_cert.local_cert_path(),
+        broker_ssl_cert_path=agent_ssl_cert.local_cert_path(),
+    )
+    daemon_json = daemon.as_dict()
     assert daemon_json['broker_ip'] == ['127.0.0.1']
     assert daemon_json['name'] == 'name'
     assert daemon_json['queue'] == 'queue'
@@ -46,11 +50,11 @@ def test_get_resource():
 def test_rendered_template_to_file():
     temp = utils.render_template_to_file(
         template_path=os.path.join('pm', 'initd', 'initd.conf.template'),
-        rest_host=['127.0.0.1']
+        name='agent1'
     )
     with open(temp) as f:
         rendered = f.read()
-        assert 'export REST_HOST="127.0.0.1"' in rendered
+        assert 'export AGENT_NAME="agent1' in rendered
 
 
 def test_resource_to_tempfile():

@@ -64,8 +64,7 @@ class NonSuckingServiceManagerDaemon(Daemon):
     RUNNING_STATES = ['SERVICE_RUNNING', 'SERVICE_STOP_PENDING']
 
     def __init__(self, logger=None, **params):
-        super(NonSuckingServiceManagerDaemon, self).__init__(
-            logger=logger, **params)
+        super().__init__(logger=logger, **params)
 
         self.config_path = os.path.join(
             self.workdir,
@@ -95,11 +94,11 @@ class NonSuckingServiceManagerDaemon(Daemon):
             log_max_bytes=self.log_max_bytes,
             log_max_history=self.log_max_history,
             workdir=self.workdir,
+            agent_dir=self.agent_dir,
+            resources_root=self.resources_root,
             user=self.user,
             service_user=self.service_user,
             service_password=self.service_password,
-            rest_host=self.rest_host,
-            rest_port=self.rest_port,
             local_rest_cert_file=self.local_rest_cert_file,
             max_workers=self.max_workers,
             virtualenv_path=VIRTUALENV,
@@ -140,10 +139,10 @@ class NonSuckingServiceManagerDaemon(Daemon):
         super(NonSuckingServiceManagerDaemon, self).before_self_stop()
 
     def delete(self, force=defaults.DAEMON_FORCE_DELETE):
-        if self._is_daemon_running():
-            if not force:
-                raise exceptions.DaemonStillRunningException(self.name)
+        try:
             self.stop()
+        except Exception as e:
+            self._logger.info('Deleting agent: could not stop daemon: %s', e)
 
         self._logger.info('Removing {0} service'.format(
             self.name))
@@ -194,13 +193,8 @@ class NonSuckingServiceManagerDaemon(Daemon):
 
     def _create_env_string(self):
         env_string = ''
-        if self.extra_env_path and os.path.exists(self.extra_env_path):
-            with open(self.extra_env_path) as f:
-                content = f.read()
-            for line in content.splitlines():
-                if line.startswith('set'):
-                    parts = line.split(' ')[1].split('=')
-                    key = parts[0]
-                    value = parts[1]
-                    env_string = '{0} {1}={2}'.format(env_string, key, value)
+        if self.extra_env:
+            env_string = ' '.join(
+                f'{key}={value}' for key, value in self.extra_env.items()
+            )
         return env_string.rstrip()

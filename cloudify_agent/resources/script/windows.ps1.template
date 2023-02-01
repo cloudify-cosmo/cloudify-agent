@@ -4,9 +4,21 @@
 $PSDefaultParameterValues['*:Encoding'] = 'utf8'
 
 Set-StrictMode -Version 1.0
+
 # Stop whenever a non-terminating cmdlet generates an error.
 $ErrorActionPreference = "Stop"
 
+function AddSSLCert()
+{
+    # Make sure the cert directory exists
+    New-Item -ItemType directory -Force -Path "{{ conf.basedir }}\{{ conf.name }}\cloudify\ssl"
+
+    # Create a new file with the certificate content
+    New-Item "{{ conf.basedir }}\{{ conf.name }}\cloudify\ssl\cloudify_internal_cert.pem" -type file -force -value "{{ conf.rest_ssl_cert }}"
+
+    # Add the certificate to the root cert store
+    Import-Certificate -FilePath "{{ conf.basedir }}\{{ conf.name }}\cloudify\ssl\cloudify_internal_cert.pem" -CertStoreLocation Cert:\LocalMachine\Root
+}
 
 function run {
     # Use this to get set -e alike behaviour, rather than running commands directly
@@ -15,25 +27,6 @@ function run {
         Write-Error "Error running @args"
     }
 }
-
-
-{% if add_ssl_cert %}
-function AddSSLCert()
-{
-    Write-Host "Ensuring SSL Cert dir exists for {{ ssl_cert_path }}"
-    # Make sure the output directory exists
-    New-Item -ItemType directory -Force -Path (Split-Path "{{ ssl_cert_path }}")
-
-    Write-Host "Adding SSL Cert to {{ ssl_cert_path }}"
-    # Create a new file with the certificate content
-    New-Item "{{ ssl_cert_path }}" -type file -force -value "{{ ssl_cert_content }}"
-
-    Write-Host "Importing SSL cert from {{ ssl_cert_path }} to local machine root store"
-    # Add the certificate to the root cert store
-    Import-Certificate -FilePath "{{ ssl_cert_path }}" -CertStoreLocation Cert:\LocalMachine\Root
-}
-{% endif %}
-
 
 {% if install %}
 function Download($Url, $OutputPath)
@@ -46,17 +39,18 @@ function Download($Url, $OutputPath)
     Write-Host "Ensuring TLS 1.2 is used"
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     Write-Host "Performing download with auth header"
-    Invoke-RestMethod -Uri $Url -Headers @{ '{{ auth_token_header }}' = '{{ auth_token_value }}' } -OutFile $OutputPath
+    Invoke-RestMethod -Uri $Url -Headers @{ 'Authentication-Token' = '{{ auth_token_value }}' } -OutFile $OutputPath
 }
 
 function InstallAgent()
 {
-    {% if add_ssl_cert %}
-    AddSSLCert
-    {% endif %}
     if (-Not (Test-Path "{{ conf.basedir }}\Scripts")) {
         Write-Host "Installing cloudify agent package"
+        {% if conf.package_url %}
         Download "{{ conf.package_url }}" "{{ conf.basedir }}\cloudify-windows-agent-package.exe"
+        {% else %}
+        Download "{{ conf.file_server_url }}/packages/agents/cloudify-windows-agent.exe" "{{ conf.basedir }}\cloudify-windows-agent-package.exe"
+        {% endif %}
         # This call is not blocking so we pipe the output to null to make it blocking
         # There's no point trying to pipe it to not null because in the event it has problems it will
         # make a dialog box despite all the flags telling it we really want it to not do stuff like that.
@@ -68,57 +62,33 @@ function InstallAgent()
 }
 {% endif %}
 
-{% if configure %}
-function ExportDaemonEnv()
+function SetupAgent()
 {
-    Write-Host "Exporting daemon env"
-    $env:Path = "{{ conf.basedir }}\Scripts;{{ conf.basedir }};" + $env:Path
-    {% for env_key, env_value in daemon_env.items() %}
-        $env:{{ env_key }} = "{{ env_value }}"
-    {% endfor %}
+    run "{{ conf.basedir }}\Scripts\cfy-agent.exe" setup `
+        --name "{{ conf.name}}" `
+        --rest-hosts "{{ conf.rest_host | join(',') }}" `
+        --rest-port "{{ conf.rest_port }}" `
+        --rest-ca-path "{{ conf.basedir }}\{{ conf.name }}\cloudify\ssl\cloudify_internal_cert.pem" `
+        --tenant-name "{{ tenant_name }}" `
+        --rest-token "{{ auth_token_value }}" `
+        --agent-dir "{{ conf.basedir }}\{{ conf.name }}" `
+        --process-management "nssm"
 }
 
-function CreateCustomEnvFile()
-{
-    {% if custom_env is not none %}
-        Write-Host 'Populating custom env at "{{ custom_env_path }}"'
-        Set-Content "{{ custom_env_path }}" ""
-        {% for env_key, env_value in custom_env.items() %}
-             Add-Content "{{ custom_env_path }}" 'set {{ env_key }}="{{ env_value }}"'
-        {% endfor %}
-    {% else %}
-        Write-Host "No custom env configured"
-    {% endif %}
-}
-
-function ConfigureAgent()
-{
-    ExportDaemonEnv
-    CreateCustomEnvFile
-
-    Write-Host "Configuring agent..."
-    run "C:\Program Files\Cloudify {{ version }} Agents\Scripts\cfy-agent.exe" {{ debug_flag }} configure {{ configure_flags }}
-    Write-Host "Agent configured successfully"
-}
-{% endif %}
 
 {% if start %}
 function StartAgent()
 {
-    if (-Not (run "C:\Program Files\Cloudify {{ version }} Agents\Scripts\cfy-agent.exe" daemons list | Select-String $env:AGENT_NAME)) {
+    if (-Not (run "{{ conf.basedir }}\Scripts\cfy-agent.exe" daemons list | Select-String {{ conf.name }})) {
         Write-Host "Creating daemon..."
-        run "C:\Program Files\Cloudify {{ version }} Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons create {{ pm_options }}
+        run "{{ conf.basedir }}\Scripts\cfy-agent.exe" {{ debug_flag }} daemons create
         Write-Host "Daemon created successfully"
     } else {
         Write-Host "Agent already created, skipping create agent."
     }
 
-    Write-Host "Configuring daemon..."
-    run "C:\Program Files\Cloudify {{ version }} Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons configure
-    Write-Host "Daemon configured successfully"
-
     Write-Host "Starting daemon..."
-    run "C:\Program Files\Cloudify {{ version }} Agents\Scripts\cfy-agent.exe" {{ debug_flag }} daemons start
+    run "{{ conf.basedir }}\Scripts\cfy-agent.exe" {{ debug_flag }} daemons start
     Write-Host "Daemon started successfully"
 }
 {% endif %}
@@ -126,12 +96,24 @@ function StartAgent()
 
 function Main()
 {
+
+    $LogDir = $env:ProgramData + "\Cloudify\cloudify-agent\logs"
+    $LogFile = $LogDir + "\{{ conf.name }}-install.log"
+
+    If (!(test-path $LogDir))
+    {
+        Write-Host "Creating directory: $LogDir"
+        New-Item -ItemType Directory -Path $LogDir
+    }
+
+    {% if add_ssl_cert %}
+    AddSSLCert
+    {% endif %}
+
     {% if install %}
     InstallAgent
     {% endif %}
-    {% if configure %}
-    ConfigureAgent
-    {% endif %}
+    SetupAgent
     {% if start %}
     StartAgent
     {% endif %}

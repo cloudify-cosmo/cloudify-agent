@@ -24,9 +24,6 @@ from cloudify_agent.shell.commands import cfy
 
 
 @cfy.command()
-@click.option('--disable-requiretty',
-              help='Disables the requiretty directive in the sudoers file.',
-              is_flag=True)
 @click.option('--fix-shebangs',
               help='Fixes shebangs in scripts.',
               is_flag=True)
@@ -35,16 +32,11 @@ from cloudify_agent.shell.commands import cfy
                    ' disable-requiretty part',
               is_flag=True)
 @handle_failures
-def configure(disable_requiretty, fix_shebangs, no_sudo):
+def configure(fix_shebangs, no_sudo):
 
     """
     Configures global agent properties.
     """
-
-    if disable_requiretty:
-        click.echo('Disabling requiretty directive in sudoers file')
-        _disable_requiretty(no_sudo)
-        click.echo('Successfully disabled requiretty for cfy-agent')
     if fix_shebangs:
         click.echo('Fixing shebangs in scripts')
         _fixup_scripts()

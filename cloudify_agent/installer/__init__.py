@@ -13,31 +13,15 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import copy
 import ntpath
 import os
 import shutil
 
-try:
-    # Python 3.3+
-    from shlex import quote
-except ImportError:
-    # Python 2.7
-    from pipes import quote
-
 from cloudify_agent.installer.runners.local_runner import LocalCommandRunner
-from cloudify.utils import (setup_logger,
-                            get_rest_token,
-                            get_is_bypass_maintenance,
-                            ENV_CFY_EXEC_TEMPDIR,
-                            ENV_AGENT_LOG_LEVEL,
-                            ENV_AGENT_LOG_MAX_BYTES,
-                            ENV_AGENT_LOG_MAX_HISTORY)
+from cloudify.utils import setup_logger
 
 from cloudify_agent.shell import env
 from cloudify_agent.api import utils, defaults
-
-from cloudify import broker_config
 
 
 class AgentInstaller(object):
@@ -111,8 +95,6 @@ class AgentInstaller(object):
         flags = ''
         if not self.cloudify_agent.is_windows:
             flags = '--fix-shebangs'
-            if self.cloudify_agent.get('disable_requiretty'):
-                flags = '{0} --disable-requiretty'.format(flags)
         return flags
 
     def create_custom_env_file_on_target(self, environment):
@@ -125,92 +107,6 @@ class AgentInstaller(object):
     @property
     def cfy_agent_path(self):
         raise NotImplementedError('Must be implemented by sub-class')
-
-    def _create_agent_env(self):
-        # pop to not leave creds around
-        tenant = self.cloudify_agent.pop('tenant')
-        tenant_name = tenant.get('name', defaults.DEFAULT_TENANT_NAME)
-        tenant_user = tenant.get('rabbitmq_username',
-                                 broker_config.broker_username)
-        tenant_pass = tenant.get('rabbitmq_password',
-                                 broker_config.broker_password)
-        broker_vhost = tenant.get('rabbitmq_vhost',
-                                  broker_config.broker_vhost)
-        # Get the agent's broker credentials
-        broker_user = self.cloudify_agent.get('broker_user', tenant_user)
-        broker_pass = self.cloudify_agent.get('broker_pass', tenant_pass)
-
-        network = self.cloudify_agent.get('network')
-        execution_env = {
-            # mandatory values calculated before the agent
-            # is actually created
-            env.CLOUDIFY_DAEMON_QUEUE: self.cloudify_agent['queue'],
-            env.AGENT_NAME: self.cloudify_agent['name'],
-            env.CLOUDIFY_REST_HOST: ','.join(self.cloudify_agent['rest_host']),
-            env.CLOUDIFY_BROKER_IP: ','.join(self.cloudify_agent['broker_ip']),
-
-            # Optional broker values
-            env.CLOUDIFY_BROKER_USER: broker_user,
-            env.CLOUDIFY_BROKER_PASS: broker_pass,
-            env.CLOUDIFY_BROKER_VHOST: broker_vhost,
-            env.CLOUDIFY_BROKER_SSL_ENABLED: broker_config.broker_ssl_enabled,
-            env.CLOUDIFY_BROKER_SSL_CERT_PATH: (
-                self.cloudify_agent['broker_ssl_cert_path']
-            ),
-            env.CLOUDIFY_HEARTBEAT: (
-                self.cloudify_agent.get('heartbeat')
-            ),
-
-            # these are variables that have default values that will be set
-            # by the agent on the remote host if not set here
-            env.CLOUDIFY_DAEMON_USER: self.cloudify_agent.get('user'),
-            env.CLOUDIFY_REST_PORT: self.cloudify_agent.get('rest_port'),
-            env.CLOUDIFY_REST_TOKEN: get_rest_token(),
-            env.CLOUDIFY_REST_TENANT: tenant_name,
-            env.CLOUDIFY_DAEMON_MAX_WORKERS: self.cloudify_agent.get(
-                'max_workers'),
-            env.CLOUDIFY_DAEMON_MIN_WORKERS: self.cloudify_agent.get(
-                'min_workers'),
-            env.CLOUDIFY_DAEMON_PROCESS_MANAGEMENT:
-            self.cloudify_agent['process_management']['name'],
-            env.CLOUDIFY_DAEMON_WORKDIR: self.cloudify_agent['workdir'],
-            env.CLOUDIFY_DAEMON_EXTRA_ENV:
-            self.create_custom_env_file_on_target(
-                self.cloudify_agent.get('env', {})),
-            env.CLOUDIFY_BYPASS_MAINTENANCE_MODE: get_is_bypass_maintenance(),
-            env.CLOUDIFY_LOCAL_REST_CERT_PATH: (
-                self.cloudify_agent['agent_rest_cert_path']
-            ),
-            env.CLOUDIFY_NETWORK_NAME: network,
-            ENV_CFY_EXEC_TEMPDIR: self.cloudify_agent.get(
-                'executable_temp_path'),
-            ENV_AGENT_LOG_LEVEL: self.cloudify_agent.get('log_level'),
-            ENV_AGENT_LOG_MAX_BYTES: self.cloudify_agent.get('log_max_bytes'),
-            ENV_AGENT_LOG_MAX_HISTORY: self.cloudify_agent.get(
-                'log_max_history')
-        }
-
-        execution_env = utils.purge_none_values(execution_env)
-        execution_env = utils.stringify_values(execution_env)
-
-        self.logger.debug('Cloudify Agent will be created using the following '
-                          'environment: {0}'.format(execution_env))
-
-        return execution_env
-
-    def _create_process_management_options(self):
-        options = []
-        process_management = copy.deepcopy(self.cloudify_agent[
-            'process_management'])
-
-        # remove the name key because it is
-        # actually passed separately via an
-        # environment variable
-        process_management.pop('name')
-        for key, value in process_management.items():
-            options.append("--{0}={1}".format(key, quote(value)))
-
-        return ' '.join(options)
 
 
 class WindowsInstallerMixin(AgentInstaller):

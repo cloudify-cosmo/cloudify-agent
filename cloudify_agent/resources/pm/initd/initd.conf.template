@@ -5,17 +5,12 @@ export AGENT_LOG_MAX_BYTES="{{ log_max_bytes }}"
 export AGENT_LOG_MAX_HISTORY="{{ log_max_history }}"
 export AGENT_LOG_DIR="{{ log_dir }}"
 export AGENT_LOG_LEVEL={{ log_level }}
-export MANAGER_FILE_SERVER_URL={% for host in rest_host -%}
-    https://{{ host }}:{{ rest_port }}/resources
-    {%- if not loop.last %},{% endif %}
-{%- endfor %}
 export LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}"
-export REST_HOST="{{ rest_host|join(',') }}"
-export REST_PORT="{{ rest_port }}"
 export CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}"
 export AGENT_NAME="{{ name }}"
 
 export CFY_RESOURCES_ROOT="{{ resources_root }}"
+export CFY_PLUGINS_ROOT="{{ agent_dir }}"
 
 {% if executable_temp_path -%}
 # Executable tempfiles directory override
@@ -26,8 +21,9 @@ export DISABLE_CRON_SCRIPT="{{ disable_cron_script }}"
 export ENABLE_CRON_RESPAWN={{ cron_respawn }}
 export CLOUDIFY_DAEMON_USER={{ user }}
 
+{% if extra_env %}
 # Extra environment variables provided by users
-EXTRA_ENV_PATH={{ extra_env_path }}
-if [ -f ${EXTRA_ENV_PATH} ]; then
-    . ${EXTRA_ENV_PATH}
-fi
+{% for env_key, env_value in extra_env.items() %}
+export {{ env_key }}="{{ env_value }}"
+{% endfor %}
+{% endif %}

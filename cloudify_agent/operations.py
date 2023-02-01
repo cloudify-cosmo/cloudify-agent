@@ -42,7 +42,7 @@ from cloudify_agent.api.factory import DaemonFactory
 from cloudify_agent.api import exceptions
 from cloudify_agent.api import utils
 from cloudify_agent.installer.script import (
-    init_script_download_link,
+    install_script_download_link,
     stop_agent_script_download_link,
     cleanup_scripts
 )
@@ -102,7 +102,7 @@ def restart(new_name=None, delay_period=5, **_):
     )
 
     # clone the current daemon to preserve all the attributes
-    attributes = utils.internal.daemon_to_dict(daemon)
+    attributes = daemon.as_dict()
 
     # give the new daemon the new name
     attributes['name'] = new_name
@@ -167,10 +167,9 @@ def _set_default_new_agent_config_values(old_agent, new_agent):
 
 def _copy_values_from_old_agent_config(old_agent, new_agent):
     fields_to_copy = ['windows', 'ip', 'basedir', 'user', 'architecture',
-                      'broker_ssl_cert_path', 'agent_rest_cert_path',
-                      'network', 'local', 'install_method',
-                      'process_management', 'node_instance_id',
-                      'distro_codename']
+                      'broker_ssl_cert_path', 'network', 'local',
+                      'install_method', 'process_management',
+                      'node_instance_id', 'distro_codename']
     # distro_codename for supporting upgrade from pre-7.0
     for field in fields_to_copy:
         if field in old_agent:
@@ -250,7 +249,7 @@ def _http_rest_host(cloudify_agent):
 
 
 def _get_init_script_path_and_url(new_agent, old_agent_version):
-    script_path, script_url = init_script_download_link(new_agent)
+    script_path, script_url = install_script_download_link(new_agent)
     # Prior to 4.2 (and script plugin 1.5.1) there was no way to pass
     # a certificate to the script plugin, so the initial script must be
     # passed over http
