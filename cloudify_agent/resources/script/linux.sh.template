@@ -58,7 +58,7 @@ log()
     echo >&2 "$(date -Iseconds) ${*}"
 }
 
-# run_as_user/run_as_root - note that this script is usually run in one of two
+# run_as_user/run_as_root - note that this script is usually run in one of three
 # cases:
 # - as root, e.g. via cloudinit (install_method = init_script or plugin), in
 #   which case we don't need to do anything to run as root, but we do need to
@@ -69,22 +69,31 @@ log()
 #   in which case we need to sudo in order to run system-wide things,
 #   i.e. installing the agent package into a system-wide location (like /opt),
 #   and creating a daemon service
+# - with process_management=detach, in which case we just run everything
+#   directly, and never sudo. BASE_DIR had better already be writable by the
+#   running user
 run_as_user()
 {
-    if [ "${MYSELF}" = "${AGENT_USER}" ]; then
+    if [ "${PROCESS_MANAGEMENT}" = "detach" ]; then
+        # when detach, ignore all user/group stuff, and run everything directly
+        "${@}"
+    elif [ "${MYSELF}" = "${AGENT_USER}" ]; then
         # `sg` to`explicitly run as the cfyagent group, so that we are in that
         # group indeed. If we just created the cfyagent group, then the current
         # shell session won't have it yet.
         # sg only takes one argument, so stringify the command using $*
         sg cfyagent "${*}"
     else
-        su "${AGENT_USER}" <<< "${@}"
+        su "${AGENT_USER}" -c "${*}"
     fi
 }
 
 run_as_root()
 {
-    if [ "$MYSELF" = "root" ]; then
+    if [ "${PROCESS_MANAGEMENT}" = "detach" ]; then
+        # when detach, ignore all user/group stuff, and run everything directly
+        "${@}"
+    elif [ "$MYSELF" = "root" ]; then
         "${@}"
     else
         sudo "${@}"
@@ -95,6 +104,10 @@ run_as_root()
 # package, and creates a directory into which the agent will be downloaded
 prepare_installation()
 {
+    if [ "${PROCESS_MANAGEMENT}" = "detach" ]; then
+        log "Using detach - skipping cfyagent group"
+        return
+    fi
     log "Creating the cfyagent group"
     run_as_root groupadd -f cfyagent
     log "Adding the user ${AGENT_USER} to the cfyagent group"
@@ -236,7 +249,13 @@ main()
     fi
 
     if [ "${DO_INSTALL}" ]; then
-        download "$(package_url)" | run_as_root tar --group=cfyagent -xzf - --strip=1 -C "${BASE_DIR}"
+        download "$(package_url)" | {
+            if [ "${PROCESS_MANAGEMENT}" = "detach" ]; then
+                tar -xzf - --strip=1 -C "${BASE_DIR}"
+            else
+                run_as_root tar --group=cfyagent -xzf - --strip=1 -C "${BASE_DIR}"
+            fi
+        }
         log "Fixing agent package shebangs"
         run_as_root "${BASE_DIR}/env/bin/python" "${BASE_DIR}/env/bin/cfy-agent" configure --fix-shebangs
     fi
