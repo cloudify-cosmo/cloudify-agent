@@ -13,14 +13,15 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import uuid
-import json
 import copy
-import tempfile
-import os
 import errno
 import getpass
+import json
+import os
 import pkgutil
+import platform
+import tempfile
+import uuid
 
 import appdirs
 import pkg_resources
@@ -452,6 +453,14 @@ def get_agent_version():
     if version_info['release'] != 'ga':
         version = '{0}-{1}'.format(version, version_info['release'])
     return version
+
+
+def get_system_name():
+    """The current system name, to be stored in the agent info"""
+    if os.name == 'nt':
+        return 'windows'
+    # platform.machine() is x86_64, or aarch64, or...
+    return f'linux {platform.machine()}'
 
 
 def get_windows_basedir():
