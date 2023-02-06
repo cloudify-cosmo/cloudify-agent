@@ -22,6 +22,7 @@ from cloudify.utils import setup_logger
 
 from cloudify_agent.api.utils import (
     get_agent_version,
+    get_system_name,
     logger as api_utils_logger,
     get_rest_client,
 )
@@ -186,6 +187,12 @@ def setup(
         executable_temp_path=agent_config.get('executable_temp_path'),
     )
     _save_daemon(daemon)
+
+    version = get_agent_version()
+    system = get_system_name()
+    click.echo(f'Agent version: {version}, system: {system}')
+    client.agents.update(name, version=version, system=system)
+
     click.echo(f'Successfully created daemon: {daemon.name}')
 
 
