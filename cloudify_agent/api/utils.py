@@ -29,12 +29,12 @@ import pkg_resources
 from jinja2 import Template
 from urllib.parse import quote as urlquote
 
-from cloudify.cluster import CloudifyClusterClient
 from cloudify.workflows import tasks as workflows_tasks
 from cloudify.utils import setup_logger, get_exec_tempdir, ipv6_url_compat
 from cloudify.constants import (SECURED_PROTOCOL,
                                 BROKER_PORT_SSL,
                                 BROKER_PORT_NO_SSL)
+from cloudify_rest_client.client import CloudifyClient
 # imported here for backwards compat
 from cloudify.amqp_client import is_agent_alive  # noqa
 
@@ -422,7 +422,7 @@ def get_rest_client(rest_host,
                       'create a REST client for a secured ' \
                       'manager [{1}]'.format(name, rest_host)
 
-    return CloudifyClusterClient(
+    return CloudifyClient(
         host=rest_host,
         protocol=SECURED_PROTOCOL,
         port=rest_port,
