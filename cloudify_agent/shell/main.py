@@ -141,6 +141,12 @@ def setup(
     inst = client.node_instances.get(name, evaluate_functions=True)
     agent = client.agents.get(name)
     agent_config = inst.runtime_properties['cloudify_agent']
+    agent_config['agent_dir'] = agent_dir
+    client.node_instances.update(
+        inst.id,
+        version=inst.version,
+        runtime_properties=inst.runtime_properties,
+    )
     network = agent_config.get('network') or 'default'
 
     broker_certs = set()
