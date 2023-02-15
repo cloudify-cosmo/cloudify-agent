@@ -193,6 +193,7 @@ def setup(
         executable_temp_path=agent_config.get('executable_temp_path'),
     )
     _save_daemon(daemon)
+    daemon.create_broker_conf()
 
     version = get_agent_version()
     system = get_system_name()
