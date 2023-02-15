@@ -391,7 +391,6 @@ class Daemon(object):
         """
         self.create_script()
         self.create_config()
-        self.create_broker_conf()
 
     def start(self,
               interval=defaults.START_INTERVAL,
