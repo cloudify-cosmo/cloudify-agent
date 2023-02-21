@@ -297,7 +297,7 @@ EOT
                   python -m pip install -r dev-requirements.txt
                   python -m pip install -r test-requirements.txt
                   python -m pip install .
-                  echo "not running tests before python 3.10" # pytest -sv --run-ci-tests --run-rabbit-tests cloudify_agent\\tests
+                  pytest -sv --run-ci-tests --run-rabbit-tests cloudify_agent\\tests
                 """
               }
             }
