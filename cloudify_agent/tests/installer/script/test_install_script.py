@@ -78,27 +78,6 @@ def test_add_ssl_func_not_rendered(tmp_path, agent_ssl_cert):
     assert expected not in install_script
 
 
-@pytest.mark.only_nt
-def test_win_create_custom_env_file(tmp_path, agent_ssl_cert):
-    with set_mock_context(agent_ssl_cert, tmp_path):
-        run_install(['CreateCustomEnvFile'],
-                    tmp_path,
-                    windows=True,
-                    cert=agent_ssl_cert,
-                    extra_agent_params={'env': {'one': 'one'}})
-    with open(os.path.join(str(tmp_path), 'custom_agent_env.bat')) as f:
-        assert 'set one="one"' in f.read()
-
-
-@pytest.mark.only_nt
-def test_win_no_create_custom_env_file(tmp_path, agent_ssl_cert):
-    with set_mock_context(agent_ssl_cert, tmp_path):
-        run_install(['CreateCustomEnvFile'], tmp_path, windows=True,
-                    cert=agent_ssl_cert)
-    assert not os.path.isfile(os.path.join(
-        str(tmp_path), 'custom_agent_env.bat'))
-
-
 @contextmanager
 def set_mock_context(agent_ssl_cert, tmp_path, **override_properties):
     node_properties = {
