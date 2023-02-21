@@ -2,7 +2,6 @@ from contextlib import contextmanager
 import getpass
 import os
 
-import platform
 from mock import patch
 
 from cloudify import constants
@@ -12,7 +11,7 @@ from cloudify_agent.tests.installer.config import mock_context
 
 
 def test_prepare(agent_ssl_cert):
-    expected = _get_package_url()
+    expected = _get_file_server_url()
 
     _test_prepare(
         agent_ssl_cert,
@@ -22,7 +21,7 @@ def test_prepare(agent_ssl_cert):
 
 
 def test_prepare_secured(agent_ssl_cert):
-    expected = _get_package_url(rest_port='443')
+    expected = _get_file_server_url(rest_port='443')
     with patch('cloudify.utils.get_manager_rest_service_port',
                return_value=443):
         _test_prepare(
@@ -35,9 +34,8 @@ def test_prepare_secured(agent_ssl_cert):
 def test_prepare_multi_networks(agent_ssl_cert):
     manager_host = '10.0.0.1'
     network_name = 'test_network'
-    expected = _get_package_url(manager_host=manager_host)
+    expected = _get_file_server_url(manager_host=manager_host)
     expected['rest_host'] = [manager_host]
-    expected['broker_ip'] = [manager_host]
     expected['network'] = network_name
     _test_prepare(
         agent_ssl_cert,
@@ -91,17 +89,8 @@ def test_connection_params_propagation(agent_ssl_cert):
         assert cloudify_agent['ssl_cert_path'] == '/tmp/blabla'
 
 
-def _get_package_url(rest_port=80, manager_host='127.0.0.1'):
+def _get_file_server_url(rest_port=80, manager_host='127.0.0.1'):
     result = {'rest_port': rest_port}
-    base_url = utils.get_manager_file_server_url(manager_host, rest_port)
-    agent_package_url = '{0}/packages/agents'.format(base_url)
-    if os.name == 'posix':
-        architecture = platform.machine()
-        result['architecture'] = architecture
-        package = 'manylinux-{0}-agent.tar.gz'.format(architecture)
-    else:
-        package = 'cloudify-windows-agent.exe'
-    result['package_url'] = '{0}/{1}'.format(agent_package_url, package)
     result['file_server_url'] = '{proto}://{addr}:{port}/resources'.format(
         proto='https' if rest_port == '443' else 'http',
         addr=manager_host,
@@ -115,23 +104,16 @@ def _test_prepare(agent_ssl_cert, agent_config, expected_values,
     user = getpass.getuser()
     is_windows = os.name == 'nt'
     basedir = utils.get_agent_basedir(is_windows)
-    agent_dir = os.path.join(basedir, 'test_deployment')
-    envdir = os.path.join(agent_dir, 'env')
-    workdir = os.path.join(agent_dir, 'work')
+    envdir = os.path.join(basedir, 'env')
 
     # This test needs to be adapted to security settings
     expected = {
-        'agent_dir': agent_dir,
-        'process_management': {
-            'name': 'init.d' if os.name == 'posix' else 'nssm'
-        },
+        'process_management': {},
         'basedir': basedir,
-        'name': 'test_deployment',
+        'name': 'test_node',
         'rest_host': ['127.0.0.1'],
-        'broker_ip': ['127.0.0.1'],
-        'broker_ssl_cert': agent_ssl_cert.DUMMY_CERT,
         'heartbeat': None,
-        'queue': 'test_deployment',
+        'queue': 'test_node',
         'envdir': envdir,
         'user': user,
         'local': True,
@@ -142,7 +124,6 @@ def _test_prepare(agent_ssl_cert, agent_config, expected_values,
         'file_server_url': 'https://127.0.0.1:80/resources',
         'max_workers': 5,
         'min_workers': 0,
-        'workdir': workdir,
         'broker_ssl_cert_path': os.environ[constants.BROKER_SSL_CERT_PATH],
         'windows': is_windows,
         'system_python': 'python',

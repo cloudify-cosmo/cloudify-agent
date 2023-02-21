@@ -15,7 +15,6 @@
 
 import getpass
 import os
-import platform
 
 from ntpath import join as nt_join
 from functools import wraps
@@ -28,7 +27,10 @@ from cloudify_agent.api import defaults
 from cloudify import ctx
 from cloudify import constants
 from cloudify import utils as cloudify_utils
-from cloudify.exceptions import CommandExecutionException
+from cloudify.agent_utils import (
+    create_agent_record,
+    get_agent_rabbitmq_user,
+)
 
 from .installer_config import create_runner, get_installer
 from .config_errors import raise_missing_attribute, raise_missing_attributes
@@ -48,6 +50,11 @@ def create_agent_config_and_installer(
                 # Set values that need to be inferred from other ones
                 cloudify_agent.set_execution_params()
                 cloudify_agent.set_default_values()
+                user_already_exists = get_agent_rabbitmq_user(cloudify_agent)
+                create_agent_record(
+                    cloudify_agent,
+                    create_rabbitmq_user=not user_already_exists,
+                )
 
             runner = create_runner(cloudify_agent, validate_connection)
             if not runner:
@@ -159,42 +166,7 @@ class CloudifyAgentConfig(dict):
         )
 
     def _set_process_management(self, runner):
-        """
-        Determine the process management system to use for the agent.
-        * If working with windows, the only option is nssm
-        * If working with linux then:
-            * If the install method is remote (SSH) we try to determine
-              the default system automatically
-            * If the install method is not remote, we default to systemd
-            * If process_management was explicitly provided, it supersedes
-              the default
-        """
         self.setdefault('process_management', {})
-
-        # If we already have a value set, don't bother trying to set it again
-        if self['process_management'].get('name'):
-            return
-        if self.is_windows:
-            default_pm_name = 'nssm'
-        else:
-            if self.is_remote:
-                default_pm_name = self._get_process_management(runner)
-            else:
-                default_pm_name = 'init.d'
-        self['process_management'].setdefault('name', default_pm_name)
-
-    @staticmethod
-    def _get_process_management(runner):
-        if not runner:
-            return 'init.d'
-        try:
-            runner.run('which systemctl')
-        except CommandExecutionException as e:
-            if e.code != 1:
-                raise
-            return 'init.d'
-        else:
-            return 'systemd'
 
     def _set_name(self):
         # proxied agents dont have a name/queue of their own
@@ -208,31 +180,17 @@ class CloudifyAgentConfig(dict):
         if self.get('name'):
             return
 
-        if self.is_local:
-            workflows_worker = self.get('workflows_worker', False)
-            suffix = '_workflows' if workflows_worker else ''
-            name = '{0}{1}'.format(ctx.deployment.id, suffix)
-        else:
-            name = ctx.instance.id
-        self['name'] = name
+        self['name'] = ctx.instance.id
 
     def _set_ips_and_certs(self):
         network = self['network']
         managers = ctx.get_managers(network=network)
-        brokers = ctx.get_brokers(network=network)
 
         self['rest_host'] = [manager.networks[network] for manager in managers]
-        self['broker_ip'] = [broker.networks[network] for broker in brokers]
-
-        self['rest_ssl_cert'] = '\n'.join(
+        self['rest_ssl_cert'] = '\n'.join(set(
             manager.ca_cert_content.strip() for manager in
             managers if manager.ca_cert_content
-        )
-        self['broker_ssl_cert'] = '\n'.join(
-            broker.ca_cert_content.strip() for broker in
-            brokers if broker.ca_cert_content
-        )
-
+        ))
         # setting fileserver url:
         # using the mgmtworker-local one, not all in the cluster.
         # This is because mgmtworker will write a script
@@ -281,7 +239,6 @@ class CloudifyAgentConfig(dict):
         self._set_process_management(runner)
         self._set_basedir(runner)
         self.set_config_paths()
-        self._set_package_url(runner)
 
     def _set_install_method(self):
         install_method = cloudify_utils.internal.get_install_method(
@@ -369,50 +326,12 @@ class CloudifyAgentConfig(dict):
             return
         join = nt_join if self.is_windows else posix_join
 
-        if not self.get('agent_dir'):
-            self['agent_dir'] = join(self['basedir'], self['name'])
-
-        if not self.get('workdir'):
-            self['workdir'] = join(self['agent_dir'], 'work')
-
         if not self.get('envdir'):
-            self['envdir'] = join(self['agent_dir'], 'env')
+            self['envdir'] = join(self['basedir'], 'env')
 
         if not self.get('broker_ssl_cert_path'):
             self['broker_ssl_cert_path'] = \
                 cloudify_utils.get_broker_ssl_cert_path()
-
-    def _set_package_url(self, runner):
-        if self.get('package_url'):
-            return
-
-        agent_package_name = None
-
-        if self.is_windows:
-            # No distribution difference in windows installation
-            agent_package_name = 'cloudify-windows-agent.exe'
-        else:
-            self._set_agent_architecture(runner)
-
-            if self.get('architecture'):
-                agent_package_name = \
-                    f'manylinux-{self["architecture"]}-agent.tar.gz'
-
-        if agent_package_name:
-
-            self['package_url'] = posix_join(
-                self['file_server_url'], 'packages', 'agents',
-                agent_package_name
-            )
-
-    def _set_agent_architecture(self, runner):
-        if self.get('architecture'):  # Might be an empty string
-            return
-
-        if self.is_local:
-            self['architecture'] = platform.machine()
-        elif self.is_remote:
-            self['architecture'] = runner.machine_architecture()
 
 
 def _get_agent_inputs(params):
@@ -482,6 +401,7 @@ def update_agent_runtime_properties(cloudify_agent):
     """
     items_to_remove = ['rest_tenant', 'rest_token',
                        'broker_user', 'broker_pass']
+    items_to_remove = []
     for item in items_to_remove:
         cloudify_agent.pop(item, None)
     ctx.instance.runtime_properties['cloudify_agent'] = cloudify_agent

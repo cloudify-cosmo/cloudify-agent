@@ -55,8 +55,7 @@ def base_test_management(agent_ssl_cert, tmp_path):
     os.chdir(str(tmp_path))
 
     with patch(
-        'cloudify_agent.shell.commands.daemons.api_utils.internal.'
-        'generate_agent_name',
+        'cloudify_agent.api.utils.internal.generate_agent_name',
         new=random_id,
     ):
         yield current_ctx
@@ -289,11 +288,8 @@ def mock_daemon_factory_load_all():
 
 
 @pytest.fixture(scope='function')
-def mock_daemon_api_internal_daemon_to_dict():
-    with patch(
-        'cloudify_agent.shell.commands.daemons.api_utils'
-        '.internal.daemon_to_dict'
-    ) as idtd:
+def mock_daemon_as_dict():
+    with patch('cloudify_agent.api.pm.base.Daemon.as_dict') as idtd:
         yield idtd
 
 

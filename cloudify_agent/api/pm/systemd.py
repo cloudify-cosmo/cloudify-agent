@@ -35,7 +35,7 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
     PROCESS_MANAGEMENT = 'systemd'
 
     def configure(self):
-        super(SystemDDaemon, self).configure()
+        super().configure()
         self._runner.run(self._systemctl_command('enable'))
         self._runner.run('sudo systemctl daemon-reload')
 
@@ -75,7 +75,6 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             config_path=self.config_path,
             max_workers=self.max_workers,
             name=self.name,
-            extra_env_path=self.extra_env_path,
         )
 
     def _get_rendered_config(self):
@@ -84,8 +83,7 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
         return utils.render_template_to_file(
             template_path='pm/systemd/systemd.conf.template',
             workdir=self.workdir,
-            rest_host=self.rest_host,
-            rest_port=self.rest_port,
+            agent_dir=self.agent_dir,
             local_rest_cert_file=self.local_rest_cert_file,
             log_level=self.log_level.upper(),
             log_dir=self.log_dir,
@@ -94,5 +92,7 @@ class SystemDDaemon(GenericLinuxDaemonMixin):
             name=self.name,
             executable_temp_path=self.executable_temp_path,
             user=self.user,
+            extra_env=self.extra_env,
             storage_dir=utils.internal.get_storage_directory(self.user),
+            resources_root=self.resources_root,
         )

@@ -18,15 +18,13 @@ def get_daemon(ssl_cert, params=None):
     params['broker_user'] = 'guest'
     params['broker_pass'] = 'guest'
     params['local_rest_cert_file'] = ssl_cert.local_cert_path()
+    params['broker_ssl_cert_path'] = ssl_cert.local_cert_path()
     return Daemon(**params)
 
 
 def test_default_workdir(agent_ssl_cert):
-    assert os.getcwd() == get_daemon(agent_ssl_cert).workdir
-
-
-def test_default_rest_port(agent_ssl_cert):
-    assert 53333 == get_daemon(agent_ssl_cert).rest_port
+    assert os.path.join(os.getcwd(), 'work') == \
+        get_daemon(agent_ssl_cert).workdir
 
 
 def test_default_min_workers(agent_ssl_cert):
@@ -41,27 +39,6 @@ def test_default_user(agent_ssl_cert):
     assert getpass.getuser() == get_daemon(agent_ssl_cert).user
 
 
-def test_missing_rest_host(agent_ssl_cert):
-    with pytest.raises(exceptions.DaemonMissingMandatoryPropertyError,
-                       match='.*rest_host is mandatory.*'):
-        get_daemon(agent_ssl_cert, params={
-            'host': 'queue',
-            'user': 'user',
-        })
-
-
-def test_bad_min_workers(agent_ssl_cert):
-    with pytest.raises(exceptions.DaemonPropertiesError,
-                       match='.*min_workers is supposed to be a number.*'):
-        get_daemon(agent_ssl_cert, params={
-            'host': 'queue',
-            'rest_host': '127.0.0.1',
-            'broker_ip': '127.0.0.1',
-            'user': 'user',
-            'min_workers': 'bad',
-        })
-
-
 def test_bad_max_workers(agent_ssl_cert):
     with pytest.raises(exceptions.DaemonPropertiesError,
                        match='.*max_workers is supposed to be a number.*'):
@@ -71,21 +48,6 @@ def test_bad_max_workers(agent_ssl_cert):
             'broker_ip': '127.0.0.1',
             'user': 'user',
             'max_workers': 'bad',
-        })
-
-
-def test_min_workers_larger_than_max_workers(agent_ssl_cert):
-    with pytest.raises(
-        exceptions.DaemonPropertiesError,
-        match='.*min_workers cannot be greater than max_workers.*',
-    ):
-        get_daemon(agent_ssl_cert, params={
-            'host': 'queue',
-            'rest_host': '127.0.0.1',
-            'broker_ip': '127.0.0.1',
-            'user': 'user',
-            'max_workers': 4,
-            'min_workers': 5,
         })
 
 

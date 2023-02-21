@@ -242,7 +242,8 @@ class CloudifyOperationConsumer(TaskConsumer):
         if common_version < parse_version('6.2.0'):
             # plugin's common is old - it does the operation state bookkeeping
             # by itself.
-            yield
+            with ctx.sync_deployment_workdir():
+                yield
             return
         store = True
         try:
@@ -259,11 +260,13 @@ class CloudifyOperationConsumer(TaskConsumer):
             ctx.resume = True
         if store:
             ctx.update_operation(constants.TASK_STARTED)
-        try:
-            yield
-        finally:
-            if store:
-                ctx.update_operation(constants.TASK_RESPONSE_SENT)
+
+        with ctx.sync_deployment_workdir():
+            try:
+                yield
+            finally:
+                if store:
+                    ctx.update_operation(constants.TASK_RESPONSE_SENT)
 
     def _plugin_common_version(self, executable, env):
         """The cloudify-common version included in the venv at executable.
@@ -525,7 +528,8 @@ class ServiceTaskConsumer(TaskConsumer):
         return {'time': time.time()}
 
     def install_plugin_task(self, plugin, rest_token, tenant,
-                            rest_host, target=None, bypass_maintenance=False):
+                            rest_host, rest_port=53333, target=None,
+                            bypass_maintenance=False):
 
         if target:
             # target was provided, so this is to be installed only on the
@@ -544,6 +548,7 @@ class ServiceTaskConsumer(TaskConsumer):
             """
             def __init__(self):
                 self.rest_host = rest_host
+                self.rest_port = rest_port
                 self.tenant_name = tenant['name']
                 self.rest_token = rest_token
                 self.execution_token = None
@@ -558,7 +563,7 @@ class ServiceTaskConsumer(TaskConsumer):
             install_plugins([plugin])
 
     def uninstall_plugin_task(self, plugin, rest_token, tenant,
-                              rest_host, target=None,
+                              rest_host, rest_port=53333, target=None,
                               bypass_maintenance=False):
 
         if target:
@@ -578,6 +583,7 @@ class ServiceTaskConsumer(TaskConsumer):
             """
             def __init__(self):
                 self.rest_host = rest_host
+                self.rest_port = rest_port
                 self.tenant_name = tenant['name']
                 self.rest_token = rest_token
                 self.execution_token = None

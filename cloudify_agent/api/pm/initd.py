@@ -42,7 +42,7 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
     PROCESS_MANAGEMENT = 'init.d'
 
     def __init__(self, logger=None, **params):
-        super(InitDDaemon, self).__init__(logger=logger, **params)
+        super().__init__(logger=logger, **params)
 
         # initd specific configuration
         self.start_on_boot = str(params.get(
@@ -107,8 +107,7 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
             template_path='pm/initd/initd.conf.template',
             queue=self.queue,
             workdir=self.workdir,
-            rest_host=self.rest_host,
-            rest_port=self.rest_port,
+            agent_dir=self.agent_dir,
             local_rest_cert_file=self.local_rest_cert_file,
             log_level=self.log_level.upper(),
             log_dir=self.log_dir,
@@ -118,9 +117,10 @@ class InitDDaemon(GenericLinuxDaemonMixin, CronRespawnDaemonMixin):
             enable_cron_script=self.create_enable_cron_script(),
             disable_cron_script=self.create_disable_cron_script(),
             executable_temp_path=self.executable_temp_path,
-            extra_env_path=self.extra_env_path,
+            extra_env=self.extra_env,
             storage_dir=utils.internal.get_storage_directory(self.user),
             name=self.name,
+            resources_root=self.resources_root,
         )
 
 

@@ -14,7 +14,6 @@ def test_new_initd(daemon_factory, agent_ssl_cert):
         **get_daemon_params(daemon_name, agent_ssl_cert))
     assert daemon_name == daemon.name
     assert 'queue' == daemon.queue
-    assert '127.0.0.1' == daemon.rest_host
     assert 'user' == daemon.user
     assert agent_ssl_cert.local_cert_path() == daemon.local_rest_cert_file
 
@@ -29,7 +28,6 @@ def test_save_load_delete(daemon_factory, agent_ssl_cert):
     assert 'init.d' == loaded.PROCESS_MANAGEMENT
     assert daemon_name == loaded.name
     assert 'queue' == loaded.queue
-    assert '127.0.0.1' == loaded.rest_host
     assert 'user' == loaded.user
     daemon_factory.delete(daemon.name)
     pytest.raises(exceptions.DaemonNotFoundError,
@@ -97,4 +95,5 @@ def get_daemon_params(name, ssl_cert):
         'broker_url': '127.0.0.1',
         'broker_ssl_enabled': True,
         'local_rest_cert_file': ssl_cert.local_cert_path(),
+        'broker_ssl_cert_path': ssl_cert.local_cert_path(),
     }

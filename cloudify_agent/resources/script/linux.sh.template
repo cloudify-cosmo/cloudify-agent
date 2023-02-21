@@ -1,236 +1,292 @@
-#! /bin/bash -ex
+#!/bin/bash
 
-{% set has_service = process_management.name != 'detach' %}
-MYSELF=$(whoami)
-run_as()
-{
-    user=$1
-    if [ "$MYSELF" == "$user" ]
-    then
-        {% if has_service %}
-        sg cfyagent "${@:2}"
-        {% else %}
-        ${@:2}
-        {% endif %}
+# This script downloads, installs, and starts a Cloudify Agent.
+# The agent is installed into {{ conf.basedir }}, then a service is
+# created using the configured process management system, and started.
+
+# no `set -x` for this script, because we could display some values that
+# we'd prefer stay hidden, such as the rest token
+set -euo pipefail
+
+# Set all variables up front, using templating (templating is never used
+# in this script afterwards)
+PROCESS_MANAGEMENT="{{ conf.process_management.name }}"
+BASE_DIR="{{ conf.basedir }}"
+AGENT_DIR="{{ conf.agent_dir }}"
+AGENT_USER="{{ conf.user }}"
+AGENT_NAME="{{ conf.name }}"
+REST_CERT="{{ conf.rest_ssl_cert }}"
+AUTH_TOKEN_VALUE="{{ auth_token_value }}"
+PACKAGE_URL="{{ conf.package_url }}"
+FILE_SERVER_URL="{{ conf.file_server_url }}"
+DEBUG_FLAG="{{ 'true' if debug_flag }}"
+REST_HOST="{{ conf.rest_host | join(',') }}"
+REST_PORT="{{ conf.rest_port }}"
+TENANT_NAME="{{ tenant_name }}"
+BYPASS_MAINTENANCE="{{ 'true' if bypass_maintenance }}"
+DO_DISABLE_REQUIRETTY="{{ 'true' if conf.disable_requiretty }}"
+DO_ADD_SSL_CERT="{{ 'true' if add_ssl_cert }}"
+DO_INSTALL="{{ 'true' if install }}"
+DO_START="{{ 'true' if start }}"
+LOG_FILE="/var/log/cloudify/agent-install.log"
+
+# if process management system wasn't selected by the user explicitly,
+# default to whatever is available
+if [ -z "${PROCESS_MANAGEMENT}" ]; then
+    if command -v systemctl > /dev/null 2>&1; then
+        PROCESS_MANAGEMENT="systemd"
     else
-        su $user --shell /bin/bash -c "set -e; ${@:2}"
+        PROCESS_MANAGEMENT="init.d"
+    fi
+fi
+
+# if agent dir wasn't selected by the user explicitly, default to
+# <homedir>/<name>
+if [ -z "${AGENT_DIR}" ]; then
+    # this sets AGENT_DIR to the expanded value of ~user/name,
+    # e.g. /home/user/agentname_123
+    eval AGENT_DIR="$(printf "~%q/%q" "${AGENT_USER}" "${AGENT_NAME}")"
+fi
+
+MYSELF="$(whoami)"
+
+# log arguments to stderr
+# We don't have `set -x` in this script, so we must make sure to log very
+# diligently.`
+log()
+{
+    echo >&2 "$(date -Iseconds) ${*}"
+}
+
+# run_as_user/run_as_root - note that this script is usually run in one of three
+# cases:
+# - as root, e.g. via cloudinit (install_method = init_script or plugin), in
+#   which case we don't need to do anything to run as root, but we do need to
+#   drop down to become the user (using `su`), in order to run things that
+#   write to the agent user's homedir (so that the files are owned
+#   by that user)
+# - as agent_user (usually in case of install_method = remote, via ssh),
+#   in which case we need to sudo in order to run system-wide things,
+#   i.e. installing the agent package into a system-wide location (like /opt),
+#   and creating a daemon service
+# - with process_management=detach, in which case we just run everything
+#   directly, and never sudo. BASE_DIR had better already be writable by the
+#   running user
+run_as_user()
+{
+    if [ "${PROCESS_MANAGEMENT}" = "detach" ]; then
+        # when detach, ignore all user/group stuff, and run everything directly
+        "${@}"
+    elif [ "${MYSELF}" = "${AGENT_USER}" ]; then
+        # `sg` to`explicitly run as the cfyagent group, so that we are in that
+        # group indeed. If we just created the cfyagent group, then the current
+        # shell session won't have it yet.
+        # sg only takes one argument, so stringify the command using $*
+        sg cfyagent "${*}"
+    else
+        su "${AGENT_USER}" -c "${*}"
     fi
 }
 
-configure_agent_installation()
+run_as_root()
 {
-   # Create cfyagent group so that we can assign it user that execute and install agent
-   # to that group so that they can have access to `/opt/cloudify-agent-{version}`
-   sudo groupadd -f cfyagent
-   sudo usermod -a -G cfyagent "{{ conf.user }}"
-
-   # Prepare and create agent directory and provide write permission to users belongs to cfyagent group
-   sudo mkdir -p "{{ conf.agent_dir }}"
-   # Currently agent data is expected to live in ~user/<agent name>, so we need to allow cfyagent group access to there,
-   # but without breaking everything else in the homedir (e.g. we shouldn't mess with permissions in .ssh)
-   sudo chgrp cfyagent $(dirname "{{ conf.agent_dir }}")
-   sudo chmod g+wx $(dirname "{{ conf.agent_dir }}")
-   # Ensure that the cfyagent user can read and write and files and directories, and access any dirs
-   sudo chgrp -R cfyagent "{{ conf.agent_dir }}"
-   sudo chmod -R g+rwX "{{ conf.agent_dir }}"
+    if [ "${PROCESS_MANAGEMENT}" = "detach" ]; then
+        # when detach, ignore all user/group stuff, and run everything directly
+        "${@}"
+    elif [ "$MYSELF" = "root" ]; then
+        "${@}"
+    else
+        sudo "${@}"
+    fi
 }
 
-export -f configure_agent_installation
-
-{% if add_ssl_cert %}
-add_ssl_cert()
+# prepare_installation creates the cfyagent group, who will own the agent
+# package, and creates a directory into which the agent will be downloaded
+prepare_installation()
 {
-    # Create all the directories in the path to the cert file
-    mkdir -p $(dirname "{{ ssl_cert_path }}")
-    echo "{{ ssl_cert_content }}" > "{{ ssl_cert_path }}"
-}
-export -f add_ssl_cert
-{% endif %}
+    if [ "${PROCESS_MANAGEMENT}" = "detach" ]; then
+        log "Using detach - skipping cfyagent group"
+        return
+    fi
+    log "Creating the cfyagent group"
+    run_as_root groupadd -f cfyagent
+    log "Adding the user ${AGENT_USER} to the cfyagent group"
+    run_as_root usermod -a -G cfyagent "${AGENT_USER}"
 
-export_daemon_env()
+    if [ -d "${BASE_DIR}" ]; then
+        log "Not creating ${BASE_DIR} - already exists"
+        return
+    fi
+    log "Creating ${BASE_DIR}"
+    run_as_root install -g cfyagent -m ug+rX -d "${BASE_DIR}"
+}
+
+
+# add_rest_ssl_cert creates the agent dir, and stores the REST-service CA
+# certificate in it
+add_rest_ssl_cert()
 {
-    export_agent_cli_env
-    {% for env_key, env_value in daemon_env.items() %}
-        export {{ env_key }}="{{ env_value }}"
-    {% endfor %}
+    log "Creating agent dir ${AGENT_DIR}"
+    run_as_user mkdir -p "${AGENT_DIR}/cloudify/ssl"
+    log "Storing the REST-service CA certificate"
+    run_as_user tee "${AGENT_DIR}/cloudify/ssl/cloudify_internal_cert.pem" > /dev/null <<<"${REST_CERT}"
 }
-export -f export_daemon_env
 
-
-export_agent_cli_env()
-{
-    local agent_env_bin="{{ conf.envdir }}/bin"
-    export AGENT_PYTHON_INTERPRETER="${agent_env_bin}/python"
-    export AGENT_CLI="${agent_env_bin}/cfy-agent"
-    export PATH="${agent_env_bin}:$PATH"
-    export AGENT_NAME="{{ conf.name }}"
-
-}
-export -f  export_agent_cli_env
-
-
-#####################################################
-###################### Install ######################
-#####################################################
-
-{% if install %}
+# download fetches the agent package from a url passed in as the only argument,
+# and outputs the received .tgz to stdout.
+# wget or curl will be used, whichever is available.
 download()
 {
-    echo "Downloading $1..."
+    log "Downloading the agent package from $1..."
     if command -v wget > /dev/null 2>&1; then
-        wget "$1" -O "$2" --header="{{ auth_token_header }}: {{ auth_token_value }}" -nv --ca-certificate "{{ ssl_cert_path }}"
+        log "...using wget"
+        wget "$1" -O - --header="Authentication-Token: ${AUTH_TOKEN_VALUE}" -nv --ca-certificate "${AGENT_DIR}/cloudify/ssl/cloudify_internal_cert.pem"
     elif command -v curl > /dev/null 2>&1; then
-        STATUS_CODE=$(curl -g -L -o "$2" --write-out "%{http_code}" "$1" -H "{{ auth_token_header }}: {{ auth_token_value }}" --cacert "{{ ssl_cert_path }}")
-        if [ "${STATUS_CODE}" -ne "200" ] ; then
-            echo >&2 "Received unexpected HTTP response code (${STATUS_CODE}). Response data was saved into $2."
-            return 1
-        fi
+        log "...using curl"
+        curl -g -f -L "$1" -H "Authentication-Token: ${AUTH_TOKEN_VALUE}" --cacert "${AGENT_DIR}/cloudify/ssl/cloudify_internal_cert.pem"
     else
-        echo >&2 "error: wget/curl not found. cannot download agent package"; return 1
+        echo >&2 "error: wget/curl not found. cannot download agent package"
+        return 1
     fi
-    echo "Download ended successfully"
 }
-export -f download
 
+# package_url returns the url of the agent package for this machine
 package_url()
 {
-    if [[ -n "{{ conf.package_url }}" ]]; then
-        echo "{{ conf.package_url }}"
+    # if the user explicitly provided a package url, let's just use that
+    if [ "${PACKAGE_URL}" ]; then
+        log "Using preconfigured agent package url: ${PACKAGE_URL}"
+        echo "${PACKAGE_URL}"
     else
-        local python_bin=$(which python || which python3)
-        local architecture="$($python_bin -c 'import sys, platform; sys.stdout.write(platform.machine().lower())')"
-        echo "{{ file_server_url }}/packages/agents/manylinux-${architecture}-agent.tar.gz"
+        # figure out what architecture are we on (x86_64 or aarch)
+        local python_bin
+        local architecture
+        local url
+        python_bin="$(which python3 || which python)"
+        architecture="$($python_bin -c 'import sys, platform; sys.stdout.write(platform.machine().lower())')"
+        url="${FILE_SERVER_URL}/packages/agents/manylinux-${architecture}-agent.tar.gz"
+        log "Using agent package url: ${url}"
+        echo "${url}"
     fi
 }
-export -f package_url
 
-download_and_extract_agent_package()
-{
-    temp_pkg_dir=$(mktemp -d)
-    pkg_loc=${temp_pkg_dir}/agent.tar.gz
-    download "$(package_url)" "${pkg_loc}"
-    tar xzf "${pkg_loc}" --strip=1 -C "{{ conf.agent_dir }}"
-    rm -rf "${temp_pkg_dir}"
-}
-export -f download_and_extract_agent_package
-
-install_agent()
-{
-    {% if has_service %}
-    configure_agent_installation
-    {% endif %}
-    {% if add_ssl_cert %}
-    run_as "{{ conf.user }}" add_ssl_cert
-    {% endif %}
-    run_as "{{ conf.user }}" download_and_extract_agent_package
-}
-export -f install_agent
-{% endif %}
-
-#######################################################
-###################### Configure ######################
-#######################################################
-
-{% if configure %}
-
-configure_pyenv()
-{
-    export_daemon_env
-    # configure command is run explicitly as the shebangs are not updated yet
-    echo "Configuring python environment..."
-    ${AGENT_PYTHON_INTERPRETER} ${AGENT_CLI} configure --fix-shebangs
-    echo "Python environment configured successfully"
-}
-export -f configure_pyenv
-
+# disable_requiretty edits sudo settings to disable requiretty
+# this is so that the agent is then free to use sudo in its scripts/plugins.
+# This function only makes sense when we're already root, because if we can't
+# run sudo in the first place (due to it requiring tty), then how can we
+# possibly edit sudo settings...
 disable_requiretty()
 {
-    {% if conf.disable_requiretty %}
-        export_daemon_env
-        echo "Disabling TTY requirement for sudo..."
-        cfy-agent {{ debug_flag }} configure --disable-requiretty --no-sudo
-        echo "TTY requirement for sudo disabled"
-    {% else %}
-        echo "Skipped disabling of TTY requirement"
-    {% endif %}
+    if [ "$MYSELF" = "root" ]; then
+        log "Disabling requiretty"
+        if grep -i ubuntu /proc/version > /dev/null; then
+            # ubuntu
+            if grep -q -E '[^!]requiretty' /etc/sudoers; then
+                echo "Defaults:${AGENT_USER} !requiretty" | tee "/etc/sudoers.d/{AGENT_USER}" >/dev/null
+                chmod 0440 "/etc/sudoers.d/${AGENT_USER}"
+            else
+                echo >&2 "No requiretty directive found, nothing to do"
+            fi
+        else
+            # other - modify sudoers file
+            if [ ! -f "/etc/sudoers" ]; then
+                echo >&2 "sudoers file not found in /etc/sudoers"
+                return 1
+            fi
+            sed -i 's/^Defaults.*requiretty/#&/g' /etc/sudoers
+        fi
+    fi
 }
-export -f disable_requiretty
 
-configure_agent()
-{
-    echo "Configuring agent..."
-    run_as "{{ conf.user }}" configure_pyenv
-    disable_requiretty
-    echo "Agent configured successfully"
-}
-export -f configure_agent
-{% endif %}
-
-###################################################
-###################### Start ######################
-###################################################
-
-{% if start %}
-create_custom_env_file()
-{
-    {% if custom_env is not none %}
-    cat <<EOF > "{{ custom_env_path }}"
-{% if conf.process_management.name == 'init.d' -%}
-#!/bin/bash
-{% endif %}
-{% for env_key, env_value in custom_env.items() %}
-{% if conf.process_management.name == 'init.d' %}export {% endif %}{{ env_key }}="{{ env_value }}"
-{% endfor %}
-EOF
-    {% else %}
-	echo "No custom env configured"
-    {% endif %}
-}
-export -f create_custom_env_file
-
+# start_daemon creates and starts the service using the configured process
+# management system
+# In case of detach, we don't need root, but in case of systemd/initd, we do.
 start_daemon()
 {
-    export_daemon_env
-    if ! cfy-agent daemons list | grep -x "${AGENT_NAME}"; then
-        echo "Creating daemon..."
-        cfy-agent {{ debug_flag }} daemons create {{ pm_options }}
-        echo "Daemon created successfully"
-    else
-        echo "Agent already created, skipping create agent."
+    create_args=(
+        daemons create
+        --name "${AGENT_NAME}"
+        --user "${AGENT_USER}"
+    )
+    start_args=(
+        daemons start
+        --name "${AGENT_NAME}"
+        --user "${AGENT_USER}"
+    )
+
+    if [ "${DEBUG_FLAG}" ]; then
+        create_args=(--debug "${create_args[@]}")
+        start_args=(--debug "${start_args[@]}")
     fi
 
-    echo "Configuring daemon..."
-    cfy-agent {{ debug_flag }} daemons configure
-    echo "Daemon configured successfully"
-
-    echo "Starting daemon..."
-    cfy-agent {{ debug_flag }} daemons start
-    echo "Daemon started successfully"
+    log "Process management system: ${PROCESS_MANAGEMENT}"
+    if [ "${PROCESS_MANAGEMENT}" = "detach" ]; then
+        log "Creating the daemon (as ${AGENT_USER})"
+        run_as_user "${BASE_DIR}/env/bin/cfy-agent" "${create_args[@]}"
+        log "Starting the daemon (as ${AGENT_USER})"
+        run_as_user "${BASE_DIR}/env/bin/cfy-agent" "${start_args[@]}"
+    else
+        log "Creating the daemon (as root)"
+        run_as_root "${BASE_DIR}/env/bin/cfy-agent" "${create_args[@]}"
+        log "Creating the daemon (as root)"
+        run_as_root "${BASE_DIR}/env/bin/cfy-agent" "${start_args[@]}"
+    fi
 }
-export -f start_daemon
-
-start_agent()
-{
-    run_as "{{ conf.user }}" create_custom_env_file
-    run_as "{{ conf.user }}" start_daemon
-}
-export -f start_agent
-{% endif %}
 
 main()
 {
-    {% if install %}
-    install_agent
-    {% endif %}
-    {% if configure %}
-    configure_agent
-    {% endif %}
-    {% if start %}
-    start_agent
-    {% endif %}
+    run_as_root mkdir -p "$(dirname ${LOG_FILE})"
+    log "Installing agent ${AGENT_NAME}"
+
+    prepare_installation
+
+    if [ "${DO_DISABLE_REQUIRETTY}" ]; then
+        disable_requiretty
+    fi
+
+    if [ "${DO_ADD_SSL_CERT}" ]; then
+        add_rest_ssl_cert
+    fi
+
+    if [ "${DO_INSTALL}" ]; then
+        download "$(package_url)" | {
+            if [ "${PROCESS_MANAGEMENT}" = "detach" ]; then
+                tar -xzf - --strip=1 -C "${BASE_DIR}"
+            else
+                run_as_root tar --group=cfyagent -xzf - --strip=1 -C "${BASE_DIR}"
+            fi
+        }
+        log "Fixing agent package shebangs"
+        run_as_root "${BASE_DIR}/env/bin/python" "${BASE_DIR}/env/bin/cfy-agent" configure --fix-shebangs
+    fi
+
+    setup_args=(
+        --name "${AGENT_NAME}"
+        --rest-hosts "${REST_HOST}"
+        --rest-port "${REST_PORT}"
+        --rest-ca-path "${AGENT_DIR}/cloudify/ssl/cloudify_internal_cert.pem"
+        --tenant-name "${TENANT_NAME}"
+        --rest-token "${AUTH_TOKEN_VALUE}"
+        --agent-dir "${AGENT_DIR}"
+        --process-management "${PROCESS_MANAGEMENT}"
+    )
+    if [ "${BYPASS_MAINTENANCE}" ]; then
+        setup_args+=("--bypass-maintenance")
+    fi
+
+    log "Preparing the agent"
+    log "Manager address: ${REST_HOST};  port: ${REST_PORT}"
+    run_as_user "${BASE_DIR}/env/bin/cfy-agent" setup "${setup_args[@]}"
+
+    # inspect so that the user can reference agent settings in the logfile
+    # (inspect hides "secret" settings)
+    run_as_user "${BASE_DIR}/env/bin/cfy-agent" daemons inspect --name "${AGENT_NAME}"
+
+    if [ "${DO_START}" ]; then
+        start_daemon
+    fi
+
+    log "Agent started successfully!"
 }
-export -f main
-{% if tmpdir %}
-export TMPDIR="{{ tmpdir }}"
-{% endif %}
-main
+
+main 2>&1 | run_as_root tee "$LOG_FILE"

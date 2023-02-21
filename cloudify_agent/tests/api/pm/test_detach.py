@@ -149,13 +149,7 @@ def test_execution_env(detach_daemon):
 @pytest.mark.only_rabbit
 @pytest.mark.only_posix
 def test_delete_before_stop(detach_daemon):
-    shared._test_delete_before_stop(detach_daemon)
-
-
-@pytest.mark.only_rabbit
-@pytest.mark.only_posix
-def test_delete_before_stop_with_force(detach_daemon):
-    shared._test_delete_before_stop_with_force(detach_daemon)
+    shared._test_delete(detach_daemon)
 
 
 @pytest.mark.only_rabbit

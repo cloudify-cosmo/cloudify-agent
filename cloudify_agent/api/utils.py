@@ -13,14 +13,15 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-import uuid
-import json
 import copy
-import tempfile
-import os
 import errno
 import getpass
+import json
+import os
 import pkgutil
+import platform
+import tempfile
+import uuid
 
 import appdirs
 import pkg_resources
@@ -127,33 +128,6 @@ class _Internal(object):
             return new_agent_name
         else:
             return '{0}_{1}'.format(old_agent_name, suffix)
-
-    @staticmethod
-    def daemon_to_dict(daemon):
-
-        """
-        Return a json representation of the daemon by copying the __dict__
-        attribute value. Also notice that this implementation removes any
-        attributes starting with the underscore ('_') character.
-
-        :param daemon: the daemon.
-        :type daemon: cloudify_agent.api.pm.base.Daemon
-        """
-
-        try:
-            getattr(daemon, '__dict__')
-        except AttributeError:
-            raise ValueError('Cannot save a daemon with '
-                             'no __dict__ attribute.')
-
-        # don't use deepcopy here because we this will try to copy
-        # the internal non primitive attributes
-        original = daemon.__dict__
-        result = copy.copy(original)
-        for attr in original:
-            if attr.startswith('_'):
-                result.pop(attr)
-        return result
 
     @staticmethod
     def get_broker_url(agent):
@@ -479,6 +453,14 @@ def get_agent_version():
     if version_info['release'] != 'ga':
         version = '{0}-{1}'.format(version, version_info['release'])
     return version
+
+
+def get_system_name():
+    """The current system name, to be stored in the agent info"""
+    if os.name == 'nt':
+        return 'windows'
+    # platform.machine() is x86_64, or aarch64, or...
+    return f'linux {platform.machine()}'
 
 
 def get_windows_basedir():

@@ -3,17 +3,19 @@ AGENT_LOG_MAX_BYTES="{{ log_max_bytes }}"
 AGENT_LOG_MAX_HISTORY="{{ log_max_history }}"
 AGENT_LOG_DIR="{{ log_dir }}"
 AGENT_LOG_LEVEL="{{ log_level }}"
-MANAGER_FILE_SERVER_URL={% for host in rest_host -%}
-    https://{{ host }}:{{ rest_port }}/resources
-    {%- if not loop.last %},{% endif %}
-{%- endfor %}
 LOCAL_REST_CERT_FILE="{{ local_rest_cert_file }}"
-REST_HOST="{{ rest_host|join(',') }}"
-REST_PORT="{{ rest_port }}"
 AGENT_NAME="{{ name }}"
 CLOUDIFY_DAEMON_USER="{{ user }}"
 CLOUDIFY_DAEMON_STORAGE_DIRECTORY="{{ storage_dir }}"
 {% if executable_temp_path -%}
 # Executable tempfiles directory override
 CFY_EXEC_TEMP="{{ executable_temp_path }}"
+{% endif %}
+CFY_RESOURCES_ROOT="{{ resources_root }}"
+CFY_PLUGINS_ROOT="{{ agent_dir }}"
+
+{% if extra_env %}
+{% for env_key, env_value in extra_env.items() %}
+{{ env_key }}="{{ env_value }}"
+{% endfor %}
 {% endif %}

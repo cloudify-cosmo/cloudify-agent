@@ -119,13 +119,7 @@ def test_execution_env(nssm_daemon):
 @pytest.mark.only_rabbit
 @pytest.mark.only_nt
 def test_delete_before_stop(nssm_daemon):
-    shared._test_delete_before_stop(nssm_daemon)
-
-
-@pytest.mark.only_rabbit
-@pytest.mark.only_nt
-def test_delete_before_stop_with_force(nssm_daemon):
-    shared._test_delete_before_stop_with_force(nssm_daemon)
+    shared._test_delete(nssm_daemon)
 
 
 @pytest.mark.only_rabbit

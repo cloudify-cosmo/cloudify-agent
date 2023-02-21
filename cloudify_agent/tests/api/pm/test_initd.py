@@ -179,14 +179,7 @@ def test_execution_env(initd_daemon):
 @pytest.mark.only_ci
 @pytest.mark.only_posix
 def test_delete_before_stop(initd_daemon):
-    shared._test_delete_before_stop(initd_daemon)
-
-
-@pytest.mark.only_rabbit
-@pytest.mark.only_ci
-@pytest.mark.only_posix
-def test_delete_before_stop_with_force(initd_daemon):
-    shared._test_delete_before_stop_with_force(initd_daemon)
+    shared._test_delete(initd_daemon)
 
 
 @pytest.mark.only_rabbit

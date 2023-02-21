@@ -15,9 +15,9 @@ if ( $PRERELEASE -eq "ga" ) {
    $AGENT_PATH = "C:\Program Files\Cloudify $VERSION Agents"
    $DISPLAY_NAME = $VERSION
 }
-$GET_PIP_URL = "http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/get-pip-20.py"
-$PIP_VERSION = "9.0.1"
-$PY_URL = "https://repository.cloudifysource.org/cloudify/components/python-3.6.8-embed-amd64.zip"
+$GET_PIP_URL = "http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/get-pip-23.py"
+$PIP_VERSION = "23.0"
+$PY_URL = "https://repository.cloudifysource.org/cloudify/components/python-3.11.1-embed-amd64.zip"
 $REPO_URL = "https://github.com/cloudify-cosmo/cloudify-agent/archive/$DEV_BRANCH.zip"
 $INNO_SETUP_URL = "http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/inno_setup_6.exe"
 
@@ -88,15 +88,15 @@ Expand-Archive -Path python.zip -DestinationPath $AGENT_PATH
 
 # We need to expand this to make virtualenv work
 pushd "$AGENT_PATH"
-    Expand-Archive -Path python36.zip
-    rm_rf python36.zip
+    Expand-Archive -Path python311.zip
+    rm_rf python311.zip
     mkdir Lib
-    move python36\* Lib
-    rmdir python36
+    move python311\* Lib
+    rmdir python311
 popd
 
 Write-Host "Adding pip to embedded python"
-Set-Content -Path "$AGENT_PATH\python36._pth" -Value ".
+Set-Content -Path "$AGENT_PATH\python311._pth" -Value ".
 .\Lib
 .\Lib\site-packages
 

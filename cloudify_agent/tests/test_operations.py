@@ -25,8 +25,7 @@ def test_create_agent_dict(agent_ssl_cert, tmp_path):
         for k in equal_keys:
             assert old_agent[k] == new_agent[k]
             assert old_agent[k] == third_agent[k]
-        nonequal_keys = ['agent_dir', 'workdir', 'envdir', 'name',
-                         'rest_host', 'basedir']
+        nonequal_keys = ['envdir', 'name', 'rest_host', 'basedir']
         for k in nonequal_keys:
             assert old_agent[k] != new_agent[k]
             assert old_agent[k] != third_agent[k]
@@ -45,24 +44,22 @@ def test_create_agent_dict(agent_ssl_cert, tmp_path):
 def test_create_agent_from_old_agent(mock_get_rest_client, tmp_path,
                                      mock_send_amqp_task,
                                      mock_is_agent_alive, agent_ssl_cert):
-    with _set_context(agent_ssl_cert, tmp_path):
+    get_rmq_user_path = (
+        'cloudify_agent.installer.config.agent_config.get_agent_rabbitmq_user'
+    )
+    with _set_context(agent_ssl_cert, tmp_path), patch(get_rmq_user_path):
         _create_cloudify_agent_dir(tmp_path)
         old_name = ctx.instance.runtime_properties[
             'cloudify_agent']['name']
-        old_agent_dir = ctx.instance.runtime_properties[
-            'cloudify_agent']['agent_dir']
         old_queue = ctx.instance.runtime_properties[
             'cloudify_agent']['queue']
 
         operations.create_agent_amqp()
         new_name = ctx.instance.runtime_properties[
             'cloudify_agent']['name']
-        new_agent_dir = ctx.instance.runtime_properties[
-            'cloudify_agent']['agent_dir']
         new_queue = ctx.instance.runtime_properties[
             'cloudify_agent']['queue']
         assert old_name != new_name
-        assert old_agent_dir != new_agent_dir
         assert old_queue != new_queue
 
 
