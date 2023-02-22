@@ -393,7 +393,8 @@ def _run_task(task_name, expected_return=None,
     python = get_python_path(prefix)
     package, func = task_name.rsplit('.', 1)
     env = os.environ.copy()
-    env['PATH'] = '{0}:{1}'.format(os.path.dirname(python), env['PATH'])
+    env['PATH'] = '{0}{1}{2}'.format(
+        os.path.dirname(python), os.pathsep, env['PATH'])
 
     return subprocess.check_output([
         python, '-c',
