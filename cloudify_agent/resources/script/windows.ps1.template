@@ -67,7 +67,7 @@ function InstallAgent()
 function SetupAgent()
 {
     run "{{ conf.basedir }}\Scripts\cfy-agent.exe" setup `
-        --name "{{ conf.name}}" `
+        --name "{{ conf.name }}" `
         --rest-hosts "{{ conf.rest_host | join(',') }}" `
         --rest-port "{{ conf.rest_port }}" `
         --rest-ca-path "{{ conf.basedir }}\{{ conf.name }}\cloudify\ssl\cloudify_internal_cert.pem" `
@@ -83,14 +83,14 @@ function StartAgent()
 {
     if (-Not (run "{{ conf.basedir }}\Scripts\cfy-agent.exe" daemons list | Select-String {{ conf.name }})) {
         Write-Host "Creating daemon..."
-        run "{{ conf.basedir }}\Scripts\cfy-agent.exe" {{ debug_flag }} daemons create
+        run "{{ conf.basedir }}\Scripts\cfy-agent.exe" {{ debug_flag }} daemons create --name "{{ conf.name }}"
         Write-Host "Daemon created successfully"
     } else {
         Write-Host "Agent already created, skipping create agent."
     }
 
     Write-Host "Starting daemon..."
-    run "{{ conf.basedir }}\Scripts\cfy-agent.exe" {{ debug_flag }} daemons start
+    run "{{ conf.basedir }}\Scripts\cfy-agent.exe" {{ debug_flag }} daemons start --name "{{ conf.name }}"
     Write-Host "Daemon started successfully"
 }
 {% endif %}
