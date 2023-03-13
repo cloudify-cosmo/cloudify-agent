@@ -191,6 +191,7 @@ def setup(
         min_workers=agent_config.get('min_workers'),
         max_workers=agent_config.get('max_workers'),
         executable_temp_path=agent_config.get('executable_temp_path'),
+        resources_root=os.path.join(agent_dir, 'resources'),
     )
     _save_daemon(daemon)
     daemon.create_broker_conf()
