@@ -75,6 +75,8 @@ function SetupAgent()
         --rest-token "{{ auth_token_value }}" `
         --agent-dir "{{ conf.basedir }}\{{ conf.name }}" `
         --process-management "nssm"
+
+    run "{{ conf.basedir }}\Scripts\cfy-agent.exe" {{ debug_flag }} daemons create --name "{{ conf.name }}"
 }
 
 
@@ -83,7 +85,7 @@ function StartAgent()
 {
     if (-Not (run "{{ conf.basedir }}\Scripts\cfy-agent.exe" daemons list | Select-String {{ conf.name }})) {
         Write-Host "Creating daemon..."
-        run "{{ conf.basedir }}\Scripts\cfy-agent.exe" {{ debug_flag }} daemons create --name "{{ conf.name }}"
+        SetupAgent
         Write-Host "Daemon created successfully"
     } else {
         Write-Host "Agent already created, skipping create agent."
