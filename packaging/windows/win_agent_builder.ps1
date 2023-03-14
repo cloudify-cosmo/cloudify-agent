@@ -5,6 +5,8 @@ param(
     $UPLOAD = ""
 )
 Set-StrictMode -Version 1.0
+Set-PSDebug -Trace 1
+
 $ErrorActionPreference="stop"
 # Use TLSv1.2 for Invoke-Restmethod
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -102,6 +104,16 @@ Set-Content -Path "$AGENT_PATH\python311._pth" -Value ".
 
 import site"
 run $AGENT_PATH\python.exe get-pip.py pip==$PIP_VERSION
+
+Write-Host "Fetching the venv module"
+pushd "$AGENT_PATH\Lib\site-packages"
+    # the embeddable python package doesn't come with the venv module.
+    # Let's just download the package from cpython itself, because we do require
+    # venv in order to create virtual environments for plugins.
+    mkdir "venv"
+    Invoke-RestMethod -Uri "https://raw.githubusercontent.com/python/cpython/v3.11.2/Lib/venv/__init__.py" -OutFile "venv\__init__.py"
+    Invoke-RestMethod -Uri "https://raw.githubusercontent.com/python/cpython/v3.11.2/Lib/venv/__main__.py" -OutFile "venv\__main__.py"
+popd
 
 Write-Host "Installing agent"
 pushd cloudify-agent
