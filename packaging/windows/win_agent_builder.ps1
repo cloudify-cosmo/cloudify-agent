@@ -107,7 +107,17 @@ Write-Host "Installing agent"
 pushd cloudify-agent
     run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" -r dev-requirements.txt
     run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" .
+    run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" virtualenv
 popd
+
+# unfortunately, the embeddable python doesn't come with venv.
+# We'll install virtualenv, and create a "stub" venv.py, which delegate
+# to virtualenv, because virtualenv does work on windows.
+Set-Content -Path "$AGENT_PATH\Lib\site-packages\venv.py" -Value "
+from virtualenv.__main__ import run
+if __name__ == '__main__':
+    run()
+"
 
 Write-Host "Adding ctx and cfy-agent symlinks..."
 New-Item -ItemType SymbolicLink -Path "$AGENT_PATH\ctx.exe" -Value "$AGENT_PATH\Scripts\ctx.exe"
