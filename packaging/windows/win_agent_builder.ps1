@@ -105,21 +105,21 @@ Set-Content -Path "$AGENT_PATH\python311._pth" -Value ".
 import site"
 run $AGENT_PATH\python.exe get-pip.py pip==$PIP_VERSION
 
-Write-Host "Fetching the venv module"
-pushd "$AGENT_PATH\Lib\site-packages"
-    # the embeddable python package doesn't come with the venv module.
-    # Let's just download the package from cpython itself, because we do require
-    # venv in order to create virtual environments for plugins.
-    mkdir "venv"
-    Invoke-RestMethod -Uri "https://raw.githubusercontent.com/python/cpython/v3.11.2/Lib/venv/__init__.py" -OutFile "venv\__init__.py"
-    Invoke-RestMethod -Uri "https://raw.githubusercontent.com/python/cpython/v3.11.2/Lib/venv/__main__.py" -OutFile "venv\__main__.py"
-popd
-
 Write-Host "Installing agent"
 pushd cloudify-agent
     run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" -r dev-requirements.txt
     run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" .
+    run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" virtualenv
 popd
+
+# unfortunately, the embeddable python doesn't come with venv.
+# We'll install virtualenv, and create a "stub" venv.py, which delegate
+# to virtualenv, because virtualenv does work on windows.
+Set-Content -Path "$AGENT_PATH\Lib\site-packages\venv.py" -Value "
+from virtualenv.__main__ import run
+if __name__ == '__main__':
+    run()
+"
 
 Write-Host "Adding ctx and cfy-agent symlinks..."
 New-Item -ItemType SymbolicLink -Path "$AGENT_PATH\ctx.exe" -Value "$AGENT_PATH\Scripts\ctx.exe"
