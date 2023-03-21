@@ -83,6 +83,10 @@ def _parse_rest_hosts(ctx, param, value):
     help='The name of the agent',
 )
 @click.option(
+    '--node-instance-id',
+    help='ID of the current node instance (defaults to agent name)',
+)
+@click.option(
     '--rest-hosts',
     help='Comma-separated list of Cloudify Manager REST-service addresses',
     callback=_parse_rest_hosts,
@@ -127,8 +131,11 @@ def setup(
     agent_dir,
     process_management,
     bypass_maintenance=False,
+    node_instance_id=None,
 ):
     """Prepare the agent, storing the agent settings"""
+    if node_instance_id is None:
+        node_instance_id = name
     client = get_rest_client(
         rest_host=rest_hosts,
         rest_port=rest_port,
@@ -137,8 +144,10 @@ def setup(
         ssl_cert_path=rest_ca_path,
         bypass_maintenance_mode=bypass_maintenance,
     )
-
-    inst = client.node_instances.get(name, evaluate_functions=True)
+    inst = client.node_instances.get(
+        node_instance_id,
+        evaluate_functions=True,
+    )
     agent = client.agents.get(name)
     agent_config = inst.runtime_properties['cloudify_agent']
     agent_config['agent_dir'] = agent_dir

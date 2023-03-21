@@ -15,6 +15,7 @@ BASE_DIR="{{ conf.basedir }}"
 AGENT_DIR="{{ conf.agent_dir }}"
 AGENT_USER="{{ conf.user }}"
 AGENT_NAME="{{ conf.name }}"
+INSTANCE_ID="{{ conf.node_instance_id }}"
 REST_CERT="{{ conf.rest_ssl_cert }}"
 AUTH_TOKEN_VALUE="{{ auth_token_value }}"
 PACKAGE_URL="{{ conf.package_url }}"
@@ -262,6 +263,7 @@ main()
 
     setup_args=(
         --name "${AGENT_NAME}"
+        --node-instance-id "${INSTANCE_ID}"
         --rest-hosts "${REST_HOST}"
         --rest-port "${REST_PORT}"
         --rest-ca-path "${AGENT_DIR}/cloudify/ssl/cloudify_internal_cert.pem"
