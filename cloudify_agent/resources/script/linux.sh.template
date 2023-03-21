@@ -250,6 +250,7 @@ main()
     fi
 
     if [ "${DO_INSTALL}" ]; then
+        log "Installing to ${BASE_DIR}"
         download "$(package_url)" | {
             if [ "${PROCESS_MANAGEMENT}" = "detach" ]; then
                 tar -xzf - --strip=1 -C "${BASE_DIR}"

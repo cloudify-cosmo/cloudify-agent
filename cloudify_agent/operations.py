@@ -169,15 +169,16 @@ def _copy_values_from_old_agent_config(old_agent, new_agent):
     fields_to_copy = ['windows', 'ip', 'basedir', 'user', 'architecture',
                       'broker_ssl_cert_path', 'network', 'local',
                       'install_method', 'process_management',
-                      'node_instance_id', 'distro_codename']
+                      'node_instance_id', 'distro_codename', 'basedir']
     # distro_codename for supporting upgrade from pre-7.0
     for field in fields_to_copy:
         if field in old_agent:
             new_agent[field] = old_agent[field]
-    if new_agent['windows']:
-        new_agent['basedir'] = utils.get_windows_basedir()
-    else:
-        new_agent['basedir'] = utils.get_linux_basedir()
+    if not new_agent.get('basedir'):
+        if new_agent['windows']:
+            new_agent['basedir'] = utils.get_windows_basedir()
+        else:
+            new_agent['basedir'] = utils.get_linux_basedir()
 
 
 def create_new_agent_config(old_agent):
