@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script downloads, installs, and starts a Cloudify Agent.
-# The agent is installed into {{ conf.basedir }}, then a service is
+# The agent is installed into {{ conf.install_dir }}, then a service is
 # created using the configured process management system, and started.
 
 # no `set -x` for this script, because we could display some values that
@@ -11,7 +11,7 @@ set -euo pipefail
 # Set all variables up front, using templating (templating is never used
 # in this script afterwards)
 PROCESS_MANAGEMENT="{{ conf.process_management.name }}"
-BASE_DIR="{{ conf.basedir }}"
+INSTALL_DIR="{{ conf.install_dir }}"
 AGENT_DIR="{{ conf.agent_dir }}"
 AGENT_USER="{{ conf.user }}"
 AGENT_NAME="{{ conf.name }}"
@@ -71,7 +71,7 @@ log()
 #   i.e. installing the agent package into a system-wide location (like /opt),
 #   and creating a daemon service
 # - with process_management=detach, in which case we just run everything
-#   directly, and never sudo. BASE_DIR had better already be writable by the
+#   directly, and never sudo. INSTALL_DIR had better already be writable by the
 #   running user
 run_as_user()
 {
@@ -114,12 +114,12 @@ prepare_installation()
     log "Adding the user ${AGENT_USER} to the cfyagent group"
     run_as_root usermod -a -G cfyagent "${AGENT_USER}"
 
-    if [ -d "${BASE_DIR}" ]; then
-        log "Not creating ${BASE_DIR} - already exists"
+    if [ -d "${INSTALL_DIR}" ]; then
+        log "Not creating ${INSTALL_DIR} - already exists"
         return
     fi
-    log "Creating ${BASE_DIR}"
-    run_as_root install -g cfyagent -m ug+rX -d "${BASE_DIR}"
+    log "Creating ${INSTALL_DIR}"
+    run_as_root install -g cfyagent -m ug+rX -d "${INSTALL_DIR}"
 }
 
 
@@ -223,14 +223,14 @@ start_daemon()
     log "Process management system: ${PROCESS_MANAGEMENT}"
     if [ "${PROCESS_MANAGEMENT}" = "detach" ]; then
         log "Creating the daemon (as ${AGENT_USER})"
-        run_as_user "${BASE_DIR}/env/bin/cfy-agent" "${create_args[@]}"
+        run_as_user "${INSTALL_DIR}/env/bin/cfy-agent" "${create_args[@]}"
         log "Starting the daemon (as ${AGENT_USER})"
-        run_as_user "${BASE_DIR}/env/bin/cfy-agent" "${start_args[@]}"
+        run_as_user "${INSTALL_DIR}/env/bin/cfy-agent" "${start_args[@]}"
     else
         log "Creating the daemon (as root)"
-        run_as_root "${BASE_DIR}/env/bin/cfy-agent" "${create_args[@]}"
+        run_as_root "${INSTALL_DIR}/env/bin/cfy-agent" "${create_args[@]}"
         log "Creating the daemon (as root)"
-        run_as_root "${BASE_DIR}/env/bin/cfy-agent" "${start_args[@]}"
+        run_as_root "${INSTALL_DIR}/env/bin/cfy-agent" "${start_args[@]}"
     fi
 }
 
@@ -250,16 +250,16 @@ main()
     fi
 
     if [ "${DO_INSTALL}" ]; then
-        log "Installing to ${BASE_DIR}"
+        log "Installing to ${INSTALL_DIR}"
         download "$(package_url)" | {
             if [ "${PROCESS_MANAGEMENT}" = "detach" ]; then
-                tar -xzf - --strip=1 -C "${BASE_DIR}"
+                tar -xzf - --strip=1 -C "${INSTALL_DIR}"
             else
-                run_as_root tar --group=cfyagent -xzf - --strip=1 -C "${BASE_DIR}"
+                run_as_root tar --group=cfyagent -xzf - --strip=1 -C "${INSTALL_DIR}"
             fi
         }
         log "Fixing agent package shebangs"
-        run_as_root "${BASE_DIR}/env/bin/python" "${BASE_DIR}/env/bin/cfy-agent" configure --fix-shebangs
+        run_as_root "${INSTALL_DIR}/env/bin/python" "${INSTALL_DIR}/env/bin/cfy-agent" configure --fix-shebangs
     fi
 
     setup_args=(
@@ -279,11 +279,11 @@ main()
 
     log "Preparing the agent"
     log "Manager address: ${REST_HOST};  port: ${REST_PORT}"
-    run_as_user "${BASE_DIR}/env/bin/cfy-agent" setup "${setup_args[@]}"
+    run_as_user "${INSTALL_DIR}/env/bin/cfy-agent" setup "${setup_args[@]}"
 
     # inspect so that the user can reference agent settings in the logfile
     # (inspect hides "secret" settings)
-    run_as_user "${BASE_DIR}/env/bin/cfy-agent" daemons inspect --name "${AGENT_NAME}"
+    run_as_user "${INSTALL_DIR}/env/bin/cfy-agent" daemons inspect --name "${AGENT_NAME}"
 
     if [ "${DO_START}" ]; then
         start_daemon

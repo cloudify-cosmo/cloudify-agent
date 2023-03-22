@@ -12,13 +12,13 @@ $ErrorActionPreference = "Stop"
 function AddSSLCert()
 {
     # Make sure the cert directory exists
-    New-Item -ItemType directory -Force -Path "{{ conf.basedir }}\{{ conf.name }}\cloudify\ssl"
+    New-Item -ItemType directory -Force -Path "{{ conf.install_dir }}\{{ conf.name }}\cloudify\ssl"
 
     # Create a new file with the certificate content
-    New-Item "{{ conf.basedir }}\{{ conf.name }}\cloudify\ssl\cloudify_internal_cert.pem" -type file -force -value "{{ conf.rest_ssl_cert }}"
+    New-Item "{{ conf.install_dir }}\{{ conf.name }}\cloudify\ssl\cloudify_internal_cert.pem" -type file -force -value "{{ conf.rest_ssl_cert }}"
 
     # Add the certificate to the root cert store
-    Import-Certificate -FilePath "{{ conf.basedir }}\{{ conf.name }}\cloudify\ssl\cloudify_internal_cert.pem" -CertStoreLocation Cert:\LocalMachine\Root
+    Import-Certificate -FilePath "{{ conf.install_dir }}\{{ conf.name }}\cloudify\ssl\cloudify_internal_cert.pem" -CertStoreLocation Cert:\LocalMachine\Root
 }
 {% endif %}
 
@@ -46,18 +46,18 @@ function Download($Url, $OutputPath)
 
 function InstallAgent()
 {
-    if (-Not (Test-Path "{{ conf.basedir }}\Scripts")) {
+    if (-Not (Test-Path "{{ conf.install_dir }}\Scripts")) {
         Write-Host "Installing cloudify agent package"
         {% if conf.package_url %}
-        Download "{{ conf.package_url }}" "{{ conf.basedir }}\cloudify-windows-agent-package.exe"
+        Download "{{ conf.package_url }}" "{{ conf.install_dir }}\cloudify-windows-agent-package.exe"
         {% else %}
-        Download "{{ conf.file_server_url }}/packages/agents/cloudify-windows-agent.exe" "{{ conf.basedir }}\cloudify-windows-agent-package.exe"
+        Download "{{ conf.file_server_url }}/packages/agents/cloudify-windows-agent.exe" "{{ conf.install_dir }}\cloudify-windows-agent-package.exe"
         {% endif %}
         # This call is not blocking so we pipe the output to null to make it blocking
         # There's no point trying to pipe it to not null because in the event it has problems it will
         # make a dialog box despite all the flags telling it we really want it to not do stuff like that.
-        Write-Host 'Starting install using "{{ conf.basedir }}\cloudify-windows-agent-package.exe"'
-        & "{{ conf.basedir }}\cloudify-windows-agent-package.exe" /SILENT /VERYSILENT /SUPPRESSMSGBOXES | Out-Null
+        Write-Host 'Starting install using "{{ conf.install_dir }}\cloudify-windows-agent-package.exe"'
+        & "{{ conf.install_dir }}\cloudify-windows-agent-package.exe" /SILENT /VERYSILENT /SUPPRESSMSGBOXES | Out-Null
     } else {
         Write-Host "Agent package already installed"
     }
@@ -66,25 +66,25 @@ function InstallAgent()
 
 function SetupAgent()
 {
-    run "{{ conf.basedir }}\Scripts\cfy-agent.exe" setup `
+    run "{{ conf.install_dir }}\Scripts\cfy-agent.exe" setup `
         --name "{{ conf.name }}" `
         --node-instance-id "{{ conf.node_instance_id }}"
         --rest-hosts "{{ conf.rest_host | join(',') }}" `
         --rest-port "{{ conf.rest_port }}" `
-        --rest-ca-path "{{ conf.basedir }}\{{ conf.name }}\cloudify\ssl\cloudify_internal_cert.pem" `
+        --rest-ca-path "{{ conf.install_dir }}\{{ conf.name }}\cloudify\ssl\cloudify_internal_cert.pem" `
         --tenant-name "{{ tenant_name }}" `
         --rest-token "{{ auth_token_value }}" `
-        --agent-dir "{{ conf.basedir }}\{{ conf.name }}" `
+        --agent-dir "{{ conf.install_dir }}\{{ conf.name }}" `
         --process-management "nssm"
 
-    run "{{ conf.basedir }}\Scripts\cfy-agent.exe" {{ debug_flag }} daemons create --name "{{ conf.name }}"
+    run "{{ conf.install_dir }}\Scripts\cfy-agent.exe" {{ debug_flag }} daemons create --name "{{ conf.name }}"
 }
 
 
 {% if start %}
 function StartAgent()
 {
-    if (-Not (run "{{ conf.basedir }}\Scripts\cfy-agent.exe" daemons list | Select-String {{ conf.name }})) {
+    if (-Not (run "{{ conf.install_dir }}\Scripts\cfy-agent.exe" daemons list | Select-String {{ conf.name }})) {
         Write-Host "Creating daemon..."
         SetupAgent
         Write-Host "Daemon created successfully"
@@ -93,7 +93,7 @@ function StartAgent()
     }
 
     Write-Host "Starting daemon..."
-    run "{{ conf.basedir }}\Scripts\cfy-agent.exe" {{ debug_flag }} daemons start --name "{{ conf.name }}"
+    run "{{ conf.install_dir }}\Scripts\cfy-agent.exe" {{ debug_flag }} daemons start --name "{{ conf.name }}"
     Write-Host "Daemon started successfully"
 }
 {% endif %}
