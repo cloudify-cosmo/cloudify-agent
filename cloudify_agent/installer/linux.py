@@ -15,10 +15,9 @@
 
 from cloudify_agent.installer import LinuxInstallerMixin
 from cloudify_agent.installer import LocalInstallerMixin
-from cloudify_agent.installer import RemoteInstallerMixin
 
 
-class RemoteLinuxAgentInstaller(LinuxInstallerMixin, RemoteInstallerMixin):
+class RemoteLinuxAgentInstaller(LinuxInstallerMixin):
 
     def __init__(self, cloudify_agent, runner, logger=None):
         super(RemoteLinuxAgentInstaller, self).__init__(cloudify_agent, logger)

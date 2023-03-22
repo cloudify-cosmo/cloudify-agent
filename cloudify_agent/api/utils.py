@@ -468,11 +468,11 @@ def get_windows_basedir():
     # is not really supported. They do then give details of how to do so, but
     # as it's stated as not supported by MS, we won't support it.
     # https://support.microsoft.com/en-us/help/933700/microsoft-does-not-support-changing-the-location-of-the-program-files  # noqa
-    return 'C:\\Program Files\\Cloudify {} Agents'.format(get_agent_version())
+    return 'C:\\Program Files\\Cloudify Agents'
 
 
 def get_linux_basedir():
-    return '/opt/cloudify-agent-{0}'.format(get_agent_version())
+    return '/opt/cloudify-agent'
 
 
 def get_agent_basedir(is_windows=False):
