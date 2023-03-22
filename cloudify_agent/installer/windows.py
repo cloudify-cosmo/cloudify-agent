@@ -15,10 +15,9 @@
 
 from cloudify_agent.installer import WindowsInstallerMixin
 from cloudify_agent.installer import LocalInstallerMixin
-from cloudify_agent.installer import RemoteInstallerMixin
 
 
-class RemoteWindowsAgentInstaller(WindowsInstallerMixin, RemoteInstallerMixin):
+class RemoteWindowsAgentInstaller(WindowsInstallerMixin):
 
     def __init__(self, cloudify_agent, runner, logger=None):
         super(RemoteWindowsAgentInstaller, self).__init__(cloudify_agent,
