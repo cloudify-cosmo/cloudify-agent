@@ -315,10 +315,18 @@ class CloudifyAgentConfig(dict):
         raise_missing_attributes('key', 'password')
 
     def _set_basedir(self, runner):
+        # if basedir is provided by the user explicitly, just use that
+        # otherwise, set install_dir to the default basedir + versioned dir
         if self.get('basedir'):
+            self['install_dir'] = self['basedir']
             return
-        basedir = agent_utils.get_agent_basedir(self.is_windows)
-        self['basedir'] = basedir
+        join = nt_join if self.is_windows else posix_join
+
+        self['basedir'] = None
+        self['install_dir'] = join(
+            agent_utils.get_agent_basedir(self.is_windows),
+            f'agent-{agent_utils.get_agent_version()}'
+        )
 
     def set_config_paths(self):
         # proxied agents don't have a name - don't set paths either
@@ -327,7 +335,7 @@ class CloudifyAgentConfig(dict):
         join = nt_join if self.is_windows else posix_join
 
         if not self.get('envdir'):
-            self['envdir'] = join(self['basedir'], 'env')
+            self['envdir'] = join(self['install_dir'], 'env')
 
         if not self.get('broker_ssl_cert_path'):
             self['broker_ssl_cert_path'] = \
