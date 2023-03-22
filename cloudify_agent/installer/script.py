@@ -36,27 +36,17 @@ LOCAL_CLEANUP_PATHS_KEY = 'local_cleanup_paths'
 class AgentInstallationScriptBuilder(AgentInstaller):
     def __init__(self, cloudify_agent):
         super(AgentInstallationScriptBuilder, self).__init__(cloudify_agent)
-        self.custom_env = None
         self.file_server_root = cloudify_utils.get_manager_file_server_root()
         self.file_server_url = cloudify_agent['file_server_url']
 
-        basedir = self.cloudify_agent['basedir']
         if cloudify_agent.is_windows:
             self.install_script_template = 'script/windows.ps1.template'
             self.install_script_filename = '{0}.ps1'.format(uuid.uuid4())
-            self.custom_env_path = '{0}\\custom_agent_env.bat'.format(basedir)
         else:
             self.install_script_template = 'script/linux.sh.template'
             self.install_script_filename = '{0}.sh'.format(uuid.uuid4())
-            self.custom_env_path = '{0}/custom_agent_env.sh'.format(basedir)
         self.stop_old_agent_template = 'script/stop-agent.py.template'
         self.stop_old_agent_filename = '{0}.py'.format(uuid.uuid4())
-
-    def create_custom_env_file_on_target(self, environment):
-        if not environment:
-            return
-        self.custom_env = environment
-        return self.custom_env_path
 
     @staticmethod
     def _get_template(template_filename):
