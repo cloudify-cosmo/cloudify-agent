@@ -103,14 +103,17 @@ def _test_prepare(agent_ssl_cert, agent_config, expected_values,
                   context=None):
     user = getpass.getuser()
     is_windows = os.name == 'nt'
+    version = utils.get_agent_version()
     basedir = utils.get_agent_basedir(is_windows)
-    envdir = os.path.join(basedir, 'env')
+    install_dir = os.path.join(basedir, f'agent-{version}')
+    envdir = os.path.join(install_dir, 'env')
 
     # This test needs to be adapted to security settings
     expected = {
         'process_management': {},
-        'basedir': basedir,
+        'basedir': None,
         'name': 'test_node',
+        'install_dir': install_dir,
         'rest_host': ['127.0.0.1'],
         'heartbeat': None,
         'queue': 'test_node',
@@ -129,7 +132,7 @@ def _test_prepare(agent_ssl_cert, agent_config, expected_values,
         'system_python': 'python',
         'bypass_maintenance': False,
         'network': 'default',
-        'version': utils.get_agent_version(),
+        'version': version,
         'node_instance_id': 'test_node',
         'log_level': 'info',
         'log_max_bytes': 5242880,
