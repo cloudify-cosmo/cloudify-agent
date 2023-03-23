@@ -68,7 +68,7 @@ function SetupAgent()
 {
     run "{{ conf.install_dir }}\Scripts\cfy-agent.exe" setup `
         --name "{{ conf.name }}" `
-        --node-instance-id "{{ conf.node_instance_id }}"
+        --node-instance-id "{{ conf.node_instance_id }}" `
         --rest-hosts "{{ conf.rest_host | join(',') }}" `
         --rest-port "{{ conf.rest_port }}" `
         --rest-ca-path "{{ conf.install_dir }}\{{ conf.name }}\cloudify\ssl\cloudify_internal_cert.pem" `
