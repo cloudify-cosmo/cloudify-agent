@@ -283,7 +283,8 @@ def _get_cloudify_context(agent, task_name, new_agent_connection=None):
         'execution_id': ctx.execution_id,
         'tenant': ctx.tenant,
         'rest_token': get_rest_token(),
-        'rest_host': agent['rest_host']
+        'rest_host': ctx.rest_host,
+        'rest_port': ctx.rest_port,
     }
 
     if new_agent_connection:
