@@ -10,9 +10,9 @@ $ErrorActionPreference="stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $DISPLAY_NAME = $VERSION + '-' + $PRERELEASE
-$AGENT_PATH = "C:\Program Files\Cloudify $DISPLAY_NAME Agents"
+$AGENT_PATH = "C:\Program Files\Cloudify Agents\agent-$DISPLAY_NAME"
 if ( $PRERELEASE -eq "ga" ) {
-   $AGENT_PATH = "C:\Program Files\Cloudify $VERSION Agents"
+   $AGENT_PATH = "C:\Program Files\Cloudify Agents\agent-$VERSION"
    $DISPLAY_NAME = $VERSION
 }
 $GET_PIP_URL = "http://repository.cloudifysource.org/cloudify/components/win-cli-package-resources/get-pip-23.py"
