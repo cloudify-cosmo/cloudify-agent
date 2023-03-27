@@ -11,7 +11,7 @@ AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
-DefaultDirName={commonpf}\Cloudify {#AppDisplayName} Agents
+DefaultDirName={commonpf}\Cloudify Agents\agent-{#AppDisplayName}
 DisableProgramGroupPage=yes
 DisableDirPage=yes
 OutputBaseFilename=cloudify-windows-agent_{#AppDisplayName}
@@ -28,11 +28,11 @@ OutputDir=output\
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "C:\Program Files\Cloudify {#AppDisplayName} Agents\*"; DestDir: "{app}"; Excludes: "\__pycache__\*"; Flags: createallsubdirs recursesubdirs
+Source: "C:\Program Files\Cloudify Agents\agent-{#AppDisplayName} Agents\*"; DestDir: "{app}"; Excludes: "\__pycache__\*"; Flags: createallsubdirs recursesubdirs
 Source: "source\icons\Cloudify.ico"; DestDir: "{app}"
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop icon";
 
 [Icons]
-Name: "{commondesktop}\Cloudify {#AppDisplayName} Agents"; Filename: "%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe";  Parameters: "-NoExit -Command $env:Path=\""{app}\Scripts\;$env:Path\""; function prompt {{\""[Cloudify {#AppDisplayName} Agents] $($executionContext.SessionState.Path.CurrentLocation)>\""}"; WorkingDir: "{app}"; IconFilename: "{app}\Cloudify.ico"; Tasks: "desktopicon";
+Name: "{commondesktop}\Cloudify Agents\agent-{#AppDisplayName}"; Filename: "%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe";  Parameters: "-NoExit -Command $env:Path=\""{app}\Scripts\;$env:Path\""; function prompt {{\""[Cloudify {#AppDisplayName} Agents] $($executionContext.SessionState.Path.CurrentLocation)>\""}"; WorkingDir: "{app}"; IconFilename: "{app}\Cloudify.ico"; Tasks: "desktopicon";
