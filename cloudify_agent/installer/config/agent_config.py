@@ -337,10 +337,6 @@ class CloudifyAgentConfig(dict):
         if not self.get('envdir'):
             self['envdir'] = join(self['install_dir'], 'env')
 
-        if not self.get('broker_ssl_cert_path'):
-            self['broker_ssl_cert_path'] = \
-                cloudify_utils.get_broker_ssl_cert_path()
-
 
 def _get_agent_inputs(params):
     """Return the agent config inputs received in the invocation"""

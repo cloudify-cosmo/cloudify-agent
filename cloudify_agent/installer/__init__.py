@@ -51,30 +51,6 @@ class AgentInstaller(object):
             .format(command, self.cloudify_agent['name']),
             execution_env=execution_env)
 
-    def _get_local_ssl_cert_paths(self):
-        if self.cloudify_agent.get('ssl_cert_path'):
-            return [self.cloudify_agent['ssl_cert_path']]
-        else:
-            return [
-                os.environ[env.CLOUDIFY_LOCAL_REST_CERT_PATH],
-                os.environ[env.CLOUDIFY_BROKER_SSL_CERT_PATH],
-            ]
-
-    def _get_remote_ssl_cert_path(self):
-        agent_dir = os.path.expanduser(self.cloudify_agent['agent_dir'])
-        cert_filename = defaults.AGENT_SSL_CERT_FILENAME
-        if self.cloudify_agent.is_windows:
-            path_join = ntpath.join
-            ssl_target_dir = defaults.SSL_CERTS_TARGET_DIR.replace('/', '\\')
-        else:
-            path_join = os.path.join
-            ssl_target_dir = defaults.SSL_CERTS_TARGET_DIR
-
-        path = path_join(agent_dir, ssl_target_dir, cert_filename)
-        self.cloudify_agent['agent_rest_cert_path'] = path
-        self.cloudify_agent['broker_ssl_cert_path'] = path
-        return path
-
     def configure_agent(self):
         self.run_daemon_command('configure')
 
