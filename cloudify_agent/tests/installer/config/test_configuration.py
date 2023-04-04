@@ -4,7 +4,6 @@ import os
 
 from mock import patch
 
-from cloudify import constants
 from cloudify_agent.api import utils
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig
 from cloudify_agent.tests.installer.config import mock_context
@@ -127,7 +126,6 @@ def _test_prepare(agent_ssl_cert, agent_config, expected_values,
         'file_server_url': 'https://127.0.0.1:80/resources',
         'max_workers': 5,
         'min_workers': 0,
-        'broker_ssl_cert_path': os.environ[constants.BROKER_SSL_CERT_PATH],
         'windows': is_windows,
         'system_python': 'python',
         'bypass_maintenance': False,
