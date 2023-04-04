@@ -1,4 +1,4 @@
-from cloudify_agent.installer import utils
+from cloudify_agent.api import utils
 
 
 def test_env_to_file():
