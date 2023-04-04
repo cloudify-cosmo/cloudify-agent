@@ -24,7 +24,7 @@ from cloudify.exceptions import CommandExecutionError
 from cloudify.utils import CommandExecutionResponse
 from cloudify.utils import setup_logger
 
-from cloudify_agent.installer import utils
+from cloudify_agent.api import utils
 
 from cloudify_rest_client.utils import is_kerberos_env
 from functools import reduce
