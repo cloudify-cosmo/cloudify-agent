@@ -14,14 +14,10 @@
 #  * limitations under the License.
 
 import ntpath
-import os
 import shutil
 
 from cloudify_agent.installer.runners.local_runner import LocalCommandRunner
 from cloudify.utils import setup_logger
-
-from cloudify_agent.shell import env
-from cloudify_agent.api import defaults
 
 
 class AgentInstaller(object):
