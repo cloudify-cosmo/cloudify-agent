@@ -21,7 +21,7 @@ from cloudify_agent.installer.runners.local_runner import LocalCommandRunner
 from cloudify.utils import setup_logger
 
 from cloudify_agent.shell import env
-from cloudify_agent.api import utils, defaults
+from cloudify_agent.api import defaults
 
 
 class AgentInstaller(object):
@@ -110,11 +110,12 @@ class WindowsInstallerMixin(AgentInstaller):
 
     @property
     def cfy_agent_path(self):
-        version = utils.get_agent_version()
-        return (
-            '"C:\\Program Files\\'
-            'Cloudify {} Agents\\Scripts\\cfy-agent"'.format(version)
+        script_path = ntpath.join(
+            self.cloudify_agent['install_dir'],
+            'Scripts',
+            "cfy-agent.exe",
         )
+        return f'"{script_path}"'
 
 
 class LinuxInstallerMixin(AgentInstaller):
