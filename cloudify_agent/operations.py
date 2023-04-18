@@ -281,6 +281,8 @@ def _get_cloudify_context(agent, task_name, new_agent_connection=None):
         'node_id': ctx.instance.id,
         'workflow_id': ctx.workflow_id,
         'execution_id': ctx.execution_id,
+        'execution_token': ctx.execution_token,
+        'deployment_id': ctx.deployment.id,
         'tenant': ctx.tenant,
         'rest_token': get_rest_token(),
         'rest_host': ctx.rest_host,
