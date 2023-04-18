@@ -245,7 +245,7 @@ def _http_rest_host(cloudify_agent):
 
 
 def _get_init_script_path_and_url(new_agent, old_agent_version):
-    script_path, script_url = install_script_download_link(new_agent)
+    script_url = install_script_download_link(new_agent)
     # Prior to 4.2 (and script plugin 1.5.1) there was no way to pass
     # a certificate to the script plugin, so the initial script must be
     # passed over http
@@ -254,7 +254,7 @@ def _get_init_script_path_and_url(new_agent, old_agent_version):
         link_relpath = script_url.split('/', 3)[3]
         script_url = urljoin(_http_rest_host(new_agent), link_relpath)
 
-    return script_path, script_url
+    return script_url
 
 
 def _validate_created_agent(new_agent):
@@ -387,7 +387,7 @@ def _run_install_script(old_agent, timeout):
         # this agent was installed by current manager.
         old_agent['version'] = str(_get_manager_version())
     new_agent = create_new_agent_config(old_agent)
-    _, script_url = _get_init_script_path_and_url(
+    script_url = _get_init_script_path_and_url(
         new_agent, old_agent['version']
     )
     new_agent_connection = {
@@ -422,7 +422,7 @@ def _stop_old_diamond(old_agent, timeout):
 
 def _stop_old_agent(new_agent, old_agent, timeout):
     ctx.logger.info('Stopping old Cloudify agent...')
-    _, script_url = stop_agent_script_download_link(
+    script_url = stop_agent_script_download_link(
         new_agent,
         old_agent_name=old_agent['name']
     )

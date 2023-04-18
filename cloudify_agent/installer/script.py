@@ -79,9 +79,9 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         """
         script_filename = self.install_script_filename
         script_content = self.install_script(add_ssl_cert=add_ssl_cert)
-        return self._get_script_path_and_url(script_filename, script_content)
+        return self._get_script_url(script_filename, script_content)
 
-    def _get_script_path_and_url(self, script_filename, script_content):
+    def _get_script_url(self, script_filename, script_content):
         """Accept filename and content, and write it to the fileserver"""
 
         script_path, script_url = self._generate_script_path_and_url(
