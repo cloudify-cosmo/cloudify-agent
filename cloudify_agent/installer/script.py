@@ -36,8 +36,6 @@ LOCAL_CLEANUP_PATHS_KEY = 'local_cleanup_paths'
 class AgentInstallationScriptBuilder(AgentInstaller):
     def __init__(self, cloudify_agent):
         super(AgentInstallationScriptBuilder, self).__init__(cloudify_agent)
-        self.file_server_root = cloudify_utils.get_manager_file_server_root()
-        self.file_server_url = cloudify_agent['file_server_url']
 
         if cloudify_agent.is_windows:
             self.install_script_template = 'script/windows.ps1.template'
@@ -56,20 +54,6 @@ class AgentInstallationScriptBuilder(AgentInstaller):
             lstrip_blocks=True,
         )
 
-    def _generate_script_path_and_url(self, script_filename):
-        """
-        Calculate install script's local path and download link
-        :return: A tuple with:
-        1. Path where the install script resides in the file server
-        2. URL where the install script can be downloaded
-        :rtype: (str, str)
-        """
-        # Store under cloudify_agent to avoid authentication
-        script_relpath = os.path.join('cloudify_agent', script_filename)
-        script_path = os.path.join(self.file_server_root, script_relpath)
-        script_url = url_join(self.file_server_url, script_relpath)
-        return script_path, script_url
-
     def install_script_download_link(self, add_ssl_cert=True):
         """Get agent installation script and write it to file server location.
         :return: A tuple with:
@@ -83,15 +67,16 @@ class AgentInstallationScriptBuilder(AgentInstaller):
 
     def _get_script_url(self, script_filename, script_content):
         """Accept filename and content, and write it to the fileserver"""
+        with tempfile.NamedTemporaryFile(delete=False, mode='w') as f:
+            f.write(script_content)
+        target_resource = os.path.basename(f.name)
+        ctx.upload_deployment_file(
+            target_resource,
+            f.name,
 
-        script_path, script_url = self._generate_script_path_and_url(
-            script_filename
         )
-        with open(script_path, 'w') as script_file:
-            script_file.write(script_content)
-
-        self._cleanup_after_installation(script_path)
-        return script_path, script_url
+        self._cleanup_after_installation(target_resource)
+        return target_resource
 
     def install_script(self, add_ssl_cert=True):
         """Get install script downloader.
@@ -141,7 +126,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
     def stop_old_agent_script_download_link(self, old_agent_name):
         script_filename = self.stop_old_agent_filename
         script_content = self.stop_old_agent(old_agent_name=old_agent_name)
-        return self._get_script_path_and_url(script_filename, script_content)
+        return self._get_script_url(script_filename, script_content)
 
 
 @create_agent_config_and_installer(
@@ -193,6 +178,6 @@ def cleanup_scripts():
     update_agent_runtime_properties(cloudify_agent)
     for path in paths:
         try:
-            os.remove(path)
-        except OSError:
-            pass
+            ctx.delete_deployment_file(path)
+        except Exception as e:
+            ctx.logger.error('Error cleaning up agent script: %s', e)
