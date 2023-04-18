@@ -15,13 +15,12 @@
 
 from contextlib import contextmanager
 import os
-from posixpath import join as url_join
 import tempfile
 import uuid
 
 import jinja2
 
-from cloudify import ctx, utils as cloudify_utils
+from cloudify import ctx
 from cloudify.constants import CLOUDIFY_TOKEN_AUTHENTICATION_HEADER
 
 from cloudify_agent.api import utils
