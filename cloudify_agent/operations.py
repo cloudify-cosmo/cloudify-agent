@@ -618,11 +618,13 @@ def _update_broker_config(agent, manager_ip, manager_cert):
     if manager_ip:
         agent['broker_ip'] = manager_ip
         agent['rest_host'] = manager_ip
-        package_url = agent['package_url']
-        agent['package_url'] = _create_package_url(package_url, manager_ip)
         broker_conf['broker_ip'] = manager_ip
     if manager_cert:
         broker_conf['broker_ssl_cert'] = manager_cert
+    if 'package_url' in agent:
+        # during upgrade, just upgrade to the newest on-manager version.
+        # we can't possibly upgrade to the same, old, package...
+        del agent['package_url']
     update_agent_runtime_properties(agent)
 
 
@@ -634,10 +636,3 @@ def _conceal_amqp_password(url):
     after_password = url[url.find('@'):]
     final = before_password + ':***' + after_password
     return final
-
-
-def _create_package_url(url, ip):
-    before, rest = url.split('//')
-    after = rest.split(':')[1]
-    new = '{before}//{ip}:{after}'.format(before=before, ip=ip, after=after)
-    return new
