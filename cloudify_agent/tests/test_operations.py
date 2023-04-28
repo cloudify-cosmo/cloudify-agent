@@ -1,8 +1,12 @@
 import os
+import pytest
+
 from contextlib import contextmanager
 
 from mock import patch, MagicMock
-import pytest
+
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
 
 from cloudify import constants
 from cloudify import ctx
@@ -72,6 +76,17 @@ def _create_agent(agent_ssl_cert):
     mock_ctx = mock_context(agent_ssl_cert)
     with patch('cloudify_agent.installer.config.agent_config.ctx',
                mock_ctx), patch('cloudify.utils.ctx', mock_ctx):
+        key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+        )
+
+        private_key = key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.TraditionalOpenSSL,
+            serialization.NoEncryption(),
+        ).decode('utf-8')
+
         old_agent = CloudifyAgentConfig({
             'install_method': 'remote',
             'ip': '10.0.4.47',
@@ -79,7 +94,7 @@ def _create_agent(agent_ssl_cert):
             'architecture': 'x86_64',
             'basedir': '/home/vagrant',
             'user': 'vagrant',
-            'key': '~/.ssh/id_rsa',
+            'key': private_key,
             'windows': False,
             'package_url': 'http://10.0.4.46:53229/packages/agents/'
                            'ubuntu-trusty-agent.tar.gz',
