@@ -22,7 +22,7 @@ pushd 'cloudify/env/bin'
 popd
 
 # -- install agent
-cloudify/env/bin/python3.11 -m pip install -r dev-requirements.txt
+cloudify/env/bin/python3.11 -m pip install -r requirements.txt
 cloudify/env/bin/python3.11 -m pip install .
 
 # -- build agent package
