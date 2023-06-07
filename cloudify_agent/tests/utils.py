@@ -125,7 +125,7 @@ def get_source_uri():
 
 
 def get_requirements_uri():
-    return os.path.join(get_source_uri(), 'dev-requirements.txt')
+    return os.path.join(get_source_uri(), 'requirements.txt')
 
 
 def get_windows_built_agent_path():

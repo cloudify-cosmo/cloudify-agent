@@ -138,7 +138,7 @@ pushd cloudify-agent
   # install prereqs
   pip install --upgrade pip setuptools
   pip install -r test-requirements.txt
-  pip install -r dev-requirements.txt
+  pip install -r requirements.txt
   pip install '.[fabric]'
 
   # run all tests
@@ -229,6 +229,7 @@ EOT
                 echo 'Install python'
                 powershell """
                   echo "### Install Chocolatey ###"
+                  \$env:chocolateyVersion = '1.4.0'
                   Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
                   choco install -y python --version=3.11.0
                   choco install -y git
@@ -251,7 +252,7 @@ EOT
                   py -m venv env
                   .\\env\\Scripts\\activate
                   python -m pip install --upgrade pip setuptools
-                  python -m pip install -r dev-requirements.txt
+                  python -m pip install -r requirements.txt
                   python -m pip install -r test-requirements.txt
                   python -m pip install .
                   pytest -sv --run-ci-tests cloudify_agent\\tests

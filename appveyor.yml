@@ -78,7 +78,7 @@ build: false # Not a C# project, build stuff at the test step instead.
 before_test:
   - echo Installing dependencies
   - virtualenv venv
-  - venv\Scripts\python.exe -m pip install -r dev-requirements.txt
+  - venv\Scripts\python.exe -m pip install -r requirements.txt
   - venv\Scripts\python.exe -m pip install -r test-requirements.txt
   - venv\Scripts\python.exe -m pip install -U .
 
