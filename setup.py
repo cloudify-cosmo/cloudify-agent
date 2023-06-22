@@ -27,7 +27,7 @@ install_requires = [
 
 setup(
     name='cloudify-agent',
-    version='7.0.1.dev1',
+    version='7.0.1',
     author='Cloudify',
     author_email='cosmo-admin@cloudify.co',
     packages=[
