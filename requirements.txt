@@ -8,26 +8,20 @@ aiohttp==3.8.4
     # via cloudify-common
 aiosignal==1.3.1
     # via aiohttp
-appdirs==1.4.3
-    # via cloudify-agent (setup.py)
 async-timeout==4.0.2
     # via aiohttp
 attrs==23.1.0
     # via aiohttp
 bottle==0.12.23
     # via cloudify-common
-certifi==2023.5.7
+certifi==2023.7.22
     # via requests
 charset-normalizer==3.1.0
     # via
     #   aiohttp
     #   requests
-click==8.1.3
-    # via cloudify-agent (setup.py)
 cloudify-common @ https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip
-    # via
-    #   -r requirements.in
-    #   cloudify-agent (setup.py)
+    # via -r requirements.in
 distro==1.8.0
     # via cloudify-common
 fasteners==0.17.3
@@ -41,17 +35,13 @@ idna==3.4
     #   requests
     #   yarl
 jinja2==3.1.2
-    # via
-    #   cloudify-agent (setup.py)
-    #   cloudify-common
+    # via cloudify-common
 markupsafe==2.1.2
     # via jinja2
 multidict==6.0.4
     # via
     #   aiohttp
     #   yarl
-packaging==23.1
-    # via cloudify-agent (setup.py)
 pika==1.3.0
     # via cloudify-common
 proxy-tools==0.1.0
@@ -60,7 +50,6 @@ pytz==2022.2.1
     # via cloudify-common
 requests==2.30.0
     # via
-    #   cloudify-agent (setup.py)
     #   cloudify-common
     #   requests-toolbelt
 requests-toolbelt==0.9.1
