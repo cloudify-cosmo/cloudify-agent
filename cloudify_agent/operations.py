@@ -612,8 +612,6 @@ def _get_broker_config(agent):
 
 
 def _update_broker_config(agent, manager_ip, manager_cert):
-    if not manager_ip and not manager_cert:
-        return
     broker_conf = agent.setdefault('broker_config', dict())
     if manager_ip:
         agent['broker_ip'] = manager_ip
