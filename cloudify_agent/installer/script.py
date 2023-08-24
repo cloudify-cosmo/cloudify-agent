@@ -66,7 +66,10 @@ class AgentInstallationScriptBuilder(AgentInstaller):
 
     def _get_script_url(self, script_filename, script_content):
         """Accept filename and content, and write it to the fileserver"""
-        with tempfile.NamedTemporaryFile(delete=False, mode='w') as f:
+        with tempfile.NamedTemporaryFile(
+            delete=False, mode='w',
+            suffix='.ps1' if cloudify_agent.is_windows else None,
+        ) as f:
             f.write(script_content)
         target_resource = os.path.basename(f.name)
         ctx.upload_deployment_file(
