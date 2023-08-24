@@ -68,14 +68,13 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         """Accept filename and content, and write it to the fileserver"""
         with tempfile.NamedTemporaryFile(delete=False, mode='w') as f:
             f.write(script_content)
-        target_resource = os.path.basename(f.name)
         ctx.upload_deployment_file(
-            target_resource,
+            script_filename,
             f.name,
 
         )
-        self._cleanup_after_installation(target_resource)
-        return target_resource
+        self._cleanup_after_installation(script_filename)
+        return script_filename
 
     def install_script(self, add_ssl_cert=True):
         """Get install script downloader.
