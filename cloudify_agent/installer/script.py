@@ -68,7 +68,7 @@ class AgentInstallationScriptBuilder(AgentInstaller):
         """Accept filename and content, and write it to the fileserver"""
         with tempfile.NamedTemporaryFile(
             delete=False, mode='w',
-            suffix='.ps1' if cloudify_agent.is_windows else None,
+            suffix='.ps1' if self.cloudify_agent.is_windows else None,
         ) as f:
             f.write(script_content)
         target_resource = os.path.basename(f.name)
