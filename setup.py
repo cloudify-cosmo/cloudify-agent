@@ -16,12 +16,12 @@
 from setuptools import setup
 
 install_requires = [
-    'appdirs==1.4.3',
-    'click>8,<9',
+    'appdirs',
+    'click',
     'cloudify-common',
-    'jinja2>3,<4',
+    'jinja2',
     'packaging',
-    'requests>=2.25.0,<3.0.0',
+    'requests',
 ]
 
 
