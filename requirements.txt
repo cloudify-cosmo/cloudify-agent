@@ -4,25 +4,25 @@
 #
 #    pip-compile --output-file=requirements.txt requirements.in setup.py
 #
-aiohttp==3.8.5
+aiohttp==3.8.6
     # via cloudify-common
 aiosignal==1.3.1
     # via aiohttp
-appdirs==1.4.3
+appdirs==1.4.4
     # via cloudify-agent (setup.py)
-async-timeout==4.0.2
+async-timeout==4.0.3
     # via aiohttp
 attrs==23.1.0
     # via aiohttp
-bottle==0.12.23
+bottle==0.12.25
     # via cloudify-common
-certifi==2023.5.7
+certifi==2023.7.22
     # via requests
-charset-normalizer==3.1.0
+charset-normalizer==3.3.0
     # via
     #   aiohttp
     #   requests
-click==8.1.3
+click==8.1.7
     # via cloudify-agent (setup.py)
 cloudify-common @ https://github.com/cloudify-cosmo/cloudify-common/archive/7.0.3-build.zip
     # via
@@ -30,9 +30,9 @@ cloudify-common @ https://github.com/cloudify-cosmo/cloudify-common/archive/7.0.
     #   cloudify-agent (setup.py)
 distro==1.8.0
     # via cloudify-common
-fasteners==0.17.3
+fasteners==0.19
     # via cloudify-common
-frozenlist==1.3.3
+frozenlist==1.4.0
     # via
     #   aiohttp
     #   aiosignal
@@ -44,34 +44,36 @@ jinja2==3.1.2
     # via
     #   cloudify-agent (setup.py)
     #   cloudify-common
-markupsafe==2.1.2
+markupsafe==2.1.3
     # via jinja2
 multidict==6.0.4
     # via
     #   aiohttp
     #   yarl
-packaging==23.1
+packaging==23.2
     # via cloudify-agent (setup.py)
-pika==1.3.0
+pika==1.3.2
     # via cloudify-common
+pkginfo==1.9.6
+    # via wagon
 proxy-tools==0.1.0
     # via cloudify-common
-pytz==2022.2.1
+pytz==2023.3.post1
     # via cloudify-common
-requests==2.30.0
+requests==2.31.0
     # via
     #   cloudify-agent (setup.py)
     #   cloudify-common
     #   requests-toolbelt
 requests-toolbelt==1.0.0
     # via cloudify-common
-urllib3==1.26.15
+urllib3==2.0.6
     # via
     #   -r requirements.in
     #   requests
 wagon==1.0.1
     # via cloudify-common
-wheel==0.40.0
+wheel==0.41.2
     # via wagon
 yarl==1.9.2
     # via aiohttp
