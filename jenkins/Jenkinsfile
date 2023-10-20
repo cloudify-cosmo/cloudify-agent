@@ -205,10 +205,7 @@ EOT
         }
         stage('Windows-Build'){
           agent{
-            kubernetes {
-              label "cloudify-agent-win-${env.BUILD_NUMBER}"
-              yamlFile 'jenkins/build-pod-windows.yaml'
-            }
+            label 'windows'
           }
           environment {
             TOX_ENV = 'pywin'
@@ -225,39 +222,38 @@ EOT
           }
           steps{
             catchError(message: 'Failure on: cloudify-agent tests', buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-              container('jnlp'){
-                echo 'Install python'
-                powershell """
-                  echo "### Install Chocolatey ###"
-                  \$env:chocolateyVersion = '1.4.0'
-                  Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-                  choco install -y python --version=3.11.0
-                  choco install -y git
-                """
-                echo 'Configure python'
-                powershell """
-                  SET \$PATH=${env.PYTHON};\$PATH
-                  python --version
-                  python -c "import struct; print(struct.calcsize('P') * 8)"
-                  echo Upgrading pip...
-                  python -m pip install pip
-                  pip --version
-                """
-                powershell """
-                  git clone https://github.com/cloudify-cosmo/cloudify-agent.git C:\\projects\\cloudify-agent
-                  cd C:\\projects\\cloudify-agent
-                  git checkout ${env.BRANCH_NAME}
-                  python -m pip install virtualenv
-                  echo 'Installing dependencies'
-                  py -m venv env
-                  .\\env\\Scripts\\activate
-                  python -m pip install --upgrade pip setuptools
-                  python -m pip install -r requirements.txt
-                  python -m pip install -r test-requirements.txt
-                  python -m pip install .
-                  pytest -sv --run-ci-tests cloudify_agent\\tests
-                """
-              }
+              
+              echo 'Install python'
+              powershell """
+                choco install -y python --version=3.11.0
+              """
+              echo 'Configure python'
+              powershell """
+                \$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine")
+                python --version
+                python -c "import struct; print(struct.calcsize('P') * 8)"
+                echo Upgrading pip...
+                python -m pip install pip
+                pip --version
+                pip cache purge
+                \$randomName = -join ((48..57) + (97..122) | Get-Random -Count 8 | % {[char]\$_})
+                New-Item C:\\projects\\\$randomName -ItemType Directory
+                \$workDir = "C:\\projects\\\$randomName\\cloudify-agent"
+                git clone https://github.com/cloudify-cosmo/cloudify-agent.git \$workDir
+                cd \$workDir
+                git checkout ${env.BRANCH_NAME}
+                python -m pip install virtualenv
+                echo 'Installing dependencies'
+                python -m venv env
+                .\\env\\Scripts\\activate
+                python -m pip install --upgrade pip setuptools
+                python -m pip install -r requirements.txt
+                python -m pip install -r test-requirements.txt
+                python -m pip install .
+                pytest -sv --run-ci-tests cloudify_agent\\tests
+                Start-Sleep -Seconds 5
+                Remove-Item -Path \$workDir -Recurse -Force
+              """
             }
           }
         }

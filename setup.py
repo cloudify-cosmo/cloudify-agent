@@ -16,12 +16,12 @@
 from setuptools import setup
 
 install_requires = [
+    'appdirs',
+    'click',
     'cloudify-common',
-    'appdirs==1.4.3',
-    'jinja2>3,<4',
-    'click>8,<9',
+    'jinja2',
     'packaging',
-    'requests>=2.25.0,<3.0.0',
+    'requests',
 ]
 
 
@@ -84,7 +84,7 @@ setup(
             'cffi>=1.14,<1.15',
         ],
         'celery': [
-            'celery==4.4.7',
+            'celery',
         ],
         'fabric': [
             'fabric==2.5.0',
