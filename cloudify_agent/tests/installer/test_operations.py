@@ -1,8 +1,8 @@
 import itertools
 import logging
 
-from mock import patch, ANY, call, Mock
 import pytest
+from unittest.mock import patch, ANY, call, Mock
 
 from cloudify.context import CloudifyContext
 from cloudify.exceptions import NonRecoverableError

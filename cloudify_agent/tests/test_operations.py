@@ -3,7 +3,7 @@ import pytest
 
 from contextlib import contextmanager
 
-from mock import patch, MagicMock
+from unittest.mock import patch, MagicMock
 
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization

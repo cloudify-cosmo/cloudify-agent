@@ -87,9 +87,8 @@ setup(
             'celery>=5.3,<6',
         ],
         'fabric': [
-            'fabric>=3.2,<4',
+            'fabric>=2.5,<3',
             'pynacl>=1.4,<2',
-            'invoke>=2.2,<3',
         ]
     }
 )
