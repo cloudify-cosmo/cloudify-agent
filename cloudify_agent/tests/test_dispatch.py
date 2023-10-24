@@ -1,7 +1,7 @@
 import json
-import mock
 import os
 import pytest
+from unittest import mock
 
 from cloudify import exceptions, constants
 from cloudify.context import CloudifyContext

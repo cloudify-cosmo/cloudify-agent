@@ -2,7 +2,7 @@ from contextlib import contextmanager
 import getpass
 import os
 
-from mock import patch
+from unittest.mock import patch
 
 from cloudify_agent.api import utils
 from cloudify_agent.installer.config.agent_config import CloudifyAgentConfig

@@ -9,7 +9,7 @@ from contextlib import contextmanager
 
 import wagon
 
-from mock import patch
+from unittest.mock import patch
 
 from cloudify import exceptions as cloudify_exceptions
 from cloudify.state import ctx, current_ctx
