@@ -1,7 +1,7 @@
 import os
 
-from mock import patch
 import pytest
+from unittest.mock import patch
 
 from cloudify import constants
 

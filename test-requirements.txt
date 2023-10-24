@@ -1,4 +1,3 @@
 cloudify-common[dispatcher] @ https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip
-mock
 pywinrm
 pytest

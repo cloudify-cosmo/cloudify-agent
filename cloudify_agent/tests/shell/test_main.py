@@ -4,7 +4,7 @@ import pkgutil
 
 import click
 
-import mock
+from unittest import mock
 
 from cloudify_agent.tests.shell.commands import run_agent_command
 
