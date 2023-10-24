@@ -89,7 +89,6 @@ setup(
         'fabric': [
             'fabric>=2.5,<3',
             'pynacl>=1.4,<2',
-            'invoke>=2.2,<3',
         ]
     }
 )
