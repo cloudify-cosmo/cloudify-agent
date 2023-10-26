@@ -1,7 +1,7 @@
 import itertools
 import logging
 
-from mock import patch, ANY, call, Mock
+from unittest.mock import patch, ANY, call, Mock
 import pytest
 
 from cloudify.context import CloudifyContext

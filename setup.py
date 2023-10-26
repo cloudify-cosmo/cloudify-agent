@@ -79,17 +79,16 @@ setup(
     },
     extras_require={
         'kerberos': [
-            'pywinrm[Kerberos]==0.4.1',
-            'python-gssapi==0.6.4',
+            'pywinrm[Kerberos]>=0.4,<1',
+            'python-gssapi>=0.6,<1',
             'cffi>=1.14,<1.15',
         ],
         'celery': [
-            'celery',
+            'celery>=5.3,<6',
         ],
         'fabric': [
-            'fabric==2.5.0',
-            'pynacl==1.4.0',
-            'invoke==1.6.0',
+            'fabric>=2.5,<3',
+            'pynacl>=1.4,<2',
         ]
     }
 )
