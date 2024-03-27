@@ -81,7 +81,7 @@ setup(
         'kerberos': [
             'pywinrm[Kerberos]>=0.4,<1',
             'python-gssapi>=0.6,<1',
-            'cffi>=1.14,<1.15',
+            'cffi>=1,<2',
         ],
         'celery': [
             'celery>=5.3,<6',
