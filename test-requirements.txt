@@ -1,3 +1,4 @@
 cloudify-common[dispatcher] @ https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip
 pywinrm
 pytest
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
