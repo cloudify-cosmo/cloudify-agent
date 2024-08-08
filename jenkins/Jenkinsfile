@@ -111,6 +111,9 @@ pipeline {
                   withVault([configuration: configuration, vaultSecrets: secrets]){
                     sh script:"""
                       ssh -i ~/.ssh/ec2_ssh_key -l centos \$(jq -r '.endpoint.value' capabilities.json) /bin/bash -ex << 'EOT'
+sudo find /etc/yum.repos.d/ -type f -name "*.repo" -print0 | xargs -0 sudo sed -i s/mirror.centos.org/vault.centos.org/g
+sudo find /etc/yum.repos.d/ -type f -name "*.repo" -print0 | xargs -0 sudo sed -i s/^#.*baseurl=http/baseurl=http/g
+sudo find /etc/yum.repos.d/ -type f -name "*.repo" -print0 | xargs -0 sudo sed -i s/^mirrorlist=http/#mirrorlist=http/g
 # install & start rabbitmq
 sudo yum install -y epel-release git wget
 sudo yum install -y rabbitmq-server
@@ -170,6 +173,11 @@ EOT
                 mkdir -p ~/rpmbuild/SOURCES/packaging/agents/ ;
                 curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
                 ''', label: 'Prepare rpm-building environment'
+              sh script: '''
+                find /etc/yum.repos.d/ -type f -name "*.repo" -print0 | xargs -0 sed -i s/mirror.centos.org/vault.centos.org/g
+                find /etc/yum.repos.d/ -type f -name "*.repo" -print0 | xargs -0 sed -i s/^#.*baseurl=http/baseurl=http/g
+                find /etc/yum.repos.d/ -type f -name "*.repo" -print0 | xargs -0 sed -i s/^mirrorlist=http/#mirrorlist=http/g
+              ''', label: 'Fix mirrorlist no longer available. See https://serverfault.com/questions/1161816/mirrorlist-centos-org-no-longer-resolve#answer-1161847'
               sh script: '''
                 #!/usr/bin/env bash
                 set -euxo pipefail
