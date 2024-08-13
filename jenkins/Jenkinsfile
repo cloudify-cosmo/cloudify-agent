@@ -236,9 +236,9 @@ EOT
               """
               echo 'Configure python'
               powershell """
-                $randomName = -join ((48..57) + (97..122) | Get-Random -Count 8 | % {[char]$_})
-                $tempDir = "C:\\projects\\$randomName"
-                New-Item -ItemType Directory -Path $tempDir
+                \$randomName = -join ((48..57) + (97..122) | Get-Random -Count 8 | % {[char]$_})
+                \$tempDir = "C:\\projects\\\$randomName"
+                New-Item -ItemType Directory -Path \$tempDir
 
                 \$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine")
                 python --version
@@ -246,8 +246,8 @@ EOT
                 echo Upgrading pip...
                 python -m pip install pip
                 pip --version
-                git clone https://github.com/cloudify-cosmo/cloudify-agent.git "$tempDir\\cloudify-agent"
-                cd "$tempDir\\cloudify-agent"
+                git clone https://github.com/cloudify-cosmo/cloudify-agent.git "\$tempDir\\cloudify-agent"
+                cd "\$tempDir\\cloudify-agent"
                 git fetch
                 git checkout ${env.BRANCH_NAME}
                 python -m pip install virtualenv
@@ -260,7 +260,7 @@ EOT
                 python -m pip install .
                 pytest -sv --run-ci-tests cloudify_agent\\tests
 
-                Remove-Item -Path $tempDir -Recurse
+                Remove-Item -Path \$tempDir -Recurse
               """
               
             }
