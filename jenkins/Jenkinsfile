@@ -243,8 +243,8 @@ EOT
                 echo Upgrading pip...
                 python -m pip install pip
                 pip --version
-                git clone https://github.com/cloudify-cosmo/cloudify-agent.git C:\\projects\\cloudify-agent
                 cd C:\\projects\\cloudify-agent
+                git status
                 git checkout ${env.BRANCH_NAME}
                 python -m pip install virtualenv
                 echo 'Installing dependencies'
