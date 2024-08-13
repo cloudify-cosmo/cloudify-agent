@@ -305,4 +305,4 @@ capabilities:
 
   key_content:
     description: Private agent key
-    value: { get_attribute: [agent_key, private_key_export] } 
+    value: { get_attribute: [agent_key, private_key_export] }
