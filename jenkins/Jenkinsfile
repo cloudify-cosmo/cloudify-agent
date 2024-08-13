@@ -236,7 +236,7 @@ EOT
               """
               echo 'Configure python'
               powershell """
-                \$randomName = -join ((48..57) + (97..122) | Get-Random -Count 8 | % {[char]$_})
+                \$randomName = -join ((48..57) + (97..122) | Get-Random -Count 8 | % {[char]\$_})
                 \$tempDir = "C:\\projects\\\$randomName"
                 New-Item -ItemType Directory -Path \$tempDir
 
