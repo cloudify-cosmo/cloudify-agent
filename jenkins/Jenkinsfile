@@ -84,9 +84,9 @@ pipeline {
 
                       cfy profile use ${MANAGER_IP} -u ${MANAGER_USERNAME} -p ${MANAGER_PASSWORD} -t ${MANAGER_TENANT} --ssl
                       pushd 'bp'
-                        cfy install -b ec2-cfy-agent-tests-blueprint-${BRANCH_NAME}-${BUILD_NUMBER} ec2-cfy-agent-tests-blueprint.yaml
+                        cfy install -b ec2-cfy-agent-tests-blueprint-${BUILD_NUMBER} ec2-cfy-agent-tests-blueprint.yaml
                       popd
-                      cfy deployments capabilities ec2-cfy-agent-tests-blueprint-${BRANCH_NAME}-${BUILD_NUMBER} --json > capabilities.json
+                      cfy deployments capabilities ec2-cfy-agent-tests-blueprint-${BUILD_NUMBER} --json > capabilities.json
                       jq -r '.key_content.value' capabilities.json > ~/.ssh/ec2_ssh_key && chmod 600 ~/.ssh/ec2_ssh_key
                       for i in {1..16};
                         do ssh-keyscan -H \$(jq -r '.endpoint.value' capabilities.json) >> ~/.ssh/known_hosts && break || sleep 10;
@@ -111,6 +111,9 @@ pipeline {
                   withVault([configuration: configuration, vaultSecrets: secrets]){
                     sh script:"""
                       ssh -i ~/.ssh/ec2_ssh_key -l centos \$(jq -r '.endpoint.value' capabilities.json) /bin/bash -ex << 'EOT'
+sudo find /etc/yum.repos.d/ -type f -name "*.repo" -print0 | xargs -0 sudo sed -i s/mirror.centos.org/vault.centos.org/g
+sudo find /etc/yum.repos.d/ -type f -name "*.repo" -print0 | xargs -0 sudo sed -i s/^#.*baseurl=http/baseurl=http/g
+sudo find /etc/yum.repos.d/ -type f -name "*.repo" -print0 | xargs -0 sudo sed -i s/^mirrorlist=http/#mirrorlist=http/g
 # install & start rabbitmq
 sudo yum install -y epel-release git wget
 sudo yum install -y rabbitmq-server
@@ -171,6 +174,11 @@ EOT
                 curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
                 ''', label: 'Prepare rpm-building environment'
               sh script: '''
+                find /etc/yum.repos.d/ -type f -name "*.repo" -print0 | xargs -0 sed -i s/mirror.centos.org/vault.centos.org/g
+                find /etc/yum.repos.d/ -type f -name "*.repo" -print0 | xargs -0 sed -i s/^#.*baseurl=http/baseurl=http/g
+                find /etc/yum.repos.d/ -type f -name "*.repo" -print0 | xargs -0 sed -i s/^mirrorlist=http/#mirrorlist=http/g
+              ''', label: 'Fix mirrorlist no longer available. See https://serverfault.com/questions/1161816/mirrorlist-centos-org-no-longer-resolve#answer-1161847'
+              sh script: '''
                 #!/usr/bin/env bash
                 set -euxo pipefail
                 cd ~/rpmbuild/SOURCES
@@ -216,7 +224,6 @@ EOT
             PYTHON = 'C:\\Python36'
           }
           options {
-            checkoutToSubdirectory('cloudify-agent')
             timeout(time: 60, unit: 'MINUTES')
             timestamps()
           }
@@ -229,14 +236,19 @@ EOT
               """
               echo 'Configure python'
               powershell """
+                \$randomName = -join ((48..57) + (97..122) | Get-Random -Count 8 | % {[char]\$_})
+                \$tempDir = "C:\\projects\\\$randomName"
+                New-Item -ItemType Directory -Path \$tempDir
+
                 \$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine")
                 python --version
                 python -c "import struct; print(struct.calcsize('P') * 8)"
                 echo Upgrading pip...
                 python -m pip install pip
                 pip --version
-                git clone https://github.com/cloudify-cosmo/cloudify-agent.git C:\\projects\\cloudify-agent
-                cd C:\\projects\\cloudify-agent
+                git clone https://github.com/cloudify-cosmo/cloudify-agent.git "\$tempDir\\cloudify-agent"
+                cd "\$tempDir\\cloudify-agent"
+                git fetch
                 git checkout ${env.BRANCH_NAME}
                 python -m pip install virtualenv
                 echo 'Installing dependencies'
@@ -247,6 +259,8 @@ EOT
                 python -m pip install -r test-requirements.txt
                 python -m pip install .
                 pytest -sv --run-ci-tests cloudify_agent\\tests
+
+                Remove-Item -Path \$tempDir -Recurse
               """
               
             }
@@ -280,7 +294,7 @@ EOT
                 sh """#!/bin/bash
                   set -euxo pipefail
                   source .venv/bin/activate
-                  cfy uninstall ec2-cfy-agent-tests-blueprint-${env.BRANCH_NAME}-${env.BUILD_NUMBER} --force --allow-custom-parameters -p ignore_failure=true
+                  cfy uninstall ec2-cfy-agent-tests-blueprint-${env.BUILD_NUMBER} --force --allow-custom-parameters -p ignore_failure=true
                 """
               }
             }

@@ -19,9 +19,9 @@ install_requires = [
     'appdirs',
     'click',
     'cloudify-common',
-    'jinja2',
+    'jinja2>=3.1.4,<4',
     'packaging',
-    'requests',
+    'requests>=2.32.0,<3',
 ]
 
 
