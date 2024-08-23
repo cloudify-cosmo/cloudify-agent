@@ -169,9 +169,9 @@ EOT
                 git clone https://github.com/cloudify-cosmo/cloudify-agent.git SOURCES && cd SOURCES && git checkout ${BRANCH_NAME}
               ''', label: 'Copying repo to separate workspace'
               sh script: '''
-                curl -o ~/rpmbuild/SOURCES/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/cloudify-agents.spec ;
+                curl -o ~/rpmbuild/SOURCES/cloudify-agents.spec https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/7.0.5-build/packaging/cloudify-agents.spec ;
                 mkdir -p ~/rpmbuild/SOURCES/packaging/agents/ ;
-                curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/packaging/agents/copy_packages.py ;
+                curl -o ~/rpmbuild/SOURCES/packaging/agents/copy_packages.py https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/7.0.5-build/packaging/agents/copy_packages.py ;
                 ''', label: 'Prepare rpm-building environment'
               sh script: '''
                 find /etc/yum.repos.d/ -type f -name "*.repo" -print0 | xargs -0 sed -i s/mirror.centos.org/vault.centos.org/g
