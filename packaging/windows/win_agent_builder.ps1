@@ -105,7 +105,7 @@ run $AGENT_PATH\python.exe get-pip.py pip==$PIP_VERSION
 
 Write-Host "Installing agent"
 pushd cloudify-agent
-    run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" -r requirements.txt
+    run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" --no-cache-dir -r requirements.txt
     run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" .
     run $AGENT_PATH\scripts\pip.exe install --prefix="$AGENT_PATH" virtualenv
 popd
