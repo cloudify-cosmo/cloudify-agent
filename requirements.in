@@ -1,2 +1,4 @@
 cloudify-common @ https://github.com/cloudify-cosmo/cloudify-common/archive/7.0.5-build.zip
 urllib3
+# idna 3.6 has a vulnerability Vulnerability ID: BDSA-2024-1193, CVE-2024-34064
+idna > 3.6
